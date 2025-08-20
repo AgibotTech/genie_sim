@@ -211,10 +211,273 @@ class AppLauncher:
                 )
 
     def _config_resolution(self, launcher_args: dict):
-        self._headless = launcher_args.pop(
+        """Resolve the input arguments and environment variables.
+
+        Args:
+            launcher_args: A dictionary of all input arguments passed to the class object.
+        """
+        # Handle all control logic resolution
+
+        # --LIVESTREAM logic--
+        #
+        livestream_env = int(os.environ.get("LIVESTREAM", 0))
+        livestream_arg = launcher_args.pop(
+            "livestream", AppLauncher._APPLAUNCHER_CFG_INFO["livestream"][1]
+        )
+        livestream_valid_vals = {0, 1, 2}
+        # Value checking on LIVESTREAM
+        if livestream_env not in livestream_valid_vals:
+            raise ValueError(
+                f"Invalid value for environment variable `LIVESTREAM`: {livestream_env} ."
+                f" Expected: {livestream_valid_vals}."
+            )
+        # We allow livestream kwarg to supersede LIVESTREAM envvar
+        if livestream_arg >= 0:
+            if livestream_arg in livestream_valid_vals:
+                self._livestream = livestream_arg
+                # print info that we overrode the env-var
+                print(
+                    f"[INFO][AppLauncher]: Input keyword argument `livestream={livestream_arg}` has overridden"
+                    f" the environment variable `LIVESTREAM={livestream_env}`."
+                )
+            else:
+                raise ValueError(
+                    f"Invalid value for input keyword argument `livestream`: {livestream_arg} ."
+                    f" Expected: {livestream_valid_vals}."
+                )
+        else:
+            self._livestream = livestream_env
+
+        # --HEADLESS logic--
+        #
+        # Resolve headless execution of simulation app
+        # HEADLESS is initially passed as an int instead of
+        # the bool of headless_arg to avoid messy string processing,
+        headless_env = int(os.environ.get("HEADLESS", 0))
+        headless_arg = launcher_args.pop(
             "headless", AppLauncher._APPLAUNCHER_CFG_INFO["headless"][1]
         )
-        self._render_mode = launcher_args.pop("render_mode")
+        headless_valid_vals = {0, 1}
+        # Value checking on HEADLESS
+        if headless_env not in headless_valid_vals:
+            raise ValueError(
+                f"Invalid value for environment variable `HEADLESS`: {headless_env} . Expected: {headless_valid_vals}."
+            )
+        # We allow headless kwarg to supersede HEADLESS envvar if headless_arg does not have the default value
+        # Note: Headless is always true when livestreaming
+        if headless_arg is True:
+            self._headless = headless_arg
+        elif self._livestream in {1, 2}:
+            # we are always headless on the host machine
+            self._headless = True
+            # inform who has toggled the headless flag
+            if self._livestream == livestream_arg:
+                print(
+                    f"[INFO][AppLauncher]: Input keyword argument `livestream={self._livestream}` has implicitly"
+                    f" overridden the environment variable `HEADLESS={headless_env}` to True."
+                )
+            elif self._livestream == livestream_env:
+                print(
+                    f"[INFO][AppLauncher]: Environment variable `LIVESTREAM={self._livestream}` has implicitly"
+                    f" overridden the environment variable `HEADLESS={headless_env}` to True."
+                )
+        else:
+            # Headless needs to be a bool to be ingested by SimulationApp
+            self._headless = bool(headless_env)
+        # Headless needs to be passed to the SimulationApp so we keep it here
+        launcher_args["headless"] = self._headless
+
+        # --enable_cameras logic--
+        #
+        enable_cameras_env = int(os.environ.get("ENABLE_CAMERAS", 0))
+        enable_cameras_arg = launcher_args.pop(
+            "enable_cameras", AppLauncher._APPLAUNCHER_CFG_INFO["enable_cameras"][1]
+        )
+        enable_cameras_valid_vals = {0, 1}
+        if enable_cameras_env not in enable_cameras_valid_vals:
+            raise ValueError(
+                f"Invalid value for environment variable `ENABLE_CAMERAS`: {enable_cameras_env} ."
+                f"Expected: {enable_cameras_valid_vals} ."
+            )
+        # We allow enable_cameras kwarg to supersede ENABLE_CAMERAS envvar
+        if enable_cameras_arg is True:
+            self._enable_cameras = enable_cameras_arg
+        else:
+            self._enable_cameras = bool(enable_cameras_env)
+        self._offscreen_render = False
+        if self._enable_cameras and self._headless:
+            self._offscreen_render = True
+
+        # Check if we can disable the viewport to improve performance
+        #   This should only happen if we are running headless and do not require livestreaming or video recording
+        #   This is different from offscreen_render because this only affects the default viewport and not other renderproducts in the scene
+        self._render_viewport = True
+        if (
+            self._headless
+            and not self._livestream
+            and not launcher_args.get("video", False)
+        ):
+            self._render_viewport = False
+
+        # hide_ui flag
+        launcher_args["hide_ui"] = False
+        if self._headless and not self._livestream:
+            launcher_args["hide_ui"] = True
+
+        # avoid creating new stage at startup by default for performance reasons
+        launcher_args["create_new_stage"] = False
+
+        # --simulation GPU device logic --
+        self.device_id = 0
+        device = launcher_args.get(
+            "device", AppLauncher._APPLAUNCHER_CFG_INFO["device"][1]
+        )
+        if "cuda" not in device and "cpu" not in device:
+            raise ValueError(
+                f"Invalid value for input keyword argument `device`: {device}."
+                " Expected: a string with the format 'cuda', 'cuda:<device_id>', or 'cpu'."
+            )
+        if "cuda:" in device:
+            self.device_id = int(device.split(":")[-1])
+
+        # Raise an error for the deprecated cpu flag
+        if launcher_args.get("cpu", False):
+            raise ValueError(
+                "The `--cpu` flag is deprecated. Please use `--device cpu` instead."
+            )
+
+        if "distributed" in launcher_args and launcher_args["distributed"]:
+            # local rank (GPU id) in a current multi-gpu mode
+            self.local_rank = int(os.getenv("LOCAL_RANK", "0")) + int(
+                os.getenv("JAX_LOCAL_RANK", "0")
+            )
+            # global rank (GPU id) in multi-gpu multi-node mode
+            self.global_rank = int(os.getenv("RANK", "0")) + int(
+                os.getenv("JAX_RANK", "0")
+            )
+
+            self.device_id = self.local_rank
+            launcher_args["multi_gpu"] = False
+            # limit CPU threads to minimize thread context switching
+            # this ensures processes do not take up all available threads and fight for resources
+            num_cpu_cores = os.cpu_count()
+            num_threads_per_process = num_cpu_cores // int(os.getenv("WORLD_SIZE", 1))
+            # set environment variables to limit CPU threads
+            os.environ["PXR_WORK_THREAD_LIMIT"] = str(num_threads_per_process)
+            os.environ["OPENBLAS_NUM_THREADS"] = str(num_threads_per_process)
+            # pass command line variable to kit
+            sys.argv.append(
+                f"--/plugins/carb.tasking.plugin/threadCount={num_threads_per_process}"
+            )
+
+        # set physics and rendering device
+        launcher_args["physics_gpu"] = self.device_id
+        launcher_args["active_gpu"] = self.device_id
+
+        # Check if input keywords contain an 'experience' file setting
+        # Note: since experience is taken as a separate argument by Simulation App, we store it separately
+        self._sim_experience_file = launcher_args.pop("experience", "")
+
+        # If nothing is provided resolve the experience file based on the headless flag
+        kit_app_exp_path = os.environ["EXP_PATH"]
+        isaaclab_app_exp_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), *[".."] * 4, "apps"
+        )
+        if self._sim_experience_file == "":
+            # check if the headless flag is setS
+            if self._enable_cameras:
+                if self._headless and not self._livestream:
+                    self._sim_experience_file = os.path.join(
+                        isaaclab_app_exp_path, "isaaclab.python.headless.rendering.kit"
+                    )
+                else:
+                    self._sim_experience_file = os.path.join(
+                        isaaclab_app_exp_path, "isaaclab.python.rendering.kit"
+                    )
+            elif self._headless and not self._livestream:
+                self._sim_experience_file = os.path.join(
+                    isaaclab_app_exp_path, "isaaclab.python.headless.kit"
+                )
+            else:
+                self._sim_experience_file = os.path.join(
+                    isaaclab_app_exp_path, "isaaclab.python.kit"
+                )
+        elif not os.path.isabs(self._sim_experience_file):
+            option_1_app_exp_path = os.path.join(
+                kit_app_exp_path, self._sim_experience_file
+            )
+            option_2_app_exp_path = os.path.join(
+                isaaclab_app_exp_path, self._sim_experience_file
+            )
+            if os.path.exists(option_1_app_exp_path):
+                self._sim_experience_file = option_1_app_exp_path
+            elif os.path.exists(option_2_app_exp_path):
+                self._sim_experience_file = option_2_app_exp_path
+            else:
+                raise FileNotFoundError(
+                    f"Invalid value for input keyword argument `experience`: {self._sim_experience_file}."
+                    "\n No such file exists in either the Kit or Isaac Lab experience paths. Checked paths:"
+                    f"\n\t [1]: {option_1_app_exp_path}"
+                    f"\n\t [2]: {option_2_app_exp_path}"
+                )
+        elif not os.path.exists(self._sim_experience_file):
+            raise FileNotFoundError(
+                f"Invalid value for input keyword argument `experience`: {self._sim_experience_file}."
+                " The file does not exist."
+            )
+
+        # Set public IP address of a remote instance
+        public_ip_env = os.environ.get("PUBLIC_IP", "127.0.0.1")
+
+        # Process livestream here before launching kit because some of the extensions only work when launched with the kit file
+        self._livestream_args = []
+        if self._livestream >= 1:
+            # Note: Only one livestream extension can be enabled at a time
+            if self._livestream == 1:
+                logger.warning(
+                    "Native Livestream is deprecated. Please use WebRTC Livestream instead with --livestream 2."
+                )
+                self._livestream_args += [
+                    '--/app/livestream/proto="ws"',
+                    "--/app/livestream/allowResize=true",
+                    "--enable",
+                    "omni.kit.livestream.core-4.1.2",
+                    "--enable",
+                    "omni.kit.livestream.native-5.0.1",
+                    "--enable",
+                    "omni.kit.streamsdk.plugins-4.1.1",
+                ]
+            elif self._livestream == 2:
+                self._livestream_args += [
+                    f"--/app/livestream/publicEndpointAddress={public_ip_env}",
+                    "--/app/livestream/port=49100",
+                    "--enable",
+                    "omni.services.livestream.nvcf",
+                ]
+            else:
+                raise ValueError(
+                    f"Invalid value for livestream: {self._livestream}. Expected: 1, 2 ."
+                )
+            sys.argv += self._livestream_args
+
+        # Resolve additional arguments passed to Kit
+        self._kit_args = []
+        if "kit_args" in launcher_args:
+            self._kit_args = [arg for arg in launcher_args["kit_args"].split()]
+            sys.argv += self._kit_args
+
+        # Resolve the absolute path of the experience file
+        self._sim_experience_file = os.path.abspath(self._sim_experience_file)
+        print(
+            f"[INFO][AppLauncher]: Loading experience file: {self._sim_experience_file}"
+        )
+        # Remove all values from input keyword args which are not meant for SimulationApp
+        # Assign all the passed settings to a dictionary for the simulation app
+        self._sim_app_config = {
+            key: launcher_args[key]
+            for key in set(AppLauncher._SIM_APP_CFG_TYPES.keys())
+            & set(launcher_args.keys())
+        }
 
     def _create_app(self):
         """Launch SimulationApp"""
