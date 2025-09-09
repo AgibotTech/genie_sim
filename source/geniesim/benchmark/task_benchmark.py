@@ -29,6 +29,7 @@ from geniesim.utils.eval_utils import *
 
 import geniesim.utils.system_utils as system_utils
 import rclpy
+import time
 
 system_utils.check_and_fix_env()
 
@@ -141,6 +142,7 @@ class TaskBenchmark(object):
         else:
             robot_cfg = self.task_config["robot"]["robot_cfg"]
         # init robot and scene
+
         robot = IsaacSimRpcRobot(
             robot_cfg=robot_cfg,
             scene_usd=self.task_config["scene"]["scene_usd"],
@@ -186,7 +188,11 @@ class TaskBenchmark(object):
                 action = self.policy.act(observaion, step_num=env.current_step)
                 for callback in step_callbacks:  # during task
                     callback(env, action)
+
+                time.sleep(10)
+
                 observaion, done, need_update, task_progress = env.step(action)
+
                 logger.info(f"STEP {env.current_step}")
                 if need_update:
                     self.update_eval_ret(task_progress)

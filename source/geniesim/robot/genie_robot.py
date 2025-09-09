@@ -89,7 +89,10 @@ class IsaacSimRpcRobot(Robot):
         rotation=[1, 0, 0, 0],
         gripper_control_type=0,
     ):
-        robot_urdf = robot_cfg.split(".")[0] + ".urdf"
+        if "G1_omnipicker" in robot_cfg:
+            robot_urdf = "G1_omnipicker.urdf"
+        else:
+            robot_urdf = robot_cfg.split(".")[0] + ".urdf"
         self.robot_cfg = robot_cfg
         if "G1" in self.robot_cfg:
             self.ik_cfg = "G1_NO_GRIPPER.urdf"

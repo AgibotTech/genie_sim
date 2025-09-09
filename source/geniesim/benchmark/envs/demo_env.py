@@ -147,6 +147,13 @@ class DemoEnv(BaseEnv):
         return observaion
 
     def step(self, actions):
+
+        if not hasattr(self.robot, "reset_pose"):
+            self.robot.reset_pose = {
+                "right": self.robot.get_ee_pose(ee_type="gripper", id="right"),
+                "left": self.robot.get_ee_pose(ee_type="gripper", id="left"),
+            }
+
         self.current_step += 1
         split_stages = split_grasp_stages(self.policy_stages)
         stage_id = -1
@@ -158,6 +165,9 @@ class DemoEnv(BaseEnv):
                 _stages[0]["passive"]["object_id"],
             )
             arm = extra_params.get("arm", "right")
+
+            self.robot.client.DetachObj()
+
             action_stages = generate_action_stages(
                 self.policy_objects, _stages, self.robot
             )
@@ -171,8 +181,11 @@ class DemoEnv(BaseEnv):
 
             for action, substages in action_stages:
                 stage_id += 1
-                logger.info(">>>>  Stage [%d]  <<<<" % (stage_id + 1))
+                logger.info(
+                    ">>>>  Stage [%d], action [%s]  <<<<" % (stage_id + 1, action)
+                )
                 if action in ["reset"]:
+
                     init_pose = self.robot.reset_pose[arm]
                     curr_pose = self.robot.get_ee_pose(ee_type="gripper", id=arm)
                     interp_pose = init_pose.copy()
@@ -180,7 +193,7 @@ class DemoEnv(BaseEnv):
                         curr_pose[:3, 3] + (init_pose[:3, 3] - curr_pose[:3, 3]) * 0.25
                     )
                     success = self.robot.move_pose(
-                        self.robot.reset_pose[arm], type="AvoidObs", arm=arm, block=True
+                        self.robot.reset_pose[arm], type="Simple", arm=arm, block=True
                     )
                     continue
                 if action in ["grasp", "pick"]:
@@ -207,9 +220,54 @@ class DemoEnv(BaseEnv):
 
                     # execution action
                     if target_gripper_pose is not None:
-                        self.robot.move_pose(
-                            target_gripper_pose, motion_type, arm=arm, block=True
-                        )
+                        attempt_num = 0
+                        while attempt_num < 5:
+                            attempt_num += 1
+                            res = self.robot.move_pose(
+                                target_gripper_pose, motion_type, arm=arm, block=True
+                            )
+                            if res or action not in ["place"]:
+                                break
+                            # add random noise to orientation of target
+                            angle_noise = np.random.uniform(-0.1, 0.1, size=3)
+                            Rx = np.array(
+                                [
+                                    [1, 0, 0],
+                                    [
+                                        0,
+                                        np.cos(angle_noise[0]),
+                                        -np.sin(angle_noise[0]),
+                                    ],
+                                    [0, np.sin(angle_noise[0]), np.cos(angle_noise[0])],
+                                ]
+                            )
+                            Ry = np.array(
+                                [
+                                    [np.cos(angle_noise[1]), 0, np.sin(angle_noise[1])],
+                                    [0, 1, 0],
+                                    [
+                                        -np.sin(angle_noise[1]),
+                                        0,
+                                        np.cos(angle_noise[1]),
+                                    ],
+                                ]
+                            )
+                            Rz = np.array(
+                                [
+                                    [
+                                        np.cos(angle_noise[2]),
+                                        -np.sin(angle_noise[2]),
+                                        0,
+                                    ],
+                                    [np.sin(angle_noise[2]), np.cos(angle_noise[2]), 0],
+                                    [0, 0, 1],
+                                ]
+                            )
+                            R_noise = Rz @ Ry @ Rx
+                            target_gripper_pose = np.array(target_gripper_pose)
+                            target_gripper_pose[:3, :3] = (
+                                R_noise @ target_gripper_pose[:3, :3]
+                            )
 
                     self.robot.client.set_frame_state(
                         action,
@@ -220,7 +278,10 @@ class DemoEnv(BaseEnv):
                     )
 
                     if gripper_action is not None:
-                        name = ["idx81_gripper_r_outer_joint1"]
+                        if arm == "left":
+                            name = ["idx41_gripper_l_outer_joint1"]
+                        else:
+                            name = ["idx81_gripper_r_outer_joint1"]
                         pos = [0.0] if gripper_action == "close" else [0.8]
                         self.policy.sim_ros_node.set_joint_state(name, pos)
                         self.robot.client.DetachObj()
@@ -284,6 +345,7 @@ class DemoEnv(BaseEnv):
         self.task.step(self)
         self.action_update()
         need_update = True
+        self.has_done = True
 
         return observaion, self.has_done, need_update, self.task.task_progress
 
@@ -422,6 +484,7 @@ class DemoEnv(BaseEnv):
 
         objs_dir = {}
         objs_interaction = {}
+
         for obj_info in task_info["objects"]:
             obj_id = obj_info["object_id"]
             if obj_id == "fix_pose":

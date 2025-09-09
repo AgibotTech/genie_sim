@@ -59,7 +59,7 @@ class CuroboMotion:
         robot_cfg,
         robot_prim_path,
         robot_list,
-        step=80,
+        step=100,
     ):
         self.usd_help = UsdHelper()
         self.target_pose = None
@@ -74,6 +74,7 @@ class CuroboMotion:
         n_obstacle_mesh = 100
 
         robot_cfg_path = get_robot_configs_path()
+
         self.robot_cfg = load_yaml(join_path(robot_cfg_path, robot_cfg))["robot_cfg"]
         self.robot_cfg["kinematics"]["extra_collision_spheres"] = {
             "attached_object": 30,
@@ -93,12 +94,14 @@ class CuroboMotion:
             world_model=self.world_cfg,
             tensor_args=tensor_args,
             collision_checker_type=CollisionCheckerType.MESH,
+            position_threshold=0.01,
+            rotation_threshold=0.1,
             use_cuda_graph=True,
-            num_trajopt_seeds=4,
-            num_graph_seeds=2,
-            num_ik_seeds=32,
+            num_trajopt_seeds=8,
+            num_graph_seeds=16,
+            num_ik_seeds=64,
             num_batch_ik_seeds=96,
-            interpolation_dt=0.01,
+            interpolation_dt=0.005,
             interpolation_steps=5000,
             collision_cache={"obb": n_obstacle_cuboids, "mesh": n_obstacle_mesh},
             optimize_dt=True,
@@ -106,7 +109,7 @@ class CuroboMotion:
             trajopt_tsteps=step,
             num_trajopt_noisy_seeds=1,
             num_batch_trajopt_seeds=2,
-            collision_activation_distance=0.0005,
+            collision_activation_distance=0.005,
         )
 
         self.tensor_args = tensor_args
@@ -115,11 +118,13 @@ class CuroboMotion:
         self.world_model = self.motion_gen.world_collision
         self.plan_config = MotionGenPlanConfig(
             enable_graph=False,
-            enable_graph_attempt=4,
-            max_attempts=10,
+            enable_graph_attempt=10,
+            max_attempts=40,
             enable_finetune_trajopt=True,
             parallel_finetune=True,
-            time_dilation_factor=0.6,
+            time_dilation_factor=1.0,
+            ik_fail_return=5,
+            check_start_validity=False,
         )
         self.target = SingleXFormPrim(
             "/World/target",
@@ -143,7 +148,7 @@ class CuroboMotion:
         self.reached = False
         self.success = False
         self.saved_poses = []
-        self.my_world = World(stage_units_in_meters=1.0)
+        self.my_world = world
         stage = self.my_world.stage
         self.usd_help.load_stage(stage)
         self.time_index = 0
@@ -181,9 +186,9 @@ class CuroboMotion:
         obstacle = self.usd_help.get_obstacles_from_stage(
             reference_prim_path=self.robot_prim_path,
             ignore_substring=[
+                self.robot_prim_path,
                 "/World/background",
                 "/World/huojia/Xform_01",
-                "/G1",
                 "/curobo",
             ],
         ).get_collision_check_world()
@@ -419,7 +424,6 @@ class CuroboMotion:
                 link_poses=link_poses,
             )
         succ = result.success.item()
-
         if succ:
             self.reached = False
             self.success = True
@@ -440,7 +444,9 @@ class CuroboMotion:
         else:
             self.reached = True
             self.success = False
-            carb.log_warn("plan did not converge to a solution")
+            carb.log_warn(
+                f"plan did not converge to a solution with status {result.status}"
+            )
         self.target_pose = cube_position
         self.target_orientation = cube_orientation
         self.past_pose = cube_position
@@ -491,6 +497,15 @@ class CuroboMotion:
                 )
                 self.spheres.append(sp)
         else:
+            if len(self.spheres) < len(sph_list[0]):
+                for si in range(len(self.spheres), len(sph_list[0])):
+                    sp = sphere.VisualSphere(
+                        prim_path=prim_prefix + str(si),
+                        position=np.array([0, 0, 0]),
+                        radius=0.01,
+                        color=color,
+                    )
+                    self.spheres.append(sp)
             for si, s in enumerate(sph_list[0]):
                 if not np.isnan(s.position[0]):
                     self.spheres[si].set_world_pose(
@@ -568,6 +583,8 @@ class CuroboMotion:
             return False
         for i, x in enumerate(object_names):
             obs = self.motion_gen.world_model.get_obstacle(x)
+            if not obs:
+                continue
             sph = obs.get_bounding_spheres(
                 n_spheres,
                 surface_sphere_radius,
@@ -585,7 +602,6 @@ class CuroboMotion:
         if spheres.shape[0] > max_spheres:
             spheres = spheres[: spheres.shape[0]]
         sphere_tensor[: spheres.shape[0], :] = spheres.contiguous()
-
         self.motion_gen.attach_spheres_to_robot(
             sphere_tensor=sphere_tensor, link_name=link_name
         )

@@ -133,9 +133,7 @@ def get_aligned_pose(active_obj, passive_obj, distance=0.01, N=1):
     current_obj_pose = active_obj_world["pose"]
     if passive_object is None:
         return current_obj_pose[np.newaxis, ...]
-
     passive_obj_world = obj2world(passive_object)
-
     R = calculate_rotation_matrix(
         active_obj_world["direction"], passive_obj_world["direction"]
     )
@@ -209,6 +207,9 @@ def load_task_solution(task_info):
 
 def parse_stage(stage, objects):
     action = stage["action"]
+    if action in ["reset"]:
+        return action, "gripper", "gripper", None, None, None, None
+
     active_obj_id = stage["active"]["object_id"]
     if "part_id" in stage["active"]:
         active_obj_id += "/%s" % stage["active"]["part_id"]
@@ -267,8 +268,11 @@ def select_obj(objects, stages, robot):
     gripper2obj = None
     extra_params = stages[0].get("extra_params", {})
     arm = extra_params.get("arm", "right")
-    current_gripper_pose = robot.get_ee_pose("gripper", arm=arm)
     grasp_offset = extra_params.get("grasp_offset", 0.0)
+    grasp_lower_percentile = extra_params.get("grasp_lower_percentile", 0)
+    grasp_upper_percentile = extra_params.get("grasp_upper_percentile", 100)
+    disable_upside_down = extra_params.get("disable_upside_down", True)
+    horizontal_pick = extra_params.get("horizontal_pick", False)
 
     """ Initial screening to grab poses, get grasp_poses_canonical, grasp_poses """
     grasp_stage_id = None
@@ -285,8 +289,11 @@ def select_obj(objects, stages, robot):
         grasp_widths = passive_element["width"]
 
         z_values = grasp_poses_canonical[:, 1, 3]
-        z_lower_threshold = np.percentile(z_values, 20)
-        z_upper_threshold = np.percentile(z_values, 40)
+        # z_lower_threshold = np.percentile(z_values, 20)
+        # z_upper_threshold = np.percentile(z_values, 40)
+
+        z_lower_threshold = np.percentile(z_values, grasp_lower_percentile)
+        z_upper_threshold = np.percentile(z_values, grasp_upper_percentile)
         # filter grasp pose with z_min and z_max value
         mask = (z_values <= z_upper_threshold) & (z_values >= z_lower_threshold)
         grasp_poses_canonical = grasp_poses_canonical[mask]
@@ -310,6 +317,29 @@ def select_obj(objects, stages, robot):
             objects[passive_obj_id].obj_pose[np.newaxis, ...] @ grasp_poses_canonical
         )
 
+        if disable_upside_down:
+            if "omnipicker" in robot.robot_cfg:
+                if arm == "left":
+                    upright_mask = grasp_poses[:, 2, 1] < 0.0
+                else:
+                    upright_mask = grasp_poses[:, 2, 1] > 0.0
+            else:
+                upright_mask = grasp_poses[:, 2, 0] > 0.0
+            grasp_poses = grasp_poses[upright_mask]
+            grasp_widths = grasp_widths[upright_mask]
+            print(
+                "%s, %s, Filtered upside-down grasp_poses: %d"
+                % (action, passive_obj_id, grasp_poses.shape[0])
+            )
+
+        if horizontal_pick:
+            horizontal_mask = np.abs(grasp_poses[:, 2, 2]) < 0.5
+            grasp_poses = grasp_poses[horizontal_mask]
+            grasp_widths = grasp_widths[horizontal_mask]
+            print(
+                "%s, %s, Filtered horizontal grasp_poses: %d"
+                % (action, passive_obj_id, grasp_poses.shape[0])
+            )
         # grasp offset
         grasp_rotate = grasp_poses.copy()
         grasp_rotate[:, :3, 3] = np.array([0, 0, 0])
@@ -353,14 +383,17 @@ def select_obj(objects, stages, robot):
                 active_primitive,
                 passive_primitive,
             ) = parse_stage(stages[next_stage_id], objects)
-
+            next_stage_extra_params = stages[next_stage_id].get("extra_params", {})
+            place_with_origin_orientation = next_stage_extra_params.get(
+                "place_with_origin_orientation", True
+            )
             single_obj = active_obj_id == passive_obj_id
 
             active_obj = objects[active_obj_id]
             passive_obj = objects[passive_obj_id]
             passive_element = passive_elements[np.random.choice(len(passive_elements))]
 
-            if action == "place":
+            if action == "place" and place_with_origin_orientation:
                 obj_pose = active_obj.obj_pose
                 mesh = trimesh.load(active_obj.info["mesh_file"], force="mesh")
                 mesh.apply_scale(0.001)
@@ -424,10 +457,11 @@ def select_obj(objects, stages, robot):
                     target_obj_poses[:, np.newaxis, ...]
                     @ grasp_poses_canonical[np.newaxis, ...]
                 ).reshape(-1, 4, 4)
-
+                print("target_gripper_poses：", target_gripper_poses)
                 ik_success, _ = robot.solve_ik(
                     target_gripper_poses, ee_type="gripper", type="Simple", arm=arm
                 )
+                print("ik_success:", ik_success)
                 element_ik_score.append(
                     np.max(ik_success.reshape(N_obj_pose, N_grasp_pose).sum(axis=1))
                 )
@@ -477,9 +511,11 @@ def select_obj(objects, stages, robot):
             ik_success, ik_info = robot.solve_ik(
                 best_grasp_poses, ee_type="gripper", type="AvoidObs", arm=arm
             )
-            mask = best_grasp_poses[:, 2, 0] < 0.0
-            ik_success[mask] = False
+            # mask = best_grasp_poses[:, 2, 0] < 0.0
+            # ik_success[mask] = False
+
             best_grasp_poses = best_grasp_poses[ik_success]
+
             print(
                 "%s, %s, Filtered grasp pose with curobo IK: %d/%d"
                 % (
@@ -531,19 +567,38 @@ def select_obj(objects, stages, robot):
 
 
 def split_grasp_stages(stages):
+    # split_stages = []
+    # i = 0
+    # while i < len(stages):
+    #     if stages[i]["action"] in ["pick", "grasp", "hook"]:
+    #         if (i + 1) < len(stages) and stages[i + 1]["action"] not in [
+    #             "pick",
+    #             "grasp",
+    #             "hook",
+    #         ]:
+    #             split_stages.append([stages[i], stages[i + 1]])
+    #             i += 2
+    #         else:
+    #             split_stages.append([stages[i]])
+    #             i += 1
+    #     else:
+    #         split_stages.append([stages[i]])
+    #         i += 1
+    # return split_stages
     split_stages = []
     i = 0
     while i < len(stages):
-        if stages[i]["action"] in ["pick", "grasp", "hook"]:
-            if (i + 1) < len(stages) and stages[i + 1]["action"] not in [
+        if stages[i]["action"] in ["pick", "grasp", "hook", "move", "shift"]:
+            split_stages.append([stages[i]])
+            i += 1
+            while i < len(stages) and stages[i]["action"] not in [
                 "pick",
                 "grasp",
                 "hook",
+                "move",
+                "shift",
             ]:
-                split_stages.append([stages[i], stages[i + 1]])
-                i += 2
-            else:
-                split_stages.append([stages[i]])
+                split_stages[-1].append(stages[i])
                 i += 1
         else:
             split_stages.append([stages[i]])
@@ -553,7 +608,6 @@ def split_grasp_stages(stages):
 
 def generate_action_stages(objects, all_stages, robot):
     split_stages = split_grasp_stages(all_stages)
-    current_gripper_pose = robot.get_ee_pose("gripper")
     action_stages = []
     for stages in split_stages:
         gripper2obj = select_obj(objects, stages, robot)
@@ -578,7 +632,9 @@ def generate_action_stages(objects, all_stages, robot):
             single_obj = active_obj_id == passive_obj_id
 
             substages = None
-            if action in ["pick", "grasp", "hook"]:
+            if action in ["reset"]:
+                substages = True
+            elif action in ["pick", "grasp", "hook"]:
                 substages = build_stage(action)(
                     active_obj_id,
                     passive_obj_id,
@@ -600,6 +656,7 @@ def generate_action_stages(objects, all_stages, robot):
                     # interaction between two rigid objects
                     obj_pose = active_obj.obj_pose
                     anchor_pose = passive_obj.obj_pose
+
                     current_obj_pose_canonical = np.linalg.inv(anchor_pose) @ obj_pose
                     active_obj.xyz, active_obj.direction = (
                         active_element["xyz"],
@@ -630,16 +687,18 @@ def generate_action_stages(objects, all_stages, robot):
                             axis=0,
                         )
 
-                    downsample_num = 50
+                    downsample_num = 200
                     if target_gripper_poses.shape[0] > downsample_num:
                         target_gripper_poses = target_gripper_poses[:downsample_num]
                     ik_success, ik_info = robot.solve_ik(
-                        target_gripper_poses, ee_type="gripper", type="Simple", arm=arm
+                        target_gripper_poses,
+                        ee_type="gripper",
+                        type="AvoidObs",
+                        arm=arm,
                     )
                     target_gripper_poses_pass_ik = target_gripper_poses[ik_success]
                     ik_joint_positions = ik_info["joint_positions"][ik_success]
                     ik_joint_names = ik_info["joint_names"][ik_success]
-
                     if len(target_gripper_poses_pass_ik) == 0:
                         logger.error(action, ": No target_obj_pose can pass isaac IK")
                         continue

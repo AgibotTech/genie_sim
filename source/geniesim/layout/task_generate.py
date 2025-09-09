@@ -215,6 +215,7 @@ class TaskGenerator:
             "lights": task_template.get("lights", {}),
             "objects": [],
         }
+
         constraint = task_template.get("constraints")
         robot_init_workspace_id = scene_info["scene_id"].split("/")[-1]
 

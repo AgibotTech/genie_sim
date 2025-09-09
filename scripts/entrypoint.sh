@@ -25,6 +25,7 @@ echo "export ROS_LOCALHOST_ONLY=1" >>~/.bashrc
 # setup ros2 environment
 source "/opt/ros/$ROS_DISTRO/setup.bash" --
 # exec "$@"
-
+cp -r /root/workspace/main/source/geniesim/app/robot_cfg/* /isaac-sim/kit/python/lib/python3.10/site-packages/curobo/content/assets/robot
+cp -r /root/workspace/main/source/geniesim/app/curobo/configs/robot/ /isaac-sim/kit/python/lib/python3.10/site-packages/curobo/content/configs/
 #
 /bin/bash

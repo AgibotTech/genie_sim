@@ -461,13 +461,12 @@ class UIBuilder:
                 current_arm_positions, target_arm_positions
             )
             distance = np.linalg.norm(target_position - current_position)
-            if len(cmd_list) < 100:
-                for position in cmd_list:
-                    joint_distance = np.linalg.norm(
-                        np.array(current_arm_positions) - np.array(position)
-                    )
-                    current_arm_positions = position
-                    self.cmd_list.append(position)
+            for position in cmd_list:
+                joint_distance = np.linalg.norm(
+                    np.array(current_arm_positions) - np.array(position)
+                )
+                current_arm_positions = position
+                self.cmd_list.append(position)
         self.cmd_idx = 0
         self.reached = False
         self.time_index = 0
@@ -740,6 +739,7 @@ class UIBuilder:
     def _find_all_objects_of_type(self, obj_type):
         items = []
         stage = omni.usd.get_context().get_stage()
+
         if stage:
             for prim in Usd.PrimRange(stage.GetPrimAtPath("/")):
                 path = str(prim.GetPath())
