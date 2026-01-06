@@ -1,0 +1,18 @@
+strict digraph "" {
+	graph [rankdir=LR];
+	table_01ea3015	[tags="['table', 'white', 'minimalist', 'center']"];
+	root_scene_9069fbb3 -> table_01ea3015;
+	root_scene_9069fbb3 -> storage_box_with_fruits_2df2ccf6;
+	root_scene_9069fbb3 -> storage_box_with_fruits_b4feef3a;
+	root_scene_9069fbb3 -> scattered_fruits_on_desk_52187fcc;
+	benchmark_storage_box_db8e50e7	[tags="['box_left', 'storage', 'container', 'left']"];
+	storage_box_with_fruits_2df2ccf6 -> benchmark_storage_box_db8e50e7;
+	benchmark_lemon_d1e606f9	[tags="['fruit_in_box_left_0', 'contained', 'left']"];
+	storage_box_with_fruits_2df2ccf6 -> benchmark_lemon_d1e606f9;
+	benchmark_storage_box_a14ece85	[tags="['box_right', 'storage', 'container', 'right']"];
+	storage_box_with_fruits_b4feef3a -> benchmark_storage_box_a14ece85;
+	benchmark_peach_dcbb443b	[tags="['fruit_in_box_right_0', 'contained', 'right']"];
+	storage_box_with_fruits_b4feef3a -> benchmark_peach_dcbb443b;
+	benchmark_peach_64921f61	[tags="['scattered_fruit_0', 'on_desk', 'random']"];
+	scattered_fruits_on_desk_52187fcc -> benchmark_peach_64921f61;
+}

@@ -1,0 +1,28 @@
+app:
+  headless: false
+  physics_step: 120
+  rendering_step: 60
+  enable_curobo: false
+  reset_fallen: false
+  enable_ros: false
+  record_img: false
+  record_video: false
+  render_mode: "RaytracedLighting"
+  disable_physics: false
+  data_convert: false
+  enable_gpu_dynamics: false
+  enable_rate_limit: true
+  enable_playback: false
+benchmark:
+  client_host: "localhost:50051"
+  num_episode: 1
+  task_name: "table_task_g1"
+  sub_task_name: "pick_specific_object"
+  output_dir: "output"
+  fps: 30
+  record: false
+  infer_host: "localhost"
+  infer_port: 8999
+  model_arc: "pi"
+  enable_ros: false
+  interactive: false

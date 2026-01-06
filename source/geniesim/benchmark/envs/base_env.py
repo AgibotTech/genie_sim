@@ -1,55 +1,158 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 import json
 import time
+from PIL.Image import logger
 import numpy as np
 from scipy.spatial.transform import Rotation as R, Slerp
 
-from geniesim.robot.genie_robot import IsaacSimRpcRobot
-from geniesim.benchmark.ader.action.action_manager import ActionManager
-from geniesim.benchmark.ader.action.common_actions import ActionBase
+from geniesim.plugins.ader import AderEnv, AderParams
+from geniesim.app.controllers.api_core import APICore
+from geniesim.utils.data_courier import DataCourier
+from geniesim.utils.infer_pre_process import TaskInfo
+from geniesim.benchmark.config.robot_init_states import TASK_INFO_DICT
 
 
-class BaseEnv(object):
-    def __init__(self, robot: IsaacSimRpcRobot) -> None:
-        self.robot = robot
-        self.action_executor = ActionManager()
-        self.last_update_time = time.time()
-        self.has_done = False
+class BaseEnv(AderEnv):
+    def __init__(
+        self,
+        api_core,
+        task_file,
+        init_task_config,
+        need_setup=True,
+        ader_instance=0,
+    ) -> None:
+        super().__init__(
+            api_core,
+            AderParams(instance=ader_instance, task_name=init_task_config["task"]),
+        )
 
-    def do_action(self, slot: str, name: str, action: ActionBase):
-        self.action_executor.start(slot, name, action)
+        self.current_episode = 0
+        self.current_step = 0
+        self.init_task_config = init_task_config
+        self.specific_task_name = self.init_task_config["specific_task_name"]
+        self.sub_task_name = self.init_task_config["sub_task_name"]
+        self.robot_cfg = self.init_task_config["robot_cfg"]
+        task_info_cfg = TASK_INFO_DICT.get(self.sub_task_name, {}).get(self.robot_cfg)
+        if task_info_cfg is not None:
+            logger.info(f"Config task info for {self.sub_task_name} with {self.robot_cfg}")
+            self.task_info = TaskInfo(task_info_cfg, self.robot_cfg)
+            (
+                self.init_arm,
+                self.init_head,
+                self.init_waist,
+                self.init_hand,
+                self.init_gripper,
+            ) = self.task_info.init_pose()
 
-    def cancel_action(self, slot):
-        self.action_executor.stop(slot)
+        self.task = None
+        self.load(task_file)
+        if need_setup:
+            self.load_task_setup()
 
-    def exist_eval_action(self):
-        return self.action_executor.exist_action("eval")
+        self.data_courier: DataCourier = None
+        self.need_infer = False
 
-    def do_eval_action(self):
-        self.do_action("eval", self.init_task_config["task"], self.task.action)
+    def set_infer_status(self, need_infer):
+        self.need_infer = need_infer
 
-    def cancel_eval(self):
-        self.reset()
-        self.has_done = True
+    def load(self, task_file):
+        self.generate_layout(task_file)
+        task_info = json.load(open(task_file, "rb"))
+        self.task_info = task_info
+
+    def load_task_setup(self):
+        """
+        To be implemented in child class
+        """
+        pass
+
+    def reset_variables(self):
+        pass
+
+    def get_observation(self):
+        return None
+
+    def stop(self):
+        pass
 
     def reset(self):
-        self.robot.reset()
+        super().reset()
+        if self.task is not None:
+            self.task.reset(self)
+        self.reset_variables()
+        observaion = self.get_observation()
+        return observaion
 
-    def exist_eval_action(self):
-        return self.action_executor.exist_action("eval")
+    def step(self, actions):
+        pass
 
-    def action_update(self):
-        if not self.exist_eval_action():
-            self.has_done = True
-            return
-        delta_time = time.time() - self.last_update_time
-        self.action_executor.update(delta_time)
-        self.last_update_time = time.time()
-        if self.has_done:
-            self.cancel_action("eval")
+    def set_data_courier(self, data_courier):
+        self.data_courier = data_courier
+
+    def set_scene_info(self, scene_info):
+        self.scene_info = scene_info
+
+    def set_current_task(self, episode_id):
+        self.task.set_task(episode_id)
+        self.task.do_action_parsing(self)
+
+    def generate_layout(self, task_file):
+        self.task_file = task_file
+        with open(task_file, "r") as f:
+            task_info = json.load(f)
+
+        # add mass for stable manipulation
+        for stage in task_info["stages"]:
+            if stage["action"] in ["place", "insert", "pour"]:
+                obj_id = stage["passive"]["object_id"]
+                for i in range(len(task_info["objects"])):
+                    if task_info["objects"][i]["object_id"] == obj_id:
+                        task_info["objects"][i]["mass"] = 10
+                        break
+
+        self.articulated_objs = []
+        for object_info in task_info["objects"]:
+            is_articulated = object_info.get("is_articulated", False)
+            if is_articulated:
+                self.articulated_objs.append(object_info["object_id"])
+            object_info["material"] = "general"
+            self.add_object(object_info)
+        time.sleep(0.3)
+
+        self.arm = task_info["arm"]
+
+        """ For G1: Fix camera rotaton to look at target object """
+        task_related_objs = []
+        for stage in task_info["stages"]:
+            for type in ["active", "passive"]:
+                obj_id = stage[type]["object_id"]
+                if obj_id == "gripper" or obj_id in task_related_objs:
+                    continue
+                task_related_objs.append(obj_id)
+
+        material_infos = []
+        for key in task_info["object_with_material"]:
+            material_infos += task_info["object_with_material"][key]
+        if len(material_infos):
+            self.api_core.SetMaterial(material_infos)
+            time.sleep(0.3)
+
+        if "lights" in task_info:
+            lights_cfg = task_info["lights"]
+            for key in lights_cfg:
+                cfg = lights_cfg[key][0]
+                self.api_core.set_light(
+                    cfg["light_type"],
+                    cfg["light_prim"],
+                    cfg["light_temperature"],
+                    cfg["light_intensity"],
+                    cfg["rotation"],
+                    cfg["texture"],
+                )
+            time.sleep(0.3)
 
     def add_object(self, object_info: dict):
         name = object_info["object_id"]
@@ -78,258 +181,28 @@ class BaseEnv(object):
             scale = np.array(object_info["scale"])
         else:
             scale = np.array([object_info["scale"]] * 3)
-        material = (
-            "general" if "material" not in object_info else object_info["material"]
-        )
+        material = "general" if "material" not in object_info else object_info["material"]
         mass = object_info.get("mass", 0.01)
         com = object_info.get("com", [0, 0, 0])
         model_type = object_info.get("model_type", "convexDecomposition")
         static_friction = object_info.get("static_friction", 0.5)
         dynamic_friction = object_info.get("dynamic_friction", 0.5)
-        self.robot.client.add_object(
+        self.api_core.add_usd_obj(
             usd_path=usd_path,
             prim_path="/World/Objects/%s" % name,
             label_name=name,
-            target_position=position,
-            target_quaternion=quaternion,
-            target_scale=scale,
-            material=material,
-            color=[1, 1, 1],
-            mass=mass,
+            position=position,
+            rotation=quaternion,
+            scale=scale,
+            object_color=[1, 1, 1],
+            object_material=material,
+            object_mass=mass,
             add_particle=add_particle,
             particle_position=particle_position,
             particle_scale=particle_scale,
-            com=com,
+            particle_color=[1, 1, 1],
+            object_com=com,
             model_type=model_type,
             static_friction=static_friction,
             dynamic_friction=dynamic_friction,
         )
-
-    def generate_layout(self, task_file, init=True):
-        with open(task_file, "r") as f:
-            task_info = json.load(f)
-
-        if init:
-            for object_info in task_info["objects"]:
-                if "box" not in object_info["name"]:
-                    continue
-                self.add_object(object_info)
-            time.sleep(1)
-
-            for object_info in task_info["objects"]:
-                if "obj" not in object_info["name"]:
-                    continue
-                self.add_object(object_info)
-            time.sleep(1)
-
-        self.task_info = task_info
-        self.robot.target_object = task_info["target_object"]
-        self.arm = task_info["arm"]
-        return task_info
-
-    def execute(self, commands):
-        for command in commands:
-            type = command["action"]
-            content = command["content"]
-            if type == "move" or type == "rotate":
-                if self.robot.move(content) == False:
-                    return False
-                else:
-                    self.last_pose = content["matrix"]
-            elif type == "open_gripper":
-                id = "left" if "gripper" not in content else content["gripper"]
-                width = 0.1 if "width" not in content else content["width"]
-                self.robot.open_gripper(id=id, width=width)
-
-            elif type == "close_gripper":
-                id = "left" if "gripper" not in content else content["gripper"]
-                force = 50 if "force" not in content else content["force"]
-                self.robot.close_gripper(id=id, force=force)
-                if "attach_obj" in content:
-                    self.robot.client.AttachObj(prim_paths=[content["attach_obj"]])
-
-            else:
-                Exception("Not implemented.")
-        return True
-
-    def start_recording(self, task_name, camera_prim_list):
-        self.robot.client.start_recording(
-            task_name=task_name,
-            fps=30,
-            data_keys={
-                "camera": {
-                    "camera_prim_list": camera_prim_list,
-                    "render_depth": False,
-                    "render_semantic": False,
-                },
-                "pose": [],
-                "joint_position": True,
-                "gripper": True,
-            },
-        )
-
-    def stop_recording(self, success):
-        self.robot.client.stop_recording()
-
-    def grasp(
-        self,
-        target_gripper_pose,
-        gripper_id=None,
-        use_pre_grasp=False,
-        use_pick_up=False,
-        grasp_width=0.1,
-    ):
-        gripper_id = "left" if gripper_id is None else gripper_id
-        pick_up_pose = np.copy(target_gripper_pose)
-        pick_up_pose[2, 3] = pick_up_pose[2, 3] + 0.1  # lift up 10cm after grasped obj
-
-        commands = []
-        commands.append(
-            {
-                "action": "open_gripper",
-                "content": {
-                    "gripper": gripper_id,
-                    "width": grasp_width,
-                },
-            }
-        )
-        if use_pre_grasp:
-            pre_pose = np.array(
-                [[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 1.0, -0.05], [0, 0, 0, 1]]
-            )
-            pre_grasp_pose = target_gripper_pose @ pre_pose
-            commands.append(
-                {
-                    "action": "move",
-                    "content": {
-                        "matrix": pre_grasp_pose,
-                        "type": "matrix",
-                        "comment": "pre_grasp",
-                        "trajectory_type": "ObsAvoid",
-                    },
-                }
-            )
-
-        grasp_trajectory_type = "Simple" if use_pre_grasp else "ObsAvoid"
-        commands.append(
-            {
-                "action": "move",
-                "content": {
-                    "matrix": target_gripper_pose,
-                    "type": "matrix",
-                    "comment": "grasp",
-                    "trajectory_type": grasp_trajectory_type,
-                },
-            }
-        )
-        commands.append(
-            {
-                "action": "close_gripper",
-                "content": {
-                    "gripper": gripper_id,
-                    "force": 50,
-                },
-            }
-        )
-
-        if use_pick_up:
-            commands.append(
-                {
-                    "action": "move",
-                    "content": {
-                        "matrix": pick_up_pose,
-                        "type": "matrix",
-                        "comment": "pick_up",
-                        "trajectory_type": "Simple",
-                    },
-                }
-            )
-
-        return commands
-
-    def get_observation(self):
-        observation_raw = self.robot.get_observation(self.data_keys)
-        self.observation = observation_raw["camera"][self.robot.base_camera]
-
-    def place(
-        self,
-        target_gripper_pose,
-        current_gripper_pose=None,
-        gripper2part=None,
-        gripper_id=None,
-    ):
-        gripper_id = "left" if gripper_id is None else gripper_id
-
-        pre_place_pose = np.copy(target_gripper_pose)
-        pre_place_pose[2, 3] += 0.05
-
-        commands = [
-            {
-                "action": "move",
-                "content": {
-                    "matrix": pre_place_pose,
-                    "type": "matrix",
-                    "comment": "pre_place",
-                    "trajectory_type": "ObsAvoid",
-                },
-            },
-            {
-                "action": "move",
-                "content": {
-                    "matrix": target_gripper_pose,
-                    "type": "matrix",
-                    "comment": "place",
-                    "trajectory_type": "Simple",
-                },
-            },
-            {
-                "action": "open_gripper",
-                "content": {
-                    "gripper": gripper_id,
-                },
-            },
-        ]
-        return commands
-
-    def pour(
-        self,
-        target_gripper_pose,
-        current_gripper_pose=None,
-        gripper2part=None,
-        gripper_id=None,
-    ):
-        def interpolate_rotation_matrices(rot_matrix1, rot_matrix2, num_interpolations):
-            rot1 = R.from_matrix(rot_matrix1)
-            rot2 = R.from_matrix(rot_matrix2)
-            quat1 = rot1.as_quat()
-            quat2 = rot2.as_quat()
-            times = [0, 1]
-            slerp = Slerp(times, R.from_quat([quat1, quat2]))
-            interp_times = np.linspace(0, 1, num_interpolations)
-            interp_rots = slerp(interp_times)
-            interp_matrices = interp_rots.as_matrix()
-            return interp_matrices
-
-        target_part_pose = target_gripper_pose @ np.linalg.inv(gripper2part)
-        current_part_pose = current_gripper_pose @ np.linalg.inv(gripper2part)
-        commands = []
-        rotations = interpolate_rotation_matrices(
-            current_part_pose[:3, :3], target_part_pose[:3, :3], 5
-        )
-        for i, rotation in enumerate(rotations):
-            target_part_pose_step = np.copy(target_part_pose)
-            target_part_pose_step[:3, :3] = rotation
-            target_gripper_pose_step = target_part_pose_step @ gripper2part
-
-            commands.append(
-                {
-                    "action": "move",
-                    "content": {
-                        "matrix": target_gripper_pose_step,
-                        "type": "matrix",
-                        "comment": "pour_sub_rotate_%d" % i,
-                        "trajectory_type": "Simple",
-                    },
-                }
-            )
-        return commands

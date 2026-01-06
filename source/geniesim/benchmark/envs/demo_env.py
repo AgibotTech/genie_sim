@@ -1,27 +1,26 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 import json
 import time
-import glob
 import pickle
 import numpy as np
 import os
 from .base_env import BaseEnv
 from geniesim.robot import Robot
 
-from geniesim.planner.manip_solver import (
+from geniesim.plugins.tgs import (
     load_task_solution,
     generate_action_stages,
     split_grasp_stages,
 )
-from tasks.demo_task import DemoTask
-from tasks.dummy_task import DummyTask
+from geniesim.benchmark.tasks.demo_task import DemoTask
+from geniesim.benchmark.tasks.dummy_task import DummyTask
 from geniesim.utils.transform_utils import calculate_rotation_matrix
 
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -70,15 +69,9 @@ class DemoEnv(BaseEnv):
     def get_capture_frame(self, data_keys):
         observation = {}
         if "camera" in data_keys:
-            render_depth = (
-                data_keys["camera"]["render_depth"]
-                if "render_depth" in data_keys["camera"]
-                else False
-            )
+            render_depth = data_keys["camera"]["render_depth"] if "render_depth" in data_keys["camera"] else False
             render_semantic = (
-                data_keys["camera"]["render_semantic"]
-                if "render_semantic" in data_keys["camera"]
-                else False
+                data_keys["camera"]["render_semantic"] if "render_semantic" in data_keys["camera"] else False
             )
 
             cam_data = {}
@@ -99,9 +92,9 @@ class DemoEnv(BaseEnv):
                     "scale": 1,
                 }
                 # rgb
-                rgb = np.frombuffer(response.color_image.data, dtype=np.uint8).reshape(
-                    cam_info["H"], cam_info["W"], 4
-                )[:, :, :3]
+                rgb = np.frombuffer(response.color_image.data, dtype=np.uint8).reshape(cam_info["H"], cam_info["W"], 4)[
+                    :, :, :3
+                ]
                 cam_data[cam_prim]["image"] = rgb
 
             observation["camera"] = cam_data
@@ -158,9 +151,7 @@ class DemoEnv(BaseEnv):
                 _stages[0]["passive"]["object_id"],
             )
             arm = extra_params.get("arm", "right")
-            action_stages = generate_action_stages(
-                self.policy_objects, _stages, self.robot
-            )
+            action_stages = generate_action_stages(self.policy_objects, _stages, self.robot)
             if not len(action_stages):
                 success = False
                 logger.warning("No action stage generated.")
@@ -176,12 +167,8 @@ class DemoEnv(BaseEnv):
                     init_pose = self.robot.reset_pose[arm]
                     curr_pose = self.robot.get_ee_pose(ee_type="gripper", id=arm)
                     interp_pose = init_pose.copy()
-                    interp_pose[:3, 3] = (
-                        curr_pose[:3, 3] + (init_pose[:3, 3] - curr_pose[:3, 3]) * 0.25
-                    )
-                    success = self.robot.move_pose(
-                        self.robot.reset_pose[arm], type="AvoidObs", arm=arm, block=True
-                    )
+                    interp_pose[:3, 3] = curr_pose[:3, 3] + (init_pose[:3, 3] - curr_pose[:3, 3]) * 0.25
+                    success = self.robot.move_pose(self.robot.reset_pose[arm], type="AvoidObs", arm=arm, block=True)
                     continue
                 if action in ["grasp", "pick"]:
                     obj_id = substages.passive_obj_id
@@ -190,12 +177,8 @@ class DemoEnv(BaseEnv):
 
                 while len(substages):
                     # get next step actionddd
-                    self.policy_objects = self.update_objects(
-                        self.policy_objects, arm=arm
-                    )
-                    target_gripper_pose, motion_type, gripper_action, arm = (
-                        substages.get_action(self.policy_objects)
-                    )
+                    self.policy_objects = self.update_objects(self.policy_objects, arm=arm)
+                    target_gripper_pose, motion_type, gripper_action, arm = substages.get_action(self.policy_objects)
                     arm = extra_params.get("arm", "right")
                     self.robot.client.set_frame_state(
                         action,
@@ -207,9 +190,7 @@ class DemoEnv(BaseEnv):
 
                     # execution action
                     if target_gripper_pose is not None:
-                        self.robot.move_pose(
-                            target_gripper_pose, motion_type, arm=arm, block=True
-                        )
+                        self.robot.move_pose(target_gripper_pose, motion_type, arm=arm, block=True)
 
                     self.robot.client.set_frame_state(
                         action,
@@ -226,9 +207,7 @@ class DemoEnv(BaseEnv):
                         self.robot.client.DetachObj()
                         if gripper_action == "close":
                             time.sleep(1)
-                            self.robot.client.AttachObj(
-                                prim_paths=["/World/Objects/" + passive_id]
-                            )
+                            self.robot.client.AttachObj(prim_paths=["/World/Objects/" + passive_id])
 
                     time.sleep(1)
 
@@ -241,12 +220,8 @@ class DemoEnv(BaseEnv):
                     )
 
                     # check sub-stage completion
-                    self.policy_objects["gripper"].obj_pose = self.robot.get_ee_pose(
-                        ee_type="gripper", id=arm
-                    )
-                    self.policy_objects = self.update_objects(
-                        self.policy_objects, arm=arm
-                    )
+                    self.policy_objects["gripper"].obj_pose = self.robot.get_ee_pose(ee_type="gripper", id=arm)
+                    self.policy_objects = self.update_objects(self.policy_objects, arm=arm)
 
                     success = substages.check_completion(self.policy_objects)
                     self.robot.client.set_frame_state(
@@ -373,9 +348,7 @@ class DemoEnv(BaseEnv):
             if "fix_pose" == obj_id:
                 if len(objects[obj_id].obj_pose) == 3:
                     position = objects[obj_id].obj_pose
-                    rotation_matrix = calculate_rotation_matrix(
-                        objects[obj_id].direction, [0, 0, 1]
-                    )
+                    rotation_matrix = calculate_rotation_matrix(objects[obj_id].direction, [0, 0, 1])
                     objects[obj_id].obj_pose = np.eye(4)
                     objects[obj_id].obj_pose[:3, 3] = position.flatten()
                     objects[obj_id].obj_pose[:3, :3] = rotation_matrix
@@ -385,9 +358,7 @@ class DemoEnv(BaseEnv):
                 obj_name = obj_id.split("/")[0]
                 part_name = obj_id.split("/")[1]
 
-                object_joint_state = self.robot.client.get_object_joint(
-                    "/World/Objects/%s" % obj_name
-                )
+                object_joint_state = self.robot.client.get_object_joint("/World/Objects/%s" % obj_name)
                 for joint_name, joint_position, joint_velocity in zip(
                     object_joint_state.joint_names,
                     object_joint_state.joint_positions,
@@ -397,22 +368,11 @@ class DemoEnv(BaseEnv):
                         objects[obj_id].joint_position = joint_position
                         objects[obj_id].joint_velocity = joint_velocity
 
-            objects[obj_id].obj_pose = self.robot.get_prim_world_pose(
-                "/World/Objects/%s" % obj_id
-            )
-            if (
-                "simple_place" in objects[obj_id].info
-                and objects[obj_id].info["simple_place"]
-            ):
-                down_direction_world = (
-                    np.linalg.inv(objects[obj_id].obj_pose) @ np.array([0, 0, -1, 1])
-                )[:3]
-                down_direction_world = (
-                    down_direction_world / np.linalg.norm(down_direction_world) * 0.08
-                )
-                objects[obj_id].elements["active"]["place"][
-                    "direction"
-                ] = down_direction_world
+            objects[obj_id].obj_pose = self.robot.get_prim_world_pose("/World/Objects/%s" % obj_id)
+            if "simple_place" in objects[obj_id].info and objects[obj_id].info["simple_place"]:
+                down_direction_world = (np.linalg.inv(objects[obj_id].obj_pose) @ np.array([0, 0, -1, 1]))[:3]
+                down_direction_world = down_direction_world / np.linalg.norm(down_direction_world) * 0.08
+                objects[obj_id].elements["active"]["place"]["direction"] = down_direction_world
 
         return objects
 
@@ -430,9 +390,9 @@ class DemoEnv(BaseEnv):
             if "interaction" in obj_info:
                 objs_interaction[obj_id] = obj_info["interaction"]
             else:
-                objs_interaction[obj_id] = json.load(
-                    open(obj_info["data_info_dir"] + "/interaction.json")
-                )["interaction"]
+                objs_interaction[obj_id] = json.load(open(obj_info["data_info_dir"] + "/interaction.json"))[
+                    "interaction"
+                ]
 
         for stage in task_info["stages"]:
             active_obj_id = stage["active"]["object_id"]
@@ -453,9 +413,7 @@ class DemoEnv(BaseEnv):
                 if primitive is None:
                     file = "grasp_pose/grasp_pose.pkl"
                 else:
-                    file = objs_interaction[passive_obj_id]["passive"]["grasp"][
-                        primitive
-                    ]
+                    file = objs_interaction[passive_obj_id]["passive"]["grasp"][primitive]
                     if isinstance(file, list):
                         file = file[0]
                 grasp_file = os.path.join(data_root, obj_dir, file)

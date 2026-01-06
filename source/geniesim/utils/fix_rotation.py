@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -105,13 +105,9 @@ def fix_gripper_rotation(source_affine, target_affine, rot_axis="z"):
         return np.arccos(np.trace(Vh) / 2)
 
     # distance between source_rotation & target_rotation
-    distance_target_rotation = rotation_matrix_distance(
-        source_rotation, target_rotation
-    )
+    distance_target_rotation = rotation_matrix_distance(source_rotation, target_rotation)
     # distance between source_rotation & target_rotation_2
-    distance_target_rotation_2 = rotation_matrix_distance(
-        source_rotation, target_rotation_2
-    )
+    distance_target_rotation_2 = rotation_matrix_distance(source_rotation, target_rotation_2)
     # which one is nearer to source_rotation
     if distance_target_rotation < distance_target_rotation_2:
         return target_affine

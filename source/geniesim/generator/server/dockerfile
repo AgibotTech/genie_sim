@@ -1,0 +1,19 @@
+ARG PYTHON_VERSION=3.11
+FROM m.daocloud.io/docker.io/python:${PYTHON_VERSION}
+# Prevents Python from writing pyc files.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Keeps Python from buffering stdout and stderr to avoid situations where
+# the application crashes without emitting any logs due to buffering.
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --upgrade -r requirements.txt
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# CMD uvicorn 'assets_agent_server:app' --host=0.0.0.0 --port=8765
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["mcpo", "--config", "mcp_config.json", "--port", "8765"]

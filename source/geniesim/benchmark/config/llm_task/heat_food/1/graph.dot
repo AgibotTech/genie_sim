@@ -1,0 +1,12 @@
+strict digraph "" {
+	graph [rankdir=LR];
+	root_scene_14b444b6 -> kitchen_task_put_food_into_microwave_oven_0f13a8d4;
+	kitchen_task_put_food_into_microwave_oven_0f13a8d4 -> place_microwave_oven_0df0db02;
+	kitchen_task_put_food_into_microwave_oven_0f13a8d4 -> place_random_13104169;
+	benchmark_microwave_oven_c504b3c9	[tags="['microwave_oven']"];
+	place_microwave_oven_0df0db02 -> benchmark_microwave_oven_c504b3c9;
+	benchmark_cushion_2b42922a	[tags="['']"];
+	place_random_13104169 -> benchmark_cushion_2b42922a;
+	benchmark_food_8318680e	[tags="['food', 'right']"];
+	place_random_13104169 -> benchmark_food_8318680e;
+}

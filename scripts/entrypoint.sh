@@ -3,28 +3,37 @@
 set -e
 
 # env
-export ROS_DISTRO=humble
+export ROS_DISTRO=jazzy
+export ISAACSIM_HOME=/isaac-sim
+
+# user 1234 access
+sudo setfacl -m u:1234:rwX /geniesim/main
+sudo setfacl -m u:1234:rwX /geniesim/main/source
+sudo setfacl -m u:1234:rwX /geniesim/main/source/geniesim/benchmark/saved_task
+sudo setfacl -m u:1234:rwX /isaac-sim/.cache
+sudo setfacl -m u:1234:rwX /isaac-sim/.nv/ComputeCache
+sudo setfacl -m u:1234:rwX /isaac-sim/.nvidia-omniverse/logs
+sudo setfacl -m u:1234:rwX /isaac-sim/.nvidia-omniverse/config
+sudo setfacl -m u:1234:rwX /isaac-sim/.local/share/ov/data
+sudo setfacl -m u:1234:rwX /isaac-sim/.local/share/ov/pkg
 
 # bashrc
-echo "alias omni_python='/isaac-sim/python.sh'" >>~/.bashrc
-echo "alias run_server='omni_python source/geniesim/app/raise_standalone_sim.py'" >>~/.bashrc
-echo "alias run_client='omni_python source/geniesim/benchmark/task_benchmark.py --task_name'" >>~/.bashrc
-echo "alias run_teleop='omni_python source/geniesim/teleop/teleop.py --task_name'" >>~/.bashrc
-echo "alias run_replay='omni_python source/geniesim/teleop/replay_state.py'" >>~/.bashrc
-
-echo "source /opt/ros/$ROS_DISTRO/setup.bash" >>~/.bashrc
-
-echo "export SIM_ASSETS=/root/assets" >>~/.bashrc
-echo "export SIM_REPO_ROOT=/root/workspace/main" >>~/.bashrc
-
-echo "export ROS_DISTRO=humble" >>~/.bashrc
+echo "export SIM_REPO_ROOT=/geniesim/main" >>~/.bashrc
+echo "export ENABLE_SIM=1" >>~/.bashrc
+echo "export ROS_DISTRO=${ROS_DISTRO}" >>~/.bashrc
+echo "export ROS_VERSION=2" >>~/.bashrc
+echo "export ROS_PYTHON_VERSION=3" >>~/.bashrc
 echo "export ROS_LOCALHOST_ONLY=1" >>~/.bashrc
+echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >>~/.bashrc
+echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib" >>~/.bashrc
+echo "export ROS_CMD_DISTRO=jazzy" >>~/.bashrc
+echo "source ${ISAACSIM_HOME}/setup_ros_env.sh" >>~/.bashrc
 
-# you can add more customized cmds here
+echo "alias omni_python='${ISAACSIM_HOME}/python.sh'" >>~/.bashrc
+echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
+echo "alias geniesim='omni_python /geniesim/main/source/geniesim/app/app.py'" >>~/.bashrc
 
-# setup ros2 environment
-source "/opt/ros/$ROS_DISTRO/setup.bash" --
-# exec "$@"
+sudo rm -rf /geniesim/main/source/GenieSim.egg-info
+/isaac-sim/python.sh -m pip install -e /geniesim/main/source
 
-#
-/bin/bash
+exec "$@"

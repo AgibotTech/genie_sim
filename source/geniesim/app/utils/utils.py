@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -98,9 +98,7 @@ def get_quaternion_from_euler(euler: np.ndarray, order: str = "XYZ") -> np.ndarr
         raise ValueError("Input euler angle order is meaningless.")
 
 
-def matrix_to_euler_angles(
-    mat: np.ndarray, degrees: bool = False, extrinsic: bool = True
-) -> np.ndarray:
+def matrix_to_euler_angles(mat: np.ndarray, degrees: bool = False, extrinsic: bool = True) -> np.ndarray:
     if extrinsic:
         if mat[2, 0] > _POLE_LIMIT:
             roll = np.arctan2(mat[0, 1], mat[0, 2])

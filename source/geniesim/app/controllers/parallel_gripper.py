@@ -14,7 +14,7 @@ import numpy as np
 import omni.kit.app
 import omni
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -170,9 +170,7 @@ class ParallelGripper(Gripper):
 
         # make sure that all gripper dof names were resolved
         if self._joint_dof_indicies[0] is None or self._joint_dof_indicies[1] is None:
-            raise Exception(
-                "Not all gripper dof names were resolved to dof handles and dof indices."
-            )
+            raise Exception("Not all gripper dof names were resolved to dof handles and dof indices.")
         self._articulation_apply_action_func = articulation_apply_action_func
         current_joint_positions = get_joint_positions_func()
         if self._default_state is None:
@@ -197,20 +195,12 @@ class ParallelGripper(Gripper):
 
     def apply_default_action(self):
         target_joint_positions = [None] * self._articulation_num_dofs
-        target_joint_positions[self._joint_dof_indicies[0]] = (
-            self._joint_opened_positions[0]
-        )
-        target_joint_positions[self._joint_dof_indicies[1]] = (
-            self._joint_opened_positions[1]
-        )
+        target_joint_positions[self._joint_dof_indicies[0]] = self._joint_opened_positions[0]
+        target_joint_positions[self._joint_dof_indicies[1]] = self._joint_opened_positions[1]
 
         if len(self._joint_prim_names) > 2:
-            target_joint_positions[self._joint_dof_indicies[2]] = (
-                self._joint_opened_positions[2]
-            )
-            target_joint_positions[self._joint_dof_indicies[3]] = (
-                self._joint_opened_positions[3]
-            )
+            target_joint_positions[self._joint_dof_indicies[2]] = self._joint_opened_positions[2]
+            target_joint_positions[self._joint_dof_indicies[3]] = self._joint_opened_positions[3]
         self._articulation_apply_action_func(control_actions=target_joint_positions)
 
     def open(self) -> None:
@@ -281,9 +271,7 @@ class ParallelGripper(Gripper):
         Returns:
             np.ndarray: joint positions of the left finger joint and the right finger joint respectively.
         """
-        return self._get_joint_positions_func(
-            joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]]
-        )
+        return self._get_joint_positions_func(joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]])
 
     def reset_stiffness(self):
         stage = omni.usd.get_context().get_stage()
@@ -314,48 +302,30 @@ class ParallelGripper(Gripper):
         prim = stage.GetPrimAtPath(self._joint_control_prim)
         if prim:
             drive = UsdPhysics.DriveAPI.Get(prim, self.gripper_type)
-        link_prim_1 = stage.GetPrimAtPath(
-            "/World/G1/Right_Left_1_Link/Right_Left_up_Joint"
-        )
-        link_prim_2 = stage.GetPrimAtPath(
-            "/World/G1/Right_Right_1_Link/Right_Right_up_Joint"
-        )
+        link_prim_1 = stage.GetPrimAtPath("/World/G1/Right_Left_1_Link/Right_Left_up_Joint")
+        link_prim_2 = stage.GetPrimAtPath("/World/G1/Right_Right_1_Link/Right_Right_up_Joint")
 
         if action == "open":
             # position mode
             self.is_reached = False
             target_joint_positions = [None] * self._articulation_num_dofs
-            target_joint_positions[self._joint_dof_indicies[0]] = (
-                self._joint_opened_positions[0]
-            )
-            target_joint_positions[self._joint_dof_indicies[1]] = (
-                self._joint_opened_positions[1]
-            )
+            target_joint_positions[self._joint_dof_indicies[0]] = self._joint_opened_positions[0]
+            target_joint_positions[self._joint_dof_indicies[1]] = self._joint_opened_positions[1]
             target_action = ArticulationAction(joint_positions=target_joint_positions)
         elif action == "close":
             # force mode
             self.is_reached = False
             current_joint_positions = self._get_joint_positions_func()
-            current_drive_finger_position = current_joint_positions[
-                self._joint_dof_indicies[0]
-            ]
-            target_force = self.gripper_max_force + 2 * np.abs(
-                current_drive_finger_position
-            )
+            current_drive_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
+            target_force = self.gripper_max_force + 2 * np.abs(current_drive_finger_position)
             if prim:
                 drive.GetMaxForceAttr().Set(target_force)
             target_joint_velocities = [None] * self._articulation_num_dofs
-            target_joint_velocities[self._joint_dof_indicies[0]] = (
-                self._joint_closed_velocities[0]
-            )
-            target_joint_velocities[self._joint_dof_indicies[1]] = (
-                self._joint_closed_velocities[1]
-            )
+            target_joint_velocities[self._joint_dof_indicies[0]] = self._joint_closed_velocities[0]
+            target_joint_velocities[self._joint_dof_indicies[1]] = self._joint_closed_velocities[1]
             target_action = ArticulationAction(joint_velocities=target_joint_velocities)
         else:
-            raise Exception(
-                "action {} is not defined for ParallelGripper".format(action)
-            )
+            raise Exception("action {} is not defined for ParallelGripper".format(action))
 
         async def check_gripper_state():
             pre_drive_finger_position = np.Infinity
@@ -365,9 +335,7 @@ class ParallelGripper(Gripper):
                 current_joint_positions = self._get_joint_positions_func()
                 if current_joint_positions is None:
                     break
-                current_finger_position = current_joint_positions[
-                    self._joint_dof_indicies[0]
-                ]
+                current_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
                 pre_drive_finger_position = current_finger_position
                 await asyncio.sleep(0.1)
 
@@ -383,35 +351,19 @@ class ParallelGripper(Gripper):
         joint_actions = ArticulationAction()
         if control_actions.joint_positions is not None:
             joint_actions.joint_positions = [None] * self._articulation_num_dofs
-            joint_actions.joint_positions[self._joint_dof_indicies[0]] = (
-                control_actions.joint_positions[0]
-            )
-            joint_actions.joint_positions[self._joint_dof_indicies[1]] = (
-                control_actions.joint_positions[1]
-            )
+            joint_actions.joint_positions[self._joint_dof_indicies[0]] = control_actions.joint_positions[0]
+            joint_actions.joint_positions[self._joint_dof_indicies[1]] = control_actions.joint_positions[1]
             if len(self._joint_prim_names) > 2:
-                joint_actions.joint_positions[self._joint_dof_indicies[2]] = (
-                    control_actions.joint_positions[2]
-                )
-                joint_actions.joint_positions[self._joint_dof_indicies[3]] = (
-                    control_actions.joint_positions[3]
-                )
+                joint_actions.joint_positions[self._joint_dof_indicies[2]] = control_actions.joint_positions[2]
+                joint_actions.joint_positions[self._joint_dof_indicies[3]] = control_actions.joint_positions[3]
         if control_actions.joint_velocities is not None:
             joint_actions.joint_velocities = [None] * self._articulation_num_dofs
-            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = (
-                control_actions.joint_velocities[0]
-            )
-            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = (
-                control_actions.joint_velocities[1]
-            )
+            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = control_actions.joint_velocities[0]
+            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = control_actions.joint_velocities[1]
         if control_actions.joint_efforts is not None:
             joint_actions.joint_efforts = [None] * self._articulation_num_dofs
-            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = (
-                control_actions.joint_efforts[0]
-            )
-            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = (
-                control_actions.joint_efforts[1]
-            )
+            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = control_actions.joint_efforts[0]
+            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = control_actions.joint_efforts[1]
         self._articulation_apply_action_func(control_actions=joint_actions)
 
         return

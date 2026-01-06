@@ -1,0 +1,231 @@
+{
+  "layout": {
+    "benchmark_cushion_05efd6e1": {
+      "description": {
+        "color": "brown",
+        "descriptive_terms": [
+          "round",
+          "brown",
+          "wooden",
+          "flat",
+          "natural"
+        ],
+        "dimensions": [
+          0.07000000029802322,
+          0.015000002924352884,
+          0.07000000029802322
+        ],
+        "full_description": "This is a round, brown wooden cushion with a flat surface and a natural appearance.",
+        "materials": [
+          "wood"
+        ],
+        "object_category": [
+          "furniture",
+          "cushion"
+        ],
+        "semantic_name": [
+          "cushion"
+        ],
+        "shape": "round",
+        "unit": "m"
+      },
+      "keywords": [
+        ""
+      ],
+      "tags": [
+        "root_scene_62501ee9",
+        "kitchen_task_put_food_into_microwave_oven_8cfb1f50",
+        "place_random_1c25cf0a",
+        "benchmark_cushion_05efd6e1"
+      ],
+      "usd": "benchmark_cushion_000",
+      "xyz": [
+        0.953,
+        0.14,
+        0.857
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "benchmark_food_96a5df4b": {
+      "description": {
+        "color": "colorful",
+        "descriptive_terms": [
+          "delicious",
+          "golden",
+          "stacked",
+          "sweet",
+          "round"
+        ],
+        "dimensions": [
+          0.20424884557724,
+          0.07571035996079445,
+          0.20424914360046387
+        ],
+        "full_description": "This is a stack of golden pancakes drizzled with honey, served on a round ceramic plate. The pancakes are stacked high, creating a complex shape and a delicious breakfast treat.",
+        "materials": [
+          "ceramic",
+          "flour",
+          "honey"
+        ],
+        "object_category": [
+          "food",
+          "breakfast"
+        ],
+        "semantic_name": [
+          "pancake"
+        ],
+        "shape": "complex-shaped",
+        "unit": "m"
+      },
+      "keywords": [
+        "food",
+        "right"
+      ],
+      "tags": [
+        "root_scene_62501ee9",
+        "kitchen_task_put_food_into_microwave_oven_8cfb1f50",
+        "place_random_1c25cf0a",
+        "benchmark_food_96a5df4b"
+      ],
+      "usd": "benchmark_food_008",
+      "xyz": [
+        0.953,
+        0.14,
+        0.918
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.873946,
+        0.486023
+      ]
+    },
+    "benchmark_microwave_oven_6915b5a4": {
+      "description": {
+        "color": "green",
+        "descriptive_terms": [
+          "rectangular",
+          "modern",
+          "functional",
+          "compact",
+          "sturdy"
+        ],
+        "dimensions": [
+          0.4379824995994568,
+          0.28200094401836395,
+          0.4458608478307724
+        ],
+        "full_description": "This is a compact and sturdy rectangular microwave oven, primarily green in color, with metal and plastic components. It features a modern design and is suitable for kitchen use.",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "object_category": [
+          "kitchen appliance",
+          "microwave oven"
+        ],
+        "semantic_name": [
+          "microwave oven"
+        ],
+        "shape": "box",
+        "unit": "m"
+      },
+      "keywords": [
+        "microwave_oven"
+      ],
+      "tags": [
+        "root_scene_62501ee9",
+        "kitchen_task_put_food_into_microwave_oven_8cfb1f50",
+        "place_microwave_oven_95f1b350",
+        "benchmark_microwave_oven_6915b5a4"
+      ],
+      "usd": "benchmark_microwave_oven_003",
+      "xyz": [
+        0.983,
+        0.535,
+        0.991
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_62501ee9",
+          "target": "kitchen_task_put_food_into_microwave_oven_8cfb1f50"
+        },
+        {
+          "source": "kitchen_task_put_food_into_microwave_oven_8cfb1f50",
+          "target": "place_microwave_oven_95f1b350"
+        },
+        {
+          "source": "kitchen_task_put_food_into_microwave_oven_8cfb1f50",
+          "target": "place_random_1c25cf0a"
+        },
+        {
+          "source": "place_microwave_oven_95f1b350",
+          "target": "benchmark_microwave_oven_6915b5a4"
+        },
+        {
+          "source": "place_random_1c25cf0a",
+          "target": "benchmark_cushion_05efd6e1"
+        },
+        {
+          "source": "place_random_1c25cf0a",
+          "target": "benchmark_food_96a5df4b"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_62501ee9"
+        },
+        {
+          "id": "kitchen_task_put_food_into_microwave_oven_8cfb1f50"
+        },
+        {
+          "id": "place_microwave_oven_95f1b350"
+        },
+        {
+          "id": "benchmark_microwave_oven_6915b5a4",
+          "tags": [
+            "microwave_oven"
+          ]
+        },
+        {
+          "id": "place_random_1c25cf0a"
+        },
+        {
+          "id": "benchmark_cushion_05efd6e1",
+          "tags": [
+            ""
+          ]
+        },
+        {
+          "id": "benchmark_food_96a5df4b",
+          "tags": [
+            "food",
+            "right"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "kitchen_task_put_food_into_microwave_oven",
+  "seed": 1846866901
+}

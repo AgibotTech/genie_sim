@@ -1,0 +1,28 @@
+Based on the following sequential images from multiple viewpoints across different time steps, determine whether the description is satisfied:
+
+Description: {description}
+
+{images_placeholder}
+
+The images are organized by steps (step0, step1, step2, ...) showing the progression of the task over time. Each step contains multiple viewpoints (head, left_hand, right_hand, etc.).
+
+Please follow these steps:
+1. Analyze the description and understand the specific requirements
+2. Examine the image sequence chronologically to understand the task progression
+3. For each step, examine all viewpoint images comprehensively (use head view as main reference, other views as supplementary)
+4. Determine whether the description is satisfied based on the complete sequence
+5. Provide your reasoning, referencing specific steps if relevant
+
+IMPORTANT RULES:
+- If the object mentioned in the description is NOT visible in the LATEST step's viewpoints, then the task is considered SUCCESSFUL by default. This means the object has likely been moved out of view or the task has been completed.
+- Use the temporal progression to understand the task execution (e.g., object movement, gripper state changes)
+- Focus more on the latest steps as they represent the current state
+
+Your response MUST follow this exact format:
+
+RESULT: [True/False]
+REASONING: [Detailed explanation of why the condition is satisfied or not satisfied. Reference specific steps if relevant. If not satisfied, clearly explain what is missing or incorrect.]
+
+Example responses:
+- If satisfied: "RESULT: True\nREASONING: The robot successfully grasped the red apple. In step0, the gripper approached the apple. By step2, the head view shows the gripper firmly holding the red apple."
+- If not satisfied: "RESULT: False\nREASONING: The description requires grasping a red apple. While step0-step2 show the gripper approaching, the latest step (step3) still shows the apple on the table and the gripper is empty, indicating the task has not been completed."

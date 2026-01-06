@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -20,9 +20,7 @@ class RobotMetric(HookBase):
             "base": {"position": robot.get_position()},
         }
 
-        self.next_state_cache.update(
-            {arm: {"position": robot.get_eef_position(arm)} for arm in robot.arm_names}
-        )
+        self.next_state_cache.update({arm: {"position": robot.get_eef_position(arm)} for arm in robot.arm_names})
 
         if not self.initialized:
             self.agent_pos = {part: [] for part in ["base"] + robot.arm_names}
@@ -30,9 +28,7 @@ class RobotMetric(HookBase):
 
             self.agent_local_pos = {part: [] for part in robot.arm_names}
 
-            self.delta_agent_distance = {
-                part: [] for part in ["base"] + robot.arm_names
-            }
+            self.delta_agent_distance = {part: [] for part in ["base"] + robot.arm_names}
             self.delta_agent_grasp_distance = {part: [] for part in robot.arm_names}
 
             self.state_cache = copy.deepcopy(self.next_state_cache)
@@ -40,16 +36,14 @@ class RobotMetric(HookBase):
 
         self.agent_pos["base"].append(list(self.state_cache["base"]["position"]))
         distance = np.linalg.norm(
-            np.array(self.next_state_cache["base"]["position"])
-            - self.state_cache["base"]["position"]
+            np.array(self.next_state_cache["base"]["position"]) - self.state_cache["base"]["position"]
         )
         self.delta_agent_distance["base"].append(distance)
 
         for arm in robot.arm_names:
             self.agent_pos[arm].append(list(self.state_cache[arm]["position"]))
             gripper_distance = np.linalg.norm(
-                self.next_state_cache[arm]["position"]
-                - self.state_cache[arm]["position"]
+                self.next_state_cache[arm]["position"] - self.state_cache[arm]["position"]
             )
             self.delta_agent_distance[arm].append(gripper_distance)
 

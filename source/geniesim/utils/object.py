@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -10,7 +10,7 @@ import os, json
 from .transform_utils import transform_coordinates_3d
 from grasp_nms import nms_grasp
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -96,12 +96,8 @@ class OmniObject:
             obj_info_file = "%s/object_parameters.json" % obj_dir
             interaction_label_file = "%s/interaction.json" % obj_dir
 
-            assert os.path.exists(obj_info_file), (
-                "object_parameters.json not found in %s" % obj_dir
-            )
-            assert os.path.exists(interaction_label_file), (
-                "interaction.json not found in %s" % obj_dir
-            )
+            assert os.path.exists(obj_info_file), "object_parameters.json not found in %s" % obj_dir
+            assert os.path.exists(interaction_label_file), "interaction.json not found in %s" % obj_dir
 
             obj_info = json.load(open(obj_info_file))
             interaction_data = json.load(open(interaction_label_file))
@@ -144,9 +140,7 @@ class OmniObject:
                         if len(grasp_data["grasp_pose"]) == 0:
                             continue
 
-                        grasp_data["grasp_pose"] = np.concatenate(
-                            grasp_data["grasp_pose"]
-                        )
+                        grasp_data["grasp_pose"] = np.concatenate(grasp_data["grasp_pose"])
                         grasp_data["width"] = np.concatenate(grasp_data["width"])
 
                         N_grasp = grasp_data["grasp_pose"].shape[0]
@@ -190,19 +184,12 @@ class OmniObject:
                             rotation = grasp_group_array[:, 4 : 4 + 9]
                             translation = grasp_group_array[:, 4 + 9 : 4 + 9 + 3]
                             width = grasp_group_array[:, 1]
-                            grasp_data["grasp_pose"] = np.tile(
-                                np.eye(4), (grasp_group_array.shape[0], 1, 1)
-                            )
-                            grasp_data["grasp_pose"][:, :3, :3] = rotation.reshape(
-                                -1, 3, 3
-                            )
+                            grasp_data["grasp_pose"] = np.tile(np.eye(4), (grasp_group_array.shape[0], 1, 1))
+                            grasp_data["grasp_pose"][:, :3, :3] = rotation.reshape(-1, 3, 3)
                             grasp_data["grasp_pose"][:, :3, 3] = translation
                             grasp_data["width"] = width
 
-                            logger.info(
-                                "Grasp num after NMS: %d/%d"
-                                % (grasp_data["grasp_pose"].shape[0], N_grasp)
-                            )
+                            logger.info("Grasp num after NMS: %d/%d" % (grasp_data["grasp_pose"].shape[0], N_grasp))
 
                         action_info[grasp_part] = grasp_data
 
@@ -229,9 +216,7 @@ class OmniObject:
         self.obj_pose = pose
         self.obj_length = length
 
-    def set_part(
-        self, xyz=None, direction=None, direction_proposals=None, relative=True
-    ):
+    def set_part(self, xyz=None, direction=None, direction_proposals=None, relative=True):
         if xyz is not None:
             if not isinstance(xyz, np.ndarray):
                 xyz = np.array(xyz)
@@ -260,9 +245,7 @@ class OmniObject:
             xyz_start = xyz_end - direction
 
         arrow_in_obj = np.array([xyz_start, xyz_end]).transpose(1, 0)
-        arrow_in_world = transform_coordinates_3d(
-            arrow_in_obj, self.obj_pose
-        ).transpose(1, 0)
+        arrow_in_world = transform_coordinates_3d(arrow_in_obj, self.obj_pose).transpose(1, 0)
 
         xyz_start_world, xyz_end_world = arrow_in_world
 

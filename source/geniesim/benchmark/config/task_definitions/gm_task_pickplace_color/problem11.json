@@ -1,0 +1,61 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "{@placeholder_str1}|[0.2,0.2,0.2]|{@placeholder_str2}"
+            },
+            {
+              "StepOut": 120
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "{@placeholder_str1}|{@placeholder_str2}"
+            },
+            {
+              "StepOut": 120
+            },
+            {
+              "Onfloor": "{@placeholder_str1}|0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": {
+    "Layout": {
+      "lay": {
+        "0": {
+          "obj": {
+            "asset_path": "objects/building_blocks/benchmark_building_blocks_002",
+            "name": "cylinder"
+          },
+          "type": "fixed"
+        },
+        "4": {
+          "obj": {
+            "asset_path": "objects/building_blocks/benchmark_building_blocks_000",
+            "name": "magic_box"
+          },
+          "type": "fixed"
+        },
+        "rest": {
+          "assets_path": "objects/building_blocks",
+          "candidates": [],
+          "random_num": 3,
+          "type": "color"
+        }
+      },
+      "random_seed": 5,
+      "type": "table_3*3"
+    }
+  },
+  "Objects": [],
+  "Problem": "gm_pickplace_color"
+}

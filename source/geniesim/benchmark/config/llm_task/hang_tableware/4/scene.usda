@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_hanger_83437d0c" (
+            prepend payload = @../../../../../assets/objects/benchmark/hanger/benchmark_hanger_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.33, 0.375, 1.286)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                delete apiSchemas = ["PhysicsRigidBodyAPI"]
+            )
+            {
+            }
+        }
+
+        def Xform "benchmark_hanger_e26b6442" (
+            prepend payload = @../../../../../assets/objects/benchmark/hanger/benchmark_hanger_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.33, 0.289, 1.286)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                delete apiSchemas = ["PhysicsRigidBodyAPI"]
+            )
+            {
+            }
+        }
+
+        def Xform "benchmark_hanger_3fce3f60" (
+            prepend payload = @../../../../../assets/objects/benchmark/hanger/benchmark_hanger_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.33, 0.236, 1.286)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                delete apiSchemas = ["PhysicsRigidBodyAPI"]
+            )
+            {
+            }
+        }
+
+        def Xform "benchmark_kitchenware_85957a5f" (
+            prepend payload = @../../../../../assets/objects/benchmark/kitchenware/benchmark_kitchenware_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999999, 0, 0, 0.0014)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.857, 0.076, 0.882)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -1,0 +1,73 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "PushPull": "drawer_cabinet_000|0.05|0.5"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "magic_cube_000|[0.4,0.4,0.4]|right"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "magic_cube_000|right"
+            },
+            {
+              "StepOut": 800
+            },
+            {
+              "Onfloor": "magic_cube_000|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Inside": "magic_cube_000|drawer_cabinet_000|1"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PushPull": "drawer_cabinet_000|0.0|0.05"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [
+    {
+      "cube": [
+        "magic_cube_000"
+      ],
+      "drawer": [
+        "drawer_cabinet_000"
+      ]
+    }
+  ],
+  "Problem": "gs_open_drawer_and_store_items"
+}

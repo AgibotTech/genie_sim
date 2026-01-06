@@ -1,0 +1,206 @@
+limit_way: "urdf"  # urdf or yaml
+
+# Optimizer general configuration
+optimizer:
+  initial_step: 1e-4
+  xtol_rel: 1.0e-7    # Relative x tolerance
+  ftol_rel: 1.0e-7    # Relative f tolerance
+  maxeval: 1000        # Maximum number of iterations
+  maxtime: 0.005      # Maximum solving time (seconds)
+  gradient_eps: 1e-8   # Finite difference step size for gradient calculation
+
+# Cost function configuration, divided into Cartesian space pose cost and joint space cost
+objectives:
+  # Cartesian space cost
+  cartesian_space:
+    # Multiple target poses can be set
+    - name: "end_effector"  # End effector
+      position: {weight: 60.0, use_groove: true}
+      orientation: {weight: 6.0, use_groove: true}
+
+  # Joint space cost
+  joint_space:
+    # Weight coefficients for each joint; larger weights indicate less preference to move these joints
+    weights:
+      joint_1: 1.2  # Shoulder joint
+      joint_2: 1.2  # Shoulder joint
+      joint_3: 1.2  # Shoulder joint
+      joint_4: 1.0  # Elbow joint
+      joint_5: 1.0  # Wrist joint
+      joint_6: 1.0  # Wrist joint
+      joint_7: 1.0  # Wrist joint
+    # Joint space objective functions
+    velocity: {weight: 8.0, use_groove: true}
+    acceleration: {weight: 5.0, use_groove: true}
+    jerk: {weight: 0.0, use_groove: true}
+    limits: {weight: 6.0, use_groove: true}
+
+active_joints:
+  head:
+    - idx03_head_yaw_joint
+    - idx04_head_pitch_joint
+
+  left_arm:
+    - idx05_left_arm_joint1
+    - idx06_left_arm_joint2
+    - idx07_left_arm_joint3
+    - idx08_left_arm_joint4
+    - idx09_left_arm_joint5
+    - idx10_left_arm_joint6
+    - idx11_left_arm_joint7
+
+  right_arm:
+    - idx12_right_arm_joint1
+    - idx13_right_arm_joint2
+    - idx14_right_arm_joint3
+    - idx15_right_arm_joint4
+    - idx16_right_arm_joint5
+    - idx17_right_arm_joint6
+    - idx18_right_arm_joint7
+
+  reduced_left_arm:
+    - idx05_left_arm_joint1
+    - idx06_left_arm_joint2
+    - idx07_left_arm_joint3
+    - idx08_left_arm_joint4
+    - idx09_left_arm_joint5
+
+  reduced_right_arm:
+    - idx12_right_arm_joint1
+    - idx13_right_arm_joint2
+    - idx14_right_arm_joint3
+    - idx15_right_arm_joint4
+    - idx16_right_arm_joint5
+
+target_links:
+  head:
+    base: arm_base_link
+    target:
+      - head_pitch_link
+  left_arm:
+    base: arm_base_link
+    target:  # Listed from farthest to nearest
+      - arm_left_link7
+  right_arm:
+    base: arm_base_link
+    target:  # Listed from farthest to nearest
+      - arm_right_link7
+
+# VR control related configurations
+vr_control:
+  reset:
+    duration: 2.0  # Reset action duration (seconds)
+    left_reset_angles: [-1.0745, 0.6112, 0.2796, -1.2842, 0.73059, 1.49565, -0.18765]  # Left arm reset target angles
+    right_reset_angles: [1.0745, -0.6112, -0.2796, 1.2842, -0.73059, -1.49565, 0.18765]  # Right arm reset target angles
+
+  safety_threshold:
+    arm_angle_threshold: 10  # Joint angle change threshold (radians)
+
+  freq:
+    arm_command_freq: 100.0  # Arm command frequency (Hz)
+
+  filter:
+    arm_angle_filter: 1.0
+
+  scale:
+    arm_scale: 1.3
+
+# Joint limits
+joint_limits:
+  # Waist joints
+  idx01_waist_lift_joint:
+    lower: [0.0]
+    upper: [0.55]
+    velocity: [0.1]
+    effort: [100.0]
+  idx02_waist_pitch_joint:
+    lower: [0.0]
+    upper: [1.5708]
+    velocity: [0.5]
+    effort: [100.0]
+
+  # Head joints
+  idx03_head_yaw_joint:
+    lower: [-1.5708]
+    upper: [1.5708]
+    velocity: [1.0]
+    effort: [50.0]
+  idx04_head_pitch_joint:
+    lower: [-0.3488]
+    upper: [0.5236]
+    velocity: [1.0]
+    effort: [50.0]
+
+  # Left arm joints
+  idx05_left_arm_joint1:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [60.0]
+  idx06_left_arm_joint2:
+    lower: [-1.48]
+    upper: [1.48]
+    velocity: [3.14]
+    effort: [60.0]
+  idx07_left_arm_joint3:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [60.0]
+  idx08_left_arm_joint4:
+    lower: [-1.48]
+    upper: [1.48]
+    velocity: [3.14]
+    effort: [60.0]
+  idx09_left_arm_joint5:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [30.0]
+  idx10_left_arm_joint6:
+    lower: [-1.74]
+    upper: [1.74]
+    velocity: [3.14]
+    effort: [30.0]
+  idx11_left_arm_joint7:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [30.0]
+
+  # Right arm joints
+  idx12_right_arm_joint1:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [60.0]
+  idx13_right_arm_joint2:
+    lower: [-1.48]
+    upper: [1.48]
+    velocity: [3.14]
+    effort: [60.0]
+  idx14_right_arm_joint3:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [60.0]
+  idx15_right_arm_joint4:
+    lower: [-1.48]
+    upper: [1.48]
+    velocity: [3.14]
+    effort: [60.0]
+  idx16_right_arm_joint5:
+    lower: [-3.14]
+    upper: [3.14]
+    velocity: [3.14]
+    effort: [30.0]
+  idx17_right_arm_joint6:
+    lower: [-1.0]
+    upper: [1.0]
+    velocity: [3.14]
+    effort: [30.0]
+  idx18_right_arm_joint7:
+    lower: [-1.5]
+    upper: [1.5]
+    velocity: [3.14]
+    effort: [30.0]

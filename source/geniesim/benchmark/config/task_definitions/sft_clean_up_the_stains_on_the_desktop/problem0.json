@@ -1,0 +1,47 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "sft_rag_000|[0.2,0.2,0.2]|right"
+            },
+            {
+              "StepOut": 100
+            },
+            {
+              "Onfloor": "sft_rag_000|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "sft_rag_000|right"
+            },
+            {
+              "StepOut": 100
+            },
+            {
+              "Onfloor": "sft_rag_000|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "CheckStainClean": "/World/Objects/sft_stain_002/Aligned|100"
+            },
+            {
+              "StepOut": 1000
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "sft_clean_up_the_stains_on_the_desktop"
+}

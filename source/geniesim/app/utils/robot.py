@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -20,6 +20,13 @@ class RobotCfg(Robot):
             robot_cfg = json.load(f)
         # init robot
         super(RobotCfg, self).__init__(robot_cfg["robot"]["robot_name"])
+        if "G1" in self.robot_name:
+            self.robot_generation = "G1"
+        elif "G2" in self.robot_name:
+            self.robot_generation = "G2"
+        else:
+            raise ValueError("robot name error")
+        self.cam_prim_path = robot_cfg["camera"].keys()
         self.robot_prim_path = robot_cfg["robot"]["base_prim_path"]
         self.urdf_name = robot_cfg["robot"]["urdf_name"]
         self.arm_type = robot_cfg["robot"]["arm"]
@@ -32,16 +39,24 @@ class RobotCfg(Robot):
         else:
             self.active_arm_joints = None
         self.robot_usd = robot_cfg["robot"]["robot_usd"]
-        self.robot_description_path = robot_cfg["robot"]["robot_description"]
+        self.robot_description_path = (
+            robot_cfg["robot"]["robot_description"] if "robot_description" in robot_cfg["robot"] else None
+        )
         self.dof_nums = robot_cfg["robot"]["dof_nums"]
         self.joint_delta_time = robot_cfg["robot"]["joint_delta_time"]
         self.lock_joints = robot_cfg["robot"]["lock_joints"]
-        self.init_joint_position = robot_cfg["robot"]["init_joint_position"]
+        self.init_joint_position = (
+            robot_cfg["robot"]["init_joint_position"] if "init_joint_position" in robot_cfg["robot"] else None
+        )
         # init camera
         self.cameras = robot_cfg["camera"]
         # init gripper
         self.gripper_type = robot_cfg["gripper"]["gripper_type"]
         self.gripper_max_force = robot_cfg["gripper"]["max_force"]
+        gripper_names = robot_cfg["gripper"].get("gripper_name", {"left": "NULL", "right": "NULL"})
+        self.left_gripper_name = gripper_names["left"]
+        self.right_gripper_name = gripper_names["right"]
+
         if robot_cfg["robot"]["arm"] == "dual":
 
             self.end_effector_name = robot_cfg["gripper"]["end_effector_name"]
@@ -55,7 +70,4 @@ class RobotCfg(Robot):
         self.opened_positions = robot_cfg["gripper"]["opened_positions"]
         self.closed_velocities = robot_cfg["gripper"]["closed_velocities"]
         self.action_deltas = np.array([-0.1, -0.1])
-        # init curobo
-        self.curobo_config_file = robot_cfg["curobo"]["curobo_config_file"]
-        self.curobo_urdf_path = robot_cfg["curobo"]["curobo_urdf_path"]
-        self.curobo_urdf_name = robot_cfg["curobo"]["curobo_urdf_name"]
+        self.perception = robot_cfg["perception"] if "perception" in robot_cfg else None

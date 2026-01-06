@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_bowl_028106f6" (
+            prepend payload = @../../../../../assets/objects/benchmark/bowl/benchmark_bowl_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999062, 0, 0, 0.043314)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.845, 0.007, 0.898)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

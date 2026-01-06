@@ -1,98 +1,80 @@
 # HOWTO use this
 # $ docker build -f ./scripts/dockerfile -t registry.agibot.com/genie-sim/open_source:latest .
 
-FROM nvcr.io/nvidia/isaac-sim:4.5.0
+FROM nvcr.io/nvidia/isaac-sim:5.1.0
 
 ENV ACCEPT_EULA=Y
 ENV PRIVACY_CONSENT=Y
+ENV DEBIAN_FRONTEND=noninteractive
 
-# apt deps
+# sys
+USER root
 RUN apt-get update && apt-get install -y \
+    bash \
+    wget \
+    curl \
+    git \
+    git-lfs \
+    sudo \
+    lsb-release \
+    unzip \
+    xterm \
     build-essential \
     cmake \
     libeigen3-dev \
-    netcat \
     ffmpeg \
-    bash \
     jq \
-    vim
+    vim \
+    acl \
+    python3 python3-pip python3-venv \
+    libvulkan1 vulkan-tools \
+    libx11-6 libxrandr2 libxss1 libxcursor1 libxi6 libglu1-mesa \
+    libgl1 libegl1 libnss3 libxcomposite1 libxdamage1 libxext6
+
+RUN usermod -aG sudo isaac-sim
+RUN echo "isaac-sim ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/isaac-sim && chmod 0440 /etc/sudoers.d/isaac-sim
+USER 1234:1234
 
 
-# install ros2 humble
-# setup timezone
-RUN echo 'Etc/UTC' > /etc/timezone && \
-    ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-    apt-get update && \
-    apt-get install -q -y --no-install-recommends tzdata locales software-properties-common curl && \
-    rm -rf /var/lib/apt/lists/*
+# install jazzy-ros, https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html
+RUN locale  # check for UTF-8
+RUN sudo apt-get update && sudo apt-get install locales
+RUN sudo locale-gen en_US en_US.UTF-8
+RUN sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+RUN export LANG=en_US.UTF-8
+RUN locale  # verify settings
 
-RUN locale-gen en_US en_US.UTF-8 && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+RUN sudo apt-get install -y software-properties-common
+RUN sudo add-apt-repository universe -y
+RUN curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/1.1.0/ros2-apt-source_1.1.0.noble_all.deb"
+RUN sudo dpkg -i /tmp/ros2-apt-source.deb
 
-ENV LANG=en_US.UTF-8
+RUN sudo apt-get update
+RUN sudo apt-get install -y ros-jazzy-desktop
+RUN sudo apt-get install -y ros-jazzy-rmw-cyclonedds-cpp
+RUN sudo apt-get install -y ros-jazzy-vision-msgs-rviz-plugins ros-jazzy-joy
+RUN sudo apt-get install -y ros-dev-tools
+RUN sudo apt-get install -y graphviz libgraphviz-dev
 
-RUN add-apt-repository universe && \
-    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
-# install packages
-RUN apt-get update && apt-get -y upgrade && \
-    apt-get install -q -y --no-install-recommends \
-    ros-dev-tools \
-    ros-humble-ros-base \
-    ros-humble-image-transport \
-    ros-humble-image-transport-plugins \
-    ros-humble-compressed-image-transport \
-    console-data \
-    git-lfs \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-# pip install benchmark deps
+# pip install benchmark deps for omni_python, remove -i if it's not needed
 COPY ./requirements.txt /tmp
-RUN /isaac-sim/kit/python/bin/python3 -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN /isaac-sim/python.sh -m pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN /isaac-sim/python.sh -m pip install -r /tmp/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-RUN /isaac-sim/python.sh -m pip install tomli wheel ninja -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# pip install infer deps
-COPY ./requirements_infer.txt /tmp
-RUN pip3 install -r /tmp/requirements_infer.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# pip install curobo [default to option1]
-# OPTION 1: install from source, which can be slow, please refer to https://curobo.org/get_started/1_install_instructions.html
-RUN git clone https://github.com/NVlabs/curobo.git --depth 1 /tmp/curobo
-RUN cd /tmp && wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
-RUN dpkg -i /tmp/cuda-keyring_1.0-1_all.deb
-RUN apt-get update
-RUN apt-get -y install cuda-toolkit-11-8
-# NOTICE!!! Default to RTX4090D that we use, do remember to change TORCH_CUDA_ARCH_LIST for your GPU model, see https://github.com/AgibotTech/genie_sim/issues/4
-ENV CUDA_HOME="/usr/local/cuda-11.8"
-ENV TORCH_CUDA_ARCH_LIST="8.9"
-RUN cd /tmp/curobo && /isaac-sim/python.sh -m pip install --no-build-isolation .[isaacsim] -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN sudo mkdir /geniesim && sudo chown 1234:1234 /geniesim
 
-# OPTION 2: install from pre-built wheel, if you have already built curobo
-# COPY 3rdparty/nvidia_curobo-0.7.6-cp310-cp310-linux_x86_64.whl /tmp
-# RUN /isaac-sim/python.sh -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
-#     /tmp/nvidia_curobo-0.7.6-cp310-cp310-linux_x86_64.whl
+# create generator venv
+COPY ./source/geniesim/generator/requirements.txt /tmp/requirements.generator.txt
+RUN python3 -m venv /geniesim/generator_env
+RUN /geniesim/generator_env/bin/pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN /geniesim/generator_env/bin/pip install -r /tmp/requirements.generator.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# copy curobo genie robot config
-COPY source/geniesim/app/robot_cfg \
-    /isaac-sim/kit/python/lib/python3.10/site-packages/curobo/content/assets/robot
-COPY source/geniesim/app/curobo/configs/robot/G1_omnipicker.yml \
-    /isaac-sim/kit/python/lib/python3.10/site-packages/curobo/content/configs/robot
-COPY source/geniesim/app/robot_cfg/G1_120s/G1_120s.yml \
-    /isaac-sim/kit/python/lib/python3.10/site-packages/curobo/content/configs/robot
+# create record venv
+RUN python3 -m venv /geniesim/record_env
+RUN /geniesim/record_env/bin/pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN /geniesim/record_env/bin/pip install rosbags pyyaml opencv-python rosbags.image "numpy<2.0" -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# pip install ik_solver
-COPY 3rdparty/ik_solver-0.4.3-cp310-cp310-linux_x86_64.whl /tmp
-RUN /isaac-sim/python.sh -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
-    /tmp/ik_solver-0.4.3-cp310-cp310-linux_x86_64.whl
-
-COPY 3rdparty/ik_solver-0.3.0-cp310-cp310-linux_x86_64.whl /tmp
-RUN python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
-    /tmp/ik_solver-0.3.0-cp310-cp310-linux_x86_64.whl
-
-# COPY 3rdparty/flash_attn-2.8.2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl /tmp
-# RUN python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
-#     /tmp/flash_attn-2.8.2+cu12torch2.5cxx11abiFALSE-cp310-cp310-linux_x86_64.whl
+RUN sudo rm -rf /var/lib/apt/lists/*
 
 CMD ["bash"]

@@ -1,0 +1,71 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "ActionSetWaitSome_2": [
+                {
+                  "ActionList": [
+                    {
+                      "Follow": "sft_egg_000|[0.2,0.2,0.2]|left"
+                    },
+                    {
+                      "PickUpOnGripper": "sft_egg_000|left"
+                    },
+                    {
+                      "Inside": "sft_egg_000|sft_cubbyhole_001/body|1"
+                    }
+                  ]
+                },
+                {
+                  "ActionList": [
+                    {
+                      "Follow": "sft_egg_001|[0.2,0.2,0.2]|left"
+                    },
+                    {
+                      "PickUpOnGripper": "sft_egg_001|left"
+                    },
+                    {
+                      "Inside": "sft_egg_001|sft_cubbyhole_001/body|1"
+                    }
+                  ]
+                },
+                {
+                  "ActionList": [
+                    {
+                      "Follow": "sft_egg_003|[0.2,0.2,0.2]|left"
+                    },
+                    {
+                      "PickUpOnGripper": "sft_egg_003|left"
+                    },
+                    {
+                      "Inside": "sft_egg_003|sft_cubbyhole_001/body|1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "StepOut": 1000
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PushPull": "sft_cubbyhole_001|2.4|2.5"
+            },
+            {
+              "StepOut": 1000
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "sft_place_an_egg"
+}

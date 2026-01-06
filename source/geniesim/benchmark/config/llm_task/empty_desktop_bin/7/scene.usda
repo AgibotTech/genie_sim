@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_trash_can_89744583" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash_can/benchmark_trash_can_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999639, 0, 0, 0.026886)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.1, 0.438, 0.26)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_bdb223d2" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash/benchmark_trash_006/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999113, 0, 0, 0.042109)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.559, -0.007, 0.794)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_548be98b" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash/benchmark_trash_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999113, 0, 0, 0.042109)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.547, -0.002, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_can_c7412de0" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash_can/benchmark_trash_can_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999113, 0, 0, 0.042109)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.556, 0.002, 0.835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -1,10 +1,10 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 from copy import copy
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -58,9 +58,7 @@ if __name__ == "__main__":
     while res == Result.Working:
         res = otg.update(inp, out)
 
-        logger.info(
-            "\t".join([f"{out.time:0.3f}"] + [f"{p:0.3f}" for p in out.new_velocity])
-        )
+        logger.info("\t".join([f"{out.time:0.3f}"] + [f"{p:0.3f}" for p in out.new_velocity]))
         out_list.append(copy(out))
 
         out.pass_to_input(inp)

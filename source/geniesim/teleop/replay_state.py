@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -19,20 +19,18 @@ from geniesim.robot.utils import (
     get_rotation_matrix_from_quaternion,
 )
 import argparse
-from geniesim.utils.ros_utils import TimerROSNode
+from geniesim.utils.ros_nodes.base_nodes import SimNode
 import geniesim.utils.system_utils as system_utils
 import rclpy
 import threading
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()
 
 
 def dump_robotcfg(robot_cfg):
     try:
-        cfg_path = os.path.join(
-            system_utils.app_root_path(), "robot_cfg/", f"{robot_cfg}.json"
-        )
+        cfg_path = os.path.join(system_utils.app_root_path(), "robot_cfg/", f"{robot_cfg}.json")
         new_cfg_path = os.path.join(
             system_utils.app_root_path(),
             "robot_cfg/",
@@ -40,10 +38,14 @@ def dump_robotcfg(robot_cfg):
         )
         with open(cfg_path, "r") as f:
             cfg_content = json.load(f)
-
-        cfg_content["camera"]["/G1/gripper_l_base_link/Left_Camera"] = [320, 240]
-        cfg_content["camera"]["/G1/gripper_r_base_link/Right_Camera"] = [320, 240]
-        cfg_content["camera"]["/G1/head_link2/Head_Camera"] = [640, 480]
+        if "G1" in robot_cfg:
+            cfg_content["camera"]["/G1/gripper_l_base_link/Left_Camera"] = [320, 240]
+            cfg_content["camera"]["/G1/gripper_r_base_link/Right_Camera"] = [320, 240]
+            cfg_content["camera"]["/G1/head_link2/Head_Camera"] = [640, 480]
+        elif "G2" in robot_cfg:
+            cfg_content["camera"]["/G2/gripper_l_base_link/Left_Camera"] = [320, 240]
+            cfg_content["camera"]["/G2/gripper_r_base_link/Right_Camera"] = [320, 240]
+            cfg_content["camera"]["/G2/head_link3/Head_Camera"] = [640, 480]
         with open(new_cfg_path, "w") as f:
             json.dump(cfg_content, f, indent=4)
         logger.info(f"Successfully dumped robot cfg to {new_cfg_path}")
@@ -55,9 +57,7 @@ def dump_robotcfg(robot_cfg):
 def get_object_scale(data_info_dir):
     assets_dir = os.environ.get("SIM_ASSETS")
     assert assets_dir is not None, "SIM_ASSETS environment variable is not set"
-    object_parameters_path = os.path.join(
-        assets_dir, data_info_dir, "object_parameters.json"
-    )
+    object_parameters_path = os.path.join(assets_dir, data_info_dir, "object_parameters.json")
     with open(object_parameters_path, "r") as f:
         object_paramsters = json.load(f)
     obj_scale = object_paramsters["scale"]
@@ -100,13 +100,11 @@ class Recording:
                 target_rotation = robot_init_pose["quaternion"]
             break
         translation_matrix = np.eye(4)
-        translation_matrix[:3, :3] = get_rotation_matrix_from_quaternion(
-            target_rotation
-        )
+        translation_matrix[:3, :3] = get_rotation_matrix_from_quaternion(target_rotation)
         translation_matrix[:3, 3] = target_position
 
         self.init_translation_matrix = translation_matrix
-        robot_cfg = self.task["robot"]["robot_cfg"].split(".")[0]
+        robot_cfg = self.state["robot"]["name"]
         dump_robotcfg(robot_cfg)
         self.client.InitRobot(
             robot_cfg=f"{robot_cfg}_recording.json",
@@ -117,10 +115,13 @@ class Recording:
         )
         self.init_frame = self.state["frames"][0] if len(self.state["frames"]) else None
         assert self.init_frame is not None, "No init frame found"
-        self.robot_pose = self.init_frame["robot"]["pose"]
+        # self.robot_pose = self.init_frame["robot"]["pose"]
+        self.robot_pose = translation_matrix
+        self.joint_name = self.init_frame["robot"]["joints"]["joint_name"]
         self.object_list = {}
         self.articulated_object_list = []
         self.run()
+        self.client.SendTaskStatus(True, [])
         self.client.Exit()
 
     def fetch_object_info(self):
@@ -174,16 +175,12 @@ class Recording:
                     object_scale = np.array(object_scale)
                 else:
                     object_scale = np.array([object_scale] * 3)
-                target_matrix = self.init_translation_matrix @ (
-                    np.linalg.inv(self.robot_pose) @ obj_pose
-                )
+                target_matrix = self.init_translation_matrix @ (np.linalg.inv(self.robot_pose) @ obj_pose)
                 target_rotation_matrix, target_position = (
                     target_matrix[:3, :3],
                     target_matrix[:3, 3],
                 )
-                target_rotation = get_quaternion_from_euler(
-                    matrix_to_euler_angles(target_rotation_matrix), order="ZYX"
-                )
+                target_rotation = get_quaternion_from_euler(matrix_to_euler_angles(target_rotation_matrix), order="ZYX")
                 self.client.add_object(
                     usd_path=usd_path,
                     prim_path="/World/Objects/" + obj_id,
@@ -206,9 +203,7 @@ class Recording:
                 object_scale = self.task_objects[key]["object_scale"]
                 target_position = self.task_objects[key]["position"]
                 target_rotation = self.task_objects[key]["quaternion"]
-                assert (
-                    target_rotation and target_rotation
-                ), "articulated object must have init pose"
+                assert target_rotation and target_rotation, "articulated object must have init pose"
                 self.client.add_object(
                     usd_path=usd_path,
                     prim_path="/World/Objects/" + key,
@@ -221,6 +216,13 @@ class Recording:
                     add_particle=False,
                     mass=0.01,
                 )
+
+    def set_scenario_light(self):
+        light_infos = []
+        for key, val in self.task.get("lights", {}).items():
+            light_infos += val
+        if len(light_infos):
+            self.client.SetLight(light_infos)
 
     def run(self):
         rclpy.init()
@@ -240,24 +242,22 @@ class Recording:
                 index = joint_names.index(key)
                 joint_indices.append(index)
 
-        self.timer_ros_node = TimerROSNode()
-        self.spin_thread = threading.Thread(
-            target=rclpy.spin, args=(self.timer_ros_node,)
-        )
+        self.sim_ros_node = SimNode()
+        self.spin_thread = threading.Thread(target=rclpy.spin, args=(self.sim_ros_node,))
         self.spin_thread.start()
 
         self.fetch_object_info()
         self.add_task_objects()
         self.add_articulated_objects()
+        self.set_scenario_light()
 
         target_joint_positions = [0] * joint_num
         joint_list = list(state[0]["robot"]["joints"]["joint_position"])
+        joint_name = list(state[0]["robot"]["joints"]["joint_name"])
         self.client.set_joint_positions(joint_list, False)
         time.sleep(1)
         if self.use_recording:
-            recording_objects_prim = self.task.get("recording_setting").get(
-                "objects_prim"
-            )
+            recording_objects_prim = self.task.get("recording_setting").get("objects_prim")
             self.client.start_recording(
                 task_name=task_name,
                 fps=self.fps,
@@ -277,48 +277,44 @@ class Recording:
         idx = 0
         while rclpy.ok() and idx < len(state):
             # set robot pose
-            robot_pose_mat = np.array(state[idx]["robot"]["pose"])
-            robot_position = robot_pose_mat[:3, 3]
-            robot_rotation = get_quaternion_from_euler(
-                matrix_to_euler_angles(robot_pose_mat[:3, :3]), order="ZYX"
-            )
-            if idx != 0:
-                if (
-                    np.linalg.norm(robot_position - robot_position_last)
-                    > BASE_MOVE_THRESH
-                    or np.linalg.norm(robot_rotation - robot_rotation_last)
-                    > BASE_MOVE_THRESH
-                ):
-                    self.client.SetObjectPose(
-                        [
-                            {
-                                "prim_path": "robot",
-                                "position": robot_position,
-                                "rotation": robot_rotation,
-                            }
-                        ],
-                        [],
-                    )
-                    target_joint_positions = [0] * joint_num
+            # robot_pose_mat = np.array(state[idx]["robot"]["pose"])
+            # robot_position = robot_pose_mat[:3, 3]
+            # robot_rotation = get_quaternion_from_euler(
+            #     matrix_to_euler_angles(robot_pose_mat[:3, :3]), order="ZYX"
+            # )
+            # if idx != 0:
+            #     if (
+            #         np.linalg.norm(robot_position - robot_position_last)
+            #         > BASE_MOVE_THRESH
+            #         or np.linalg.norm(robot_rotation - robot_rotation_last)
+            #         > BASE_MOVE_THRESH
+            #     ):
+            #         self.client.SetObjectPose(
+            #             [
+            #                 {
+            #                     "prim_path": "robot",
+            #                     "position": robot_position,
+            #                     "rotation": robot_rotation,
+            #                 }
+            #             ],
+            #             [],
+            #         )
+            #         target_joint_positions = [0] * joint_num
 
-            robot_position_last = robot_position
-            robot_rotation_last = robot_rotation
+            # robot_position_last = robot_position
+            # robot_rotation_last = robot_rotation
 
             # set object pose
             object_info = state[idx]["objects"]
             object_poses = []
             for key, value in object_info.items():
                 object_pose = {}
-                target_matrix = self.init_translation_matrix @ (
-                    np.linalg.inv(self.robot_pose) @ value["pose"]
-                )
+                target_matrix = self.init_translation_matrix @ (np.linalg.inv(self.robot_pose) @ value["pose"])
                 target_rotation_matrix, target_position = (
                     target_matrix[:3, :3],
                     target_matrix[:3, 3],
                 )
-                target_rotation = get_quaternion_from_euler(
-                    matrix_to_euler_angles(target_rotation_matrix), order="ZYX"
-                )
+                target_rotation = get_quaternion_from_euler(matrix_to_euler_angles(target_rotation_matrix), order="ZYX")
                 object_pose["prim_path"] = "/World/Objects/" + key
                 object_pose["position"] = target_position
                 object_pose["rotation"] = target_rotation
@@ -338,17 +334,16 @@ class Recording:
                 object_joint["joint_cmd"] = value["joints"]["joint_position"]
                 object_joints.append(object_joint)
             self.client.SetObjectPose(object_poses, joint_list, object_joints)
+            # self.sim_ros_node.set_joint_state(joint_name, joint_list)
             idx += 1
-            self.timer_ros_node.loop_rate.sleep()
+            self.sim_ros_node.loop_rate.sleep()
         self.client.stop_recording()
-        self.timer_ros_node.destroy_node()
+        self.sim_ros_node.destroy_node()
         rclpy.shutdown()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="SimGraspingAgent Command Line Interface"
-    )
+    parser = argparse.ArgumentParser(description="SimGraspingAgent Command Line Interface")
     parser.add_argument(
         "--client_host",
         type=str,

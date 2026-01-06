@@ -1,52 +1,34 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 import numpy as np
-import threading
-import os
-import rclpy
-import json
-from geniesim.utils.ros_utils import SimROSNode
-import geniesim.utils.system_utils as system_utils
+import os, json
+from geniesim.utils import system_utils
+from geniesim.utils.data_courier import DataCourier
+from collections import deque
 
 
 class BasePolicy:
-    def __init__(self, task_name) -> None:
-        rclpy.init()
-        # load robot_cfg
-        with open(
-            os.path.join(
-                system_utils.benchmark_ader_path(),
-                "eval_tasks",
-                f"{task_name}.json",
-            ),
-            "r",
-        ) as f:
-            task_content = json.load(f)
-        self.robot_cfg_file = task_content["robot"]["robot_cfg"]
-        with open(
-            os.path.join(
-                system_utils.app_root_path(),
-                "robot_cfg",
-                self.robot_cfg_file,
-            ),
-            "r",
-        ) as f:
-            self.robot_cfg = json.load(f)
-        self.sim_ros_node = SimROSNode(robot_cfg=self.robot_cfg)
-        self.spin_thread = threading.Thread(
-            target=rclpy.spin, args=(self.sim_ros_node,)
-        )
-        self.spin_thread.start()
+    def __init__(self, task_name="") -> None:
+        self.data_courier: DataCourier = None
+        self.action_buffer = deque(maxlen=30)
+        pass
+
+    def init_ros_node(self):
+        pass
+
+    def need_infer(self):
+        return len(self.action_buffer) == 0
 
     def shutdown(self):
-        if rclpy.ok():
-            self.sim_ros_node.destroy_node()
-            rclpy.shutdown()
+        pass
+        # if rclpy.ok():
+        #     self.sim_ros_node.destroy_node()
+        #     rclpy.shutdown()
 
-        if self.spin_thread.is_alive():
-            self.spin_thread.join(timeout=5)
+        # if self.spin_thread.is_alive():
+        #     self.spin_thread.join(timeout=5)
 
     def reset(self):
         """Called at the beginning of an episode."""
@@ -58,6 +40,25 @@ class BasePolicy:
     def act(self, observations, **kwargs) -> np.ndarray:
         """Act based on the observations."""
         pass
+
+    def set_data_courier(self, data_courier):
+        self.data_courier = data_courier
+
+    def load_robot_task_config(self):
+        # fmt: off
+        task_path = os.path.join(system_utils.benchmark_conf_path(), "eval_tasks", f"{self.task_name}.json")
+        with open(task_path, "r") as f:
+            self.task_content = json.load(f)
+
+        self.robot_cfg_file = self.task_content["robot"]["robot_cfg"]
+        robot_cfg_path = os.path.join(system_utils.app_root_path(), "robot_cfg", self.robot_cfg_file)
+        # fmt: on
+        with open(robot_cfg_path, "r") as f:
+            self.robot_cfg = json.load(f)
+
+        self.gripper_control_joint = self.robot_cfg["gripper"]["gripper_control_joint"]
+        self.robot_name = self.robot_cfg["robot"]["robot_name"]
+        self.camera_list = self.task_content["recording_setting"]["camera_list"]
 
 
 class RandomPolicy(BasePolicy):

@@ -1,0 +1,72 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_767baee5" (
+            prepend payload = @../../../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_pen_46f736ed" (
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.99982, 0, 0, -0.018976)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.192, 0.271, 0.875)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_pen_02e77f51" (
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.997032, 0, 0, -0.076995)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.142, -0.229, 0.875)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_pen_35cdb73c" (
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.997658, 0, 0, -0.068394)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.192, -0.169, 0.875)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_pen_978c12c2" (
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_006/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.992566, 0, 0, -0.121709)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.16, -0.117, 0.873)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_pen_3a66ea2a" (
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999813, 0, 0, 0.019363)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.015, -0.193, 0.875)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

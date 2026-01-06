@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -18,9 +18,6 @@ from setuptools import setup
 
 SETUP_PATH = os.path.dirname(os.path.realpath(__file__))
 REQUIREMENTS_PATH = os.path.join(SETUP_PATH, "../requirements.txt")
-WHEEL_PATH = os.path.abspath(
-    os.path.join(SETUP_PATH, "../3rdparty/ik_solver-0.4.3-cp310-cp310-linux_x86_64.whl")
-)
 
 
 def read_requirements(file_path):
@@ -35,8 +32,14 @@ def read_requirements(file_path):
 
 
 # Minimum dependencies required prior to installation
-INSTALL_REQUIRES = read_requirements(REQUIREMENTS_PATH)
-INSTALL_REQUIRES.append(f"ik_solver @ file://{WHEEL_PATH}")
+REQUIREMENTS = read_requirements(REQUIREMENTS_PATH)
+# REQUIREMENTS.append(f"ik_solver @ file://{WHEEL_PATH}")
+
+skip_deps = os.environ.get("SKIP_DEPS", "0") == "1"
+if skip_deps:
+    INSTALL_REQUIRES = []
+else:
+    INSTALL_REQUIRES = REQUIREMENTS
 
 # Installation operation
 setup(
@@ -44,18 +47,18 @@ setup(
     author="Genie Sim Team",
     maintainer="Genie Sim Team",
     url="https://github.com/AgibotTech/genie_sim",
-    version="2.2.2",
+    version="3.0.0",
     description="geniesim",
     keywords=["agibot", "genie", "sim", "benchmark"],
     license="Mozilla Public License Version 2.0",
     include_package_data=True,
-    python_requires=">=3.10",
+    python_requires=">=3.11",
     install_requires=INSTALL_REQUIRES,
     packages=["geniesim"],
     classifiers=[
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.10",
-        "Isaac Sim :: 4.5.0",
+        "Programming Language :: Python :: 3.11",
+        "Isaac Sim :: 5.1.0",
     ],
     zip_safe=False,
 )

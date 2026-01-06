@@ -1,0 +1,26 @@
+optimizer:
+  initial_step: 1e-2
+  xtol_rel: 1.0e-5
+  ftol_rel: 1.0e-5
+  maxeval: 200
+  maxtime: 0.005
+
+standard_ik:
+  pos_weight: 40.0
+  ori_weight: 8.0
+  pos_elbow_weight: 10.0
+  ori_elbow_weight: 8.0
+  upper_arm_coef: 2.0
+  elbow_coef: 1.0
+
+relaxed_ik:
+  pos_weight: 40.0
+  ori_weight: 8.0
+  min_velocity_weight: 1.0
+  min_acceleration_weight: 0.0
+  min_jerk_weight: 0.0
+  joint_limits_weight: 1.0
+  pos_elbow_weight: 0.0
+  ori_elbow_weight: 0.0
+  upper_arm_coef: 2.0
+  elbow_coef: 1.0

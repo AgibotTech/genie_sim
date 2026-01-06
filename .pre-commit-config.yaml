@@ -1,29 +1,29 @@
+exclude: ^.pre-commit-config.yaml
 repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.1.0 # Use the latest Black version
+    rev: 25.12.0 # Use the latest Black version
     hooks:
       - id: black
-        args: ["--diff", "--line-length", "120"] # --check to Enforce check-only mode (no auto-formatting)
-        types: [python] # Target Python files
         exclude: .*_pb2.*\.py
+        args: [
+            "--diff",
+            "--line-length",
+            "120",
+            "--exclude",
+            "source/geniesim/benchmark/config/llm_task/",
+          ] # --check to Enforce check-only mode (no auto-formatting)
+        types: [python] # Target Python files
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.5
     hooks:
       - id: insert-license
-        files: \.py$
+        files: ^.*\.py$
+        exclude: ^source/geniesim/(generator/scene_language/|robot/isaac_sim/aimdk/|app/workflow/|app/controllers/parallel_gripper\.py$)
         args:
-          # - "--remove-header" # Remove existing license headers. Useful when updating license.
-          - "--license-filepath"
-          - ".github/LICENSE_HEADER.txt"
-          - "--use-current-year"
-        exclude: |
-          (?x)^(
-              source/geniesim/app/workflow/app_launcher.py|
-              source/geniesim/app/workflow/ui_builder.py|
-              source/geniesim/app/controllers/parallel_gripper.py|
-              source/geniesim/robot/isaac_sim/aimdk/
-          )$
+          - --license-filepath
+          - .github/LICENSE_HEADER.txt
+          - --use-current-year
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0 # Use the ref you want to point at
@@ -41,8 +41,10 @@ repos:
       - id: mixed-line-ending
       - id: detect-private-key
       - id: debug-statements
+        exclude: ^source/geniesim/generator/scene_language
       - id: check-merge-conflict
       - id: check-docstring-first
+        exclude: ^source/geniesim/(benchmark/config/llm_task/|generator/LLM_RESULT\.py$)
       - id: check-byte-order-marker # Forbid UTF-8 byte-order markers
       - id: end-of-file-fixer
 

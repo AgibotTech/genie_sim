@@ -1,0 +1,47 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "benchmark_fruit_017|[0.2,0.2,0.2]|right"
+            },
+            {
+              "StepOut": 400
+            },
+            {
+              "Onfloor": "benchmark_fruit_017|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "benchmark_fruit_017|right"
+            },
+            {
+              "StepOut": 400
+            },
+            {
+              "Onfloor": "benchmark_fruit_017|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Ontop": "benchmark_fruit_017|benchmark_plate_004"
+            },
+            {
+              "StepOut": 400
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "gs_pack_the_fruit_into_the_plate"
+}

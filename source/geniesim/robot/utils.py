@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -486,9 +486,7 @@ import math
 _POLE_LIMIT = 1.0 - 1e-6
 
 
-def matrix_to_euler_angles(
-    mat: np.ndarray, degrees: bool = False, extrinsic: bool = True
-) -> np.ndarray:
+def matrix_to_euler_angles(mat: np.ndarray, degrees: bool = False, extrinsic: bool = True) -> np.ndarray:
     """Convert rotation matrix to Euler XYZ extrinsic or intrinsic angles.
 
     Args:

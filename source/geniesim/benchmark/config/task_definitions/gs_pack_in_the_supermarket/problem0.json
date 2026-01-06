@@ -1,0 +1,66 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "beverage_bottle_002|[0.2,0.2,0.2]|right"
+            },
+            {
+              "StepOut": 800
+            },
+            {
+              "Onfloor": "beverage_bottle_002|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "beverage_bottle_002|right"
+            },
+            {
+              "StepOut": 800
+            },
+            {
+              "Onfloor": "beverage_bottle_002|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "handbag_000|[1,1,1]|right"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Inside": "beverage_bottle_002|handbag_000|1"
+            },
+            {
+              "StepOut": 800
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [
+    {
+      "bottle": [
+        "beverage_bottle_002"
+      ],
+      "handbag": [
+        "handbag_000"
+      ]
+    }
+  ],
+  "Problem": "gs_pack_in_the_supermarket"
+}

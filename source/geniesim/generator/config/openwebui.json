@@ -1,0 +1,79 @@
+{
+  "file": {
+    "image_compression_height": null,
+    "image_compression_width": null
+  },
+  "google_drive": {
+    "enable": false
+  },
+  "onedrive": {
+    "enable": false
+  },
+  "openai": {
+    "api_base_urls": [
+      "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    ],
+    "api_configs": {
+      "0": {
+        "auth_type": "bearer",
+        "connection_type": "external",
+        "enable": true,
+        "model_ids": [],
+        "prefix_id": "",
+        "tags": []
+      }
+    },
+    "api_keys": [
+      "PUT_YOUR_API_KEY_HERE"
+    ],
+    "enable": true
+  },
+  "tool_server": {
+    "connections": [
+      {
+        "auth_type": "bearer",
+        "config": {
+          "access_control": null,
+          "enable": true,
+          "function_name_filter_list": ""
+        },
+        "headers": null,
+        "info": {
+          "description": "search assets from keywords, return topk assets",
+          "id": "search assets api",
+          "name": "search assets api"
+        },
+        "key": "",
+        "path": "openapi.json",
+        "spec": "",
+        "spec_type": "url",
+        "type": "openapi",
+        "url": "http://localhost:8765/assets-agent"
+      },
+      {
+        "auth_type": "bearer",
+        "config": {
+          "access_control": null,
+          "enable": true,
+          "function_name_filter_list": ""
+        },
+        "headers": null,
+        "info": {
+          "description": "save file to local",
+          "id": "file save api",
+          "name": "file save api"
+        },
+        "key": "",
+        "path": "openapi.json",
+        "spec": "",
+        "spec_type": "url",
+        "type": "openapi",
+        "url": "http://localhost:8765/file-agent"
+      }
+    ]
+  },
+  "ui": {
+    "enable_signup": false
+  },
+  "version": 0
+}

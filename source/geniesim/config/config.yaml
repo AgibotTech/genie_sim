@@ -1,0 +1,33 @@
+app:
+  headless: false
+  physics_step: 120
+  rendering_step: 60
+  enable_curobo: false
+  reset_fallen: false
+  enable_ros: true
+  record_img: false
+  record_video: false
+  render_mode: "RaytracedLighting"
+  disable_physics: false
+  data_convert: false
+  enable_gpu_dynamics: false
+  enable_rate_limit: true
+  enable_playback: false
+benchmark:
+  client_host: "localhost:50051"
+  num_episode: 1
+  policy_class: "DemoPolicy"
+  env_class: "DummyEnv"
+  task_name: "gm_task_pickplace"
+  output_dir: "output"
+  fps: 30
+  record: false
+  infer_host: "localhost"
+  infer_port: 8999
+  model_arc: "pi"
+  enable_ros: true
+  interactive: false
+layout:
+  seed: 0
+  autogen_ratio: 0.5
+  num_obj: 1

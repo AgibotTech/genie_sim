@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -49,6 +49,22 @@ class TaskHook(HookBase):
     def start_callback(self, env, _):
         init_joint_state = self.policy.reset()
         print("SET INIT POS", init_joint_state)
+        if init_joint_state != None:
+            env.robot.client.set_joint_positions(init_joint_state, False)
+
+        task_name = env.init_task_config["task"]
+        if task_name == "gm_task_pickplace":
+            instruction = env.task.get_instruction()
+            env.update_place_holder("placeholder_str1", instruction[1])
+            env.update_place_holder("placeholder_str2", instruction[2])
+        elif task_name == "gm_task_pickplace_abs_pose":
+            instruction = env.task.get_instruction()
+            env.update_place_holder("placeholder_str1", instruction[1])
+            env.update_place_holder("placeholder_str2", instruction[2])
+        elif task_name == "gm_task_pickplace_color":
+            instruction = env.task.get_instruction()
+            env.update_place_holder("placeholder_str1", instruction[1])
+            env.update_place_holder("placeholder_str2", instruction[2])
 
     def step_callback(self, env, action):
         pass

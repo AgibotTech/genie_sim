@@ -1,11 +1,11 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R, Slerp
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -60,9 +60,7 @@ def interpolate_pose_trajectory(pose1, pose2, num_interpolations):
     interp_rots = slerp(interp_times)
     interp_matrices = interp_rots.as_matrix()  # (num_interpolations, 3, 3)
     # interpolate translation
-    interp_xyz = np.linspace(
-        pose1[:3, 3], pose2[:3, 3], num_interpolations
-    )  # (num_interpolations, 3)
+    interp_xyz = np.linspace(pose1[:3, 3], pose2[:3, 3], num_interpolations)  # (num_interpolations, 3)
 
     interp_poses = np.tile(np.eye(4), (num_interpolations, 1, 1))
     interp_poses[:, :3, :3] = interp_matrices
@@ -161,9 +159,7 @@ def transform_point_cloud_numpy(cloud, transform, format="4x4"):
             points in new coordinates
     """
     if not (format == "3x3" or format == "4x4" or format == "3x4"):
-        raise ValueError(
-            "Unknown transformation format, only support '3x3' or '4x4' or '3x4'."
-        )
+        raise ValueError("Unknown transformation format, only support '3x3' or '4x4' or '3x4'.")
     if format == "3x3":
         cloud_transformed = np.dot(transform, cloud.T).T
     elif format == "4x4" or format == "3x4":
@@ -192,9 +188,7 @@ def transform_point_cloud_tensor(cloud, transform, format="4x4"):
             points in new coordinates
     """
     if not (format == "3x3" or format == "4x4" or format == "3x4"):
-        raise ValueError(
-            "Unknown transformation format, only support '3x3' or '4x4' or '3x4'."
-        )
+        raise ValueError("Unknown transformation format, only support '3x3' or '4x4' or '3x4'.")
     if format == "3x3":
         cloud_transformed = torch.matmul(transform, cloud.T).T
     elif format == "4x4" or format == "3x4":
@@ -280,7 +274,7 @@ def get_workspace_mask(cloud, seg, trans=None, organized=True, outlier=0):
         cloud: [np.ndarray, (H,W,3), np.float32]
             scene point cloud
         seg: [np.ndarray, (H,W,), np.uint8]
-            segmantation label of scene points
+            segmentation label of scene points
         trans: [np.ndarray, (4,4), np.float32]
             transformation matrix for scene points, default: None.
         organized: [bool]
@@ -361,30 +355,18 @@ def get_rot_dim(rotation_mode):
 
 def map_ambiguous_rot(rot):
     # Conversion to PyTorch: Define the rotation along the x-axis by 180 degrees.
-    rotate_along_x_axis_180 = torch.tensor(
-        [[[1, 0, 0], [0, -1, 0], [0, 0, -1]]], dtype=rot.dtype, device=rot.device
-    )
+    rotate_along_x_axis_180 = torch.tensor([[[1, 0, 0], [0, -1, 0], [0, 0, -1]]], dtype=rot.dtype, device=rot.device)
 
     # Conversion to PyTorch: Perform matrix multiplication.
     rot_new = torch.matmul(rot, rotate_along_x_axis_180)
 
     # Conversion to PyTorch: Compute the rotation error before and after applying the new rotation.
     # The trace function in PyTorch does not support 'axis1' and 'axis2', so we need to handle it manually.
-    rot_error = (
-        torch.acos(torch.clamp((torch.einsum("bii->b", rot) - 1) / 2, -1.0, 1.0))
-        * 180
-        / torch.pi
-    )
-    rot_new_error = (
-        torch.acos(torch.clamp((torch.einsum("bii->b", rot_new) - 1) / 2, -1.0, 1.0))
-        * 180
-        / torch.pi
-    )
+    rot_error = torch.acos(torch.clamp((torch.einsum("bii->b", rot) - 1) / 2, -1.0, 1.0)) * 180 / torch.pi
+    rot_new_error = torch.acos(torch.clamp((torch.einsum("bii->b", rot_new) - 1) / 2, -1.0, 1.0)) * 180 / torch.pi
 
     # Conversion to PyTorch: Choose between the original and new rotation based on the error.
-    chosen_rot = torch.where(
-        rot_error[:, None, None] <= rot_new_error[:, None, None], rot, rot_new
-    )
+    chosen_rot = torch.where(rot_error[:, None, None] <= rot_new_error[:, None, None], rot, rot_new)
 
     return chosen_rot
 
@@ -409,9 +391,7 @@ def get_3d_center_of_rgbd_mask(masks, depth, cam_info, c2w):
             center_xyz = np.array([np.inf, np.inf, np.inf])
         else:
             xyz = pts_world[mask]
-            center_xyz = (
-                np.percentile(xyz, 98, axis=0) + np.percentile(xyz, 2, axis=0)
-            ) / 2
+            center_xyz = (np.percentile(xyz, 98, axis=0) + np.percentile(xyz, 2, axis=0)) / 2
         centers.append(center_xyz)
     centers = np.stack(centers)
     return centers
@@ -481,9 +461,7 @@ def vector_difference(pose1, pose2, vector=np.array([0, 0, 1])):
     transformed_vector2 = rotation2 @ vector
 
     dot_product = np.dot(transformed_vector1, transformed_vector2)
-    norms_product = np.linalg.norm(transformed_vector1) * np.linalg.norm(
-        transformed_vector2
-    )
+    norms_product = np.linalg.norm(transformed_vector1) * np.linalg.norm(transformed_vector2)
     cos_angle = dot_product / norms_product
 
     cos_angle = np.clip(cos_angle, -1.0, 1.0)
@@ -553,15 +531,9 @@ def unnormalize_vars(normalized_vars, og_bounds):
 def calculate_collision_cost(poses, sdf_func, collision_points, threshold):
     assert poses.shape[1:] == (4, 4)
     transformed_pcs = batch_transform_points(collision_points, poses)
-    transformed_pcs_flatten = transformed_pcs.reshape(
-        -1, 3
-    )  # [num_poses * num_points, 3]
-    signed_distance = (
-        sdf_func(transformed_pcs_flatten) + threshold
-    )  # [num_poses * num_points]
-    signed_distance = signed_distance.reshape(
-        -1, collision_points.shape[0]
-    )  # [num_poses, num_points]
+    transformed_pcs_flatten = transformed_pcs.reshape(-1, 3)  # [num_poses * num_points, 3]
+    signed_distance = sdf_func(transformed_pcs_flatten) + threshold  # [num_poses * num_points]
+    signed_distance = signed_distance.reshape(-1, collision_points.shape[0])  # [num_poses, num_points]
     non_zero_mask = signed_distance > 0
     collision_cost = np.sum(signed_distance[non_zero_mask])
     return collision_cost
@@ -591,9 +563,7 @@ def transform_keypoints(transform, keypoints, movable_mask):
     assert transform.shape == (4, 4)
     transformed_keypoints = keypoints.copy()
     if movable_mask.sum() > 0:
-        transformed_keypoints[movable_mask] = (
-            np.dot(keypoints[movable_mask], transform[:3, :3].T) + transform[:3, 3]
-        )
+        transformed_keypoints[movable_mask] = np.dot(keypoints[movable_mask], transform[:3, :3].T) + transform[:3, 3]
     return transformed_keypoints
 
 
@@ -669,12 +639,8 @@ def path_length(samples_homo):
     pos_length = 0
     rot_length = 0
     for i in range(len(samples_homo) - 1):
-        pos_length += np.linalg.norm(
-            samples_homo[i, :3, 3] - samples_homo[i + 1, :3, 3]
-        )
-        rot_length += angle_between_rotmat(
-            samples_homo[i, :3, :3], samples_homo[i + 1, :3, :3]
-        )
+        pos_length += np.linalg.norm(samples_homo[i, :3, 3] - samples_homo[i + 1, :3, 3])
+        rot_length += angle_between_rotmat(samples_homo[i, :3, :3], samples_homo[i + 1, :3, :3])
     return pos_length, rot_length
 
 
@@ -695,9 +661,7 @@ def get_config(config_path=None):
     if config_path is None:
         this_file_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(this_file_dir, "configs/config.yaml")
-    assert config_path and os.path.exists(
-        config_path
-    ), f"config file does not exist ({config_path})"
+    assert config_path and os.path.exists(config_path), f"config file does not exist ({config_path})"
     with open(config_path, "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     return config
@@ -811,13 +775,9 @@ def sample_from_spline(spline, num_samples):
     if isinstance(spline, RotationSpline):
         samples = spline(sample_points).as_matrix()  # [num_samples, 3, 3]
     else:
-        assert (
-            isinstance(spline, tuple) and len(spline) == 2
-        ), "spline must be a tuple of (tck, u)"
+        assert isinstance(spline, tuple) and len(spline) == 2, "spline must be a tuple of (tck, u)"
         tck, u = spline
-        samples = interpolate.splev(
-            np.linspace(0, 1, num_samples), tck
-        )  # [spline_dim, num_samples]
+        samples = interpolate.splev(np.linspace(0, 1, num_samples), tck)  # [spline_dim, num_samples]
         samples = np.array(samples).T  # [num_samples, spline_dim]
     return samples
 

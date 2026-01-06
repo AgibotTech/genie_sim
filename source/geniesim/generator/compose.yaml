@@ -1,0 +1,35 @@
+services:
+  mcp-server:
+    build:
+      context: ./server
+      dockerfile: dockerfile
+    container_name: assets-retrieval-agent
+    ports:
+      - "8765:8765"
+    volumes:
+      - ..:/geniesim
+      - ./server_chromadb:/tmp/chromadb_cache:rw
+    command:
+      [
+        "mcpo",
+        "--config",
+        "/geniesim/generator/server/mcp_config.json",
+        "--port",
+        "8765",
+      ]
+    working_dir: /geniesim
+    restart: unless-stopped
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    network_mode: host
+    volumes:
+      - ..:/geniesim
+      - ./server_open-webui:/app/backend/data
+    environment:
+      - WEBUI_AUTH=False
+      - HF_ENDPOINT=http://hf-mirror.com
+    restart: always
+
+volumes:
+  open-webui:

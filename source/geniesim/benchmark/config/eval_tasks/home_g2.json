@@ -1,0 +1,118 @@
+{
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_base_link/Left_Camera",
+      "/genie/gripper_r_base_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "right",
+    "robot_cfg": "G2_omnipicker.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -0.1,
+          -0.0,
+          0.0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          -4.03,
+          -0.032,
+          0.80621
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_extra": {
+        "position": [
+          -4.56,
+          0.01,
+          1.12314
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_ground": {
+        "position": [
+          -4,
+          -0.07,
+          0.5
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0.9,
+          1,
+          1
+        ]
+      }
+    },
+    "scene_id": "workspace_00",
+    "scene_info_dir": "background/opensource_home",
+    "scene_usd": "background/opensource_home/home_02.usd"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "home_g2"
+}

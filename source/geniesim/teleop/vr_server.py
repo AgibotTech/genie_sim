@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -9,13 +9,13 @@ import threading
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
 
 class VRServer:
-    def __init__(self, host="192.168.110.96", port=7890):
+    def __init__(self, host="localhost", port=7890):
         self.data = None
         self.host = host
         self.port = port
@@ -47,6 +47,6 @@ class VRServer:
 
 
 if __name__ == "__main__":
-    vr_server = VRServer(host="192.168.111.177", port=8080)
+    vr_server = VRServer(host="localhost", port=8080)
     while True:
         vr_server.on_update()

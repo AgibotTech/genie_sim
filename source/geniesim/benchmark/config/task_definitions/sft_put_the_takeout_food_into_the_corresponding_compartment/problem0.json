@@ -1,0 +1,63 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "/World/store_supplementary_asset/Aligned|[0.2,0.2,0.2]|left"
+            },
+            {
+              "StepOut": 1000
+            },
+            {
+              "Onfloor": "/World/store_supplementary_asset/Aligned|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "/World/store_supplementary_asset/Aligned|left"
+            },
+            {
+              "StepOut": 1000
+            },
+            {
+              "Onfloor": "/World/store_supplementary_asset/Aligned|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "GripperPassing": "/World/store_supplementary_asset/Aligned|false"
+            },
+            {
+              "StepOut": 1000
+            },
+            {
+              "Onfloor": "/World/store_supplementary_asset/Aligned|0.0"
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "/World/store_supplementary_asset/Aligned|right"
+            },
+            {
+              "StepOut": 1000
+            },
+            {
+              "Onfloor": "/World/store_supplementary_asset/Aligned|0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "sft_put_the_takeout_food_into_the_corresponding_compartment"
+}

@@ -1,0 +1,51 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "{@placeholder_str1}|[0.2,0.2,0.2]|{@placeholder_str2}"
+            },
+            {
+              "StepOut": 120
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "{@placeholder_str1}|{@placeholder_str2}"
+            },
+            {
+              "StepOut": 120
+            },
+            {
+              "Onfloor": "{@placeholder_str1}|0.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": {
+    "Layout": {
+      "lay": {
+        "rest": {
+          "candidates": [
+            {
+              "asset_path": "objects/gm/cola",
+              "name": "cola"
+            }
+          ],
+          "random_num": 2,
+          "type": "random"
+        }
+      },
+      "random_seed": 7,
+      "type": "table_3*3"
+    }
+  },
+  "Objects": [],
+  "Problem": "gm_pickplace_abs_pose"
+}

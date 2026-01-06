@@ -1,0 +1,15 @@
+strict digraph "" {
+	graph [rankdir=LR];
+	root_scene_4d8d9dfd -> create_desk_f3183a08;
+	root_scene_4d8d9dfd -> place_random_objects_on_desk_bf93dbc9;
+	table_ec710732	[tags="['table_000', 'desk', 'table']"];
+	create_desk_f3183a08 -> table_ec710732;
+	benchmark_beverage_bottle_3da81d63	[tags="['benchmark_beverage_bottle_003', 'beverage', 'on desk', 'left']"];
+	place_random_objects_on_desk_bf93dbc9 -> benchmark_beverage_bottle_3da81d63;
+	benchmark_green_apple_2e8ed9c1	[tags="['benchmark_green_apple_001', 'fruit', 'on desk', 'left']"];
+	place_random_objects_on_desk_bf93dbc9 -> benchmark_green_apple_2e8ed9c1;
+	benchmark_pen_fafcb7c4	[tags="['benchmark_pen_000', 'stationery', 'on desk', 'right']"];
+	place_random_objects_on_desk_bf93dbc9 -> benchmark_pen_fafcb7c4;
+	benchmark_rubik_cube_9450976d	[tags="['benchmark_rubik_cube_001', 'toy', 'on desk', 'right']"];
+	place_random_objects_on_desk_bf93dbc9 -> benchmark_rubik_cube_9450976d;
+}

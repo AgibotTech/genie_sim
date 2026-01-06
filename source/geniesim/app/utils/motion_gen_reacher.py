@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -151,9 +151,7 @@ class CuroboMotion:
         self.set_obstacles()
         self.link_names = self.motion_gen.kinematics.link_names
         self.ee_link_name = self.motion_gen.kinematics.ee_link
-        kin_state = self.motion_gen.kinematics.get_state(
-            self.motion_gen.get_retract_config().view(1, -1)
-        )
+        kin_state = self.motion_gen.kinematics.get_state(self.motion_gen.get_retract_config().view(1, -1))
         link_retract_pose = kin_state.link_pose
         self.target_links = {}
         for i in self.link_names:
@@ -221,9 +219,7 @@ class CuroboMotion:
                     position=self.tensor_args.to_device(c_p),
                     quaternion=self.tensor_args.to_device(c_rot),
                 )
-        result = self.motion_gen.ik_solver.solve_single(
-            goal_pose, link_poses=link_poses
-        )
+        result = self.motion_gen.ik_solver.solve_single(goal_pose, link_poses=link_poses)
         return result.success, result.js_solution
 
     # nvblox camera
@@ -235,9 +231,7 @@ class CuroboMotion:
             orientation=np.array([0.707, 0.707, 0, 0]),
         )
         depth_camera.initialize()
-        depth_camera.set_world_pose(
-            position=position, orientation=orientation, camera_axes="usd"
-        )
+        depth_camera.set_world_pose(position=position, orientation=orientation, camera_axes="usd")
         rp = depth_camera._render_product_path
         rgb_annot = rep.AnnotatorRegistry.get_annotator("rgb")
         depth_annot = rep.AnnotatorRegistry.get_annotator("distance_to_image_plane")
@@ -292,9 +286,7 @@ class CuroboMotion:
             pose[:3, 3] = xyz
             return pose
 
-        rotation_x_180 = np.array(
-            [[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]]
-        )
+        rotation_x_180 = np.array([[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]])
         depth_camera_prim = SingleXFormPrim(prim_path=camera_prim)
         rp = depth_camera._render_product_path
         rgb_annot = rep.AnnotatorRegistry.get_annotator("rgb")
@@ -405,9 +397,7 @@ class CuroboMotion:
                 jerk=self.tensor_args.to_device(sim_js_velocities) * 0.0,
                 joint_names=sim_js_names,
             )
-            target_js = target_js.get_ordered_joint_state(
-                self.motion_gen.kinematics.joint_names
-            )
+            target_js = target_js.get_ordered_joint_state(self.motion_gen.kinematics.joint_names)
             result = self.motion_gen.plan_single_js(
                 cu_js.unsqueeze(0), target_js.unsqueeze(0), self.plan_config.clone()
             )
@@ -494,9 +484,7 @@ class CuroboMotion:
             for si, s in enumerate(sph_list[0]):
                 if not np.isnan(s.position[0]):
                     self.spheres[si].set_world_pose(
-                        position=np.array(
-                            [s.position[0] - 0.4, s.position[1], s.position[2] - 0.55]
-                        )
+                        position=np.array([s.position[0] - 0.4, s.position[1], s.position[2] - 0.55])
                     )
                     self.spheres[si].set_radius(float(s.radius))
 
@@ -534,9 +522,7 @@ class CuroboMotion:
             link_name=link_name,
             sphere_fit_type=SphereFitType.VOXEL_VOLUME_SAMPLE_SURFACE,
             surface_sphere_radius=0.005,
-            world_objects_pose_offset=Pose.from_list(
-                [0, 0, 0.005, 1, 0, 0, 0], self.tensor_args
-            ),
+            world_objects_pose_offset=Pose.from_list([0, 0, 0.005, 1, 0, 0, 0], self.tensor_args),
             remove_obstacles_from_world_config=True,
             ee_pose=ee_pose,
         )
@@ -557,9 +543,7 @@ class CuroboMotion:
         if world_objects_pose_offset is not None:
             ee_pose = world_objects_pose_offset.inverse().multiply(ee_pose)
         ee_pose = ee_pose.inverse()  # ee_T_w to multiply all objects later
-        max_spheres = self.motion_gen.robot_cfg.kinematics.kinematics_config.get_number_of_spheres(
-            link_name
-        )
+        max_spheres = self.motion_gen.robot_cfg.kinematics.kinematics_config.get_number_of_spheres(link_name)
         n_spheres = int(max_spheres / len(object_names))
         sphere_tensor = torch.zeros((max_spheres, 4))
         sphere_tensor[:, 3] = -10.0
@@ -586,9 +570,7 @@ class CuroboMotion:
             spheres = spheres[: spheres.shape[0]]
         sphere_tensor[: spheres.shape[0], :] = spheres.contiguous()
 
-        self.motion_gen.attach_spheres_to_robot(
-            sphere_tensor=sphere_tensor, link_name=link_name
-        )
+        self.motion_gen.attach_spheres_to_robot(sphere_tensor=sphere_tensor, link_name=link_name)
         return True
 
     def on_physics_step(self):

@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -6,7 +6,7 @@ import os
 import omni
 import omni.graph.core as og
 
-from geniesim.utils.logger import Logger
+from geniesim.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
 
@@ -20,8 +20,9 @@ class USDBase:
         pass
 
     def _init_sensor(self):
-        self.publish_clock()
-        self.publish_rtf()
+        # self.publish_clock()
+        # self.publish_rtf()
+        pass
 
     def step(self):
         pass
@@ -66,7 +67,7 @@ class USDBase:
             publish_boundingbox2d_loose,
             publish_boundingbox2d_tight,
             publish_boundingbox3d,
-            publish_semantic_segmant,
+            publish_semantic_segment,
         )
 
         camera = Camera(
@@ -81,9 +82,7 @@ class USDBase:
 
         rendering_fps = int(1.0 / rendering_dt)
         step_size = int(rendering_fps / param["frequency"])
-        logger.info(
-            f"init cam rendering_fps {rendering_fps} frequency {param['frequency']} step_size {step_size}"
-        )
+        logger.info(f"init cam rendering_fps {rendering_fps} frequency {param['frequency']} step_size {step_size}")
         camera_graph = []
         for publish in param["publish"]:
             if publish is None:
@@ -108,7 +107,7 @@ class USDBase:
             elif publish == "bbox3":
                 publish_boundingbox3d(camera, step_size, topic)
             elif publish == "semantic":
-                publish_semantic_segmant(camera, step_size, topic)
+                publish_semantic_segment(camera, step_size, topic)
         camera.initialize()
         return camera_graph
 
@@ -218,10 +217,10 @@ class USDBase:
                         "ReadSimTime",
                         "isaacsim.core.nodes.IsaacReadSimulationTime",
                     ),
-                    (
-                        "PublisherJointState",
-                        "isaacsim.ros2.bridge.ROS2PublishJointState",
-                    ),
+                    # (
+                    #     "PublisherJointState",
+                    #     "isaacsim.ros2.bridge.ROS2PublishJointState",
+                    # ),
                     (
                         "SubscriberJointState",
                         "isaacsim.ros2.bridge.ROS2SubscribeJointState",
@@ -232,18 +231,18 @@ class USDBase:
                     ),
                 ],
                 og.Controller.Keys.CONNECT: [
-                    (
-                        "OnPlaybackTick.outputs:tick",
-                        "PublisherJointState.inputs:execIn",
-                    ),
-                    (
-                        "RosContext.outputs:context",
-                        "PublisherJointState.inputs:context",
-                    ),
-                    (
-                        "ReadSimTime.outputs:simulationTime",
-                        "PublisherJointState.inputs:timeStamp",
-                    ),
+                    # (
+                    #     "OnPlaybackTick.outputs:tick",
+                    #     "PublisherJointState.inputs:execIn",
+                    # ),
+                    # (
+                    #     "RosContext.outputs:context",
+                    #     "PublisherJointState.inputs:context",
+                    # ),
+                    # (
+                    #     "ReadSimTime.outputs:simulationTime",
+                    #     "PublisherJointState.inputs:timeStamp",
+                    # ),
                     (
                         "OnPlaybackTick.outputs:tick",
                         "SubscriberJointState.inputs:execIn",
@@ -275,8 +274,8 @@ class USDBase:
                 ],
                 og.Controller.Keys.SET_VALUES: [
                     ("ReadSimTime.inputs:resetOnStop", False),
-                    ("PublisherJointState.inputs:topicName", "/joint_states"),
-                    ("PublisherJointState.inputs:targetPrim", robot_prim),
+                    # ("PublisherJointState.inputs:topicName", "/joint_states"),
+                    # ("PublisherJointState.inputs:targetPrim", robot_prim),
                     ("SubscriberJointState.inputs:topicName", "/joint_command"),
                     ("ArticulationController.inputs:targetPrim", robot_prim),
                     ("ArticulationController.inputs:robotPath", robot_prim),

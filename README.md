@@ -53,11 +53,11 @@ Please refer to [this page](https://agibot-world.com/sim-evaluation/docs/#/v2) f
 ## 4.3 Support
 <img src="./docs/wechat.JPEG" width="30%"/>
 
-## 4.4 TODO List
+## 4.4 Roadmap
 - [x] Release more long-horizon benchmark mainuplation tasks
 - [x] More scenes and assets for each benchmark task
 - [x] Support Agibot World Challenge baseline model
-- [ ] Scenario layout and manipulation trajectory generalization toolkit
+- [x] Scenario layout and manipulation trajectory generalization toolkit
 
 ## 4.5 FAQ
 - How to shut down the isaac sim server when errors occur, causing the process not responding?
@@ -66,7 +66,8 @@ Please refer to [this page](https://agibot-world.com/sim-evaluation/docs/#/v2) f
   The default render mode is `RaytracedLighting(RealTime)`. For tasks that contain transparent objects, use `RealTimePathTracing(RealTime-2.0)` for perspective relationship of objects
 
 ## 4.6 License and Citation
-All the data and code within this repo are under Mozilla Public License 2.0
+All the data and code within `source/geniesim` and `source/data_collection` are under Mozilla Public License 2.0
+The `source/scene_reconstruction` project contains code under multiple licenses, for complete and updated licensing details, please see the LICENSE files
 Please consider citing our work either way below if it helps your research.
 ```
 @misc{2025geniesim,
@@ -83,3 +84,4 @@ Please consider citing our work either way below if it helps your research.
 3. CUROBO [Source code]. https://github.com/NVlabs/curobo
 4. Isaac Lab [Source code]. https://github.com/isaac-sim/IsaacLab
 5. Omni Gibson [Source code]. https://github.com/StanfordVL/OmniGibson
+6. The Scene Language [Source code]. https://github.com/zzyunzhi/scene-language

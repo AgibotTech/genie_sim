@@ -1,0 +1,117 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAll": [
+            {
+              "ActionList": [
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "Follow": "sft_pen_000|[0.2,0.2,0.2]|left"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                },
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "PickUpOnGripper": "sft_pen_000|left"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                },
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "Inside": "sft_pen_000|iros_pen_cup_000|1"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "ActionList": [
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "Follow": "sft_pen_001|[0.2,0.2,0.2]|left"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                },
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "PickUpOnGripper": "sft_pen_001|left"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                },
+                {
+                  "ActionSetWaitAny": [
+                    {
+                      "Inside": "sft_pen_001|iros_pen_cup_000|1"
+                    },
+                    {
+                      "StepOut": 100
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ActionList": [
+            {
+              "ActionSetWaitAny": [
+                {
+                  "Follow": "iros_crumpled_paper_000|[0.2,0.2,0.2]|right"
+                },
+                {
+                  "StepOut": 100
+                }
+              ]
+            },
+            {
+              "ActionSetWaitAny": [
+                {
+                  "PickUpOnGripper": "iros_crumpled_paper_000|right"
+                },
+                {
+                  "StepOut": 100
+                }
+              ]
+            },
+            {
+              "ActionSetWaitAny": [
+                {
+                  "Inside": "iros_crumpled_paper_000|iros_trash_can_000|1"
+                },
+                {
+                  "StepOut": 100
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "sft_clean_the_desk"
+}

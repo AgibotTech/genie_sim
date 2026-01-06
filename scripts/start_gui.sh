@@ -5,36 +5,35 @@ CURRENT_DIR=$(pwd)
 
 set -eo pipefail
 
-echo "using SIM_REPO_ROOT='$CURRENT_DIR'"
-if [ -z "$SIM_ASSETS" ]; then
-    echo "You need to set \$SIM_ASSETS eg. SIM_ASSETS=~/assets"
-    exit 1
-else
-    echo "using SIM_ASSETS='$SIM_ASSETS'"
-fi
+mkdir -p ~/docker/isaac-sim/cache/main/ov
+mkdir -p ~/docker/isaac-sim/cache/main/warp
+mkdir -p ~/docker/isaac-sim/cache/computecache
+mkdir -p ~/docker/isaac-sim/config
+mkdir -p ~/docker/isaac-sim/data/documents
+mkdir -p ~/docker/isaac-sim/data/Kit
+mkdir -p ~/docker/isaac-sim/logs
+mkdir -p ~/docker/isaac-sim/pkg
+sudo chown -R 1234:1234 ~/docker/isaac-sim
 
-xhost +
-docker run -itd --name genie_sim_benchmark \
+xhost +local:
+docker run -it --name genie_sim_benchmark \
+    --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
-    --gpus all \
     --rm \
+    --gpus all \
     --network=host \
     --privileged \
     -e "ACCEPT_EULA=Y" \
     -e "PRIVACY_CONSENT=Y" \
-    -e "PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python" \
     -e DISPLAY \
-    -v $HOME/.Xauthority:/root/.Xauthority \
-    -v ~/docker/isaac-sim/cache/kit:/isaac-sim/kit/cache:rw \
-    -v ~/docker/isaac-sim/cache/ov:/root/.cache/ov:rw \
-    -v ~/docker/isaac-sim/cache/pip:/root/.cache/pip:rw \
-    -v ~/docker/isaac-sim/cache/glcache:/root/.cache/nvidia/GLCache:rw \
-    -v ~/docker/isaac-sim/cache/computecache:/root/.nv/ComputeCache:rw \
-    -v ~/docker/isaac-sim/logs:/root/.nvidia-omniverse/logs:rw \
-    -v ~/docker/isaac-sim/data:/root/.local/share/ov/data:rw \
-    -v ~/docker/isaac-sim/documents:/root/Documents:rw \
+    -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
+    -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
+    -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \
+    -v ~/docker/isaac-sim/config:/isaac-sim/.nvidia-omniverse/config:rw \
+    -v ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw \
+    -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw \
     -v /dev/input:/dev/input:rw \
-    -v $SIM_ASSETS:/root/assets:rw \
-    -v $CURRENT_DIR:/root/workspace/main:rw \
-    -w /root/workspace/main \
-    registry.agibot.com/genie-sim/open_source:latest
+    -v $CURRENT_DIR:/geniesim/main:rw \
+    -w /geniesim/main \
+    registry.agibot.com/genie-sim/open_source:latest \
+    bash

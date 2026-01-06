@@ -1,0 +1,11 @@
+strict digraph "" {
+	graph [rankdir=LR];
+	root_scene_b1a49b33 -> study_room_pick_and_place_book_on_shelf_db56fdd6;
+	study_room_pick_and_place_book_on_shelf_db56fdd6 -> place_magzine_96381c12;
+	benchmark_book_5a7080a0	[tags="['right']"];
+	study_room_pick_and_place_book_on_shelf_db56fdd6 -> benchmark_book_5a7080a0;
+	benchmark_bookshelf_a10b22ec	[tags="['book_holder']"];
+	study_room_pick_and_place_book_on_shelf_db56fdd6 -> benchmark_bookshelf_a10b22ec;
+	sft_book_bfd51411	[tags="['magzine']"];
+	place_magzine_96381c12 -> sft_book_bfd51411;
+}

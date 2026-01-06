@@ -1,0 +1,233 @@
+{
+  "layout": {
+    "benchmark_cushion_591b3b11": {
+      "description": {
+        "color": "brown",
+        "descriptive_terms": [
+          "round",
+          "brown",
+          "wooden",
+          "flat",
+          "natural"
+        ],
+        "dimensions": [
+          0.07000000029802322,
+          0.015000002924352884,
+          0.07000000029802322
+        ],
+        "full_description": "This is a round, brown wooden cushion with a flat surface and a natural appearance.",
+        "materials": [
+          "wood"
+        ],
+        "object_category": [
+          "furniture",
+          "cushion"
+        ],
+        "semantic_name": [
+          "cushion"
+        ],
+        "shape": "round",
+        "unit": "m"
+      },
+      "keywords": [
+        ""
+      ],
+      "tags": [
+        "root_scene_f7446a56",
+        "kitchen_task_put_food_into_microwave_oven_3d31dfde",
+        "place_random_a14423c8",
+        "benchmark_cushion_591b3b11"
+      ],
+      "usd": "benchmark_cushion_000",
+      "xyz": [
+        0.927,
+        0.104,
+        0.857
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "benchmark_food_8e03000b": {
+      "description": {
+        "color": "colorful",
+        "descriptive_terms": [
+          "delicious",
+          "savory",
+          "juicy",
+          "crispy",
+          "colorful"
+        ],
+        "dimensions": [
+          0.2367575243115425,
+          0.07976215705275536,
+          0.23188455402851105
+        ],
+        "full_description": "This is a colorful and delicious burger with crispy french fries and fresh vegetables, presented on a plate.",
+        "materials": [
+          "bread",
+          "meat",
+          "lettuce",
+          "tomato",
+          "french_fries"
+        ],
+        "object_category": [
+          "food",
+          "burger"
+        ],
+        "semantic_name": [
+          "food"
+        ],
+        "shape": "complex-shaped",
+        "unit": "m"
+      },
+      "keywords": [
+        "food",
+        "right"
+      ],
+      "tags": [
+        "root_scene_f7446a56",
+        "kitchen_task_put_food_into_microwave_oven_3d31dfde",
+        "place_random_a14423c8",
+        "benchmark_food_8e03000b"
+      ],
+      "usd": "benchmark_food_013",
+      "xyz": [
+        0.927,
+        0.104,
+        0.92
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.350455,
+        0.93658
+      ]
+    },
+    "benchmark_microwave_oven_da7908b6": {
+      "description": {
+        "color": "green",
+        "descriptive_terms": [
+          "rectangular",
+          "modern",
+          "functional",
+          "compact",
+          "sturdy"
+        ],
+        "dimensions": [
+          0.4379824995994568,
+          0.28200094401836395,
+          0.4458608478307724
+        ],
+        "full_description": "This is a compact and sturdy rectangular microwave oven, primarily green in color, with metal and plastic components. It features a modern design and is suitable for kitchen use.",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "object_category": [
+          "kitchen appliance",
+          "microwave oven"
+        ],
+        "semantic_name": [
+          "microwave oven"
+        ],
+        "shape": "box",
+        "unit": "m"
+      },
+      "keywords": [
+        "microwave_oven"
+      ],
+      "tags": [
+        "root_scene_f7446a56",
+        "kitchen_task_put_food_into_microwave_oven_3d31dfde",
+        "place_microwave_oven_64762c18",
+        "benchmark_microwave_oven_da7908b6"
+      ],
+      "usd": "benchmark_microwave_oven_003",
+      "xyz": [
+        0.983,
+        0.535,
+        0.991
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "links": [
+        {
+          "source": "root_scene_f7446a56",
+          "target": "kitchen_task_put_food_into_microwave_oven_3d31dfde"
+        },
+        {
+          "source": "kitchen_task_put_food_into_microwave_oven_3d31dfde",
+          "target": "place_microwave_oven_64762c18"
+        },
+        {
+          "source": "kitchen_task_put_food_into_microwave_oven_3d31dfde",
+          "target": "place_random_a14423c8"
+        },
+        {
+          "source": "place_microwave_oven_64762c18",
+          "target": "benchmark_microwave_oven_da7908b6"
+        },
+        {
+          "source": "place_random_a14423c8",
+          "target": "benchmark_cushion_591b3b11"
+        },
+        {
+          "source": "place_random_a14423c8",
+          "target": "benchmark_food_8e03000b"
+        }
+      ],
+      "multigraph": false,
+      "nodes": [
+        {
+          "id": "root_scene_f7446a56"
+        },
+        {
+          "id": "kitchen_task_put_food_into_microwave_oven_3d31dfde"
+        },
+        {
+          "id": "place_microwave_oven_64762c18"
+        },
+        {
+          "id": "benchmark_microwave_oven_da7908b6",
+          "tags": [
+            "microwave_oven"
+          ]
+        },
+        {
+          "id": "place_random_a14423c8"
+        },
+        {
+          "id": "benchmark_cushion_591b3b11",
+          "tags": [
+            ""
+          ]
+        },
+        {
+          "id": "benchmark_food_8e03000b",
+          "tags": [
+            "food",
+            "right"
+          ]
+        }
+      ]
+    }
+  },
+  "scene_id": "kitchen_task_put_food_into_microwave_oven",
+  "seed": 696629987
+}

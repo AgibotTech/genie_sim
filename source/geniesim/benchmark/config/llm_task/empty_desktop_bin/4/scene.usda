@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_trash_can_b2fc38bf" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash_can/benchmark_trash_can_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999713, 0, 0, 0.023944)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.018, 0.518, 0.26)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_416a9297" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999081, 0, 0, 0.042874)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.551, 0.004, 0.828)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_7f9258b2" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash/benchmark_trash_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999081, 0, 0, 0.042874)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.552, -0.002, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_can_8d7dfcb4" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash_can/benchmark_trash_can_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999081, 0, 0, 0.042874)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.555, 0.004, 0.835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

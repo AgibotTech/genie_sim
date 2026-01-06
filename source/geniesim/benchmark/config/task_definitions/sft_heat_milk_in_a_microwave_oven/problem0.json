@@ -1,0 +1,71 @@
+{
+  "Acts": [
+    {
+      "ActionList": [
+        {
+          "ActionSetWaitAny": [
+            {
+              "PushPull": "benchmark_microwave_oven_002|-1.2|-0.9"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Follow": "sft_cup_007|[0.2,0.2,0.2]|right"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PickUpOnGripper": "sft_cup_007|right"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "Inside": "sft_cup_007|benchmark_microwave_oven_002/body|1"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "PushPull": "benchmark_microwave_oven_002|-0.1|0"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        },
+        {
+          "ActionSetWaitAny": [
+            {
+              "TriggerAction": "/World/Objects/benchmark_microwave_oven_002/ActionGraph/on_contact_event_01.outputs:contactingBody|/G1/gripper_r_inner_link4"
+            },
+            {
+              "StepOut": 100
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Init": [],
+  "Objects": [],
+  "Problem": "sft_heat_milk_in_a_microwave_oven"
+}

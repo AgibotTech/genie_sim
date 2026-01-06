@@ -1,11 +1,11 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 """
 Utility functions of matrix and vector transformations.
 Adapted from OmniGibson
-NOTE: convention for quaternions is (x, y, z, w)
+convention for quaternions is (x, y, z, w)
 """
 
 import math
@@ -79,9 +79,7 @@ def get_bott_up_point(
     threshold = 0.03 * obj_size
     z_m = sorted_points[0][-1]  #
     while True:
-        top_surface_points = sorted_points[
-            np.abs(sorted_points[:, 2] - z_m) < threshold
-        ]
+        top_surface_points = sorted_points[np.abs(sorted_points[:, 2] - z_m) < threshold]
         if len(top_surface_points) >= 15:
             break
         # Increase threshold to get more points
@@ -160,13 +158,9 @@ def ewma_vectorized(data, alpha, offset=None, dtype=None, order="C", out=None):
 
     # scaling_factors -> 0 as len(data) gets large
     # this leads to divide-by-zeros below
-    scaling_factors = np.power(
-        1.0 - alpha, np.arange(data.size + 1, dtype=dtype), dtype=dtype
-    )
+    scaling_factors = np.power(1.0 - alpha, np.arange(data.size + 1, dtype=dtype), dtype=dtype)
     # create cumulative sum array
-    np.multiply(
-        data, (alpha * scaling_factors[-2]) / scaling_factors[:-1], dtype=dtype, out=out
-    )
+    np.multiply(data, (alpha * scaling_factors[-2]) / scaling_factors[:-1], dtype=dtype, out=out)
     np.cumsum(out, dtype=dtype, out=out)
 
     # cumsums / scaling
@@ -633,7 +627,6 @@ def pose_inv(pose_mat):
         np.array: 4x4 matrix for the inverse pose
     """
 
-
     pose_inv = np.zeros((4, 4))
     pose_inv[:3, :3] = pose_mat[:3, :3].T
     pose_inv[:3, 3] = -pose_inv[:3, :3].dot(pose_mat[:3, 3])
@@ -821,9 +814,7 @@ def rotation_matrix(angle, direction, point=None):
     cosa = math.cos(angle)
     direction = unit_vector(direction[:3])
     # rotation matrix around unit vector
-    R = np.array(
-        ((cosa, 0.0, 0.0), (0.0, cosa, 0.0), (0.0, 0.0, cosa)), dtype=direction.dtype
-    )
+    R = np.array(((cosa, 0.0, 0.0), (0.0, cosa, 0.0), (0.0, 0.0, cosa)), dtype=direction.dtype)
     R += np.outer(direction, direction) * (1.0 - cosa)
     direction *= sina
     R += np.array(
@@ -995,9 +986,7 @@ def get_orientation_error(target_orn, current_orn):
         orn_error (np.array): (ax,ay,az) current orientation error, corresponds to
             (target_orn - current_orn)
     """
-    current_orn = np.array(
-        [current_orn[3], current_orn[0], current_orn[1], current_orn[2]]
-    )
+    current_orn = np.array([current_orn[3], current_orn[0], current_orn[1], current_orn[2]])
     target_orn = np.array([target_orn[3], target_orn[0], target_orn[1], target_orn[2]])
 
     pinv = np.zeros((3, 4))
@@ -1206,9 +1195,7 @@ def check_quat_right_angle(quat, atol=5e-2):
     Returns:
         bool: Whether the quaternion is a right angle or not
     """
-    return np.any(
-        np.isclose(np.abs(quat).sum(), np.array([1.0, 1.414, 2.0]), atol=atol)
-    )
+    return np.any(np.isclose(np.abs(quat).sum(), np.array([1.0, 1.414, 2.0]), atol=atol))
 
 
 def z_angle_from_quat(quat):
@@ -1451,9 +1438,7 @@ def transform_coordinates_3d(coordinates: ndarray, sRT: ndarray):
     :returns: new pointcloud of shape [3, N]
     """
     assert coordinates.shape[0] == 3
-    coordinates = np.vstack(
-        [coordinates, np.ones((1, coordinates.shape[1]), dtype=np.float32)]
-    )
+    coordinates = np.vstack([coordinates, np.ones((1, coordinates.shape[1]), dtype=np.float32)])
     new_coordinates = sRT @ coordinates
     new_coordinates = new_coordinates[:3, :] / new_coordinates[3, :]
     return new_coordinates

@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -17,9 +17,7 @@ import sys
 
 
 class Kinematics_Solver:
-    def __init__(
-        self, robot_description_path, urdf_path, end_effector_name, articulation
-    ):
+    def __init__(self, robot_description_path, urdf_path, end_effector_name, articulation):
         main_path = Path(sys.modules["__main__"].__file__).resolve()
         main_dir = str(main_path.parent)
         cfg_directory = main_dir + "/robot_cfg"

@@ -3,52 +3,41 @@
     "editor.defaultFormatter": "ms-azuretools.vscode-docker"
   },
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
   },
+  "black-formatter.args": [
+    "--line-length=120"
+  ],
   "cmake.ignoreCMakeListsMissing": true,
+  "cursorpyright.analysis.extraPaths": [
+    "~/isaacsim/exts/omni.isaac.core",
+    "~/isaacsim/exts/omni.isaac.core_nodes",
+    "~/isaacsim/exts/omni.isaac.dynamic_control",
+    "~/isaacsim/exts/omni.isaac.kit",
+    "~/isaacsim/exts/omni.isaac.ros2_bridge",
+    "~/isaacsim/exts/omni.isaac.sensor",
+    "~/isaacsim/exts/omni.replicator.isaac",
+    "~/isaacsim/exts/omni.isaac.repl",
+    "~/isaacsim/exts/omni.isaac.utils",
+    "~/isaacsim/exts/omni.isaac.wheeled_robots",
+    "~/isaacsim/kit/exts/omni.graph",
+    "~/isaacsim/kit/exts/omni.syntheticdata",
+    "~/isaacsim/kit/exts/omni.usd.libs/",
+    "~/isaacsim/extscache/omni.replicator.core-1.11.14+106.0.1.lx64.r.cp310/",
+    "~/isaacsim/exts/omni.isaac.manipulators",
+    "~/isaacsim/extsPhysics/omni.physx"
+  ],
   "editor.formatOnSave": true,
   "files.insertFinalNewline": true,
   "git.enableSmartCommit": true,
-  "python.analysis.extraPaths": [
-    "~/isaacsim/exts/omni.isaac.core",
-    "~/isaacsim/exts/omni.isaac.core_nodes",
-    "~/isaacsim/exts/omni.isaac.dynamic_control",
-    "~/isaacsim/exts/omni.isaac.kit",
-    "~/isaacsim/exts/omni.isaac.ros2_bridge",
-    "~/isaacsim/exts/omni.isaac.sensor",
-    "~/isaacsim/exts/omni.replicator.isaac",
-    "~/isaacsim/exts/omni.isaac.repl",
-    "~/isaacsim/exts/omni.isaac.utils",
-    "~/isaacsim/exts/omni.isaac.wheeled_robots",
-    "~/isaacsim/kit/exts/omni.graph",
-    "~/isaacsim/kit/exts/omni.syntheticdata",
-    "~/isaacsim/kit/exts/omni.usd.libs/",
-    "~/isaacsim/extscache/omni.replicator.core-1.11.14+106.0.1.lx64.r.cp310/",
-    "~/isaacsim/exts/omni.isaac.manipulators",
-    "~/isaacsim/extsPhysics/omni.physx"
+  "python-envs.pythonProjects": [
+    {
+      "envManager": "ms-python.python:conda",
+      "packageManager": "ms-python.python:conda",
+      "path": ""
+    }
   ],
-  "python.autoComplete.extraPaths": [
-    "~/isaacsim/exts/omni.isaac.core",
-    "~/isaacsim/exts/omni.isaac.core_nodes",
-    "~/isaacsim/exts/omni.isaac.dynamic_control",
-    "~/isaacsim/exts/omni.isaac.kit",
-    "~/isaacsim/exts/omni.isaac.ros2_bridge",
-    "~/isaacsim/exts/omni.isaac.sensor",
-    "~/isaacsim/exts/omni.replicator.isaac",
-    "~/isaacsim/exts/omni.isaac.repl",
-    "~/isaacsim/exts/omni.isaac.utils",
-    "~/isaacsim/exts/omni.isaac.wheeled_robots",
-    "~/isaacsim/exts/omni.isaac.motion_generation",
-    "~/isaacsim/extscache/omni.anim.people-0.3.3",
-    "~/isaacsim/kit/exts/omni.graph",
-    "~/isaacsim/kit/exts/omni.syntheticdata",
-    "~/isaacsim/kit/exts/omni.usd.libs/",
-    "~/isaacsim/extscache/omni.replicator.core-1.11.14+106.0.1.lx64.r.cp310/",
-    "~/isaacsim/kit/exts/omni.kit.viewport.utility",
-    "~/isaacsim/exts/omni.isaac.manipulators",
-    "~/isaacsim/extsPhysics/omni.physx"
-  ],
-  "python.defaultInterpreterPath": "~/isaacsim/python.sh",
   "python.formatting.provider": "black",
   "ros.distro": "humble",
   "ros.isolateEnvironment": "false",

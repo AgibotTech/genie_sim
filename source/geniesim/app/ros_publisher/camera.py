@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
@@ -22,9 +22,7 @@ def publish_boundingbox2d_loose(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        "BoundingBox2DLoose"
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar("BoundingBox2DLoose")
     writer = rep.writers.get("ROS2PublishBoundingBox2DLoose")
     writer.initialize(
         frameId=frame_id,
@@ -33,13 +31,11 @@ def publish_boundingbox2d_loose(camera: Camera, step_size: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
-def publish_semantic_segmant(camera: Camera, step_size: int, topic=""):
+def publish_semantic_segment(camera: Camera, step_size: int, topic=""):
     render_product = camera._render_product_path
     topic_name = camera.prim_path + "_semantic" if topic == "" else topic
     queue_size = 1
@@ -93,9 +89,7 @@ def publish_boundingbox2d_tight(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        "BoundingBox2DTight"
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar("BoundingBox2DTight")
     writer = rep.writers.get("ROS2PublishBoundingBox2DTight")
     writer.initialize(
         frameId=frame_id,
@@ -104,9 +98,7 @@ def publish_boundingbox2d_tight(camera: Camera, step_size: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -117,9 +109,7 @@ def publish_boundingbox3d(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        "BoundingBox3D"
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar("BoundingBox3D")
     writer = rep.writers.get("ROS2PublishBoundingBox3D")
     writer.initialize(
         frameId=frame_id,
@@ -128,9 +118,7 @@ def publish_boundingbox3d(camera: Camera, step_size: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -141,9 +129,7 @@ def publish_rgb(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        sd.SensorType.Rgb.name
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.Rgb.name)
     writer = rep.writers.get(rv + "ROS2PublishImage")
     writer.initialize(
         frameId=frame_id,
@@ -153,9 +139,7 @@ def publish_rgb(camera: Camera, step_size: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
     return gate_path
@@ -167,9 +151,7 @@ def publish_camera_info(camera: Camera, step_size: int, topic=""):
     )  # isaacsim.ros2.bridge -> read_camera_info has bug in computing cx, cy
 
     render_product = camera._render_product_path
-    topic_name = (
-        camera.prim_path.split("/")[-1] + "_camera_info" if topic == "" else topic
-    )
+    topic_name = camera.prim_path.split("/")[-1] + "_camera_info" if topic == "" else topic
     queue_size = 1
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
@@ -203,9 +185,7 @@ def publish_pointcloud_from_depth(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        sd.SensorType.DistanceToImagePlane.name
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
 
     writer = rep.writers.get(rv + "ROS2PublishPointCloud")
     writer.initialize(
@@ -216,9 +196,7 @@ def publish_pointcloud_from_depth(camera: Camera, step_size: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -229,9 +207,7 @@ def publish_depth(camera: Camera, step_size: int, topic=""):
     node_namespace = NODE_NAMESPACE
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        sd.SensorType.DistanceToImagePlane.name
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
     writer = rep.writers.get(rv + "ROS2PublishImage")
     writer.initialize(
         frameId=frame_id,
@@ -241,8 +217,6 @@ def publish_depth(camera: Camera, step_size: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
     return gate_path

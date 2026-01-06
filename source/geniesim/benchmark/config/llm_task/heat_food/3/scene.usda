@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_microwave_oven_da7908b6" (
+            prepend payload = @../../../../../assets/objects/benchmark/microwave_oven/benchmark_microwave_oven_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.983, 0.535, 0.991)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cushion_591b3b11" (
+            prepend payload = @../../../../../assets/objects/benchmark/cushion/benchmark_cushion_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.927, 0.104, 0.857)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_food_8e03000b" (
+            prepend payload = @../../../../../assets/objects/benchmark/food/benchmark_food_013/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.93658, 0, 0, -0.350455)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.927, 0.104, 0.92)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

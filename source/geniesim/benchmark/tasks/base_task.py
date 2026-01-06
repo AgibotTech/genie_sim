@@ -1,25 +1,31 @@
-# Copyright (c) 2023-2025, AgiBot Inc. All Rights Reserved.
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 from abc import abstractmethod
-from geniesim.benchmark.ader.action.action_parsing import do_parsing
+from geniesim.plugins.ader import AderTask
+from geniesim.utils.system_utils import benchmark_task_definitions_path
+
+# PATHS
+EVAL_CONFIGS_PATH = benchmark_task_definitions_path()
 
 
-class BaseTask:
+class BaseTask(AderTask):
 
     def __init__(self, env):
+        super().__init__(env, EVAL_CONFIGS_PATH)
         self.config = env.task_info
+        self.instructions = [""]
+        self.env = env
 
-        self.problem_name, self.objects, self.action, self.task_progress = do_parsing(
-            env.specific_task_name, env
-        )
+    def set_task(self, episode_id):
+        self.current_episode_id = episode_id
 
-    def update_progress(self, id, progress):
-        for item in self.task_progress:
-            if item["id"] == id:
-                item["progress"] = progress
-                break
+    def get_instruction(self):
+        return self.instructions
+
+    def set_instruction(self, instruction):
+        self.instructions[0] = instruction
 
     @abstractmethod
     def reset_scene(self, env):
@@ -48,6 +54,7 @@ class BaseTask:
         return
 
     def reset(self, env):
+        super().reset(env)
         self.reset_variables(env)
 
     @abstractmethod
