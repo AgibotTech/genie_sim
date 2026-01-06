@@ -1,0 +1,22 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/vec3.proto";
+import public "aimdk/protocol/common/timestamp.proto";
+
+
+/**
+ * Velocity (twist)
+ */
+message Twist {
+  Vec3 linear = 1;
+  Vec3 angular = 2;
+}
+
+/**
+ * Velocity with timestamp
+ */
+message TwistStamped {
+  Timestamp timestamp = 1;
+  Twist twist = 2;
+}

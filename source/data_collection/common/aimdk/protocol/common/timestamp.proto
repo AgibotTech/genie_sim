@@ -1,0 +1,48 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+/**
+ * Timestamp
+ */
+message Timestamp {
+  // Represents seconds of UTC time since Unix epoch
+  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+  // 9999-12-31T23:59:59Z inclusive.
+  int64 seconds = 1;
+
+  // Non-negative fractions of a second at nanosecond resolution. Negative
+  // second values with fractions must still have non-negative nanos values
+  // that count forward in time. Must be from 0 to 999,999,999
+  // inclusive.
+  int32 nanos = 2;
+
+  // miliseconds since epoch for counts using by frontend.
+  int64 ms_since_epoch = 3;
+}
+
+// # Examples
+//
+// Example 1: Compute Timestamp from POSIX `time()`.
+//
+//     Timestamp timestamp;
+//     timestamp.set_seconds(time(NULL));
+//     timestamp.set_nanos(0);
+//
+// Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+//
+//     struct timeval tv;
+//     gettimeofday(&tv, NULL);
+//
+//     Timestamp timestamp;
+//     timestamp.set_seconds(tv.tv_sec);
+//     timestamp.set_nanos(tv.tv_usec * 1000);
+//
+// Example 3: Compute Timestamp from C++ `std::chrono::system_clock::now()`.
+//
+//     std::chrono::system_clock::time_point tp =
+//       std::chrono::system_clock::now();
+//     std::chrono::duration<long int, std::nano> diff = tp.time_since_epoch();
+//     Timestamp timestamp;
+//     timestamp.set_seconds(diff.count() / 1e9);
+//     timestamp.set_nanos(diff.count() % 1e9);

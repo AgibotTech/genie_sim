@@ -1,0 +1,100 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+// Joint information
+message JointState {
+  /**
+   * Joint name
+   */
+  string name = 1;
+
+  /**
+   * Joint message sequence number
+   */
+  uint32 sequence = 2;
+
+  /**
+   * Joint position, unit: radians or meters
+   */
+  double position = 3;
+
+  /**
+   * Joint velocity, unit: rad/s or m/s
+   */
+  double velocity = 4;
+
+  /**
+   * Joint effort (torque/force), unit: N or N*m
+   */
+  double effort = 5;
+}
+
+message JointCommand {
+  /**
+   * Joint name
+   */
+  string name = 1;
+
+  /**
+   * Joint message sequence number
+   */
+  uint32 sequence = 2;
+
+  /**
+   * Joint position, unit: radians or meters
+   */
+  double position = 3;
+
+  /**
+   * Joint velocity, unit: rad/s or m/s
+   */
+  double velocity = 4;
+
+  /**
+   * Joint effort (torque/force), unit: N
+   */
+  double effort = 5;
+
+  /**
+   * Stiffness, unit: N·m/rad or N/m
+   */
+  double stiffness = 6;
+
+  /**
+   * Damping, unit: N·s/m or N·m·s/rad
+   */
+  double damping = 7;
+}
+
+message JointParam {
+  /**
+   * Joint name
+   */
+  string name = 1;
+
+  /**
+   * Joint position upper limit, unit: radians or meters
+   */
+  double position_upper_limit = 2;
+
+  /**
+   * Joint position lower limit, unit: radians or meters
+   */
+  double position_lower_limit = 3;
+
+  /**
+   * Joint velocity limit, unit: rad/s or m/s
+   */
+  double velocity_limit = 4;
+
+  /**
+   * Joint acceleration limit, unit: rad/s^2 or m/s^2
+   */
+  double acceleration_limit = 5;
+
+  /**
+   * Joint effort limit, unit: N or N·m
+   */
+  double effort_limit = 6;
+}

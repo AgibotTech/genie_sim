@@ -1,0 +1,20 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+// Gripper hand command
+message AgiClawHandCommand {
+  uint32 cmd = 1;
+  uint32 pos = 2;
+  uint32 force = 3;
+  uint32 clamp_method = 4;
+  uint32 finger_pos = 5;
+}
+
+// Gripper hand state
+message AgiClawHandState {
+  uint32 state = 1;
+  uint32 pos = 2;
+  uint32 temperature = 3;
+  uint32 finger_pos = 4;
+}

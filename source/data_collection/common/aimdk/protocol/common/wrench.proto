@@ -1,0 +1,22 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/vec3.proto";
+import public "aimdk/protocol/common/timestamp.proto";
+
+
+/**
+ * @brief Wrench (force and torque)
+ */
+message Wrench {
+  Vec3 force = 1;   // Force, unit: N
+  Vec3 torque = 2;  // Torque, unit: N*m
+}
+
+/**
+ * @brief Wrench with timestamp
+ */
+message WrenchStamped {
+  Timestamp timestamp = 1;
+  Wrench wrench = 2;
+}

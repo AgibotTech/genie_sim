@@ -1,0 +1,30 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/vec3.proto";
+import public "aimdk/protocol/common/quaternion.proto";
+import public "aimdk/protocol/common/rpy.proto";
+
+
+/**
+ * SE3 pose (quaternion representation)
+ */
+message SE3Pose {
+  Vec3 position = 1;           // 3D position, unit: meters
+  Quaternion orientation = 2;  // Quaternion
+}
+
+/**
+ * SE3 pose (RPY angle representation)
+ */
+message SE3RpyPose {
+  Vec3 position = 1;       // 3D position, unit: meters
+  Rpy rpy = 2;             // RPY angles
+}
+
+/**
+ * SE3 pose (matrix representation)
+ */
+ message SE3MatrixPose {
+  repeated double elements = 1;
+ }

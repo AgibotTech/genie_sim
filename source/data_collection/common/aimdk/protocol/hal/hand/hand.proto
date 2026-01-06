@@ -1,0 +1,34 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/header.proto";
+import public "aimdk/protocol/hal/hand/inspire.proto";
+import public "aimdk/protocol/hal/hand/jodell.proto";
+import public "aimdk/protocol/hal/hand/agi_claw.proto";
+
+
+message SingleHandState {
+  oneof hand {
+    InspireHand inspire = 1;              // Inspire hand
+    ClawHand claw = 2;                    // Jodell gripper hand
+    AgiClawHandState agi_claw_state = 3;  // AGI custom gripper state
+  }
+}
+
+message SingleHandCommand {
+  oneof hand {
+    InspireHand inspire = 1;              // Inspire hand
+    ClawHand claw = 2;                    // Jodell gripper hand
+    AgiClawHandCommand agi_claw_cmd = 3;  // AGI custom gripper command
+  }
+}
+
+message HandState {
+  SingleHandState left = 2;   // Left hand state
+  SingleHandState right = 3;  // Right hand state
+}
+
+message HandCommand {
+  SingleHandCommand left = 2;   // Left hand command
+  SingleHandCommand right = 3;  // Right hand command
+}

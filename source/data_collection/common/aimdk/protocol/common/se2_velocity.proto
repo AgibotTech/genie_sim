@@ -1,0 +1,13 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/vec2.proto";
+
+
+/**
+ * SE2 velocity
+ */
+message SE2Velocity {
+  Vec2 linear = 1;   // Linear velocity, unit: m/s
+  Vec2 angular = 2;  // Angular velocity, unit: rad/s
+}

@@ -1,0 +1,25 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+// Finger
+message Finger {
+  int32 thumb_pos_0 = 1;  // Thumb first joint
+  int32 thumb_pos_1 = 2;  // Thumb second joint
+  int32 index_pos = 3;    // Index finger
+  int32 middle_pos = 4;   // Middle finger
+  int32 ring_pos = 5;     // Ring finger
+  int32 pinky_pos = 6;    // Pinky finger
+}
+
+// Wrist
+message Wrist {
+  int32 x = 1;  // X axis
+  int32 y = 2;  // Y axis
+}
+
+// Inspire hand
+message InspireHand {
+  Finger finger = 1;  // Finger
+  Wrist wrist = 2;    // Wrist
+}

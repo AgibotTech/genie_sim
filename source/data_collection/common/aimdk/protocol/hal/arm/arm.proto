@@ -1,0 +1,69 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/se3_pose.proto";
+
+/**
+ * @brief Motion mode
+ */
+enum MoveMode {
+  MoveMode_ABS = 0;       // Absolute motion
+  MoveMode_INCR = 1;      // Relative motion
+  MoveMode_CONTINUE = 2;  // Continuous motion
+}
+
+/**
+ * @brief Optional parameters
+ */
+message OptionalCond {
+  int32 executingLineId = 1;
+}
+
+/**
+ * @brief LinearMove extended parameters
+ */
+message LinearMoveExt {
+  double acc = 1;
+  double tol = 2;
+  OptionalCond option_cond = 3;
+}
+
+/**
+ * @brief Request information for rpc LinearMove()
+ */
+message LinearMoveReq {
+  string robot_name = 1;
+  SE3RpyPose pose = 2;
+  MoveMode mode = 3;
+  bool is_block = 4;
+  double distance_frame = 5;
+  LinearMoveExt ext = 6;
+  bool ee_interpolation = 7;
+  repeated double goal_offset = 8;
+  repeated double path_constraint = 9;
+  bool offset_and_constraint_in_goal_frame = 10;
+  repeated string disable_collision_links = 11;
+  double motion_run_ratio = 12;
+  string gripper_action_timing = 13;
+  bool from_current_pose = 14;
+}
+
+/**
+ * @brief Response information for rpc LinearMove()
+ */
+message LinearMoveRsp {
+  int32 errcode = 1;
+  string errmsg = 2;
+}
+
+/**
+ * @brief Service provided by arm control module
+ */
+service ArmControlService {
+  /**
+   * @brief Execute linear end-effector motion.
+   * @param LinearMoveReq
+   * @return LinearMoveRsp
+   */
+  rpc linear_move(LinearMoveReq) returns (LinearMoveRsp);
+}

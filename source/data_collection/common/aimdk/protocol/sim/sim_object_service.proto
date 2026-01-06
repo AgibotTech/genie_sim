@@ -1,0 +1,65 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/se3_pose.proto";
+import public "aimdk/protocol/common/vec3.proto";
+
+message AddObjectReq {
+    string usd_path = 1;        // Object USD resource path
+    string prim_path = 2;       // Prim path where object is placed in the scene
+    string label_name = 3;      // Object label name
+    SE3RpyPose object_pose = 4; // Object placement pose
+    Vec3 object_scale = 5;      // Object scale
+    Color object_color = 6;
+    string object_material = 7;
+    double object_mass = 8;
+    bool add_particle = 9;
+    Vec3 particle_position = 10;
+    Vec3 particle_scale = 11;
+    Color particle_color = 12;
+    double static_friction = 13;//static friction coefficient of object
+    double dynamic_friction = 14;//Object dynamic friction coefficient
+    bool add_rigid_body = 15;
+    string model_type = 16;
+}
+message Color {
+    float r = 1;
+    float g = 2;
+    float b = 3;
+}
+message AddObjectRsp {
+    string prim_path = 1;
+    string label_name = 2;
+}
+message GetObjectPoseReq {
+    string prim_path = 1;
+}
+message GetObjectPoseRsp {
+    string prim_path = 1;
+    SE3RpyPose object_pose = 2;
+}
+
+message GetPartDofJointReq {
+    string prim_path = 1;
+    string part_name = 2;
+}
+
+message GetPartDofJointRsp {
+    string joint_name = 1;
+    double joint_position = 2;
+    double joint_velocity = 3;
+}
+message SetTargetPointReq {
+    Vec3 point_position = 1;
+}
+message SetTargetPointRsp {
+    string msg = 1;
+}
+
+
+service SimObjectService {
+    rpc add_object(AddObjectReq) returns(AddObjectRsp);
+    rpc get_object_pose(GetObjectPoseReq) returns(GetObjectPoseRsp);
+    rpc set_target_point(SetTargetPointReq) returns(SetTargetPointRsp);
+    rpc get_part_dof_joint(GetPartDofJointReq) returns(GetPartDofJointRsp);
+}

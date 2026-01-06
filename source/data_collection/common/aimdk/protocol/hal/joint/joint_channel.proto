@@ -1,0 +1,75 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/header.proto";
+import public "aimdk/protocol/common/joint.proto";
+import public "aimdk/protocol/common/se3_pose.proto";
+
+message JointStatesChannel {
+  /** Message header */
+  Header header = 1;
+
+  /**
+   * Joint states, including position, velocity, and torque
+   */
+  repeated JointState states = 2;
+}
+message LinkPose {
+    string link_name = 1;
+    SE3RpyPose link_pose = 2;
+}
+message IKStatus{
+    repeated string joint_names=1;
+    repeated double joint_positions=2;
+    repeated LinkPose link_poses=3;
+    bool isSuccess=4;
+}
+
+message JointCommandsChannel {
+  /** Message header */
+  Header header = 1;
+
+  /**
+   * Joint commands
+   */
+  repeated JointCommand commands = 2;
+}
+
+message GetJointReq {
+  string serial_no = 1;
+}
+message GetJointRsp {
+  repeated JointState states = 1;
+}
+message GetEEPoseReq {
+    bool is_right = 1;
+}
+message GetEEPoseRsp {
+    string prim_path = 1;
+    SE3RpyPose ee_pose = 2;
+}
+message GetIKStatusReq {
+    bool is_right = 1;
+    repeated SE3MatrixPose target_pose = 2;
+    bool ObsAvoid = 3;
+    bool output_link_pose = 4;
+}
+message GetIKStatusRsp {
+    repeated IKStatus IKStatus = 2;
+}
+
+
+message SetJointReq {
+  repeated JointCommand commands = 1;
+  bool is_trajectory = 2;
+}
+message SetJointRsp {
+  string errmsg = 1;
+}
+
+service JointControlService {
+  rpc get_joint_position(GetJointReq) returns(GetJointRsp);
+  rpc set_joint_position(SetJointReq) returns(SetJointRsp);
+  rpc get_ik_status(GetIKStatusReq) returns(GetIKStatusRsp);
+  rpc get_ee_pose(GetEEPoseReq) returns(GetEEPoseRsp);
+}

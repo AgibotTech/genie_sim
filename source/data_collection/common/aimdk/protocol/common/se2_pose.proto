@@ -1,0 +1,13 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/vec2.proto";
+
+
+/**
+ * SE2 pose
+ */
+message SE2Pose {
+  Vec2 position = 1;  // 2D position, unit: meters
+  double angle = 2;   // Angle, unit: radians
+}

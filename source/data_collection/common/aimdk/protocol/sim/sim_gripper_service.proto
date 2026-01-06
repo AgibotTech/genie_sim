@@ -1,0 +1,16 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/se3_pose.proto";
+
+message SetGripperStateReq {
+    string gripper_command = 1;
+    bool is_right = 2;
+    double opened_width = 3;
+}
+message SetGripperStateRsp {
+    string msg = 1;
+}
+service SimGripperService {
+    rpc set_gripper_state(SetGripperStateReq) returns(SetGripperStateRsp);
+}

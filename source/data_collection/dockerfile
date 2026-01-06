@@ -1,0 +1,31 @@
+# HOWTO use this
+# $ docker build -f ./dockerfile -t registry.agibot.com/genie-sim/open_source-data-collection:latest .
+
+FROM registry.agibot.com/genie-sim/open_source:latest
+
+ENV ACCEPT_EULA=Y
+ENV PRIVACY_CONSENT=Y
+ENV DEBIAN_FRONTEND=noninteractive
+
+# apt deps
+USER root
+
+RUN apt-get update && apt-get install -y ninja-build build-essential
+# pip install data collection requirements
+COPY ./requirements.txt /tmp
+RUN /isaac-sim/python.sh -m pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN /isaac-sim/python.sh -m pip install -r /tmp/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# install curobo
+RUN git clone https://github.com/NVlabs/curobo.git --depth 1 /tmp/curobo
+RUN cd /tmp && wget https://developer.download.nvidia.cn/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+RUN dpkg -i /tmp/cuda-keyring_1.1-1_all.deb
+RUN apt-get update
+RUN apt-get -y install cuda-toolkit-12-8
+# NOTICE!!! Default to RTX4090D that we use, do remember to change TORCH_CUDA_ARCH_LIST for your GPU model, see https://github.com/AgibotTech/genie_sim/issues/4
+ENV CUDA_HOME="/usr/local/cuda-12.8"
+ENV TORCH_CUDA_ARCH_LIST="8.9"
+RUN cd /tmp/curobo && /isaac-sim/python.sh -m pip install --no-build-isolation .[isaacsim] -i https://pypi.tuna.tsinghua.edu.cn/simple
+COPY ./config/curobo/assets/robot /isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/assets/
+COPY ./config/curobo/configs /isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/
+CMD ["bash"]

@@ -1,0 +1,13 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+/**
+ * @brief RPY angle representation
+ */
+message Rpy {
+  double rw = 1;
+  double rx = 2;  // Rotation angle around fixed X axis, unit: rad
+  double ry = 3;  // Rotation angle around fixed Y axis, unit: rad
+  double rz = 4;  // Rotation angle around fixed Z axis, unit: rad
+}

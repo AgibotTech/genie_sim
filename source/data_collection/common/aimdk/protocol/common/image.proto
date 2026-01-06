@@ -1,0 +1,22 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import "aimdk/protocol/common/timestamp.proto";
+
+
+/**
+ * @brief Image data format for video stream pushed to client
+ */
+message PubImageData {
+  // Frame height
+  int32 height = 1;
+
+  // Frame width
+  int32 width = 2;
+
+  // Timestamp
+  Timestamp timestamp = 3;
+
+  // Image data
+  bytes image_data = 4;
+}

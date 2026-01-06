@@ -1,0 +1,13 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/se3_pose.proto";
+
+
+/**
+ * QR pose
+ */
+message QRPose {
+  int32 qr_code = 1; // QR code value
+  SE3Pose pose = 2; // 6D pose
+}

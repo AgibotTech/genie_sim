@@ -1,0 +1,269 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/se3_pose.proto";
+import public "aimdk/protocol/common/joint.proto";
+
+/**
+ * @brief Label information
+ */
+message SemanticData {
+    string name = 2;
+    bytes data = 3;
+}
+message SemanticDict {
+    int32 label_id = 2;
+    string label_name = 3;
+}
+/**
+ * @brief Compressed image data
+ */
+message CamImage {
+  string format = 2;
+  bytes data = 3;
+}
+
+/**
+ * @brief Camera intrinsics
+ */
+message CamInfo {
+  int32 width = 1;
+  int32 height = 2;
+  float ppx = 3;
+  float ppy = 4;
+  float fx = 5;
+  float fy = 6;
+}
+
+message CameraRsp {
+    CamInfo camera_info = 1;
+    CamImage rgb_camera = 2;
+    CamImage depth_camera = 3;
+    SemanticData semantic_mask = 4;
+    repeated SemanticDict label_dict = 5;
+}
+
+message JointRsp {
+    repeated JointState left_arm = 1;
+    repeated JointState right_arm = 2;
+    repeated JointState body_arm = 3;
+
+}
+
+message ObjectRsp {
+    SE3RpyPose object_pose = 7;
+}
+message GripperRsp {
+    SE3RpyPose left_gripper = 1;
+    SE3RpyPose right_gripper = 2;
+
+}
+
+message CameraRequest{
+    bool render_depth = 1;
+    bool render_semantic = 2;
+    repeated string camera_prim_list = 3;
+    string additional_parameters = 4;
+}
+
+
+message GripperRequest{
+    bool left = 1;
+    bool right = 2;
+}
+
+
+/**
+ * @brief request
+ */
+message GetObservationReq {
+    bool isCam = 1;
+    CameraRequest CameraReq = 2;
+    bool isJoint = 3;
+    bool isPose = 4;
+    repeated string objectPrims = 5;
+    bool isGripper = 6;
+    GripperRequest gripperReq = 7;
+    bool startRecording = 8;
+    bool stopRecording = 9;
+    int32 fps = 10;
+    string task_name = 11;
+}
+/**
+ * @brief response
+ */
+message GetObservationRsp {
+    repeated CameraRsp camera = 1;
+    repeated ObjectRsp pose = 2;
+    JointRsp joint = 3;
+    GripperRsp gripper = 4;
+    string recordingState = 5;
+}
+
+message ResetReq{
+    bool reset = 1;
+}
+message ResetRsp{
+    string msg = 1;
+}
+message AttachReq{
+    repeated string obj_prims = 1;
+    bool is_right = 2;
+}
+message AttachRsp{
+    string msg = 1;
+}
+message DetachReq{
+    bool detach = 1;
+}
+message DetachRsp{
+    string msg = 1;
+}
+message RemoveObstacleReq {
+    repeated string obj_prims = 1;
+}
+message RemoveObstacleRsp {
+    string msg = 1;
+}
+message TaskStatusReq{
+    bool isSuccess = 1;
+    repeated int32 failStep =2;
+
+}
+message TaskStatusRsp{
+    string msg = 1;
+}
+
+message ExitReq{
+    bool exit = 1;
+}
+message ExitRsp{
+    string msg = 2;
+}
+
+message InitRobotReq{
+    string robot_cfg_file = 1;
+    string robot_usd_path = 2;
+    string scene_usd_path = 3;
+    SE3RpyPose robot_pose = 4;
+    string stand_type = 5;
+    float stand_size_x = 6;
+    float stand_size_y = 7;
+    repeated JointCommand joint_cmd=8;
+}
+message InitRobotRsp{
+    string msg = 1;
+}
+message AddCameraReq{
+    string camera_prim = 1;
+    SE3RpyPose camera_pose = 2;
+    float focus_length = 3;
+    float horizontal_aperture = 4;
+    float vertical_aperture = 5;
+    int32 width = 6;
+    int32 height = 7;
+    bool is_local = 8;
+}
+message AddCameraRsp{
+    string msg = 1;
+}
+message ObjectPose {
+    string prim_path = 1;
+    SE3RpyPose pose = 2;
+}
+message ObjectJoint {
+    string prim_path = 1;
+    repeated JointCommand joint_cmd = 2;
+}
+message SetObjectPoseReq {
+    repeated ObjectPose object_pose = 1;
+    repeated JointCommand joint_cmd = 2;
+    repeated ObjectJoint object_joint = 3;
+
+}
+message SetObjectPoseRsp{
+    string msg = 1;
+}
+message SetTrajectoryListReq {
+  repeated SE3RpyPose trajectory_point = 1;
+  bool is_block = 2;
+}
+message SetTrajectoryListRsp {
+  string msg = 1;
+}
+message SetFrameStateReq {
+    string frame_state = 1;
+}
+message SetFrameStateRsp{
+    string msg = 1;
+}
+message SetTaskMetricReq {
+    string metric = 1;
+}
+message SetTaskMetricRsp{
+    string msg = 1;
+}
+message MaterialInfo {
+    string object_prim = 1;
+    string material_name = 2;
+    string material_path = 3;
+    string label_name = 4;
+}
+message SetMaterailReq {
+    repeated MaterialInfo materials = 1;
+}
+message SetMaterialRsp {
+    string msg = 1;
+}
+message LightCfg {
+    string light_type = 1;
+    string light_prim = 2;
+    float light_temperature = 3;
+    float light_intensity = 4;
+    Rpy light_rotation = 5;
+    string light_texture = 6;
+}
+message SetLightReq {
+    repeated LightCfg lights = 1;
+}
+message SetLightRsp {
+    string msg = 1;
+}
+message StoreCurrentStateReq {
+    string playback_id = 1;
+}
+message StoreCurrentStateRsp {
+    string msg = 1;
+}
+message PlaybackReq {
+    string playback_id = 1;
+}
+message PlaybackRsp {
+    string msg = 1;
+}
+message GetCheckerStatusReq {
+    string checker = 1;
+}
+message GetCheckerStatusRsp {
+    string msg = 1;
+}
+service SimObservationService {
+    rpc get_observation(GetObservationReq) returns(GetObservationRsp);
+    rpc reset(ResetReq) returns(ResetRsp);
+    rpc attach_obj(AttachReq) returns(AttachRsp);
+    rpc detach_obj(DetachReq) returns(DetachRsp);
+    rpc task_status(TaskStatusReq) returns(TaskStatusRsp);
+    rpc exit(ExitReq) returns(ExitRsp);
+    rpc init_robot(InitRobotReq) returns(InitRobotRsp);
+    rpc add_camera(AddCameraReq) returns(AddCameraRsp);
+    rpc set_object_pose(SetObjectPoseReq) returns(SetObjectPoseRsp);
+    rpc set_trajectory_list(SetTrajectoryListReq) returns(SetTrajectoryListRsp);
+    rpc set_frame_state(SetFrameStateReq) returns(SetFrameStateRsp);
+    rpc set_task_metric(SetTaskMetricReq) returns(SetTaskMetricRsp);
+    rpc set_material(SetMaterailReq) returns(SetMaterialRsp);
+    rpc set_light(SetLightReq) returns(SetLightRsp);
+    rpc remove_objs_from_obstacle(RemoveObstacleReq) returns(RemoveObstacleRsp);
+    rpc store_current_state(StoreCurrentStateReq) returns(StoreCurrentStateRsp);
+    rpc playback(PlaybackReq) returns(PlaybackRsp);
+    rpc get_checker_status(GetCheckerStatusReq) returns(GetCheckerStatusRsp);
+}

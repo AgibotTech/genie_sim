@@ -1,0 +1,17 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/timestamp.proto";
+import public "aimdk/protocol/common/se3_pose.proto";
+import public "aimdk/protocol/common/twist.proto";
+
+
+/**
+ * odometry
+ */
+message Odometry {
+  Timestamp timestamp = 1;
+  string child_frame_id = 2;
+  SE3Pose pose = 3;
+  Twist twist = 4;
+}

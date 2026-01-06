@@ -1,0 +1,54 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import public "aimdk/protocol/common/timestamp.proto";
+import public "aimdk/protocol/common/header.proto";
+
+/**
+ * State definition
+ */
+enum CommonState {
+  CommonState_UNKNOWN = 0;      // Unknown
+  CommonState_SUCCESS = 1;      // Success
+  CommonState_FAILURE = 2;      // Failure
+  CommonState_ABORTED = 3;      // Aborted
+  CommonState_TIMEOUT = 4;      // Timeout
+  CommonState_INVALID = 5;      // Invalid
+  CommonState_IN_MANUAL = 6;    // Manual
+  CommonState_NOT_READY = 100;  // Not ready
+  CommonState_PENDING = 200;    // Pending
+  CommonState_CREATED = 300;    // Created
+  CommonState_RUNNING = 400;    // Running
+}
+
+/**
+ * Common request type
+ */
+message CommonRequest {
+  RequestHeader header = 1;
+}
+
+/**
+ * Common response type
+ */
+message CommonResponse {
+  ResponseHeader header = 1;
+  CommonState state = 2;
+}
+
+/**
+ * Common task request type
+ */
+message CommonTaskRequest {
+  RequestHeader header = 1;
+  uint64 task_id = 2;
+}
+
+/**
+ * Common task response type
+ */
+message CommonTaskResponse {
+  ResponseHeader header = 1;
+  uint64 task_id = 2;
+  CommonState state = 3;
+}

@@ -1,0 +1,31 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+
+/**
+ * @brief 2D pixel coordinates
+ */
+message Pixel {
+  // Pixel horizontal coordinate (u)
+  int32 u = 1;
+
+  // Pixel vertical coordinate (v)
+  int32 v = 2;
+}
+
+/**
+ * @brief 2D pixel pose
+ * @note Coordinate system illustration
+ *      +--------> u
+ *      | - (angle)
+ *      |   -
+ *      |     *
+ *    v V
+ */
+message PixelPose {
+  // 2D pixel coordinates
+  Pixel position = 1;
+
+  // Angle from u-axis to v-axis, unit: radians
+  double angle = 2;
+}

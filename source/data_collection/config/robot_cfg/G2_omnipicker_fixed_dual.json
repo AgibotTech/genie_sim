@@ -1,0 +1,202 @@
+{
+    "robot": {
+        "robot_name": "G2_omnipicker_fixed",
+        "base_prim_path": "/G2",
+        "arm_base_prim_path": "/G2/arm_base_link",
+        "arm": "dual",
+        "urdf_name": "/G2/G2_omnipicker_fixed_dual.urdf",
+        "robot_description": {
+            "right": "/G2/G2_omnipicker_fixed_right.yaml",
+            "left": "/G2/G2_omnipicker_fixed_left.yaml"
+        },
+        "robot_usd": "robot/G2_omnipicker/robot_fix.usda",
+        "initial_position": [],
+        "dof_nums": 7,
+        "joint_delta_time": 0.01,
+        "lock_joints": [
+            "idx01_body_joint1",
+            "idx02_body_joint2",
+            "idx03_body_joint3",
+            "idx04_body_joint4",
+            "idx05_body_joint5",
+            "idx11_head_joint1",
+            "idx12_head_joint2",
+            "idx13_head_joint3",
+            "idx72_gripper_r_inner_joint3",
+            "idx73_gripper_r_inner_joint4",
+            "idx81_gripper_r_outer_joint1",
+            "idx82_gripper_r_outer_joint3",
+            "idx83_gripper_r_outer_joint4",
+            "idx71_gripper_r_inner_joint1",
+            "idx32_gripper_l_inner_joint3",
+            "idx33_gripper_l_inner_joint4",
+            "idx41_gripper_l_outer_joint1",
+            "idx42_gripper_l_outer_joint3",
+            "idx43_gripper_l_outer_joint4",
+            "idx31_gripper_l_inner_joint1"
+        ],
+        "active_arm_joints": {
+            "left": [
+                "idx21_arm_l_joint1",
+                "idx22_arm_l_joint2",
+                "idx23_arm_l_joint3",
+                "idx24_arm_l_joint4",
+                "idx25_arm_l_joint5",
+                "idx26_arm_l_joint6",
+                "idx27_arm_l_joint7"
+            ],
+            "right": [
+                "idx61_arm_r_joint1",
+                "idx62_arm_r_joint2",
+                "idx63_arm_r_joint3",
+                "idx64_arm_r_joint4",
+                "idx65_arm_r_joint5",
+                "idx66_arm_r_joint6",
+                "idx67_arm_r_joint7"
+            ]
+        },
+        "init_joint_position": [
+            0.0,
+            0.0,
+            null,
+            null,
+            null,
+            null,
+            0.261,
+            null,
+            null,
+            null,
+            null,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.57,
+            0.174,
+            0.0,
+            1.57,
+            0.0,
+            -1.57,
+            0.0,
+            -1.57,
+            0.0,
+            -1.57,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ]
+    },
+    "camera": {
+        "/G2/head_link3/head_front_Camera": [
+            640,
+            400
+        ],
+        "/G2/gripper_r_base_link/Right_Camera": [
+            1280,
+            1056
+        ],
+        "/G2/gripper_l_base_link/Left_Camera": [
+            1280,
+            1056
+        ],
+        "/G2/head_link3/head_right_Camera": [
+            1920,
+            1536
+        ],
+        "/G2/head_link3/head_left_Camera": [
+            1920,
+            1536
+        ]
+
+    },
+    "gripper": {
+        "gripper_type": "angular",
+        "gripper_name": {
+            "left": "zhiyuan_gripper_omnipicker",
+            "right": "zhiyuan_gripper_omnipicker"
+        },
+        "max_force": 10,
+        "finger_names": {
+            "left": [
+                "idx41_gripper_l_outer_joint1",
+                "idx31_gripper_l_inner_joint1"
+            ],
+            "right": [
+                "idx81_gripper_r_outer_joint1",
+                "idx71_gripper_r_inner_joint1"
+            ]
+        },
+        "end_effector_name": {
+            "left": "gripper_l_center_link",
+            "right": "gripper_r_center_link"
+        },
+        "end_effector_prim_path": {
+            "left": "/G2/arm_l_end_link",
+            "right": "/G2/arm_r_end_link"
+        },
+        "end_effector_center_prim_path": {
+            "left": "/G2/gripper_l_center_link",
+            "right": "/G2/gripper_r_center_link"
+        },
+        "gripper_controll_joint": {
+            "left": "/G2/joints/idx41_gripper_l_outer_joint1",
+            "right": "/G2/joints/idx81_gripper_r_outer_joint1"
+        },
+        "opened_positions": {
+            "left": [
+                0.95,
+                0.95
+            ],
+            "right": [
+                0.95,
+                0.95
+            ]
+        },
+        "closed_velocities": {
+            "left": [
+                -5,
+                -5
+            ],
+            "right": [
+                -5,
+                -5
+            ]
+        }
+    },
+    "closed_positions": {
+        "left": [
+            0,
+            0
+        ],
+        "right": [
+            0,
+            0
+        ]
+    },
+    "curobo": {
+        "curobo_config_file": {
+            "right": "G2_omnipicker_fixed_dual.yml",
+            "left": "G2_omnipicker_fixed_left.yml"
+        },
+        "curobo_urdf_path": "G2",
+        "curobo_urdf_name": "G2/G2_omnipicker.urdf"
+    }
+}

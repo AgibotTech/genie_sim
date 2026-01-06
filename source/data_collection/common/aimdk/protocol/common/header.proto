@@ -1,0 +1,71 @@
+syntax = "proto3";
+package aimdk.protocol;
+
+import "aimdk/protocol/common/timestamp.proto";
+
+
+/**
+ * @brief Header for general messages
+ */
+message Header {
+  // sequence ID: consecutively increasing ID
+  uint32 seq = 1;
+
+  // timestamp
+  Timestamp timestamp = 2;
+
+  // Frame this data is associated with
+  string frame_id = 3;
+}
+
+/**
+ * @brief Header for RPC request
+ */
+message RequestHeader {
+  // timestamp
+  Timestamp timestamp = 1;
+}
+
+/**
+ * @brief Header for RPC response
+ */
+message ResponseHeader {
+  // Processing result
+  // - 0: success
+  // - non-zero: failure
+  uint64 code = 1;
+
+  // Processing result description
+  string msg  = 2;
+
+  // Timestamp
+  Timestamp timestamp = 3;
+}
+
+/**
+ * @brief Header for blockable RPC request
+ */
+message BlockableRequestHeader {
+  // Timestamp
+  Timestamp timestamp = 1;
+
+  // Whether to block the call (default: false)
+  bool blocked = 2;
+}
+
+message BlockableResponseHeader {
+  // Processing result
+  // - 0: success
+  // - non-zero: failure
+  uint64 code = 1;
+
+  // Processing result description
+  string msg  = 2;
+
+  // Timestamp
+  Timestamp timestamp = 3;
+
+  // RPC ID associated with the request. If non-blocking mode is set, this field can be used by the caller to periodically query the executor about the RPC execution status.
+  // This value must be maintained and set by the executor, default is zero (invalid).
+  uint64 id = 4;
+}
