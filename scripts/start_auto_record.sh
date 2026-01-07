@@ -16,7 +16,6 @@ source $PROJECT_ROOT/../record_env/bin/activate
 
 # Set default parameters
 OUTPUT_DIR="$PROJECT_ROOT/output/recording_data"
-FINAL_OUTPUT_DIR="$PROJECT_ROOT/output/recording_data"
 TIMEOUT=10
 
 echo "Configuration parameters:"
@@ -42,7 +41,6 @@ source /opt/ros/jazzy/setup.bash
 python3 "$(dirname "$0")/auto_record_and_extract.py" \
     --output_dir "$OUTPUT_DIR" \
     --timeout "$TIMEOUT" \
-    --final_output_dir "$FINAL_OUTPUT_DIR" \
     --delete_db3_after
 
 EXIT_CODE=$?

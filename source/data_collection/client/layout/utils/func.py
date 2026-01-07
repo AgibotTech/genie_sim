@@ -190,10 +190,7 @@ def create_grid(plane_width, plane_height, grid_size, blocked_zone=None):
     for x in np.arange(-plane_width / 2, plane_width / 2, grid_size):
         for y in np.arange(-plane_height / 2, plane_height / 2, grid_size):
             if blocked_zone is not None:
-                if (
-                    blocked_zone[0][0] <= x <= blocked_zone[0][1]
-                    and blocked_zone[1][0] <= y <= blocked_zone[1][1]
-                ):
+                if blocked_zone[0][0] <= x <= blocked_zone[0][1] and blocked_zone[1][0] <= y <= blocked_zone[1][1]:
                     continue
             grid_points.append((x, y))
     return grid_points
@@ -214,9 +211,7 @@ def filter_occupied_grids(grid_points, placed_objects):
 
     for obj in placed_objects:
         obj_poly = Polygon(obj[1])  # Get polygon of placed object
-        available_points = [
-            point for point in available_points if not obj_poly.contains(Point(point))
-        ]
+        available_points = [point for point in available_points if not obj_poly.contains(Point(point))]
 
     return available_points
 

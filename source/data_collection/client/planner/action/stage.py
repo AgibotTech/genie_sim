@@ -246,9 +246,7 @@ class Stage(ABC):
                 element = obj.elements[type][action_mapped]
                 return element, "default"
 
-            primitive = (
-                stage[type]["primitive"] if stage[type]["primitive"] is not None else "default"
-            )
+            primitive = stage[type]["primitive"] if stage[type]["primitive"] is not None else "default"
             if primitive != "default" or (action_mapped == "grasp" and type == "passive"):
                 if action_mapped not in obj.elements[type]:
                     logger.info("No %s element for %s" % (action_mapped, obj.name))
@@ -319,9 +317,7 @@ class Stage(ABC):
                     transform_world,
                     motion_type,
                 ]
-                target_gripper_pose = solve_target_gripper_pose(
-                    goal_datapack, objects, action_extra_params
-                )
+                target_gripper_pose = solve_target_gripper_pose(goal_datapack, objects, action_extra_params)
 
             last_statement = {
                 "objects": copy.deepcopy(objects),
@@ -369,9 +365,7 @@ class Stage(ABC):
         return gripper2obj
 
     def check_completion(self, objects, robot=None):
-        assert (
-            self.active_action_sequence is not None
-        ), f"Active action for stage {self.action_type} is None"
+        assert self.active_action_sequence is not None, f"Active action for stage {self.action_type} is None"
         goal_datapack = [
             self.active_obj_id,
             self.passive_obj_id,

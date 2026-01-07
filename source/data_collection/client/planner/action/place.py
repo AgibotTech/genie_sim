@@ -115,9 +115,7 @@ class PlaceStage(Stage):
                         upright_mask = target_gripper_poses[:, 2, 0] > 0.0
                 target_gripper_poses = target_gripper_poses[upright_mask]
             if not target_gripper_poses.shape[0]:
-                logger.warning(
-                    f"{self.action_type}: No target_gripper_poses can pass upright filter"
-                )
+                logger.warning(f"{self.action_type}: No target_gripper_poses can pass upright filter")
                 continue
 
             # downsample target_gripper_poses
@@ -150,9 +148,7 @@ class PlaceStage(Stage):
             ik_link_poses = ik_info["link_poses"][ik_success]
             if len(target_gripper_poses_pass_ik) == 0:
                 if self.extra_params.get("use_near_point", False):
-                    logger.warning(
-                        f"{self.action_type}: No target_obj_pose can pass isaac curobo IK"
-                    )
+                    logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac curobo IK")
                     logger.info("-" * 20 + " use near point " + "-" * 20)
                     if "fix_pose" in self.passive_obj_id:
                         target_obj_poses = get_aligned_fix_pose(active_obj, passive_obj, N=12)
@@ -204,12 +200,8 @@ class PlaceStage(Stage):
             # filter by pre place pose
             pre_insert_pose_canonical = None
             if self.use_pre_place:
-                target_obj_pose = (
-                    target_gripper_poses_pass_ik @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
-                )
-                target_obj_pose_canonical = (
-                    np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose
-                )
+                target_obj_pose = target_gripper_poses_pass_ik @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
+                target_obj_pose_canonical = np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose
                 self.pre_insert_offset = self.extra_params.get("pre_insert_offset", 0.1)
                 # Calculate direction perpendicular to placement point
                 # We assume that the passive object has only one placement direction, and all passive_elements have the same direction
@@ -265,9 +257,7 @@ class PlaceStage(Stage):
                     for try_time in range(MAX_TRY_TIMES):
                         logger.info(f"try {try_time} times to add noise to pre insert pose")
                         if try_time == MAX_TRY_TIMES - 1:
-                            logger.error(
-                                "try to add noise to pre insert pose failed, use original pose"
-                            )
+                            logger.error("try to add noise to pre insert pose failed, use original pose")
                             position_noise = 0
                             rotation_noise = 0
                         pre_insert_pose_canonical = add_noise(
@@ -277,9 +267,7 @@ class PlaceStage(Stage):
                             position_noise,
                             rotation_noise,
                         )
-                        pre_insert_obj_pose = (
-                            anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
-                        )
+                        pre_insert_obj_pose = anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
                         pre_insert_gripper_pose = pre_insert_obj_pose @ gripper2obj[np.newaxis, ...]
                         ik_success_pre, ik_info_pre = robot.solve_ik(
                             pre_insert_gripper_pose,
@@ -312,17 +300,12 @@ class PlaceStage(Stage):
                     hand_name=hand_name,
                 )
             else:
-                idx_sorted = sorted_by_joint_pos_dist(
-                    robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score
-                )
+                idx_sorted = sorted_by_joint_pos_dist(robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score)
 
             target_obj_pose_sorted = (
-                target_gripper_poses_pass_ik[idx_sorted]
-                @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
+                target_gripper_poses_pass_ik[idx_sorted] @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
             )
-            target_obj_pose_canonical_sorted = (
-                np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose_sorted
-            )
+            target_obj_pose_canonical_sorted = np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose_sorted
             if pre_insert_pose_canonical is not None:
                 pre_insert_pose_canonical = pre_insert_pose_canonical[idx_sorted]
         result = []
@@ -351,9 +334,7 @@ class PlaceStage(Stage):
         )  # place object without collision check, e.g., place on a surface
         palce_transform_up = np.eye(4)
         palce_transform_up[:3, 3] = self.place_transform_up
-        action_sequence.add_action(
-            Action(target_pose_canonical, None, palce_transform_up, "AvoidObs")
-        )
+        action_sequence.add_action(Action(target_pose_canonical, None, palce_transform_up, "AvoidObs"))
         if post_place_action is not None:
             for post_action in post_place_action:
                 post_place_gripper_cmd = post_action.get("gripper_cmd", None)
@@ -372,13 +353,9 @@ class PlaceStage(Stage):
                 )  # in passive object local frame
                 target_pose_canonical = target_pose_canonical.copy()
                 target_pose_canonical[:3, 3] += (
-                    post_place_direction
-                    * post_place_distance
-                    / np.linalg.norm(post_place_direction)
+                    post_place_direction * post_place_distance / np.linalg.norm(post_place_direction)
                 )
-                action_sequence.add_action(
-                    Action(target_pose_canonical, gripper_cmd, np.eye(4), "Simple")
-                )
+                action_sequence.add_action(Action(target_pose_canonical, gripper_cmd, np.eye(4), "Simple"))
         else:
             action_sequence.add_action(Action(None, gripper_cmd, np.eye(4), "Simple"))
         return action_sequence

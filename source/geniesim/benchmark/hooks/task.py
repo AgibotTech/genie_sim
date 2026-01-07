@@ -53,18 +53,6 @@ class TaskHook(HookBase):
             env.robot.client.set_joint_positions(init_joint_state, False)
 
         task_name = env.init_task_config["task"]
-        if task_name == "gm_task_pickplace":
-            instruction = env.task.get_instruction()
-            env.update_place_holder("placeholder_str1", instruction[1])
-            env.update_place_holder("placeholder_str2", instruction[2])
-        elif task_name == "gm_task_pickplace_abs_pose":
-            instruction = env.task.get_instruction()
-            env.update_place_holder("placeholder_str1", instruction[1])
-            env.update_place_holder("placeholder_str2", instruction[2])
-        elif task_name == "gm_task_pickplace_color":
-            instruction = env.task.get_instruction()
-            env.update_place_holder("placeholder_str1", instruction[1])
-            env.update_place_holder("placeholder_str2", instruction[2])
 
     def step_callback(self, env, action):
         pass

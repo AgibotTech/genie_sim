@@ -14,7 +14,6 @@ mkdir -p ~/docker/isaac-sim/logs
 mkdir -p ~/docker/isaac-sim/pkg
 sudo chown -R 1234:1234 ~/docker/isaac-sim
 
-xhost +local:
 docker run -it --name genie_sim_benchmark \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
@@ -24,7 +23,6 @@ docker run -it --name genie_sim_benchmark \
     --privileged \
     -e "ACCEPT_EULA=Y" \
     -e "PRIVACY_CONSENT=Y" \
-    -e DISPLAY \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
     -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
     -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \

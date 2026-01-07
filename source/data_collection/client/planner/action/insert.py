@@ -65,18 +65,14 @@ class InsertStage(PlaceStage):
         place_transform_up[:3, 3] = self.place_transform_up
 
         if post_place_action is not None:
-            action_sequence.add_action(
-                Action(target_pose_canonical, None, place_transform_up, "Simple")
-            )
+            action_sequence.add_action(Action(target_pose_canonical, None, place_transform_up, "Simple"))
             post_place_distance = post_place_action.get("distance", 0.02)
             post_place_direction = np.array(post_place_action.get("direction", [0, 0, 1]))
             target_pose_canonical = target_pose_canonical.copy()
             target_pose_canonical[:3, 3] += (
                 post_place_direction * post_place_distance / np.linalg.norm(post_place_direction)
             )
-            action_sequence.add_action(
-                Action(target_pose_canonical, gripper_cmd, np.eye(4), "simple")
-            )
+            action_sequence.add_action(Action(target_pose_canonical, gripper_cmd, np.eye(4), "simple"))
         else:
             action_sequence.add_action(
                 Action(

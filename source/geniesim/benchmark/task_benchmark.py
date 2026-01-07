@@ -74,7 +74,7 @@ class TaskBenchmark(object):
         return tasks
 
     def config_task(self):
-        if self.args.model_arc in ["pi", "fast", "gm", "go", "gm_new", "fast_new"]:
+        if self.args.model_arc in ["pi"]:
             self.task_mode = "infer"
         else:
             self.task_mode = "empty"
@@ -91,6 +91,15 @@ class TaskBenchmark(object):
             self.task_config["sub_task_name"] = self.args.sub_task_name
             self.instruction = self.task_config.get("instruction", "")
             logger.info(f"sub_task_name: {self.args.sub_task_name}")
+
+            # Update api_core.sub_task_name and republish to ROS topic
+            if hasattr(self.api_core, "sub_task_name"):
+                self.api_core.sub_task_name = self.args.sub_task_name
+                # Republish sub_task_name if ROS node is available
+                if hasattr(self.api_core, "benchmark_ros_node") and self.api_core.benchmark_ros_node is not None:
+                    if hasattr(self.api_core.benchmark_ros_node, "set_sub_task_name"):
+                        self.api_core.benchmark_ros_node.set_sub_task_name(self.args.sub_task_name)
+                        logger.info(f"Republished sub_task_name to ROS: {self.args.sub_task_name}")
 
             task_generator = TaskGenerator(self.task_config)
             task_folder = os.path.join(
@@ -187,46 +196,6 @@ class TaskBenchmark(object):
                 host_ip=self.args.infer_host,
                 port=self.args.infer_port,
             )
-        elif self.args.model_arc == "fast":
-            from geniesim.benchmark.policy.fastpolicy import FastPolicy
-
-            self.policy = FastPolicy(
-                task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
-            )
-        elif self.args.model_arc == "fast_new":
-            from geniesim.benchmark.policy.fastpolicy_new import FastPolicyNew
-
-            self.policy = FastPolicyNew(
-                task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
-            )
-        elif self.args.model_arc == "gm":
-            from geniesim.benchmark.policy.gmpolicy import GmPolicy
-
-            self.policy = GmPolicy(
-                task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
-            )
-        elif self.args.model_arc == "gm_new":
-            from geniesim.benchmark.policy.gmpolicy_new import GmPolicyNew
-
-            self.policy = GmPolicyNew(
-                task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
-            )
-        elif self.args.model_arc == "go":
-            from geniesim.benchmark.policy.gopolicy import GoPolicy
-
-            self.policy = GoPolicy(
-                task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
-            )
         elif self.args.model_arc == "":
             from geniesim.benchmark.policy.base import BasePolicy
 
@@ -235,10 +204,6 @@ class TaskBenchmark(object):
             )
         elif self.args.policy_class == "DemoPolicy":
             self.policy = DemoPolicy(task_name=self.args.task_name)
-        elif self.args.policy_class == "BaselinePolicy":
-            from geniesim.benchmark.policy.baselinepolicy import BaselinePolicy
-
-            self.policy = BaselinePolicy(task_name=self.args.task_name)
         else:
 
             if self.args.policy_class == "DemoPolicy":
@@ -301,26 +266,6 @@ class TaskBenchmark(object):
             from geniesim.benchmark.envs.pi_env import PiEnv
 
             self.env = PiEnv(self.api_core, episode_file, self.task_config)
-        elif self.args.model_arc == "fast":
-            from geniesim.benchmark.envs.fast_env import FastEnv
-
-            self.env = FastEnv(self.api_core, episode_file, self.task_config)
-        elif self.args.model_arc == "fast_new":
-            from geniesim.benchmark.envs.fast_env_new import FastEnvNew
-
-            self.env = FastEnvNew(self.api_core, episode_file, self.task_config)
-        elif self.args.model_arc == "gm":
-            from geniesim.benchmark.envs.gm_env import GmEnv
-
-            self.env = GmEnv(self.api_core, episode_file, self.task_config)
-        elif self.args.model_arc == "gm_new":
-            from geniesim.benchmark.envs.gm_env_new import GmEnvNew
-
-            self.env = GmEnvNew(self.api_core, episode_file, self.task_config)
-        elif self.args.model_arc == "go":
-            from geniesim.benchmark.envs.go_env import GoEnv
-
-            self.env = GoEnv(self.api_core, episode_file, self.task_config)
         elif self.args.model_arc == "":
             from geniesim.benchmark.envs.dummy_env import DummyEnv
 

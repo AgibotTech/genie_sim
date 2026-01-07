@@ -14,8 +14,7 @@ from isaacsim.robot_motion.motion_generation import (
 class KinematicsSolver:
     def __init__(self, robot_description_path, urdf_path, end_effector_name, articulation):
         current_directory = (
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            + "/config/robot_cfg"
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "/config/robot_cfg"
         )
         self._kinematics_solver = LulaKinematicsSolver(
             robot_description_path=current_directory + robot_description_path,

@@ -32,9 +32,7 @@ def publish_boundingbox2d_loose(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -92,9 +90,7 @@ def publish_boundingbox2d_tight(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -115,9 +111,7 @@ def publish_boundingbox3d(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -139,9 +133,7 @@ def publish_rgb(camera: Camera, freq: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
     return gate_path
@@ -222,9 +214,7 @@ def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
     node_namespace = ""
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        sd.SensorType.DistanceToImagePlane.name
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
 
     writer = rep.writers.get(rv + "ROS2PublishPointCloud")
     writer.initialize(
@@ -235,9 +225,7 @@ def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -249,9 +237,7 @@ def publish_depth(camera: Camera, freq: int, topic=""):
     node_namespace = ""
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
-        sd.SensorType.DistanceToImagePlane.name
-    )
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
     writer = rep.writers.get(rv + "ROS2PublishImage")
     writer.initialize(
         frameId=frame_id,
@@ -261,8 +247,6 @@ def publish_depth(camera: Camera, freq: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
-        rv + "IsaacSimulationGate", render_product
-    )
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
     return gate_path

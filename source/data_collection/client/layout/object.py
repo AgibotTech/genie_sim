@@ -135,9 +135,7 @@ class OmniObject:
                 object_dir_base_name,
                 "interaction.json",
             )
-            assert os.path.exists(
-                interaction_label_file
-            ), f"interaction.json not found in {interaction_label_file}"
+            assert os.path.exists(interaction_label_file), f"interaction.json not found in {interaction_label_file}"
             interaction_data = json.load(open(interaction_label_file))
             interaction_info = interaction_data["interaction"]
         if object_id is not None:
@@ -237,23 +235,16 @@ class OmniObject:
                                 rotation = grasp_group_array[:, 4 : 4 + 9]
                                 translation = grasp_group_array[:, 4 + 9 : 4 + 9 + 3]
                                 width = grasp_group_array[:, 1]
-                                grasp_data["grasp_pose"] = np.tile(
-                                    np.eye(4), (grasp_group_array.shape[0], 1, 1)
-                                )
+                                grasp_data["grasp_pose"] = np.tile(np.eye(4), (grasp_group_array.shape[0], 1, 1))
                                 grasp_data["grasp_pose"][:, :3, :3] = rotation.reshape(-1, 3, 3)
                                 grasp_data["grasp_pose"][:, :3, 3] = translation
                                 grasp_data["width"] = width
                                 # scale the pose
                                 if scale != 1.0:
-                                    grasp_data["grasp_pose"][:, :3, 3] = (
-                                        grasp_data["grasp_pose"][:, :3, 3] * scale
-                                    )
+                                    grasp_data["grasp_pose"][:, :3, 3] = grasp_data["grasp_pose"][:, :3, 3] * scale
                                     grasp_data["width"] = grasp_data["width"] * scale
 
-                                logger.info(
-                                    "Grasp num after NMS: %d/%d"
-                                    % (grasp_data["grasp_pose"].shape[0], N_grasp)
-                                )
+                                logger.info("Grasp num after NMS: %d/%d" % (grasp_data["grasp_pose"].shape[0], N_grasp))
 
                             action_info[grasp_part] = grasp_data
 

@@ -27,9 +27,7 @@ except Exception:
     torch = None
 
 
-def simplify_obstacles_from_stage(
-    world_config, max_faces=1000, min_faces=50, usd_path=None, save=False
-):
+def simplify_obstacles_from_stage(world_config, max_faces=1000, min_faces=50, usd_path=None, save=False):
     if not world_config.mesh:
         return world_config
 

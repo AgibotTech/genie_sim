@@ -243,9 +243,7 @@ def get_aligned_pose(active_obj, passive_obj, distance=0.01, N=1):
                 p_cons,
             )
         else:
-            R = calculate_rotation_matrix(
-                active_obj_world["direction"], passive_obj_world["direction"]
-            )
+            R = calculate_rotation_matrix(active_obj_world["direction"], passive_obj_world["direction"])
     except Exception:
         R = calculate_rotation_matrix(active_obj_world["direction"], passive_obj_world["direction"])
     T = passive_obj_world["xyz_end"] - R @ active_obj_world["xyz_start"]

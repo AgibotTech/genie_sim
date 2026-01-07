@@ -50,6 +50,7 @@
 import numpy as np
 import warp as wp
 
+
 def truncated_absolute_normal(
     mean=0.15,
     std=0.1,
@@ -69,11 +70,7 @@ def truncated_absolute_normal(
 
 def get_random_parameters(noise_type):
     if noise_type == "gaussian":
-        return {
-            "sigma": truncated_absolute_normal(
-                mean=0.15, std=0.08, lower=0.1, upper=0.4, max_attempts=10000
-            )
-        }
+        return {"sigma": truncated_absolute_normal(mean=0.15, std=0.08, lower=0.1, upper=0.4, max_attempts=10000)}
     elif noise_type == "salt_pepper":
         prob = np.random.uniform(0.002, 0.02)
         return {"salt_prob": prob, "pepper_prob": prob}
@@ -264,15 +261,9 @@ def image_sensor_noise_warp(
     read_noise_b = wp.randn(state_b2) * read_noise
 
     # Combine both noise sources
-    data_out[i, j, 0] = wp.uint8(
-        wp.clamp((val_r + shot_noise_r + read_noise_r) * 255.0, 0.0, 255.0)
-    )
-    data_out[i, j, 1] = wp.uint8(
-        wp.clamp((val_g + shot_noise_g + read_noise_g) * 255.0, 0.0, 255.0)
-    )
-    data_out[i, j, 2] = wp.uint8(
-        wp.clamp((val_b + shot_noise_b + read_noise_b) * 255.0, 0.0, 255.0)
-    )
+    data_out[i, j, 0] = wp.uint8(wp.clamp((val_r + shot_noise_r + read_noise_r) * 255.0, 0.0, 255.0))
+    data_out[i, j, 1] = wp.uint8(wp.clamp((val_g + shot_noise_g + read_noise_g) * 255.0, 0.0, 255.0))
+    data_out[i, j, 2] = wp.uint8(wp.clamp((val_b + shot_noise_b + read_noise_b) * 255.0, 0.0, 255.0))
 
 
 @wp.kernel

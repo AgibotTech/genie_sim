@@ -161,9 +161,7 @@ class UIBuilder:
             target_world = XFormPrim(
                 f"{self.robot_prim_path}/target",
             )
-            target_world.set_local_pose(
-                translation=self._followingPos, orientation=self._followingOrientation
-            )
+            target_world.set_local_pose(translation=self._followingPos, orientation=self._followingOrientation)
             if self.arm_type == "dual":
                 key = self.end_effector_name["left"]
                 if isRight:
@@ -213,12 +211,8 @@ class UIBuilder:
             self.kinematics_solver[key]._kinematics_solver.set_robot_base_pose(
                 robot_base_translation, robot_base_orientation
             )
-            return self.kinematics_solver[
-                key
-            ]._articulation_kinematics_solver.compute_end_effector_pose()
-        self.kinematics_solver._kinematics_solver.set_robot_base_pose(
-            robot_base_translation, robot_base_orientation
-        )
+            return self.kinematics_solver[key]._articulation_kinematics_solver.compute_end_effector_pose()
+        self.kinematics_solver._kinematics_solver.set_robot_base_pose(robot_base_translation, robot_base_orientation)
         return self.kinematics_solver._articulation_kinematics_solver.compute_end_effector_pose()
 
     def _get_ik_status(self, target_position, target_orientation, isRight):
@@ -230,19 +224,15 @@ class UIBuilder:
             self.kinematics_solver[key]._kinematics_solver.set_robot_base_pose(
                 robot_base_translation, robot_base_orientation
             )
-            actions, success = self.kinematics_solver[
-                key
-            ]._articulation_kinematics_solver.compute_inverse_kinematics(
+            actions, success = self.kinematics_solver[key]._articulation_kinematics_solver.compute_inverse_kinematics(
                 target_position, target_orientation
             )
         else:
             self.kinematics_solver._kinematics_solver.set_robot_base_pose(
                 robot_base_translation, robot_base_orientation
             )
-            actions, success = (
-                self.kinematics_solver._articulation_kinematics_solver.compute_inverse_kinematics(
-                    target_position, target_orientation
-                )
+            actions, success = self.kinematics_solver._articulation_kinematics_solver.compute_inverse_kinematics(
+                target_position, target_orientation
             )
         return success, actions
 
@@ -295,12 +285,8 @@ class UIBuilder:
             self.reached = True
             logger.info("IK not success")
             return
-        target_arm_positions = self._get_ik_status(target_position, target_orientation, is_right)[
-            1
-        ].joint_positions
-        self.idx_list = self._get_ik_status(target_position, target_orientation, is_right)[
-            1
-        ].joint_indices
+        target_arm_positions = self._get_ik_status(target_position, target_orientation, is_right)[1].joint_positions
+        self.idx_list = self._get_ik_status(target_position, target_orientation, is_right)[1].joint_indices
         current_arm_positions = self.articulation.get_joint_positions(joint_indices=self.idx_list)
 
         def lerp(start, end, t):
@@ -335,21 +321,15 @@ class UIBuilder:
                     position = lerp(current_position, target_position, t)
                     rotation = slerp(current_rotation, target_orientation, t)
                     issuccess, arm_position = self._get_ik_status(position, rotation, is_right)
-                    joint_distance = np.linalg.norm(
-                        arm_position.joint_positions - current_arm_positions
-                    )
+                    joint_distance = np.linalg.norm(arm_position.joint_positions - current_arm_positions)
                     if joint_distance < 1:
                         self.cmd_list.append(arm_position.joint_positions)
                         current_arm_positions = arm_position.joint_positions
         else:
-            cmd_list = self.ruckig_controller.caculate_trajectory(
-                current_arm_positions, target_arm_positions
-            )
+            cmd_list = self.ruckig_controller.caculate_trajectory(current_arm_positions, target_arm_positions)
             distance = np.linalg.norm(target_position - current_position)
             for position in cmd_list:
-                joint_distance = np.linalg.norm(
-                    np.array(current_arm_positions) - np.array(position)
-                )
+                joint_distance = np.linalg.norm(np.array(current_arm_positions) - np.array(position))
                 current_arm_positions = position
                 self.cmd_list.append(position)
         self.cmd_idx = 0
@@ -405,14 +385,10 @@ class UIBuilder:
                     if self.arm_type == "dual":
                         for effector_key, value in self.end_effector_name.items():
                             if effector_key == "left":
-                                current_position, rotation_matrix = self._get_ee_pose(
-                                    False, is_local=True
-                                )
+                                current_position, rotation_matrix = self._get_ee_pose(False, is_local=True)
                             else:
 
-                                current_position, rotation_matrix = self._get_ee_pose(
-                                    True, is_local=True
-                                )
+                                current_position, rotation_matrix = self._get_ee_pose(True, is_local=True)
                             self.curoboMotion.get(key).init_ee_pose[value] = {
                                 "position": current_position,
                                 "orientation": mat2quat_wxyz(rotation_matrix),

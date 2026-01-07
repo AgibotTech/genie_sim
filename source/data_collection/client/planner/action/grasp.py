@@ -79,9 +79,7 @@ class PickStage(Stage):
                 local_y = grasp_poses_canonical[i][:3, 1]
                 target_y = np.array([0, 1, 0]) if arm == "right" else np.array([0, -1, 0])
                 calc_rotation_matrix = calculate_rotation_matrix2(local_y, target_y)
-                grasp_poses_canonical[i][:3, :3] = (
-                    calc_rotation_matrix @ grasp_poses_canonical[i][:3, :3]
-                )
+                grasp_poses_canonical[i][:3, :3] = calc_rotation_matrix @ grasp_poses_canonical[i][:3, :3]
 
         if flip_grasp:
             grasp_poses_canonical_flip = []
@@ -90,9 +88,7 @@ class PickStage(Stage):
                     rotate_along_axis(grasp_poses_canonical[_i], 180, "z", use_local=True)
                 )
             grasp_poses_canonical_flip = np.stack(grasp_poses_canonical_flip)
-            grasp_poses_canonical = np.concatenate(
-                [grasp_poses_canonical, grasp_poses_canonical_flip], axis=0
-            )
+            grasp_poses_canonical = np.concatenate([grasp_poses_canonical, grasp_poses_canonical_flip], axis=0)
             grasp_widths = np.concatenate([grasp_widths, grasp_widths], axis=0)
 
         random_grasp_pose = self.extra_params.get("random_grasp_pose", False)
@@ -108,9 +104,7 @@ class PickStage(Stage):
             )
 
         if self.extra_params.get("humanlike_filter", False):
-            grasp_poses, grasp_widths, _ = filter_grasp_poses_with_humanlike_posture(
-                grasp_poses, grasp_widths
-            )
+            grasp_poses, grasp_widths, _ = filter_grasp_poses_with_humanlike_posture(grasp_poses, grasp_widths)
 
         if disable_upside_down:
             if "omnipicker" in robot.robot_cfg:
@@ -127,9 +121,7 @@ class PickStage(Stage):
             )
 
         if len(grasp_poses) == 0:
-            logger.warning(
-                f"{self.action_type}: No grasp_gripper_pose can pass gripper y direction filter"
-            )
+            logger.warning(f"{self.action_type}: No grasp_gripper_pose can pass gripper y direction filter")
             return []
 
         # Downsample if there are too many grasp points
@@ -142,9 +134,7 @@ class PickStage(Stage):
         grasp_rotate[:, :3, 3] = np.array([0, 0, 0])
         transport_vector = grasp_rotate @ np.array([0, 0, 1, 0])[:, np.newaxis]
         transport_vector = transport_vector[:, :3, 0]
-        transport_vector = transport_vector / np.linalg.norm(
-            transport_vector, axis=1, keepdims=True
-        )
+        transport_vector = transport_vector / np.linalg.norm(transport_vector, axis=1, keepdims=True)
 
         grasp_poses[:, :3, 3] = grasp_poses[:, :3, 3] + transport_vector * grasp_offset
         object_pose_inverse = np.linalg.inv(objects[self.passive_obj_id].obj_pose)
@@ -190,8 +180,7 @@ class PickStage(Stage):
                 success_poses = random_poses[ik_success]
                 if success_poses.shape[0] > 0:
                     gripper2obj += (
-                        np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...]
-                        @ success_poses
+                        np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...] @ success_poses
                     ).tolist()
                     ik_joint_positions += ik_info["joint_positions"][ik_success].tolist()
                     ik_joint_names += ik_info["joint_names"][ik_success].tolist()
@@ -203,9 +192,7 @@ class PickStage(Stage):
                 for ik_joint_position, ik_joint_name in zip(ik_joint_positions, ik_joint_names):
                     temp_target_joint_positions = []
                     for joint_name in joint_names:
-                        temp_target_joint_positions.append(
-                            ik_joint_position[list(ik_joint_name).index(joint_name)]
-                        )
+                        temp_target_joint_positions.append(ik_joint_position[list(ik_joint_name).index(joint_name)])
                     target_joint_positions.append(np.array(temp_target_joint_positions))
                 target_joint_positions = np.array(target_joint_positions)
                 cur_joint_states = robot.client.get_joint_positions().states
@@ -214,9 +201,7 @@ class PickStage(Stage):
                     if key.name in joint_names:
                         cur_joint_positions.append(key.position)
                 cur_joint_positions = np.array(cur_joint_positions)
-                joint_pos_dist = np.linalg.norm(
-                    target_joint_positions - cur_joint_positions[np.newaxis, :], axis=1
-                )
+                joint_pos_dist = np.linalg.norm(target_joint_positions - cur_joint_positions[np.newaxis, :], axis=1)
                 dist_mean = np.mean(joint_pos_dist)
                 dist_std = np.std(joint_pos_dist)
                 joint_pos_dist = (joint_pos_dist - dist_mean) / dist_std
@@ -244,9 +229,7 @@ class PickStage(Stage):
             and not error_type
             and next_active_stage.action_type not in ["pick", "grasp", "hook", "rotate"]
         ):
-            place_with_origin_orientation = next_active_stage.extra_params.get(
-                "place_with_origin_orientation", True
-            )
+            place_with_origin_orientation = next_active_stage.extra_params.get("place_with_origin_orientation", True)
             single_obj = next_active_stage.active_obj_id == next_active_stage.passive_obj_id
 
             next_active_obj = objects[next_active_stage.active_obj_id]
@@ -256,10 +239,7 @@ class PickStage(Stage):
             ]
             active_elements = next_active_stage.active_element
 
-            if (
-                next_active_stage.action_type in PLACE_LIKE_ACTIONS
-                and place_with_origin_orientation
-            ):
+            if next_active_stage.action_type in PLACE_LIKE_ACTIONS and place_with_origin_orientation:
                 obj_pose = next_active_obj.obj_pose
                 direction = np.array([0, 0, -1])
                 xyz_canonical = np.array([0, 0, 0])
@@ -290,9 +270,7 @@ class PickStage(Stage):
                             next_active_obj.angle_sample_num,
                         )
                         N_align = min(N_align, 12)
-                        target_obj_poses = get_aligned_fix_pose(
-                            next_active_obj, next_passive_obj, N=N_align
-                        )
+                        target_obj_poses = get_aligned_fix_pose(next_active_obj, next_passive_obj, N=N_align)
                     else:
                         next_passive_obj.update_aligned_info(next_passive_element)
                         # N_align equals the least common multiple of next_passive_obj.angle_sample_num and next_active_obj.angle_sample_num
@@ -301,9 +279,7 @@ class PickStage(Stage):
                             next_active_obj.angle_sample_num,
                         )
                         N_align = min(N_align, 12)
-                        target_obj_poses = get_aligned_pose(
-                            next_active_obj, next_passive_obj, N=N_align
-                        )
+                        target_obj_poses = get_aligned_pose(next_active_obj, next_passive_obj, N=N_align)
                 else:  # Object moves by itself
                     transform = np.eye(4)
                     transform[:3, 3] = active_element["xyz"]
@@ -316,9 +292,7 @@ class PickStage(Stage):
                     target_obj_poses[:, np.newaxis, ...] @ grasp_poses_canonical[np.newaxis, ...]
                 ).reshape(-1, 4, 4)
 
-                ik_success, _ = robot.solve_ik(
-                    target_gripper_poses, ee_type="gripper", type="Simple", arm=arm
-                )
+                ik_success, _ = robot.solve_ik(target_gripper_poses, ee_type="gripper", type="Simple", arm=arm)
                 if next_active_stage.extra_params.get("disable_upside_down", False):
                     if "omnipicker" in robot.robot_cfg:
                         if arm == "left":
@@ -328,9 +302,7 @@ class PickStage(Stage):
                     else:
                         upright_mask = target_gripper_poses[:, 2, 0] > 0.0
                     ik_success = ik_success & upright_mask
-                element_ik_score.append(
-                    np.max(ik_success.reshape(N_obj_pose, N_grasp_pose).sum(axis=1))
-                )
+                element_ik_score.append(np.max(ik_success.reshape(N_obj_pose, N_grasp_pose).sum(axis=1)))
 
                 grasp_pose_ik = ik_success.reshape(N_obj_pose, N_grasp_pose)
                 grasp_pose_ik_score.append(np.sum(grasp_pose_ik, axis=0))
@@ -344,9 +316,7 @@ class PickStage(Stage):
 
             _mask = grasp_ik_score >= max(np.median(grasp_ik_score) / 2, 1)
             best_grasp_poses = grasp_poses[_mask]
-            if best_grasp_poses.shape[0] == 0 and next_active_stage.extra_params.get(
-                "use_near_point", False
-            ):
+            if best_grasp_poses.shape[0] == 0 and next_active_stage.extra_params.get("use_near_point", False):
                 logger.info("! search near point")
                 x_offset_range = np.arange(-0.06, 0.06, 0.02)
                 y_offset_range = np.arange(-0.06, 0.06, 0.02)
@@ -384,9 +354,7 @@ class PickStage(Stage):
                                         next_passive_obj.angle_sample_num,
                                         next_active_obj.angle_sample_num,
                                     )
-                                    target_obj_poses = get_aligned_pose(
-                                        next_active_obj, next_passive_obj, N=N_align
-                                    )
+                                    target_obj_poses = get_aligned_pose(next_active_obj, next_passive_obj, N=N_align)
                             else:  # Object moves by itself
                                 transform = np.eye(4)
                                 transform[:3, 3] = active_element["xyz"]
@@ -396,8 +364,7 @@ class PickStage(Stage):
                             N_obj_pose = target_obj_poses.shape[0]
                             N_grasp_pose = grasp_poses_canonical.shape[0]
                             target_gripper_poses = (
-                                target_obj_poses[:, np.newaxis, ...]
-                                @ grasp_poses_canonical[np.newaxis, ...]
+                                target_obj_poses[:, np.newaxis, ...] @ grasp_poses_canonical[np.newaxis, ...]
                             ).reshape(-1, 4, 4)
 
                             ik_success, _ = robot.solve_ik(
@@ -406,9 +373,7 @@ class PickStage(Stage):
                                 type="Simple",
                                 arm=arm,
                             )
-                            element_ik_score.append(
-                                np.max(ik_success.reshape(N_obj_pose, N_grasp_pose).sum(axis=1))
-                            )
+                            element_ik_score.append(np.max(ik_success.reshape(N_obj_pose, N_grasp_pose).sum(axis=1)))
 
                             grasp_pose_ik = ik_success.reshape(N_obj_pose, N_grasp_pose)
                             grasp_pose_ik_score.append(np.sum(grasp_pose_ik, axis=0))
@@ -430,9 +395,7 @@ class PickStage(Stage):
                             )
                             ok = True
                         else:
-                            logger.info(
-                                f"can not get grasp pose with offset: [{x_offset}, {y_offset}]"
-                            )
+                            logger.info(f"can not get grasp pose with offset: [{x_offset}, {y_offset}]")
                         if ok:
                             break
                     if ok:
@@ -472,9 +435,7 @@ class PickStage(Stage):
                 # calculate pre grasp pose
                 pre_grasp_distance = self.extra_params.get("pre_grasp_distance", 0.05)
                 pre_grasp_offset = [0, 0, -pre_grasp_distance, 1, 0, 0, 0]
-                pre_grasp_offset_matrix = pose_from_position_quaternion(
-                    pre_grasp_offset[:3], pre_grasp_offset[3:]
-                )
+                pre_grasp_offset_matrix = pose_from_position_quaternion(pre_grasp_offset[:3], pre_grasp_offset[3:])
                 pre_grasp_poses = best_grasp_poses @ pre_grasp_offset_matrix
                 ik_success_pre, ik_info_pre = robot.solve_ik(
                     pre_grasp_poses,
@@ -524,22 +485,18 @@ class PickStage(Stage):
             return []
 
         grasp_pose_canonical_sorted = (
-            np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...]
-            @ grasp_poses_sorted
+            np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...] @ grasp_poses_sorted
         )
         gripper2obj = grasp_pose_canonical_sorted
         if pre_grasp_poses is not None and len(pre_grasp_poses_sorted) == len(grasp_poses_sorted):
             pre_grasp_pose_canonical_sorted = (
-                np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...]
-                @ pre_grasp_poses_sorted
+                np.linalg.inv(objects[self.passive_obj_id].obj_pose)[np.newaxis, ...] @ pre_grasp_poses_sorted
             )
         result = []
         for i in range(len(gripper2obj)):
             tmp_result = {}
             tmp_result["grasp_pose"] = gripper2obj[i]
-            tmp_result["pre_grasp_pose"] = (
-                pre_grasp_pose_canonical_sorted[i] if pre_grasp_poses is not None else None
-            )
+            tmp_result["pre_grasp_pose"] = pre_grasp_pose_canonical_sorted[i] if pre_grasp_poses is not None else None
             result.append(tmp_result)
         return result
 
@@ -635,9 +592,7 @@ class PickStage(Stage):
                         transform_up[1, 3] = pick_up_distance
                     else:
                         transform_up[2, 3] = pick_up_distance
-                    action_sequence.add_action(
-                        Action(grasp_pose, gripper_action, transform_up, motion_type)
-                    )
+                    action_sequence.add_action(Action(grasp_pose, gripper_action, transform_up, motion_type))
                 else:
                     action_sequence.add_action(Action(grasp_pose, "open", np.eye(4), "AvoidObs"))
         if self.error_type == "WrongTarget":
@@ -651,9 +606,7 @@ class PickStage(Stage):
         return action_sequence
 
     def check_completion(self, objects, robot=None):
-        assert (
-            self.active_action_sequence is not None
-        ), f"Active action for stage {self.action_type} is None"
+        assert self.active_action_sequence is not None, f"Active action for stage {self.action_type} is None"
 
         goal_datapack = [
             self.active_obj_id,

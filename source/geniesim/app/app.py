@@ -71,10 +71,7 @@ def main():
         stage_units_in_meters=1,
         physics_dt=1.0 / cfg.app.physics_step,
         rendering_dt=1.0 / cfg.app.rendering_step,
-        # backend="torch",
-        # device="cuda:0",
     )
-    # Override CPU setting to use GPU
     if cfg.app.enable_gpu_dynamics:
         physx_interface = omni.physx.get_physx_interface()
         physx_interface.overwrite_gpu_setting(1)
@@ -86,22 +83,11 @@ def main():
         benchmark_config=cfg.benchmark,
     )
 
-    # ext_manager = omni.kit.app.get_app().get_extension_manager()
-    # ext_manager.add_path(str(project_root) + "/geniesim/extension")
-    # ext_manager.set_extension_enabled_immediate("perfect.cb.ui", True)
-    # omni.ui.Workspace.show_window("perfect.cb.ui", True)
-
-    # if cfg.app.enable_rate_limit:
-    #     carb.settings.get_settings().set_bool(
-    #         "/app/runLoops/main/rateLimitEnabled", True
-    #     )
-
     def callback_physics(step_size):
         global _frame_count, _last_time
         _frame_count += 1
         now = time.time()
         elapsed = now - _last_time
-        # Output frequency every 1 second
         if elapsed >= 1.0:
             hz = _frame_count / elapsed
             print(f"[Physics Callback] {hz:.2f} Hz")
@@ -135,5 +121,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # run the main execution
     main()

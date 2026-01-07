@@ -142,9 +142,7 @@ class ParallelGripper(Gripper):
 
         # make sure that all gripper dof names were resolved
         if self._joint_dof_indicies[0] is None or self._joint_dof_indicies[1] is None:
-            raise Exception(
-                "Not all gripper dof names were resolved to dof handles and dof indices."
-            )
+            raise Exception("Not all gripper dof names were resolved to dof handles and dof indices.")
         self._articulation_apply_action_func = articulation_apply_action_func
         current_joint_positions = get_joint_positions_func()
         if self._default_state is None:
@@ -244,9 +242,7 @@ class ParallelGripper(Gripper):
         Returns:
             np.ndarray: joint positions of the left finger joint and the right finger joint respectively.
         """
-        return self._get_joint_positions_func(
-            joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]]
-        )
+        return self._get_joint_positions_func(joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]])
 
     def reset_stiffness(self):
         stage = omni.usd.get_context().get_stage()
@@ -303,12 +299,8 @@ class ParallelGripper(Gripper):
                 drive.GetStiffnessAttr().Set(0)
                 drive.GetMaxForceAttr().Set(target_force)
             target_joint_velocities = [None] * self._articulation_num_dofs
-            target_joint_velocities[self._joint_dof_indicies[0]] = (
-                self._joint_closed_velocities[0]
-            )
-            target_joint_velocities[self._joint_dof_indicies[1]] = (
-                self._joint_closed_velocities[1]
-            )
+            target_joint_velocities[self._joint_dof_indicies[0]] = self._joint_closed_velocities[0]
+            target_joint_velocities[self._joint_dof_indicies[1]] = self._joint_closed_velocities[1]
             target_action = ArticulationAction(joint_velocities=target_joint_velocities)
 
         else:
@@ -342,34 +334,18 @@ class ParallelGripper(Gripper):
         joint_actions = ArticulationAction()
         if control_actions.joint_positions is not None:
             joint_actions.joint_positions = [None] * self._articulation_num_dofs
-            joint_actions.joint_positions[self._joint_dof_indicies[0]] = (
-                control_actions.joint_positions[0]
-            )
-            joint_actions.joint_positions[self._joint_dof_indicies[1]] = (
-                control_actions.joint_positions[1]
-            )
+            joint_actions.joint_positions[self._joint_dof_indicies[0]] = control_actions.joint_positions[0]
+            joint_actions.joint_positions[self._joint_dof_indicies[1]] = control_actions.joint_positions[1]
             if len(self._joint_prim_names) > 2:
-                joint_actions.joint_positions[self._joint_dof_indicies[2]] = (
-                    control_actions.joint_positions[2]
-                )
-                joint_actions.joint_positions[self._joint_dof_indicies[3]] = (
-                    control_actions.joint_positions[3]
-                )
+                joint_actions.joint_positions[self._joint_dof_indicies[2]] = control_actions.joint_positions[2]
+                joint_actions.joint_positions[self._joint_dof_indicies[3]] = control_actions.joint_positions[3]
         if control_actions.joint_velocities is not None:
             joint_actions.joint_velocities = [None] * self._articulation_num_dofs
-            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = (
-                control_actions.joint_velocities[0]
-            )
-            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = (
-                control_actions.joint_velocities[1]
-            )
+            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = control_actions.joint_velocities[0]
+            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = control_actions.joint_velocities[1]
         if control_actions.joint_efforts is not None:
             joint_actions.joint_efforts = [None] * self._articulation_num_dofs
-            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = (
-                control_actions.joint_efforts[0]
-            )
-            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = (
-                control_actions.joint_efforts[1]
-            )
+            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = control_actions.joint_efforts[0]
+            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = control_actions.joint_efforts[1]
         self._articulation_apply_action_func(control_actions=joint_actions)
         return

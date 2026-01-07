@@ -1,8 +1,4 @@
 #!/bin/bash
-# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
-# Author: Genie Sim Team
-# License: Mozilla Public License Version 2.0
-
 # Script to collect scores from evaluate_ret_*.json files and generate CSV output
 
 set -e
@@ -101,8 +97,8 @@ PYTHON_EOF
 format_operation_label() {
     local manip=$1
     case "$manip" in
-        "pick") echo "Planer pick" ;;
-        "planer_pick_place_") echo "Planer pickplace" ;;
+        "pick") echo "Planar pick" ;;
+        "planar_pick_place_") echo "Planar pickplace" ;;
         "spatial_pick") echo "Spatial pick" ;;
         "spatial_pick_place") echo "Spatial pickplace" ;;
         "insert") echo "Insert" ;;

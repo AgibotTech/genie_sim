@@ -27,8 +27,8 @@ plt.rcParams["axes.unicode_minus"] = False
 # Define operation category mapping
 OPERATION_CATEGORIES = {
     "Basic operation": [
-        "Planer pick",
-        "Planer pickplace",
+        "Planar pick",
+        "Planar pickplace",
         "Spatial pick",
         "Spatial pickplace",
     ],

@@ -44,7 +44,18 @@ class PIROSNode(SimNode):
             "/genie_sim/dynamic_info",
             QOS_PROFILE_LATEST,
         )
+        self.pub_sub_task_name = self.create_publisher(
+            String,
+            "/record/sub_task_name",
+            QOS_PROFILE_LATEST,
+        )
         # fmt: on
+
+        self.sub_task_name = ""
+        self.sub_task_name_lock = threading.Lock()
+
+        # Create timer for periodic publishing of sub_task_name (10Hz)
+        self.sub_task_name_timer = self.create_timer(0.1, self.timer_callback_sub_task_name)
 
         # Subscribe to /sim/instruction, /sim/reset, /sim/infer_start and /sim/shuffle
         self.sub_instruction = self.create_subscription(String, "/sim/instruction", self.callback_instruction, 1)
@@ -195,3 +206,21 @@ class PIROSNode(SimNode):
         """Get the latest shuffle message"""
         with self.shuffle_lock:
             return self.shuffle_msg
+
+    def timer_callback_sub_task_name(self):
+        """Timer callback: periodically publish sub_task_name"""
+        with self.sub_task_name_lock:
+            msg_out = String()
+            msg_out.data = self.sub_task_name if self.sub_task_name else ""
+            self.pub_sub_task_name.publish(msg_out)
+
+    def set_sub_task_name(self, sub_task_name: str):
+        """Set sub_task_name (will be published periodically by timer)"""
+        with self.sub_task_name_lock:
+            self.sub_task_name = sub_task_name
+            self.get_logger().info(f"Set sub_task_name: '{sub_task_name}' (will be published periodically)")
+
+    def get_sub_task_name(self):
+        """Get the current sub_task_name"""
+        with self.sub_task_name_lock:
+            return self.sub_task_name

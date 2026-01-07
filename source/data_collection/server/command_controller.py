@@ -35,7 +35,7 @@ from common.base_utils.transform_utils import mat2quat_wxyz, quat2mat_wxyz
 from common.data_filter.runtime_checker import CheckerStatus, create_checker
 from server.command_enum import Command, command_value_to_string
 from server.controllers.parallel_gripper import ParallelGripper
-from server.material_changer import Light, material_changer
+from server.utils import Light
 from server.robot import RobotCfg
 from server.ros_publisher.base import USDBase
 from server.ui_builder import UIBuilder
@@ -276,15 +276,12 @@ class CommandController:
                     add_reference_to_stage(self.robot_usd_path, "/World_{}".format(idx))
                 add_reference_to_stage(self.scene_usd_path, "/World_{}".format(idx))
                 XFormPrim(prim_path="/World_{}".format(idx), position=[0, 2 * idx + 1, 0])
-            self.material_changer = material_changer()
             camera_state = ViewportCameraState("/OmniverseKit_Persp")
             camera_state.set_position_world(
                 Gf.Vec3d(1.9634841037804776, 0.9488467163528935, 2.1182000480154555),
                 True,
             )
-            camera_state.set_target_world(
-                Gf.Vec3d(init_position[0], init_position[1], init_position[2]), True
-            )
+            camera_state.set_target_world(Gf.Vec3d(init_position[0], init_position[1], init_position[2]), True)
             stage = omni.usd.get_context().get_stage()
             self.scene = UsdPhysics.Scene.Define(stage, Sdf.Path("/physicsScene"))
             self.scene.CreateGravityDirectionAttr().Set(Gf.Vec3f(0.0, 0.0, -1.0))
@@ -324,9 +321,7 @@ class CommandController:
                     "idx12_head_joint2",
                     "idx13_head_joint3",
                 ]
-            joint_indices_mapping = {
-                joint_name: articulation.get_dof_index(joint_name) for joint_name in joint_names
-            }
+            joint_indices_mapping = {joint_name: articulation.get_dof_index(joint_name) for joint_name in joint_names}
             for idx, joint_name in enumerate(init_joint_names):
                 joint_index = articulation.get_dof_index(joint_name)
                 if joint_index < len(robot.init_joint_position):
@@ -336,10 +331,7 @@ class CommandController:
                 with open(robot_config_dir + robot_description_path, "r") as file:
                     robot_description = yaml.safe_load(file)
                     for cspace_rule in robot_description["cspace_to_urdf_rules"]:
-                        if (
-                            cspace_rule["name"] in joint_indices_mapping
-                            and cspace_rule["rule"] == "fixed"
-                        ):
+                        if cspace_rule["name"] in joint_indices_mapping and cspace_rule["rule"] == "fixed":
                             joint_index = joint_indices_mapping[cspace_rule["name"]]
                             if joint_index < len(robot.init_joint_position):
                                 cspace_rule["value"] = robot.init_joint_position[joint_index]
@@ -356,9 +348,7 @@ class CommandController:
                     "right": create_temp_robot_description(right_description_path),
                 }
             else:
-                robot.robot_description_path = create_temp_robot_description(
-                    robot.robot_description_path
-                )
+                robot.robot_description_path = create_temp_robot_description(robot.robot_description_path)
             self.robot_cfg = robot
             self.ui_builder._init_kinematic_solver(self.robot_cfg)
             self.init_joint_position = robot.init_joint_position
@@ -379,9 +369,7 @@ class CommandController:
                 prim_paths = random_config.get("prim_paths", [])
                 material_buffer = random_config.get("material_buffer", [])
                 # Select len(prim_paths) materials from material_buffer for replacement
-                selected_materials = np.random.choice(
-                    material_buffer, size=len(prim_paths), replace=False
-                )
+                selected_materials = np.random.choice(material_buffer, size=len(prim_paths), replace=False)
                 for idx, prim_path in enumerate(prim_paths):
                     # check if prim_path is a valid prim path
                     if not stage.GetPrimAtPath(prim_path).IsValid():
@@ -432,10 +420,7 @@ class CommandController:
                         is_right = self.gripper_action_timing.get("is_right", True)
                         if is_right and key == "right" or (not is_right and key == "left"):
                             if state is not None and timing is not None:
-                                if (
-                                    curobo_motion.cmd_idx
-                                    >= len(curobo_motion.cmd_plan.position) * timing
-                                ):
+                                if curobo_motion.cmd_idx >= len(curobo_motion.cmd_plan.position) * timing:
                                     additional_action = self._get_gripper_action(state, is_right)
                     curobo_motion.on_physics_step(self.motion_run_ratio, additional_action)
 
@@ -487,12 +472,8 @@ class CommandController:
             if not prim.IsValid():
                 continue
             state_info["articulation_objects"][prim_path] = {}
-            state_info["articulation_objects"][prim_path][
-                "joint_positions"
-            ] = articulation_obj.get_joint_positions()
-            state_info["articulation_objects"][prim_path][
-                "joint_velocities"
-            ] = articulation_obj.get_joint_velocities()
+            state_info["articulation_objects"][prim_path]["joint_positions"] = articulation_obj.get_joint_positions()
+            state_info["articulation_objects"][prim_path]["joint_velocities"] = articulation_obj.get_joint_velocities()
         articulation = self._initialize_articulation()
         state_info["articulation"]["joint_positions"] = articulation.get_joint_positions()
         state_info["articulation"]["joint_velocities"] = articulation.get_joint_velocities()
@@ -522,10 +503,7 @@ class CommandController:
         self.playback_waited_frame_num += 1
         if not state_info:
             return False
-        if (
-            self.playback_waited_frame_num == 1
-            or self.playback_waited_frame_num >= MAX_PLAYBACK_WAITED_FRAME_NUM
-        ):
+        if self.playback_waited_frame_num == 1 or self.playback_waited_frame_num >= MAX_PLAYBACK_WAITED_FRAME_NUM:
             # isaac related
             stage = omni.usd.get_context().get_stage()
             if not stage:
@@ -611,9 +589,7 @@ class CommandController:
         is_backend = self.data["is_backend"]
         goal_offset = self.data.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
         path_constraint = self.data.get("path_constraint", None)
-        offset_and_constraint_in_goal_frame = self.data.get(
-            "offset_and_constraint_in_goal_frame", True
-        )
+        offset_and_constraint_in_goal_frame = self.data.get("offset_and_constraint_in_goal_frame", True)
         disable_collision_links = self.data.get("disable_collision_links", [])
         from_current_pose = self.data.get("from_current_pose", False)
         is_Right = False
@@ -674,9 +650,7 @@ class CommandController:
                     self.target_joints_pose.append(value)
         if np.linalg.norm(np.array(self.target_joints_pose) - np.array(target_joints_pose)) != 0:
             self.target_joints_pose = target_joints_pose
-            self._joint_moveto(
-                target_joints_pose, target_joint_indices, is_trajectory=is_trajectory
-            )
+            self._joint_moveto(target_joints_pose, target_joint_indices, is_trajectory=is_trajectory)
         if not is_trajectory:
             self.data_to_send = "move joints"
             self.target_joints_pose = []
@@ -849,9 +823,7 @@ class CommandController:
                         "noised_camera_indices",
                         np.arange(len(self.data["camera_prim_list"])),
                     )
-                    noised_camera_prim_list = [
-                        self.data["camera_prim_list"][i] for i in noised_camera_indices
-                    ]
+                    noised_camera_prim_list = [self.data["camera_prim_list"][i] for i in noised_camera_indices]
                     logger.info(f"noised_camera_indices{noised_camera_indices}")
                     logger.info(f"noised_camera_prim_list{noised_camera_prim_list}")
                     self.sensor_base._init_sensor(self.loop_count)
@@ -926,9 +898,7 @@ class CommandController:
                                 camera_param["noised"] = False
                             if "head_right_Camera" in camera or "head_left_Camera" in camera:
                                 camera_param["publish"].remove("depth:/" + camera.split("/")[-1])
-                            self.camera_info_list[self.get_camera_prim_name(camera)]["noised"] = (
-                                camera_param["noised"]
-                            )
+                            self.camera_info_list[self.get_camera_prim_name(camera)]["noised"] = camera_param["noised"]
                             camera_graph, ros_nodes = self.sensor_base._init_camera(camera_param)
                             self.ros_publishers += ros_nodes
                         self.camera_graph_path.append(self.data["camera_prim_list"])
@@ -944,11 +914,7 @@ class CommandController:
                         topic_name = "/" + camera.split("/")[-1] + "_rgb"
                         compressed_name = topic_name + "_compressed"
                         ros_cmd_distro = os.getenv("ROS_CMD_DISTRO", "humble")
-                        extra_args = (
-                            "--remap _out_transport:=compressed"
-                            if ros_cmd_distro != "humble"
-                            else ""
-                        )
+                        extra_args = "--remap _out_transport:=compressed" if ros_cmd_distro != "humble" else ""
                         command_str = f"""
                         unset PYTHONPATH
                         unset LD_LIBRARY_PATH
@@ -1212,17 +1178,6 @@ class CommandController:
             )
         self.data_to_send = "success"
 
-    def handle_set_material(self):
-        """Handle Command 29: SetMaterial"""
-        for material_info in self.data:
-            self._set_object_material(
-                material_info["object_prim"],
-                material_info["material_name"],
-                material_info["material_path"],
-                material_info["label_name"],
-            )
-        self.data_to_send = "success"
-
     def handle_set_light(self):
         """Handle Command 30: SetLight"""
         for light in self.data:
@@ -1239,9 +1194,7 @@ class CommandController:
 
     def handle_get_part_dof_joint(self):
         """Handle Command 32: GetPartDofJoint"""
-        self.data_to_send = self._get_dof_joint_for_part(
-            self.data["object_prim_path"], self.data["part_name"]
-        )
+        self.data_to_send = self._get_dof_joint_for_part(self.data["object_prim_path"], self.data["part_name"])
 
     def handle_remove_objs_from_obstacle(self):
         """Handle Command 52: RemoveObjsFromObstacle"""
@@ -1310,9 +1263,7 @@ class CommandController:
             if not self.data or not self.Command:
                 return
             else:
-                with self._timing_context(
-                    f"rpc_server.step_command_{command_value_to_string[self.Command]}"
-                ):
+                with self._timing_context(f"rpc_server.step_command_{command_value_to_string[self.Command]}"):
                     if self.Command == Command.LINEAR_MOVE:
                         self.handle_linear_move()
                     elif self.Command == Command.SET_JOINT_POSITION:
@@ -1351,8 +1302,6 @@ class CommandController:
                         self.handle_set_target_point()
                     elif self.Command == Command.SET_FRAME_STATE:
                         self.handle_set_frame_state()
-                    elif self.Command == Command.SET_MATERIAL:
-                        self.handle_set_material()
                     elif self.Command == Command.SET_LIGHT:
                         self.handle_set_light()
                     elif self.Command == Command.GET_PART_DOF_JOINT:
@@ -1374,24 +1323,9 @@ class CommandController:
             with self.condition:
                 self.condition.notify_all()
 
-    def _generate_materials(self):
-        self.materials = {}
-        material_infos = {}
-        path = os.path.dirname(__file__) + "/material_infos.json"
-        with open(path, "r") as f:
-            material_infos = json.load(f)
-
-        for mat in material_infos:
-            material = self.material_changer.assign_material(
-                material_infos[mat]["material_path"], mat
-            )
-            self.materials[mat] = material
-
     def _get_observation(self):
         for camera in self.cameras:
-            self._capture_camera(
-                prim_path=camera, isRGB=True, isDepth=True, isSemantic=True, isGN=False
-            )
+            self._capture_camera(prim_path=camera, isRGB=True, isDepth=True, isSemantic=True, isGN=False)
 
     def _on_reset(self):
         self._reset_stiffness()
@@ -1460,9 +1394,7 @@ class CommandController:
     def arm_move_rmp(self, position, rotation, ee_interpolation, distance_frame, is_right=True):
         self.ui_builder._followingPos = position
         self.ui_builder._followingOrientation = rotation
-        self.ui_builder._trajectory_list_follow_target(
-            position, rotation, is_right, ee_interpolation, distance_frame
-        )
+        self.ui_builder._trajectory_list_follow_target(position, rotation, is_right, ee_interpolation, distance_frame)
 
     def _initialize_articulation(self):
         return self.ui_builder.articulation
@@ -1470,9 +1402,7 @@ class CommandController:
     # 3. Move all joints to specified angles, Input: np.array([None])*28
     def _joint_moveto(self, joint_position, joint_indices=None, is_trajectory=False):
         self._initialize_articulation()
-        self.ui_builder._move_to(
-            joint_position, joint_indices=joint_indices, is_trajectory=is_trajectory
-        )
+        self.ui_builder._move_to(joint_position, joint_indices=joint_indices, is_trajectory=is_trajectory)
 
     def _add_camera(
         self,
@@ -1489,9 +1419,7 @@ class CommandController:
         camera = Camera(prim_path=camera_prim, resolution=[width, height])
         camera.initialize()
         self._get_observation()
-        self._capture_camera(
-            prim_path=camera_prim, isRGB=True, isDepth=True, isSemantic=True, isGN=False
-        )
+        self._capture_camera(prim_path=camera_prim, isRGB=True, isDepth=True, isSemantic=True, isGN=False)
         if is_local:
             camera.set_local_pose(
                 translation=camera_position,
@@ -1499,9 +1427,7 @@ class CommandController:
                 camera_axes="usd",
             )
         else:
-            camera.set_world_pose(
-                position=camera_position, orientation=camera_rotation, camera_axes="usd"
-            )
+            camera.set_world_pose(position=camera_position, orientation=camera_rotation, camera_axes="usd")
         self.cameras[camera_prim] = [width, height]
         self.ui_builder.cameras[camera_prim] = [width, height]
         _prim = get_prim_at_path(camera_prim)
@@ -1535,10 +1461,7 @@ class CommandController:
                                 idx = dof_names.index(joint_prim.split("/")[-1])
                             else:
                                 traveled_joint_prim_paths.append(joint_prim)
-                                part_names = [
-                                    rel_target.pathString.split("/")[-1]
-                                    for rel_target in rel_targets
-                                ]
+                                part_names = [rel_target.pathString.split("/")[-1] for rel_target in rel_targets]
                             break
                     if len(traveled_joint_prim_paths) or idx is not None:
                         break
@@ -1714,36 +1637,7 @@ class CommandController:
             self.ui_builder._move_to(joint_position, is_action=action)
         if object_joints is not None:
             for joint in object_joints:
-                self._set_object_joint(
-                    prim_path=joint["prim_path"], target_positions=joint["object_joint"]
-                )
-
-    def _set_object_material(self, prim_path, material_name, material_path, label_name=None):
-        stage = omni.usd.get_context().get_stage()
-        logger.info(label_name)
-        if label_name:
-            object_rep = rep.get.prims(path_pattern=prim_path, prim_types=["Xform"])
-            with object_rep:
-                rep.modify.semantics([("class", label_name)])
-        if not stage:
-            return
-        if "Glass" in material_name or "glass" in material_name:
-            material_prim = "/World/Materials/OmniGlass"
-            material = OmniGlass(prim_path=material_prim)
-            for prim in Usd.PrimRange(stage.GetPrimAtPath(prim_path)):
-                path = str(prim.GetPath())
-                prim = get_prim_at_path(path)
-                if prim.IsA(UsdGeom.Mesh) or prim.GetTypeName() in "GeomSubset":
-                    geometry_prim = GeometryPrim(prim_path=path)
-                    geometry_prim.apply_visual_material(material)
-
-        else:
-            material = self.material_changer.assign_material(material_path, material_name)
-            for prim in Usd.PrimRange(stage.GetPrimAtPath(prim_path)):
-                path = str(prim.GetPath())
-                prim = get_prim_at_path(path)
-                if prim.IsA(UsdGeom.Mesh) or prim.GetTypeName() in "GeomSubset":
-                    UsdShade.MaterialBindingAPI(prim).Bind(material)
+                self._set_object_joint(prim_path=joint["prim_path"], target_positions=joint["object_joint"])
 
     def _set_light(
         self,
@@ -1868,9 +1762,7 @@ class CommandController:
             for i in range(target_poses.shape[0]):
                 target_position = target_poses[i, :3, 3]
                 target_rotation = mat2quat_wxyz(target_poses[i, :3, :3])
-                is_success, joint_state = self.ui_builder._get_ik_status(
-                    target_position, target_rotation, isRight
-                )
+                is_success, joint_state = self.ui_builder._get_ik_status(target_position, target_rotation, isRight)
                 all_names = self.ui_builder.articulation.dof_names
                 for i, idx in enumerate(joint_state.joint_indices):
                     joint_positions[all_names[idx]] = joint_state.joint_positions[i]
@@ -1884,9 +1776,7 @@ class CommandController:
             robot_translation_matrix[:3, :3] = init_rotation_matrix
             robot_translation_matrix[:3, 3] = self.robot_init_position
             robot_translation_matrix[3, 3] = 1
-            target_poses_local = (
-                np.linalg.inv(robot_translation_matrix[np.newaxis, ...]) @ target_poses
-            )
+            target_poses_local = np.linalg.inv(robot_translation_matrix[np.newaxis, ...]) @ target_poses
             target_rotations_local = batch_matrices_to_quaternions_scipy_w_first(target_poses_local)
             target_positions_local = target_poses_local[:, :3, 3]
             if isinstance(self.end_effector_name, dict):

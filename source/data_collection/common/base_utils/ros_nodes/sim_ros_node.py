@@ -86,9 +86,7 @@ class SimPubRosNode(Node):
                     self._publisher.publish(msg)
                     self._cur_step = 0
             except Exception as e:
-                logger.error(
-                    f"Error publishing message: {e}, node: :{self.get_name()}, topic: {self._topic}"
-                )
+                logger.error(f"Error publishing message: {e}, node: :{self.get_name()}, topic: {self._topic}")
 
 
 class ImagePubRosNode(SimPubRosNode):

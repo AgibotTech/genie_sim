@@ -147,8 +147,6 @@ class LayoutObject(OmniObject):
             self.anchor_points["top"] = get_bott_up_point(mesh_points, 1.5, descending=False)
             self.anchor_points["buttom"] = get_bott_up_point(mesh_points, 1.5, descending=True)
             self.anchor_points["top"] = random_point(self.anchor_points["top"], 3)[np.newaxis, :]
-            self.anchor_points["buttom"] = random_point(self.anchor_points["buttom"], 3)[
-                np.newaxis, :
-            ]
+            self.anchor_points["buttom"] = random_point(self.anchor_points["buttom"], 3)[np.newaxis, :]
             self.size = self.mesh.extents.copy()
         self.up_axis = up_aixs[0]

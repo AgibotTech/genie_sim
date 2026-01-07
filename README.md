@@ -1,35 +1,51 @@
-![image.png](./docs/image.jpg)
+
+![image.png](./docs/image.png)
 <div align="center">
+  <p align="center"><a href="https://arxiv.org/abs/2601.02078"><img src='https://img.shields.io/badge/arXiv-Paper-red?logo=arxiv&logoColor=white' alt='arXiv'></a>
   <a href="https://github.com/AgibotTech/genie_sim">
     <img src="https://img.shields.io/badge/GitHub-grey?logo=GitHub" alt="GitHub">
   </a>
-  <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
+  <!-- <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
     <img src="https://img.shields.io/badge/HuggingFace-yellow?logo=HuggingFace" alt="HuggingFace">
+  </a> -->
+  <a href="http://agibot-world.com/genie-sim">
+    <img src="https://img.shields.io/badge/Webpage-green?" alt="Webpage">
   </a>
-  <a href="https://agibot-world.com/sim-evaluation">
-    <img src="https://img.shields.io/badge/Genie%20Sim%20Benchmark-blue?style=plastic" alt="Genie Sim Benchmark">
+  <a href="https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset">
+    <img src="https://img.shields.io/badge/Modelscope-blue" alt="Genie Studio">
   </a>
-  <a href="https://genie.agibot.com/en/geniestudio">
-    <img src="https://img.shields.io/badge/Genie_Studio-green?style=flat" alt="Genie Studio">
-  </a>
+  <div align="center">
+    <a href="https://agibot-world.com/videos/genieSim/modules/heroFullVideoEn.mp4" target="_blank">
+      <img src="./docs/videoPlay.png" alt="Play Video" />
+    </a>
+  </div>
 </div>
 
-# 1. Genie Sim Benchmark
-Genie Sim is the simulation framework from AgiBot, which provides developers efficient data generation capabilities and evaluation benchmarks to accelerate embodied intelligence development. Genie Sim has established a comprehensive closed loop pipeline, encompassing trajectory generation, model training, benchmarking, and deployment validation. Users can quickly validate algorithm performance and optimize models through this efficient simulation toolchain. Whether for simple grasping tasks or complex long-range operations, Genie Sim can provide a highly realistic simulation environment and precise evaluation metrics, empowering developers to efficiently complete the development and iteration of robotic technologies.
 
-Genie Sim Benchmark, as the open-source evaluation version of Genie Sim, is dedicated to providing precise performance testing and optimization support for embodied AI models.
+# 1. Genie Sim 3.0
+Genie Sim is the simulation platform from AgiBot. It provides developers with a complete toolchain for environment reconstruction, scene generalization, data collection, and automated evaluation. Its core module, Genie Sim Benchmark is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
+
+The platform integrates 3D reconstruction with visual generation to create a high-fidelity simulation environment. It pioneers LLM-driven technology to generate vast simulation scenes and evaluation configurations in minutes. The evaluation system covers 200+ tasks across 100,000+ scenarios to establish a comprehensive capability profile for models. Genie Sim also opens over 10,000 hours synthetic dataset including real-world robot operation scenarios.
+
+The platform will significantly accelerate model development, reduce reliance on physical hardware, and empower innovation in embodied intelligence. Simulation assets, dataset, and code are fully open source.
 
 # 2. Features
-- Flexible and user-friendly simulation configuration and interface
-- Simulation benchmarks and evaluation tasks for 10+ manipulation tasks
-- Teleoperation capability based on VR and keyboard
-- All Joints and end effector pose record and replay
-- 550+ High fidelity and physically accurate 3D simulation environment and assets
-- Standardized evaluation metrics to quantify performance of embodied AI models
-- Evaluation results achieve less than 5% sim to real evaluation error on GO-1 model
-- Support UniVLA baseline model in simulation evaluation
+- **High-Fidelity Sim-Ready Assets**: 5,140 validated 3D assets covering five real-world operation fields: retail, industry, catering, home and office. [Download assets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
+- **3DGS-based Reconstruction Pipeline**: Integrate 3DGS-based reconstruction process with visual generative model to synthesize realistic simulation environment with high-precision meshes.
+- **LLM-Driven Scene Generation**: Natural language-driven generation and generalization which instantly generates diverse simulation scenes through conversational interaction.
+- **Large-Scale Synthetic Dataset**: Over 10,000 hours open-source synthetic data across 200+ loco-manipulation tasks with multi-sensor streams, alongside multi-dimensional variations.
+- **Synthetic Data Generation**: Efficient toolkit for data collectoin with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [Download assets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
+- **Robust and Diverse Benchmark**: Provide 100,000+ simulation scenarios and use LLM to autonomously generate task instructions and evaluation configurations. Discrepancy between simulation and real-world test results is less than 10%.
+- **VLM-based Auto-Evaluation System**: Full-spectrum evaluation criteria to provide model's capability profile covering manipulation skills, cognitive comprehension and task complexity.
+- **Zero-Shot Sim-to-Real Transfer**: Model trained with our synthetic data exhibits zero-shot sim-to-real transfer capability with superior task success rate compared to model trained with real data.
 
 # 3. Updates
+- [1/7/2026] v3.0
+  - Update Isaac Sim to v5.1.0 and support RTX 50series graphic card
+  - Provide USD and URDF files of Genie G2 robot and support whole body control
+  - Support 3DGS-based scene reconstruction and convert output to USD format for application in Isaac Sim
+  - Release synthetic dataset and corresponding data collection pipeline
+  - Add LLM-based features to generate scenarios, task instructions and evaluation configurations
 - [7/14/2025] v2.2
   - Provide detailed evaluation metrics for all Agibot World Challenge tasks
   - Add automatic evaluation script to run each task multiple times and record score of all steps
@@ -42,43 +58,44 @@ Genie Sim Benchmark, as the open-source evaluation version of Genie Sim, is dedi
   - Optimize communication framework and improve simulation running speed by 2x
   - Update automatic evaluation framework for more complicated long-range tasks
 
-# 4. Contents
+# 4. Documentation
 
-## 4.1 Introduction
-Embodied intelligence simulation benchmarks in Genie Sim are designed to evaluate and advance the development of embodied AI models. These benchmarks provide realistic environments, diverse tasks and standardized metrics to measure the performance of robotic AI systems, which reduce the requirement of expensive physical hardware and real-world testing, avoid risky and dangerous testing scenarios and accelerate training and evaluaiton process of AI agents.
+Please refer to these links to install Genie Sim and download assets and dataset:
+- [User Guide](https://agibot-world.com/sim-evaluation/docs/#/v2)
+- [Assets](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)
+- [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset)
 
-## 4.2 Getting Started
-Please refer to [this page](https://agibot-world.com/sim-evaluation/docs/#/v2) for installation, user guide and API reference
-
-## 4.3 Support
+## 4.1 Support
 <img src="./docs/wechat.JPEG" width="30%"/>
 
-## 4.4 Roadmap
+## 4.2 Roadmap
 - [x] Release more long-horizon benchmark mainuplation tasks
 - [x] More scenes and assets for each benchmark task
 - [x] Support Agibot World Challenge baseline model
 - [x] Scenario layout and manipulation trajectory generalization toolkit
+- [ ] Provide dockfile and tutorial for scene reconstruction pipeline
+- [ ] Upload all assets and dataset on Huggingface
+- [ ] Update motion control toolkit to support Genie G2 teleoperation in simulation
+- [ ] Human-in-the-loop and distributed reinforcement learning pipline
 
-## 4.5 FAQ
-- How to shut down the isaac sim server when errors occur, causing the process not responding?
-  Kill the process in terminal using `pkill -9 -f raise_standalone_sim`
-- How to choose different render modes?
-  The default render mode is `RaytracedLighting(RealTime)`. For tasks that contain transparent objects, use `RealTimePathTracing(RealTime-2.0)` for perspective relationship of objects
+## 4.3 License and Citation
+All the data and code within `source/geniesim` and `source/data_collection` are under `Mozilla Public License 2.0`. The `source/scene_reconstruction` project contains code under multiple licenses, for complete and updated licensing details, please see the LICENSE files
 
-## 4.6 License and Citation
-All the data and code within `source/geniesim` and `source/data_collection` are under Mozilla Public License 2.0
-The `source/scene_reconstruction` project contains code under multiple licenses, for complete and updated licensing details, please see the LICENSE files
 Please consider citing our work either way below if it helps your research.
+
 ```
-@misc{2025geniesim,
-  title={GenieSim},
-  author={GenieSim Team},
-  year={2025},
-  url={https://github.com/AgibotTech/genie_sim}
+@misc{yin2026geniesim30,
+  title={Genie Sim 3.0 : A High-Fidelity Comprehensive Simulation Platform for Humanoid Robot},
+  author={Chenghao Yin and Da Huang and Di Yang and Jichao Wang and Nanshu Zhao and Chen Xu and Wenjun Sun and Linjie Hou and Zhijun Li and Junhui Wu and Zhaobo Liu and Zhen Xiao and Sheng Zhang and Lei Bao and Rui Feng and Zhenquan Pang and Jiayu Li and Qian Wang and Maoqing Yao},
+  year={2026},
+  eprint={2601.02078},
+  archivePrefix={arXiv},
+  primaryClass={cs.RO},
+  url={https://arxiv.org/abs/2601.02078},
 }
 ```
 
-## 4.7 References
+## 4.4 References
 1. PDDL Parser (2020). Version 1.1. [Source code]. https://github.com/pucrs-automated-planning/pddl-parser.
 2. BDDL. Version 1.x.x [Source code]. https://github.com/StanfordVL/bddl
 3. CUROBO [Source code]. https://github.com/NVlabs/curobo

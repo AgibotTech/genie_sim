@@ -29,22 +29,15 @@ def is_gripper_grasp_object(
 ) -> bool:
     # Gripper must be closed and nearly motionless within backtrack_frame_num frames
     gripper_joint_index = 20 if gripper == "right" else 18
-    gripper_finger_joint_pos = abs(
-        frames[frame_index]["robot"]["joints"]["joint_position"][gripper_joint_index]
-    )
+    gripper_finger_joint_pos = abs(frames[frame_index]["robot"]["joints"]["joint_position"][gripper_joint_index])
     if gripper_finger_joint_pos > gripper_close_threshold:
         return False
     if frame_index < backtrack_frame_num:
         return False
     gripper_finger_joint_pos_last = abs(
-        frames[frame_index - backtrack_frame_num]["robot"]["joints"]["joint_position"][
-            gripper_joint_index
-        ]
+        frames[frame_index - backtrack_frame_num]["robot"]["joints"]["joint_position"][gripper_joint_index]
     )
-    if (
-        abs(gripper_finger_joint_pos - gripper_finger_joint_pos_last)
-        >= gripper_grasp_obj_finger_pos_change_threshold
-    ):
+    if abs(gripper_finger_joint_pos - gripper_finger_joint_pos_last) >= gripper_grasp_obj_finger_pos_change_threshold:
         return False
 
     object_pos = np.array(frames[frame_index]["objects"][obj]["pose"])[:3, 3]
@@ -56,12 +49,8 @@ def is_gripper_grasp_object(
         # Within backtrack_frame_num frames, object and gripper move the same
         if frame_index < backtrack_frame_num:
             return False
-        object_pos_last = np.array(
-            frames[frame_index - backtrack_frame_num]["objects"][obj]["pose"]
-        )[:3, 3]
-        gripper_pos_last = np.array(
-            frames[frame_index - backtrack_frame_num]["ee"][gripper]["pose"]
-        )[:3, 3]
+        object_pos_last = np.array(frames[frame_index - backtrack_frame_num]["objects"][obj]["pose"])[:3, 3]
+        gripper_pos_last = np.array(frames[frame_index - backtrack_frame_num]["ee"][gripper]["pose"])[:3, 3]
 
         object_pos_change = object_pos - object_pos_last
         gripper_pos_change = gripper_pos - gripper_pos_last
@@ -74,9 +63,7 @@ def is_gripper_grasp_object(
 
 
 # Get distance from gripper to an object
-def get_dis_gripper2object(
-    current_frame: dict, gripper: str = "right", obj: str = None
-):
+def get_dis_gripper2object(current_frame: dict, gripper: str = "right", obj: str = None):
     obj_pos = np.array(current_frame["objects"][obj]["pose"])[:3, 3]
     gripper_pos = np.array(current_frame["ee"][gripper]["pose"])[:3, 3]
 
@@ -92,13 +79,12 @@ def is_gripper_close_complete(
     finger_joint_pos_threshold: float = 0.01,
 ):
     gripper_joint_index = 20 if gripper == "right" else 18
-    gripper_finger_joint_pos = abs(
-        current_frame["robot"]["joints"]["joint_position"][gripper_joint_index]
-    )
+    gripper_finger_joint_pos = abs(current_frame["robot"]["joints"]["joint_position"][gripper_joint_index])
 
     if gripper_finger_joint_pos < finger_joint_pos_threshold:
         return True
     return False
+
 
 def check_pose_similar(
     frame0: dict,
@@ -131,9 +117,7 @@ def check_pose_similar(
             return not check_exist
         obj0_pose = np.array(frame0["ee"][obj0[1]]["pose"])
     else:
-        raise ValueError(
-            f"obj0[0] must be one of ['object','camera','gripper'], current is {obj0[0]}"
-        )
+        raise ValueError(f"obj0[0] must be one of ['object','camera','gripper'], current is {obj0[0]}")
     obj0_pos = obj0_pose[:3, 3]
     if abs(obj0_pos[0]) > 500 or abs(obj0_pos[1]) > 500 or abs(obj0_pos[2]) > 500:
         return not check_exist
@@ -146,9 +130,7 @@ def check_pose_similar(
     elif obj1[0] == "gripper":
         obj1_pose = np.array(frame1["ee"][obj1[1]]["pose"])
     else:
-        raise ValueError(
-            f"obj1[0] must be one of ['object','camera','gripper'], current is {obj1[0]}"
-        )
+        raise ValueError(f"obj1[0] must be one of ['object','camera','gripper'], current is {obj1[0]}")
     obj1_pos = obj1_pose[:3, 3]
     obj1_euler = R.from_matrix(obj1_pose[:3, :3]).as_euler("yzx", degrees=True)
 
@@ -183,16 +165,12 @@ def get_corresponding_vector(input_vec: str | list) -> np.array:
         elif input_vec == "-z":
             input_vec_right = np.array([0.0, 0.0, -1.0])
         else:
-            raise ValueError(
-                f"if type of input_vec is str, input_vec must in {input_vec_premitted}"
-            )
+            raise ValueError(f"if type of input_vec is str, input_vec must in {input_vec_premitted}")
     elif isinstance(input_vec, list) and len(input_vec) == 3:
         # Ensure vector is numpy array and normalized
         input_vec_right = np.array(input_vec, dtype=np.float64)
         input_vec_right = input_vec_right / np.linalg.norm(input_vec_right)
     else:
-        raise TypeError(
-            f"input_vec must be str in [{input_vec_premitted}] or list length is 3"
-        )
+        raise TypeError(f"input_vec must be str in [{input_vec_premitted}] or list length is 3")
 
     return input_vec_right

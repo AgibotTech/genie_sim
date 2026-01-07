@@ -58,7 +58,6 @@ class Command(IntEnum):
 
     # State and configuration commands
     SET_FRAME_STATE = 28
-    SET_MATERIAL = 29
     SET_LIGHT = 30
     SET_CODE_FACE_ORIENTATION = 34
     SET_TASK_METRIC = 53

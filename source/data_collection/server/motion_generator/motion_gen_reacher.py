@@ -150,11 +150,7 @@ class CuroboMotion:
             )
 
     def _get_curobo_kinematics(self):
-        if (
-            CuroboMotion.curobo_kinematics is None
-            and hasattr(self, "robot_cfg")
-            and self.robot_cfg is not None
-        ):
+        if CuroboMotion.curobo_kinematics is None and hasattr(self, "robot_cfg") and self.robot_cfg is not None:
             CuroboMotion.curobo_kinematics_robot_cfg = robot_cfg = copy.deepcopy(self.robot_cfg)
             if robot_cfg["kinematics"].get("link_names", None) is None:
                 robot_cfg["kinematics"]["link_names"] = []
@@ -201,9 +197,7 @@ class CuroboMotion:
 
             # Simplify geometry
             time0 = time.time()
-            simplified_obstacles = simplify_obstacles_from_stage(
-                initial_obstacles, max_faces=MAX_MESH_FACES
-            )
+            simplified_obstacles = simplify_obstacles_from_stage(initial_obstacles, max_faces=MAX_MESH_FACES)
             time1 = time.time()
             logger.info(f"extract simplified geometry time: {time1 - time0} seconds")
 
@@ -220,9 +214,7 @@ class CuroboMotion:
                         "original_pose": mesh.pose,  # Save original pose as reference
                     }
 
-            logger.info(
-                f"Cache completed, extracted {len(CuroboMotion.cached_obstacle_info)} obstacle geometries"
-            )
+            logger.info(f"Cache completed, extracted {len(CuroboMotion.cached_obstacle_info)} obstacle geometries")
 
         # Get robot reference coordinate system transformation
         if self.robot_prim_path:
@@ -277,13 +269,9 @@ class CuroboMotion:
                         # Add to cache (update if already exists)
                         if obstacle_prim_path not in CuroboMotion.cached_obstacle_info:
                             new_obstacles_count += 1
-                            logger.info(
-                                f"New obstacle: {obstacle_prim_path} (type: {obstacle_type})"
-                            )
+                            logger.info(f"New obstacle: {obstacle_prim_path} (type: {obstacle_type})")
                         else:
-                            logger.info(
-                                f"Updated existing obstacle: {obstacle_prim_path} (type: {obstacle_type})"
-                            )
+                            logger.info(f"Updated existing obstacle: {obstacle_prim_path} (type: {obstacle_type})")
 
                         CuroboMotion.cached_obstacle_info[obstacle_prim_path] = {
                             "type": obstacle_type,
@@ -464,9 +452,7 @@ class CuroboMotion:
         self.set_obstacles()
         self.link_names = self.motion_gen.kinematics.link_names
         self.ee_link_name = self.motion_gen.kinematics.ee_link
-        kin_state = self.motion_gen.kinematics.get_state(
-            self.motion_gen.get_retract_config().view(1, -1)
-        )
+        kin_state = self.motion_gen.kinematics.get_state(self.motion_gen.get_retract_config().view(1, -1))
         link_retract_pose = kin_state.link_pose
         self.target_links = {}
         for i in self.link_names:
@@ -502,9 +488,7 @@ class CuroboMotion:
         self.motion_gen.graph_planner.reset_buffer()
 
         elapsed_time = time.time() - start_time
-        logger.info(
-            f"Fast obstacle update completed, time: {elapsed_time:.4f}s, needs update: {has_update}"
-        )
+        logger.info(f"Fast obstacle update completed, time: {elapsed_time:.4f}s, needs update: {has_update}")
 
     def _update_obstacle_poses_fast(self):
         """
@@ -525,9 +509,7 @@ class CuroboMotion:
         if self.robot_reference_prim and self.robot_transform_cache:
             self.robot_transform_cache.Clear()
             self.robot_transform_cache.SetTime(0)  # Can be changed to current time
-            r_T_w, _ = get_prim_world_pose(
-                self.robot_transform_cache, self.robot_reference_prim, inverse=True
-            )
+            r_T_w, _ = get_prim_world_pose(self.robot_transform_cache, self.robot_reference_prim, inverse=True)
 
         # Prepare updated obstacle list
         updated_obstacles = {
@@ -605,9 +587,7 @@ class CuroboMotion:
                     radius=float(s.radius),
                     color=color,
                 )
-                sp.set_local_pose(
-                    translation=np.array([s.position[0], s.position[1], s.position[2]])
-                )
+                sp.set_local_pose(translation=np.array([s.position[0], s.position[1], s.position[2]]))
                 spheres_buffer.append(sp)
         else:
             if len(spheres_buffer) < len(sph_list[0]):
@@ -668,11 +648,7 @@ class CuroboMotion:
         for i in range(links_position.shape[0]):
             tmp_output = {}
             for j, link_name in enumerate(link_names):
-                if (
-                    output_link_names is None
-                    or not len(output_link_names)
-                    or link_name in output_link_names
-                ):
+                if output_link_names is None or not len(output_link_names) or link_name in output_link_names:
                     tmp_output[link_name] = [
                         links_position[i][j].cpu().numpy().tolist(),
                         links_quaternion[i][j].cpu().numpy().tolist(),
@@ -762,10 +738,7 @@ class CuroboMotion:
     def update_lock_joints(self, locked_joints):
         if (
             self.lock_joint_states is None
-            or np.abs(
-                np.array(list(self.lock_joint_states.values()))
-                - np.array(list(locked_joints.values()))
-            ).max()
+            or np.abs(np.array(list(self.lock_joint_states.values())) - np.array(list(locked_joints.values()))).max()
             > 1e-3
         ):
             before = time.time()
@@ -779,20 +752,11 @@ class CuroboMotion:
     def update_curobo_kinematics_lock_joints(self, locked_joints):
         before = time.time()
         if CuroboMotion.curobo_kinematics is not None and locked_joints is not None:
-            if (
-                CuroboMotion.curobo_kinematics_robot_cfg["kinematics"]["lock_joints"]
-                != locked_joints
-            ):
+            if CuroboMotion.curobo_kinematics_robot_cfg["kinematics"]["lock_joints"] != locked_joints:
                 logger.info("update kinematics lock joints")
-                CuroboMotion.curobo_kinematics_robot_cfg["kinematics"][
-                    "lock_joints"
-                ] = locked_joints
-                robot_cfg = RobotConfig.from_dict(
-                    CuroboMotion.curobo_kinematics_robot_cfg, self.tensor_args
-                )
-                CuroboMotion.curobo_kinematics.update_kinematics_config(
-                    robot_cfg.kinematics.kinematics_config
-                )
+                CuroboMotion.curobo_kinematics_robot_cfg["kinematics"]["lock_joints"] = locked_joints
+                robot_cfg = RobotConfig.from_dict(CuroboMotion.curobo_kinematics_robot_cfg, self.tensor_args)
+                CuroboMotion.curobo_kinematics.update_kinematics_config(robot_cfg.kinematics.kinematics_config)
         after = time.time()
         carb.log_warn("update curobo kinematics lock joints time is {}".format(after - before))
 
@@ -860,14 +824,9 @@ class CuroboMotion:
         sim_js_velocities = np.array(sim_js_velocities)[np.newaxis, :]
         cu_js = JointState(
             position=self.tensor_args.to_device(np.tile(sim_js_positions, (CUROBO_BATCH_SIZE, 1))),
-            velocity=self.tensor_args.to_device(np.tile(sim_js_positions, (CUROBO_BATCH_SIZE, 1)))
-            * 0.0,
-            acceleration=self.tensor_args.to_device(
-                np.tile(sim_js_velocities, (CUROBO_BATCH_SIZE, 1))
-            )
-            * 0.0,
-            jerk=self.tensor_args.to_device(np.tile(sim_js_velocities, (CUROBO_BATCH_SIZE, 1)))
-            * 0.0,
+            velocity=self.tensor_args.to_device(np.tile(sim_js_positions, (CUROBO_BATCH_SIZE, 1))) * 0.0,
+            acceleration=self.tensor_args.to_device(np.tile(sim_js_velocities, (CUROBO_BATCH_SIZE, 1))) * 0.0,
+            jerk=self.tensor_args.to_device(np.tile(sim_js_velocities, (CUROBO_BATCH_SIZE, 1))) * 0.0,
             joint_names=sim_js_names,
         )
         cu_js = cu_js.get_ordered_joint_state(self.motion_gen.kinematics.joint_names)
@@ -881,9 +840,7 @@ class CuroboMotion:
         ee_orientation_teleop_goal = cube_orientation
         if goal_offset is not None:
             offset = Pose.from_list(goal_offset)
-            goal_pose_list = np.concatenate(
-                [ee_translation_goal, ee_orientation_teleop_goal]
-            ).tolist()
+            goal_pose_list = np.concatenate([ee_translation_goal, ee_orientation_teleop_goal]).tolist()
             goal_pose = Pose.from_list(goal_pose_list)
             if offset_and_constraint_in_goal_frame:
                 offset_goal_pose = goal_pose.clone().multiply(offset)
@@ -892,12 +849,8 @@ class CuroboMotion:
             ee_translation_goal = offset_goal_pose.position.squeeze().cpu().numpy()
             ee_orientation_teleop_goal = offset_goal_pose.quaternion.squeeze().cpu().numpy()
         ik_goal = Pose(
-            position=self.tensor_args.to_device(
-                np.tile(ee_translation_goal, (CUROBO_BATCH_SIZE, 1))
-            ),
-            quaternion=self.tensor_args.to_device(
-                np.tile(ee_orientation_teleop_goal, (CUROBO_BATCH_SIZE, 1))
-            ),
+            position=self.tensor_args.to_device(np.tile(ee_translation_goal, (CUROBO_BATCH_SIZE, 1))),
+            quaternion=self.tensor_args.to_device(np.tile(ee_orientation_teleop_goal, (CUROBO_BATCH_SIZE, 1))),
             batch=CUROBO_BATCH_SIZE,
         )
         if path_constraint is not None and len(path_constraint) == 6:
@@ -912,9 +865,7 @@ class CuroboMotion:
             self.plan_config.pose_cost_metric = self.pose_metic
         link_poses = None
         if self.plan_config.pose_cost_metric:
-            update_res = self.motion_gen.update_pose_cost_metric(
-                self.plan_config.pose_cost_metric, cu_js, ik_goal
-            )
+            update_res = self.motion_gen.update_pose_cost_metric(self.plan_config.pose_cost_metric, cu_js, ik_goal)
             if not update_res:
                 self.reached = True
                 self.success = False
@@ -940,12 +891,8 @@ class CuroboMotion:
                 carb.log_warn("end_time is{}".format(time.time() - start_time))
                 self.num_targets += 1
                 paths = result.get_successful_paths()
-                position_filter_res = filter_paths_by_position_error(
-                    paths, result.position_error[result.success]
-                )
-                rotation_filter_res = filter_paths_by_rotation_error(
-                    paths, result.rotation_error[result.success]
-                )
+                position_filter_res = filter_paths_by_position_error(paths, result.position_error[result.success])
+                rotation_filter_res = filter_paths_by_rotation_error(paths, result.rotation_error[result.success])
                 filtered_paths = []
                 for i in range(len(paths)):
                     if position_filter_res[i] and rotation_filter_res[i]:
@@ -1082,9 +1029,7 @@ class CuroboMotion:
         if world_objects_pose_offset is not None:
             ee_pose = world_objects_pose_offset.inverse().multiply(ee_pose)
         ee_pose = ee_pose.inverse()  # ee_T_w to multiply all objects later
-        max_spheres = self.motion_gen.robot_cfg.kinematics.kinematics_config.get_number_of_spheres(
-            link_name
-        )
+        max_spheres = self.motion_gen.robot_cfg.kinematics.kinematics_config.get_number_of_spheres(link_name)
         if len(object_names) == 0:
             return
         n_spheres = int(max_spheres / len(object_names))
@@ -1155,9 +1100,7 @@ class CuroboMotion:
                     if idx in art_action.joint_indices:
                         art_idx = art_action.joint_indices.index(idx)
                         art_action.joint_positions[art_idx] = additional_action.joint_positions[idx]
-                        art_action.joint_velocities[art_idx] = additional_action.joint_velocities[
-                            idx
-                        ]
+                        art_action.joint_velocities[art_idx] = additional_action.joint_velocities[idx]
                     else:
                         art_action.joint_indices = np.append(art_action.joint_indices, idx)
                         art_action.joint_positions = np.append(

@@ -58,12 +58,8 @@ def read_camera_info(render_product_path: str) -> Dict:
         camera_info["cameraFisheyeParams"][14] = camera.GetAttribute("s1").Get()
         camera_info["cameraFisheyeParams"][15] = camera.GetAttribute("s2").Get()
         camera_info["cameraFisheyeParams"][16] = camera.GetAttribute("s3").Get()
-        camera_info["cameraFisheyeParams"][17] = camera.GetAttribute(
-            "fisheyeResolutionBudget"
-        ).Get()
-        camera_info["cameraFisheyeParams"][18] = camera.GetAttribute(
-            "fisheyeFrontFaceResolutionScale"
-        ).Get()
+        camera_info["cameraFisheyeParams"][17] = camera.GetAttribute("fisheyeResolutionBudget").Get()
+        camera_info["cameraFisheyeParams"][18] = camera.GetAttribute("fisheyeFrontFaceResolutionScale").Get()
 
     physical_distortion = camera.GetAttribute("physicalDistortionModel").Get()
     if physical_distortion is not None:
@@ -84,8 +80,6 @@ def read_camera_info(render_product_path: str) -> Dict:
     cy = height * 0.5 + camera_info["verticalOffset"] * height / verticalAperture
     camera_info["k"] = np.asarray([[fx, 0.0, cx], [0.0, fy, cy], [0.0, 0.0, 1.0]])
     camera_info["r"] = np.eye(N=3, dtype=float)
-    camera_info["p"] = np.concatenate(
-        (camera_info["k"], np.zeros(shape=[3, 1], dtype=float)), axis=1
-    )
+    camera_info["p"] = np.concatenate((camera_info["k"], np.zeros(shape=[3, 1], dtype=float)), axis=1)
 
     return camera_info

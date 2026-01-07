@@ -41,9 +41,7 @@ class DataFilter:
                     raise ValueError(f"Filter method '{rule_name}' not found in DataFilter class")
                 collected_data_valid = filter_method(**filter_rule.get("params", {}))
 
-                logger.info(
-                    f"Folder name: {episode_id}, ", end=""
-                )  # Note: end parameter is ignored in logger
+                logger.info(f"Folder name: {episode_id}, ", end="")  # Note: end parameter is ignored in logger
                 if not collected_data_valid:
                     result_code = filter_rule.get("result_code", 1)
                     logger.info(f"Can't pass [{rule_name}] check")
@@ -78,16 +76,12 @@ class DataFilter:
                 else:
                     raise ValueError("When input target as [List], the length must be 3!")
             else:
-                raise ValueError(
-                    "The type of target must be [List: len=3] or [str: target_obj_name]!"
-                )
+                raise ValueError("The type of target must be [List: len=3] or [str: target_obj_name]!")
             distance = object_pos_last - target_pos_last
             target_scope_array = np.array(target_scope)
             if target_scope_array.shape != (3, 2):
                 raise ValueError("The shape of target_scope must be (3, 2)")
-            is_reach_target = np.all(
-                (distance >= target_scope_array[:, 0]) & (distance <= target_scope_array[:, 1])
-            )
+            is_reach_target = np.all((distance >= target_scope_array[:, 0]) & (distance <= target_scope_array[:, 1]))
             if not is_reach_target:
                 return False
         return True
@@ -153,9 +147,7 @@ class DataFilter:
         fx, fy = intrinsic["fx"], intrinsic["fy"]
         ppx, ppy = intrinsic["ppx"], intrinsic["ppy"]
 
-        out_view_max_frame_count = max(
-            1, int(out_view_allow_time * refresh_rate * downsample_ratio)
-        )
+        out_view_max_frame_count = max(1, int(out_view_allow_time * refresh_rate * downsample_ratio))
         out_view_frame_count = np.zeros(len(objects), dtype=int)
         for frame in frames:
             extrinsic_matrix = np.array(frame["cameras"][camera]["pose"])
@@ -163,9 +155,7 @@ class DataFilter:
                 obj_pos_world = np.array(frame["objects"][objects[obj_index]]["pose"])[
                     :3, 3
                 ]  # Object world coordinates [x, y, z]
-                obj_pos_world_h = np.append(
-                    obj_pos_world, 1.0
-                )  # Homogeneous coordinates [x, y, z, 1]
+                obj_pos_world_h = np.append(obj_pos_world, 1.0)  # Homogeneous coordinates [x, y, z, 1]
                 # Calculate object coordinates in camera coordinate system
                 # World coordinates → Camera coordinates
                 obj_pos_cam_h = np.linalg.inv(extrinsic_matrix) @ obj_pos_world_h
@@ -232,9 +222,7 @@ class DataFilter:
             width = float(intrinsic["width"])
             height = float(intrinsic["height"])
 
-        out_view_max_frame_count = max(
-            1, int(out_view_allow_time * refresh_rate * downsample_ratio)
-        )
+        out_view_max_frame_count = max(1, int(out_view_allow_time * refresh_rate * downsample_ratio))
         out_view_frame_count = 0
         for frame in frames:
             extrinsic_matrix = np.array(frame["cameras"][camera]["pose"])
@@ -373,9 +361,7 @@ class DataFilter:
     region_size: Region size (length, width, height)
     """
 
-    def is_object_end_in_region(
-        self, objects: list[str], region_center: list[float], region_size: list[float]
-    ) -> bool:
+    def is_object_end_in_region(self, objects: list[str], region_center: list[float], region_size: list[float]) -> bool:
         last_frame = self.state["frames"][-1]
         region_min = np.array(region_center) - np.array(region_size) / 2
         region_max = np.array(region_center) + np.array(region_size) / 2
@@ -413,9 +399,7 @@ class DataFilter:
         last_obj2gripper_pose = np.linalg.inv(last_gripper_pose) @ last_object_pose
         standstill_count = 0
         grasp_count = 0
-        gripper_open_velocity_threshold = (
-            0.02  # greater than this value means the gripper is opening
-        )
+        gripper_open_velocity_threshold = 0.02  # greater than this value means the gripper is opening
         # Check if gripper grasps object, and if gripper is opening when gripper and object separate
         for frame_index in range(len(frames) - 1):
             frame = frames[frame_index]
@@ -438,15 +422,9 @@ class DataFilter:
                 standstill_count += 1
             obj2gripper_pose = np.linalg.inv(gripper_pose) @ object_pose
             relatve_transmission = np.linalg.inv(last_obj2gripper_pose) @ obj2gripper_pose
-            if (
-                standstill_count < 15
-                and np.linalg.norm(relatve_transmission[:3, 3]) < object_gripper_move_threshold
-            ):
+            if standstill_count < 15 and np.linalg.norm(relatve_transmission[:3, 3]) < object_gripper_move_threshold:
                 # Relative pose change between gripper and object is small, consider object is grasped
-                if (
-                    abs(gripper_joint_pos - last_gripper_joint_pos)
-                    < gripper_open_velocity_threshold
-                ):
+                if abs(gripper_joint_pos - last_gripper_joint_pos) < gripper_open_velocity_threshold:
                     grasp_count += 1
             else:
                 grasp_count = 0
@@ -470,10 +448,6 @@ class DataFilter:
             relative_pos = relative_pose[:3, 3]
 
             for i in range(3):
-                if not (
-                    relative_position_range[i][0]
-                    <= relative_pos[i]
-                    <= relative_position_range[i][1]
-                ):
+                if not (relative_position_range[i][0] <= relative_pos[i] <= relative_position_range[i][1]):
                     return False
         return True

@@ -48,19 +48,19 @@ TASK_MAPPING = {
     },
     "place_block_into_box": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "semantic"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
     },
     "place_object_into_box_position": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "position"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "position"},
     },
     "place_object_into_box_color": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "color"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "color"},
     },
     "place_object_into_box_size": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "size"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "size"},
     },
     "put_pen_into_penholder": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
@@ -68,7 +68,7 @@ TASK_MAPPING = {
     },
     "sort_accessory": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "semantic"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
     },
     "straighten_object": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
@@ -100,7 +100,7 @@ TASK_MAPPING = {
     },
     "place_object_on_convoy": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "semantic"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
     },
     "clean_the_desktop": {
         "background": {"G2": "study_room_05_g2"},
@@ -108,7 +108,7 @@ TASK_MAPPING = {
     },
     "sort_fruit": {
         "background": {"G1": "table_task_g1", "G2": "table_task_g2"},
-        "eval_dims": {"manip": "planer_pick_place_", "cognition": "semantic"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
     },
     "place_book": {
         "background": {"G2": "study_room_00_g2"},

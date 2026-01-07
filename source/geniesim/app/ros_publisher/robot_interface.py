@@ -19,14 +19,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import JointState, Image
 from geometry_msgs.msg import TransformStamped, Point, Vector3, Quaternion
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
-from vision_msgs.msg import (
-    Detection3DArray,
-    Detection3D,
-    ObjectHypothesisWithPose,
-    ObjectHypothesis,
-    BoundingBox3D,
-    BoundingBox3DArray,
-)
+
 
 MAP_DYNAMIC_TF_NAMES = {
     "idx01_body_joint1",
@@ -197,36 +190,12 @@ class RobotInterface(Node):
     def register_obj_tf(self, object_prim):
         self._dynamic_tf_tree.append((object_prim, None))
 
-    def register_perception(self, stage, robot_ns):
-        prim_path_list, prim_list, robot_prim = (
-            [],
-            [],
-            stage.GetPrimAtPath(f"{robot_ns}/base_link"),
-        )
-
-        for prim in stage.Traverse():
-            prim_str = str(prim.GetPath())
-            if prim_str.startswith("/World/Objects") and 3 == prim_str.count("/"):
-                prim_path_list.append(prim_str)
-                prim_list.append(stage.GetPrimAtPath(prim_str))
-
-        self.object_names, self.object_prims, self.robot_prim = (
-            prim_path_list,
-            prim_list,
-            robot_prim,
-        )
-
-        self.pub_perception3d = self.create_publisher(Detection3DArray, "/perception3d", 1)
-
     def build_tf_tree(self, stage, prim, parent, joint_name):
         prim_name = prim.GetName().split("/")[-1]
         if joint_name in MAP_DYNAMIC_TF_NAMES or "base_link" in prim_name:
             self._dynamic_tf_tree.append((prim, parent))
         else:
             self._static_tf_tree.append((prim, parent))
-
-        # print("static_tf_tree", self._static_tf_tree)
-        # print("dynamic_tf_tree", self._dynamic_tf_tree)
 
         for child in self.all_joints:
             joint = UsdPhysics.Joint(child)
@@ -317,8 +286,6 @@ class RobotInterface(Node):
             for cam in self.publisher_map:
                 if 0 == self._current_step_index % self.parameters[cam]["every_n_frame"]:
                     self.pub_camera(cam)
-                    if "head" in cam and hasattr(self, "object_prims"):
-                        self.pub_perception()
 
     def prepare_data(self):
         if self._articulation is None:
@@ -469,52 +436,6 @@ class RobotInterface(Node):
     def pub_articulated_object(self):
         for idx, articulation in enumerate(self.articulated_objs):
             self.pub_joint_state(self.articulated_obj_publishers[idx], articulation)
-
-    def pub_perception(self):
-        msg_array = Detection3DArray()
-        msg_array.header = self._header
-        for idx, prim in enumerate(self.object_prims):
-            name = self.object_names[idx]
-            matrix = get_world_transform_matrix(prim)
-            matrix = matrix * (get_world_transform_matrix(self.robot_prim).GetInverse())
-            translate = matrix.ExtractTranslation()
-            orient = matrix.ExtractRotationQuat()
-
-            msg = Detection3D()
-            msg.header = self._header
-            msg.id = name
-            obj_hyp = ObjectHypothesisWithPose()
-            obj_hyp.hypothesis.class_id = name
-            obj_hyp.hypothesis.score = 100.0
-            obj_hyp.pose.pose.position.x = translate[0]
-            obj_hyp.pose.pose.position.y = translate[1]
-            obj_hyp.pose.pose.position.z = translate[2]
-            obj_hyp.pose.pose.orientation = Quaternion(
-                x=orient.imaginary[0],
-                y=orient.imaginary[1],
-                z=orient.imaginary[2],
-                w=orient.real,
-            )
-            msg.results.append(obj_hyp)
-
-            bbox = BoundingBox3D()
-            bbox.center.position.x = translate[0]
-            bbox.center.position.y = translate[1]
-            bbox.center.position.z = translate[2]
-            bbox.center.orientation = Quaternion(
-                x=orient.imaginary[0],
-                y=orient.imaginary[1],
-                z=orient.imaginary[2],
-                w=orient.real,
-            )
-            bbox.size.x = 0.086 / 2.0
-            bbox.size.y = 0.115 / 2.0
-            bbox.size.z = 0.080 / 2.0
-            msg.bbox = bbox
-
-            msg_array.detections.append(msg)
-
-        self.pub_perception3d.publish(msg_array)
 
     def get_joint_state_names(self):
         return self._articulation_dof_names

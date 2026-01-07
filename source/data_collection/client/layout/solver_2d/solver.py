@@ -110,10 +110,7 @@ class LayoutSolver2D:
             [
                 self.cx + obj_cx,
                 self.cy + obj_cy,
-                self.cz
-                - self.workspace_Z_half
-                + self.objects[obj_id].size[2] / 2.0
-                + self.z_offset,
+                self.cz - self.workspace_Z_half + self.objects[obj_id].size[2] / 2.0 + self.z_offset,
             ]
         )
         if not self.objects[obj_id].up_side_down:
@@ -334,17 +331,13 @@ class LayoutSolver2D:
                 new_corners = get_rotated_corners(x, y, width, height, angle)
 
                 # Use sub_workspace boundary check
-                if self._is_within_sub_workspace(new_corners, obj_id) and not is_collision(
-                    new_corners, placed_objects
-                ):
+                if self._is_within_sub_workspace(new_corners, obj_id) and not is_collision(new_corners, placed_objects):
                     if not placed_objects:
                         best_position = (x, y, width, height, angle)
                         valid_position = True
                         break
 
-                    min_distance = min(
-                        calculate_distance(new_corners, obj[1]) for obj in placed_objects
-                    )
+                    min_distance = min(calculate_distance(new_corners, obj[1]) for obj in placed_objects)
                     if min_distance > max_distance:
                         max_distance = min_distance
                         found_position_count += 1

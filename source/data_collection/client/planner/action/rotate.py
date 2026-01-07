@@ -71,9 +71,7 @@ class RotateStage(Stage):
 
         target_poses = np.array(target_poses)
 
-        ik_success, ik_info = robot.solve_ik(
-            target_poses, ee_type="gripper", type="Simple", arm=arm
-        )
+        ik_success, ik_info = robot.solve_ik(target_poses, ee_type="gripper", type="Simple", arm=arm)
         target_poses = target_poses[ik_success]
         logger.info(
             f"Rotate, {self.passive_obj_id}, Filtered target pose with isaac-sim IK: {target_poses.shape[0]}/{ik_success.shape[0]}"
@@ -135,9 +133,7 @@ class RotateStage(Stage):
             delta_world_z = (place_length - origin_length) / 2.0
             object_target_place_position = origin_position + np.array([0, 0, delta_world_z])
             after_rotation_object_positions = target_poses @ object2gripper
-            delta_translation = (
-                object_target_place_position - after_rotation_object_positions[:, :3, 3]
-            )
+            delta_translation = object_target_place_position - after_rotation_object_positions[:, :3, 3]
             # gripper pose at object place position
             target_place_poses = target_poses.copy()
             target_place_poses[:, :3, 3] += delta_translation
@@ -145,9 +141,7 @@ class RotateStage(Stage):
             if target_place_poses.shape[0] < num_samples:
                 sample_indices = np.arange(target_place_poses.shape[0])
             else:
-                sample_indices = np.linspace(
-                    0, target_place_poses.shape[0] - 1, num_samples
-                ).astype(int)
+                sample_indices = np.linspace(0, target_place_poses.shape[0] - 1, num_samples).astype(int)
             sampled_poses = target_place_poses[sample_indices]
             num_samples = sampled_poses.shape[0]
             z_shifts = np.arange(-0.08, 0.02, 0.01)
@@ -159,9 +153,7 @@ class RotateStage(Stage):
                 sampled_poses_batch.append(new_poses)
             sampled_poses_batch = np.vstack(sampled_poses_batch)  # (num_samples * num_z, 4, 4)
 
-            ik_success_array, _ = robot.solve_ik(
-                sampled_poses_batch, ee_type="gripper", type="AvoidObs", arm=arm
-            )
+            ik_success_array, _ = robot.solve_ik(sampled_poses_batch, ee_type="gripper", type="AvoidObs", arm=arm)
             z_success_counts = []
             for i in range(num_z):
                 ik_success_this_z = ik_success_array[i * num_samples : (i + 1) * num_samples]
@@ -182,32 +174,24 @@ class RotateStage(Stage):
             margin = 0.0
             target_place_poses[:, :3, 3] += np.array([0, 0, best_z + margin])
 
-            ik_success, ik_info = robot.solve_ik(
-                target_place_poses, ee_type="gripper", type="Simple", arm=arm
-            )
+            ik_success, ik_info = robot.solve_ik(target_place_poses, ee_type="gripper", type="Simple", arm=arm)
             target_place_poses = target_place_poses[ik_success]
             target_poses = target_poses[ik_success]
             logger.info(
                 f"Rotate, {self.passive_obj_id}, Filtered target place pose with isaac-sim IK: {target_place_poses.shape[0]}/{ik_success.shape[0]}"
             )
             if target_place_poses.shape[0] == 0:
-                logger.info(
-                    f"Rotate, {self.passive_obj_id}, No target place pose can pass isaac-sim IK"
-                )
+                logger.info(f"Rotate, {self.passive_obj_id}, No target place pose can pass isaac-sim IK")
                 return []
 
-            ik_success, ik_info = robot.solve_ik(
-                target_place_poses, ee_type="gripper", type="AvoidObs", arm=arm
-            )
+            ik_success, ik_info = robot.solve_ik(target_place_poses, ee_type="gripper", type="AvoidObs", arm=arm)
             target_poses = target_poses[ik_success]
             target_place_poses = target_place_poses[ik_success]
             logger.info(
                 f"Rotate, {self.passive_obj_id}, Filtered target place pose with curobo IK: {target_place_poses.shape[0]}/{ik_success.shape[0]}"
             )
             if target_place_poses.shape[0] == 0:
-                logger.info(
-                    f"Rotate, {self.passive_obj_id}, No target place pose can pass curobo IK"
-                )
+                logger.info(f"Rotate, {self.passive_obj_id}, No target place pose can pass curobo IK")
                 return []
         result = []
 
@@ -253,7 +237,5 @@ class RotateStage(Stage):
         return action_sequence
 
     def check_completion(self, objects, robot=None):
-        assert (
-            self.active_action_sequence is not None
-        ), f"Active action for stage {self.action_type} is None"
+        assert self.active_action_sequence is not None, f"Active action for stage {self.action_type} is None"
         return True

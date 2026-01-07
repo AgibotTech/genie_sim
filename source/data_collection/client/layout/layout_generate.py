@@ -50,9 +50,7 @@ class LayoutGenerator:
         if "poses" in workspace:
             self.generator_type = GeneratorType.SAMPLE
         else:
-            workspace_xyz, workspace_size = np.array(workspace["position"]), np.array(
-                workspace["size"]
-            )
+            workspace_xyz, workspace_size = np.array(workspace["position"]), np.array(workspace["size"])
             blocked_zone = None
             if "blocked_zone" in workspace:
                 blocked_zone = np.array(workspace["blocked_zone"])
@@ -135,10 +133,7 @@ class LayoutGenerator:
             else:
                 rel_position = np.array(obj_info["workspace_relative_position"])
 
-            if (
-                "workspace_relative_orientation" not in obj_info
-                or len(obj_info["workspace_relative_orientation"]) != 4
-            ):
+            if "workspace_relative_orientation" not in obj_info or len(obj_info["workspace_relative_orientation"]) != 4:
                 # If no relative orientation, use default value [0, 0, 0, 1] (w, x, y, z)
                 rel_quaternion = axis_to_quaternion(up_axis, "z", upside_down)
             else:
@@ -170,9 +165,7 @@ class LayoutGenerator:
             else:
                 ws_quat_wxyz = np.array([1.0, 0.0, 0.0, 0.0])
             # Convert to (x, y, z, w) format for pose2mat
-            ws_quat_xyzw = np.array(
-                [ws_quat_wxyz[1], ws_quat_wxyz[2], ws_quat_wxyz[3], ws_quat_wxyz[0]]
-            )
+            ws_quat_xyzw = np.array([ws_quat_wxyz[1], ws_quat_wxyz[2], ws_quat_wxyz[3], ws_quat_wxyz[0]])
             rel_quat_xyzw = np.array(
                 [
                     rel_quaternion[1],

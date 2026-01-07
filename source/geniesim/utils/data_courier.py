@@ -14,10 +14,15 @@ class DataCourier:
         self.api_core = api_core
         self.enable_ros = enable_ros
         if enable_ros:
-            if node_name in ["pi", "fast", "gm", "go", "fast_new", "gm_new", ""]:
+            if node_name in ["pi", ""]:
                 self.sim_ros_node = PIROSNode(robot_name="G1_omnipicker")
                 # Spin in main loop for unified processing
                 self.api_core.benchmark_ros_node = self.sim_ros_node
+                # Set sub_task_name if available (even if empty string, we'll publish it)
+                if hasattr(api_core, "sub_task_name"):
+                    # Publish sub_task_name immediately, even if empty
+                    # This ensures auto_record_and_extract.py receives it
+                    self.sim_ros_node.set_sub_task_name(api_core.sub_task_name or "")
             else:
                 # To be implemented
                 pass

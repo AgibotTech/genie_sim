@@ -121,9 +121,7 @@ class armService(arm_pb2_grpc.ArmControlService):
         if req.robot_name == "right":
             isArmRight = True
         target_position = np.array([req.pose.position.x, req.pose.position.y, req.pose.position.z])
-        target_rotation = np.array(
-            [req.pose.rpy.rw, req.pose.rpy.rx, req.pose.rpy.ry, req.pose.rpy.rz]
-        )
+        target_rotation = np.array([req.pose.rpy.rw, req.pose.rpy.rx, req.pose.rpy.ry, req.pose.rpy.rz])
         is_backend = req.is_block
         motion_run_ratio = req.motion_run_ratio
         try:
@@ -355,9 +353,7 @@ class ObjectService(sim_object_service_pb2_grpc.SimObjectService):
 
     def set_target_point(self, req, rsp):
         rsp = sim_object_service_pb2.SetTargetPointRsp()
-        target_position = np.array(
-            [req.point_position.x, req.point_position.y, req.point_position.z]
-        )
+        target_position = np.array([req.point_position.x, req.point_position.y, req.point_position.z])
         rsp.msg = self.server_function.blocking_start_server(
             data={"target_position": target_position}, Command=Command.SET_TARGET_POINT
         )
@@ -539,9 +535,7 @@ class ObservationService(sim_observation_service_pb2_grpc.SimObservationService)
     def reset(self, req, rsp):
         rsp = sim_observation_service_pb2.ResetRsp()
         Reset = req.reset
-        rsp.msg = self.server_function.blocking_start_server(
-            data={"reset", Reset}, Command=Command.RESET
-        )
+        rsp.msg = self.server_function.blocking_start_server(data={"reset", Reset}, Command=Command.RESET)
         return rsp
 
     def attach_obj(self, req, rsp):
@@ -558,9 +552,7 @@ class ObservationService(sim_observation_service_pb2_grpc.SimObservationService)
     def detach_obj(self, req, rsp):
         rsp = sim_observation_service_pb2.DetachRsp()
         detach = req.detach
-        rsp.msg = self.server_function.blocking_start_server(
-            data={"detach", detach}, Command=Command.DETACH_OBJ
-        )
+        rsp.msg = self.server_function.blocking_start_server(data={"detach", detach}, Command=Command.DETACH_OBJ)
         return rsp
 
     def remove_objs_from_obstacle(self, req, rsp):
@@ -587,9 +579,7 @@ class ObservationService(sim_observation_service_pb2_grpc.SimObservationService)
     def exit(self, req, rsp):
         rsp = sim_observation_service_pb2.ExitRsp()
         exit = req.exit
-        rsp.msg = self.server_function.blocking_start_server(
-            data={"exit": exit}, Command=Command.EXIT
-        )
+        rsp.msg = self.server_function.blocking_start_server(data={"exit": exit}, Command=Command.EXIT)
         return rsp
 
     def add_camera(self, req, rsp):
@@ -747,24 +737,6 @@ class ObservationService(sim_observation_service_pb2_grpc.SimObservationService)
         )
         return rsp
 
-    def set_material(self, req, rsp):
-        rsp = sim_observation_service_pb2.SetMaterialRsp()
-        logger.info(req)
-        materials = []
-        for mat in req.materials:
-            materials.append(
-                {
-                    "object_prim": mat.object_prim,
-                    "material_name": mat.material_name,
-                    "material_path": mat.material_path,
-                    "label_name": mat.label_name,
-                }
-            )
-        rsp.msg = self.server_function.blocking_start_server(
-            data=materials, Command=Command.SET_MATERIAL
-        )
-        return rsp
-
     def set_light(self, req, rsp):
         rsp = sim_observation_service_pb2.SetLightRsp()
         lights = []
@@ -819,15 +791,11 @@ class GrpcServer:
                 ("grpc.max_receive_message_length", 16094304),
             ],
         )
-        rs2_camera_pb2_grpc.add_CameraServiceServicer_to_server(
-            CameraService(self.server_function), self._server
-        )
+        rs2_camera_pb2_grpc.add_CameraServiceServicer_to_server(CameraService(self.server_function), self._server)
         sim_camera_service_pb2_grpc.add_SimCameraServiceServicer_to_server(
             SimCameraService(self.server_function), self._server
         )
-        arm_pb2_grpc.add_ArmControlServiceServicer_to_server(
-            armService(self.server_function), self._server
-        )
+        arm_pb2_grpc.add_ArmControlServiceServicer_to_server(armService(self.server_function), self._server)
         joint_channel_pb2_grpc.add_JointControlServiceServicer_to_server(
             JointService(self.server_function), self._server
         )

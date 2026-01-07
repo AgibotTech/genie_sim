@@ -266,9 +266,7 @@ class RpcClient:
         req.add_particle = add_particle
         req.static_friction = static_friction
         req.dynamic_friction = dynamic_friction
-        req.particle_position.x, req.particle_position.y, req.particle_position.z = (
-            particle_position
-        )
+        req.particle_position.x, req.particle_position.y, req.particle_position.z = particle_position
         req.particle_scale.x, req.particle_scale.y, req.particle_scale.z = particle_scale
         req.particle_color.r, req.particle_color.g, req.particle_color.b = particle_color
         req.add_rigid_body = add_rigid_body
@@ -422,9 +420,7 @@ class RpcClient:
             if "G1" in self.robot_urdf:
                 J = pinocchio.computeJointJacobian(model, data, joint_positions, 24)
             elif "G2" in self.robot_urdf:
-                J = pinocchio.computeJointJacobian(
-                    model, data, joint_positions, 45
-                )
+                J = pinocchio.computeJointJacobian(model, data, joint_positions, 45)
             else:
                 J = pinocchio.computeJointJacobian(model, data, joint_positions, 7)
             manip = np.sqrt(np.linalg.det(np.dot(J, J.T)))
@@ -574,21 +570,6 @@ class RpcClient:
         req = sim_object_service_pb2.SetTargetPointReq()
         req.point_position.x, req.point_position.y, req.point_position.z = position
         response = stub.set_target_point(req)
-        return response
-
-    def set_material(self, material_info):
-        stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)
-        req = sim_observation_service_pb2.SetMaterailReq()
-        for mat in material_info:
-            logger.info(mat)
-            mat_info = sim_observation_service_pb2.MaterialInfo()
-            mat_info.object_prim = mat["object_prim"]
-            mat_info.material_name = mat["material_name"]
-            mat_info.material_path = mat["material_path"]
-            if "label_name" in mat:
-                mat_info.label_name = mat["label_name"]
-            req.materials.append(mat_info)
-        response = stub.set_material(req)
         return response
 
     def set_light(self, light_info):

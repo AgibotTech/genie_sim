@@ -2,6 +2,13 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+import os
+
+import omni.kit.commands
+import omni.usd
+from isaacsim.core.prims import SingleXFormPrim as XFormPrim
+from pxr import Gf, Sdf, UsdLux, UsdShade
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 
@@ -42,3 +49,46 @@ def batch_matrices_to_quaternions_scipy_w_first(pose_matrices):
     quaternions_w_first[:, 0] = quaternions[:, 3]  # w
     quaternions_w_first[:, 1:] = quaternions[:, :3]  # x, y, z
     return quaternions_w_first
+
+
+class Light:
+    def __init__(self, prim_path, stage, light_type, intensity, color, orientation, texture_file):
+        self.prim_path = prim_path
+        self.light_type = light_type
+        self.stage = stage
+        self.intensity = intensity
+        self.color = color
+        self.orientation = orientation
+        base_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/data/" + texture_file
+        for file in os.listdir(base_folder):
+            if file.endswith(".hdr"):
+                self.texture_file = os.path.join(base_folder, file)
+
+    def initialize(self):
+        # selection between different light types
+        if self.light_type == "Dome":
+            light = UsdLux.DomeLight.Define(self.stage, Sdf.Path(self.prim_path))
+            light.CreateIntensityAttr(self.intensity)
+            light.CreateColorTemperatureAttr(self.color)
+            light.CreateTextureFileAttr().Set(Sdf.AssetPath(self.texture_file))
+        elif self.light_type == "Sphere":
+            light = UsdLux.SphereLight.Define(self.stage, Sdf.Path(self.prim_path))
+            light.CreateIntensityAttr(self.intensity)
+            light.CreateColorTemperatureAttr(self.color)
+        elif self.light_type == "Disk":
+            light = UsdLux.DiskLight.Define(self.stage, Sdf.Path(self.prim_path))
+            light.CreateIntensityAttr(self.intensity)
+            light.CreateColorTemperatureAttr(self.color)
+        elif self.light_type == "Rect":
+            light = UsdLux.RectLight.Define(self.stage, Sdf.Path(self.prim_path))
+            light.CreateIntensityAttr(self.intensity)
+            light.CreateColorTemperatureAttr(self.color)
+        elif self.light_type == "Distant":
+            light = UsdLux.DistantLight.Define(self.stage, Sdf.Path(self.prim_path))
+            light.CreateIntensityAttr(self.intensity)
+            light.CreateColorTemperatureAttr(self.color)
+
+        light.CreateEnableColorTemperatureAttr().Set(True)
+        lightPrim = XFormPrim(self.prim_path, orientation=self.orientation)
+
+        return lightPrim

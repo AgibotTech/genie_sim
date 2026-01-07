@@ -61,9 +61,7 @@ def filter_paths_by_position_error(paths, position_errors):
     Returns:
         List(bool): A filtered list of bool where each path's position error is below the threshold.
     """
-    assert (
-        len(paths) == position_errors.shape[0]
-    ), "The number of paths must match the number of position errors."
+    assert len(paths) == position_errors.shape[0], "The number of paths must match the number of position errors."
 
     mean_error = torch.mean(position_errors)
     torch.std(position_errors)
@@ -84,9 +82,7 @@ def filter_paths_by_rotation_error(paths, rotation_errors):
     Returns:
         List(bool): A filtered list of bool where each path's rotation error is below the threshold.
     """
-    assert (
-        len(paths) == rotation_errors.shape[0]
-    ), "The number of paths must match the number of rotation errors."
+    assert len(paths) == rotation_errors.shape[0], "The number of paths must match the number of rotation errors."
 
     mean_error = torch.mean(rotation_errors)
     torch.std(rotation_errors)

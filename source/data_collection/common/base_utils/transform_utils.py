@@ -1410,9 +1410,7 @@ def calculate_rotation_matrix(v1, v2):
     elif np.dot(v1, v2) == 1:
         qTrans_Mat = np.eye(3, 3)
     else:
-        qTrans_Mat = (
-            np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(v1, v2))
-        )
+        qTrans_Mat = np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(v1, v2))
 
     qTrans_Mat *= scale
     return qTrans_Mat

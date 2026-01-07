@@ -136,10 +136,7 @@ class DataCollectionAgent(BaseAgent):
             object_info["material"] = "general"
             if object_info.get("scene_object", False):
                 if "position" not in object_info or "quaternion" not in object_info:
-                    logger.error(
-                        "Scene object %s missing position or quaternion, skipping."
-                        % object_info["object_id"]
-                    )
+                    logger.error("Scene object %s missing position or quaternion, skipping." % object_info["object_id"])
                     continue
                 object_pose = {}
                 name = object_info["object_id"]
@@ -175,15 +172,6 @@ class DataCollectionAgent(BaseAgent):
             target_lookat_point = np.mean(np.stack(target_lookat_point), axis=0)
             self.robot.client.set_target_point(target_lookat_point.tolist())
 
-        """ Set material """
-        material_infos = []
-        if "object_with_material" in task_info:
-            for key in task_info["object_with_material"]:
-                material_infos += task_info["object_with_material"][key]
-            if len(material_infos):
-                self.robot.client.set_material(material_infos)
-                time.sleep(0.3)
-
         """ Set light """
         light_infos = []
         if "lights" in task_info:
@@ -195,14 +183,11 @@ class DataCollectionAgent(BaseAgent):
                     if "light_temperature" in info:
                         temperature_random_ratio = min(max(0.4, np.random.normal(1, 0.2)), 1.6)
                         info["light_temperature"] = (
-                            original_light_infos[idx]["light_temperature"]
-                            * temperature_random_ratio
+                            original_light_infos[idx]["light_temperature"] * temperature_random_ratio
                         )
                     if "light_intensity" in info:
                         intensity_random_ratio = max(0.1, np.random.normal(1, 0.3))
-                        info["light_intensity"] = (
-                            original_light_infos[idx]["light_intensity"] * intensity_random_ratio
-                        )
+                        info["light_intensity"] = original_light_infos[idx]["light_intensity"] * intensity_random_ratio
                     if "rotation" in info:
                         info["rotation"] = original_light_infos[idx]["rotation"]
                     else:
@@ -241,9 +226,7 @@ class DataCollectionAgent(BaseAgent):
             if "fix_pose" in obj_id:
                 if len(objects[obj_id].obj_pose) == 3:
                     position = objects[obj_id].obj_pose
-                    rotation_matrix = calculate_rotation_matrix(
-                        objects[obj_id].direction, [0, 0, 1]
-                    )
+                    rotation_matrix = calculate_rotation_matrix(objects[obj_id].direction, [0, 0, 1])
                     objects[obj_id].obj_pose = np.eye(4)
                     objects[obj_id].obj_pose[:3, 3] = position.flatten()
                     objects[obj_id].obj_pose[:3, :3] = rotation_matrix
@@ -251,9 +234,7 @@ class DataCollectionAgent(BaseAgent):
             if "/" in obj_id:
                 obj_id.split("/")[0]
                 part_name = obj_id.split("/")[1]
-                dof_joint = self.robot.client.get_part_dof_joint(
-                    objects[obj_id].parent_prim_path, part_name
-                )
+                dof_joint = self.robot.client.get_part_dof_joint(objects[obj_id].parent_prim_path, part_name)
                 objects[obj_id].joint_position = dof_joint.joint_position
                 objects[obj_id].joint_velocity = dof_joint.joint_velocity
 
@@ -263,12 +244,8 @@ class DataCollectionAgent(BaseAgent):
                 and "simple_place" in objects[obj_id].info
                 and objects[obj_id].info["simple_place"]
             ):
-                down_direction_world = (
-                    np.linalg.inv(objects[obj_id].obj_pose) @ np.array([0, 0, -1, 1])
-                )[:3]
-                down_direction_world = (
-                    down_direction_world / np.linalg.norm(down_direction_world) * 0.08
-                )
+                down_direction_world = (np.linalg.inv(objects[obj_id].obj_pose) @ np.array([0, 0, -1, 1]))[:3]
+                down_direction_world = down_direction_world / np.linalg.norm(down_direction_world) * 0.08
                 objects[obj_id].elements["active"]["place"]["direction"] = down_direction_world
 
         return objects
@@ -294,9 +271,7 @@ class DataCollectionAgent(BaseAgent):
                     object_dir_base_name,
                     "interaction.json",
                 )
-                assert os.path.exists(
-                    interaction_label_file
-                ), f"interaction.json not found in {interaction_label_file}"
+                assert os.path.exists(interaction_label_file), f"interaction.json not found in {interaction_label_file}"
                 objs_interaction[obj_id] = json.load(open(interaction_label_file))["interaction"]
 
         for stage in task_info["stages"]:
@@ -369,9 +344,7 @@ class DataCollectionAgent(BaseAgent):
                         file = objs_interaction[passive_obj_id]["passive"]["grasp"][primitive]
                         if isinstance(file, list):
                             file = file[0]
-                    grasp_file = os.path.join(
-                        os.environ.get("SIM_ASSETS"), "interaction", object_dir_base_name, file
-                    )
+                    grasp_file = os.path.join(os.environ.get("SIM_ASSETS"), "interaction", object_dir_base_name, file)
                     if not os.path.exists(grasp_file):
                         logger.info("-- Grasp file not exist: %s" % grasp_file)
                         return False
@@ -422,25 +395,17 @@ class DataCollectionAgent(BaseAgent):
                 if rule == "random_choice":
                     active_obj_id = np.random.choice(stage["active"]["object_id"])
                     stage["active"]["object_id"] = active_obj_id
-                    logger.info(
-                        f"Stage {stage['action']} randomly selected active object id: {active_obj_id}"
-                    )
+                    logger.info(f"Stage {stage['action']} randomly selected active object id: {active_obj_id}")
                 else:
-                    raise NotImplementedError(
-                        f"Rule {rule} for active object selection is not implemented"
-                    )
+                    raise NotImplementedError(f"Rule {rule} for active object selection is not implemented")
             if isinstance(stage["passive"]["object_id"], list):
                 rule = stage["passive"].get("rule", "random_choice")
                 if rule == "random_choice":
                     passive_obj_id = np.random.choice(stage["passive"]["object_id"])
                     stage["passive"]["object_id"] = passive_obj_id
-                    logger.info(
-                        f"Stage {stage['action']} randomly selected passive object id: {passive_obj_id}"
-                    )
+                    logger.info(f"Stage {stage['action']} randomly selected passive object id: {passive_obj_id}")
                 else:
-                    raise NotImplementedError(
-                        f"Rule {rule} for passive object selection is not implemented"
-                    )
+                    raise NotImplementedError(f"Rule {rule} for passive object selection is not implemented")
 
             if stage["action"] == "pick" and stage["extra_params"]["arm"] == "auto":
                 passive_obj_id = stage["passive"]["object_id"]
@@ -473,9 +438,9 @@ class DataCollectionAgent(BaseAgent):
                 stage["extra_params"]["arm"] = arm
 
             # Also update arm parameter in place stage to maintain consistency
-            if (
-                stage["action"] in PLACE_LIKE_ACTIONS or stage["action"] in ["rotate", "reset"]
-            ) and stage["extra_params"]["arm"] == "auto":
+            if (stage["action"] in PLACE_LIKE_ACTIONS or stage["action"] in ["rotate", "reset"]) and stage[
+                "extra_params"
+            ]["arm"] == "auto":
                 stage["extra_params"]["arm"] = arm
 
             # Only select based on arm when passive_obj_id is a dictionary
@@ -504,16 +469,16 @@ class DataCollectionAgent(BaseAgent):
                     english_arm_upper = "Right"
                     english_arm_lower = "right"
                 if "action_text" in stage["action_description"]:
-                    stage["action_description"]["action_text"] = stage["action_description"][
-                        "action_text"
-                    ].replace("{左/右}", chinese_arm)
+                    stage["action_description"]["action_text"] = stage["action_description"]["action_text"].replace(
+                        "{左/右}", chinese_arm
+                    )
                 if "english_action_text" in stage["action_description"]:
-                    stage["action_description"]["english_action_text"] = stage[
-                        "action_description"
-                    ]["english_action_text"].replace("{Left/Right}", english_arm_upper)
-                    stage["action_description"]["english_action_text"] = stage[
-                        "action_description"
-                    ]["english_action_text"].replace("{left/right}", english_arm_lower)
+                    stage["action_description"]["english_action_text"] = stage["action_description"][
+                        "english_action_text"
+                    ].replace("{Left/Right}", english_arm_upper)
+                    stage["action_description"]["english_action_text"] = stage["action_description"][
+                        "english_action_text"
+                    ].replace("{left/right}", english_arm_lower)
                 if "action_text" in stage["action_description"]:
                     match = re.search(r"\{object:.*\}", stage["action_description"]["action_text"])
                     if match:
@@ -521,33 +486,23 @@ class DataCollectionAgent(BaseAgent):
                         for obj in task_info["objects"]:
                             if obj["object_id"] == object_name:
                                 if "chinese_semantic_name" in obj:
-                                    stage["action_description"]["action_text"] = stage[
-                                        "action_description"
-                                    ]["action_text"].replace(
-                                        match.group(0), obj["chinese_semantic_name"]
-                                    )
+                                    stage["action_description"]["action_text"] = stage["action_description"][
+                                        "action_text"
+                                    ].replace(match.group(0), obj["chinese_semantic_name"])
                                 else:
-                                    raise ValueError(
-                                        f"Object {object_name} has no chinese_semantic_name"
-                                    )
+                                    raise ValueError(f"Object {object_name} has no chinese_semantic_name")
                                 break
-                    match = re.search(
-                        r"\{position:.*\}", stage["action_description"]["action_text"]
-                    )
+                    match = re.search(r"\{position:.*\}", stage["action_description"]["action_text"])
                     if match:
                         object_name = match.group(0).replace("{position:", "").replace("}", "")
                         for obj in task_info["objects"]:
                             if obj["object_id"] == object_name:
                                 if "chinese_position_semantic" in obj:
-                                    stage["action_description"]["action_text"] = stage[
-                                        "action_description"
-                                    ]["action_text"].replace(
-                                        match.group(0), obj["chinese_position_semantic"]
-                                    )
+                                    stage["action_description"]["action_text"] = stage["action_description"][
+                                        "action_text"
+                                    ].replace(match.group(0), obj["chinese_position_semantic"])
                                 else:
-                                    raise ValueError(
-                                        f"Object {object_name} has no chinese_position_semantic"
-                                    )
+                                    raise ValueError(f"Object {object_name} has no chinese_position_semantic")
                                 break
                 if "english_action_text" in stage["action_description"]:
                     match = re.search(
@@ -559,33 +514,23 @@ class DataCollectionAgent(BaseAgent):
                         for obj in task_info["objects"]:
                             if obj["object_id"] == object_name:
                                 if "english_semantic_name" in obj:
-                                    stage["action_description"]["english_action_text"] = stage[
-                                        "action_description"
-                                    ]["english_action_text"].replace(
-                                        match.group(0), obj["english_semantic_name"]
-                                    )
+                                    stage["action_description"]["english_action_text"] = stage["action_description"][
+                                        "english_action_text"
+                                    ].replace(match.group(0), obj["english_semantic_name"])
                                 else:
-                                    raise ValueError(
-                                        f"Object {object_name} has no english_semantic_name"
-                                    )
+                                    raise ValueError(f"Object {object_name} has no english_semantic_name")
                                 break
-                    match = re.search(
-                        r"\{position:.*\}", stage["action_description"]["english_action_text"]
-                    )
+                    match = re.search(r"\{position:.*\}", stage["action_description"]["english_action_text"])
                     if match:
                         object_name = match.group(0).replace("{position:", "").replace("}", "")
                         for obj in task_info["objects"]:
                             if obj["object_id"] == object_name:
                                 if "english_position_semantic" in obj:
-                                    stage["action_description"]["english_action_text"] = stage[
-                                        "action_description"
-                                    ]["english_action_text"].replace(
-                                        match.group(0), obj["english_position_semantic"]
-                                    )
+                                    stage["action_description"]["english_action_text"] = stage["action_description"][
+                                        "english_action_text"
+                                    ].replace(match.group(0), obj["english_position_semantic"])
                                 else:
-                                    raise ValueError(
-                                        f"Object {object_name} has no english_position_semantic"
-                                    )
+                                    raise ValueError(f"Object {object_name} has no english_position_semantic")
                                 break
         # Modify english_task_name, task_name, init_scene_text in task_description
         if "task_description" in task_info:
@@ -597,13 +542,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "english_semantic_name" in obj:
-                                task_description["english_task_name"] = task_description[
-                                    "english_task_name"
-                                ].replace(match.group(0), obj["english_semantic_name"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no english_semantic_name"
+                                task_description["english_task_name"] = task_description["english_task_name"].replace(
+                                    match.group(0), obj["english_semantic_name"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no english_semantic_name")
                             break
                 match = re.search(r"\{position:.*\}", task_description["english_task_name"])
                 if match:
@@ -611,13 +554,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "english_position_semantic" in obj:
-                                task_description["english_task_name"] = task_description[
-                                    "english_task_name"
-                                ].replace(match.group(0), obj["english_position_semantic"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no english_position_semantic"
+                                task_description["english_task_name"] = task_description["english_task_name"].replace(
+                                    match.group(0), obj["english_position_semantic"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no english_position_semantic")
                             break
             if "task_name" in task_description:
                 match = re.search(r"\{object:.*\}", task_description["task_name"])
@@ -626,13 +567,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "chinese_semantic_name" in obj:
-                                task_description["task_name"] = task_description[
-                                    "task_name"
-                                ].replace(match.group(0), obj["chinese_semantic_name"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no chinese_semantic_name"
+                                task_description["task_name"] = task_description["task_name"].replace(
+                                    match.group(0), obj["chinese_semantic_name"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no chinese_semantic_name")
                             break
                 match = re.search(r"\{position:.*\}", task_description["task_name"])
                 if match:
@@ -640,13 +579,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "chinese_position_semantic" in obj:
-                                task_description["task_name"] = task_description[
-                                    "task_name"
-                                ].replace(match.group(0), obj["chinese_position_semantic"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no chinese_position_semantic"
+                                task_description["task_name"] = task_description["task_name"].replace(
+                                    match.group(0), obj["chinese_position_semantic"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no chinese_position_semantic")
                             break
             if "init_scene_text" in task_description:
                 match = re.search(r"\{object:.*\}", task_description["init_scene_text"])
@@ -655,13 +592,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "english_semantic_name" in obj:
-                                task_description["init_scene_text"] = task_description[
-                                    "init_scene_text"
-                                ].replace(match.group(0), obj["english_semantic_name"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no english_semantic_name"
+                                task_description["init_scene_text"] = task_description["init_scene_text"].replace(
+                                    match.group(0), obj["english_semantic_name"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no english_semantic_name")
                             break
                 match = re.search(r"\{position:.*\}", task_description["init_scene_text"])
                 if match:
@@ -669,13 +604,11 @@ class DataCollectionAgent(BaseAgent):
                     for obj in task_info["objects"]:
                         if obj["object_id"] == object_name:
                             if "english_position_semantic" in obj:
-                                task_description["init_scene_text"] = task_description[
-                                    "init_scene_text"
-                                ].replace(match.group(0), obj["english_position_semantic"])
-                            else:
-                                raise ValueError(
-                                    f"Object {object_name} has no english_position_semantic"
+                                task_description["init_scene_text"] = task_description["init_scene_text"].replace(
+                                    match.group(0), obj["english_position_semantic"]
                                 )
+                            else:
+                                raise ValueError(f"Object {object_name} has no english_position_semantic")
                             break
 
         self.action_script.initialize(task_info, objects)
@@ -701,9 +634,7 @@ class DataCollectionAgent(BaseAgent):
         index,
         step_index,
     ):
-        logger.info(
-            f"==> [RUN] Stage {stage_id} Substage {index} Step {step_index}: {stage.action_type}"
-        )
+        logger.info(f"==> [RUN] Stage {stage_id} Substage {index} Step {step_index}: {stage.action_type}")
         step_success = False
         need_retry = True
         extra_params = stage.extra_params.copy()
@@ -760,9 +691,7 @@ class DataCollectionAgent(BaseAgent):
         goal_offset = extra_params.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
         path_constraint = extra_params.get("path_constraint", [])
         from_current_pose = extra_params.get("from_current_pose", False)
-        offset_and_constraint_in_goal_frame = extra_params.get(
-            "offset_and_constraint_in_goal_frame", True
-        )
+        offset_and_constraint_in_goal_frame = extra_params.get("offset_and_constraint_in_goal_frame", True)
         disable_collision_links = extra_params.get("disable_collision_links", [])
         if remove_obstacles:
             self.robot.client.remove_objs_from_obstacle([objects[stage.passive_obj_id].prim_path])
@@ -785,9 +714,7 @@ class DataCollectionAgent(BaseAgent):
                     )
                     noisy_target_gripper_poses = []
                     for _ in range(10):
-                        noisy_target_gripper_poses.append(
-                            add_random_noise_to_pose(target_gripper_pose, rot_noise=10)
-                        )
+                        noisy_target_gripper_poses.append(add_random_noise_to_pose(target_gripper_pose, rot_noise=10))
                     noisy_target_gripper_poses = np.array(noisy_target_gripper_poses)
                     ik_success, _ = self.robot.solve_ik(
                         noisy_target_gripper_poses,
@@ -803,9 +730,7 @@ class DataCollectionAgent(BaseAgent):
                         )
                         min_index = np.argmin(dists)
                         target_gripper_pose = noisy_target_gripper_poses[min_index]
-                        logger.info(
-                            f"Substage {index} step_id {step_index}: find reachable gripper pose"
-                        )
+                        logger.info(f"Substage {index} step_id {step_index}: find reachable gripper pose")
             state = self.robot.move_pose(
                 target_gripper_pose,
                 motion_type,
@@ -941,10 +866,7 @@ class DataCollectionAgent(BaseAgent):
 
             task_success = True
             for stage_id, stage in enumerate(self.action_script):
-                if (
-                    "action_text" in stage.action_description
-                    and "english_action_text" in stage.action_description
-                ):
+                if "action_text" in stage.action_description and "english_action_text" in stage.action_description:
                     logger.info(
                         f"RUNNING TASK: Stage {stage_id} action_text: {stage.action_description['action_text']}"
                     )
@@ -959,9 +881,7 @@ class DataCollectionAgent(BaseAgent):
                     init_pose = self.robot.reset_pose[arm]
                     curr_pose = self.robot.get_ee_pose(ee_type="gripper", id=arm)
                     interp_pose = init_pose.copy()
-                    interp_pose[:3, 3] = (
-                        curr_pose[:3, 3] + (init_pose[:3, 3] - curr_pose[:3, 3]) * 0.25
-                    )
+                    interp_pose[:3, 3] = curr_pose[:3, 3] + (init_pose[:3, 3] - curr_pose[:3, 3]) * 0.25
                     task_success = self.robot.move_pose(
                         self.robot.reset_pose[arm],
                         type=plan_type,
@@ -969,9 +889,7 @@ class DataCollectionAgent(BaseAgent):
                         block=True,
                     )
                     if not task_success and plan_type == "AvoidObs":
-                        logger.error(
-                            f"Stage {stage_id} reset move to reset pose with AvoidObs failed, try Simple"
-                        )
+                        logger.error(f"Stage {stage_id} reset move to reset pose with AvoidObs failed, try Simple")
                         task_success = self.robot.move_pose(
                             self.robot.reset_pose[arm],
                             type="Simple",
@@ -982,9 +900,7 @@ class DataCollectionAgent(BaseAgent):
                 # Initialize action sequence
                 if not stage.initialize_action_sequence_buffer(objects, self.robot):
                     task_success = False
-                    logger.warning(
-                        f"Stage {stage_id} {stage.action_type} initialize action sequence buffer failed"
-                    )
+                    logger.warning(f"Stage {stage_id} {stage.action_type} initialize action sequence buffer failed")
                     break
                 attempt_count = 0
                 stage_success = False
@@ -1001,9 +917,7 @@ class DataCollectionAgent(BaseAgent):
                         # no more action sequence to try, fail this stage
                         stage_success = False
                         try_next_sequence = False
-                        logger.info(
-                            f"Stage {stage_id} {stage.action_type} failed due to no more action sequence"
-                        )
+                        logger.info(f"Stage {stage_id} {stage.action_type} failed due to no more action sequence")
                         break
                     for action in action_sequence:
                         step_success, try_next_sequence = self.step(
@@ -1027,19 +941,13 @@ class DataCollectionAgent(BaseAgent):
                                 )
                             stage_success = False
                             break
-                    if (
-                        not stage_success
-                        and try_next_sequence
-                        and not stage.action_sequence_buffer.empty()
-                    ):
+                    if not stage_success and try_next_sequence and not stage.action_sequence_buffer.empty():
                         self.robot.client.playback(store_name)
                         logger.info(f"Playback state {store_name}")
                     elif stage.checker_config:
                         for check_config in stage.checker_config:
                             checker_status = self.robot.client.get_checker_status(check_config).msg
-                            logger.info(
-                                f"stage finish: {stage_id}, checker: {check_config}, status: {checker_status}"
-                            )
+                            logger.info(f"stage finish: {stage_id}, checker: {check_config}, status: {checker_status}")
                             if checker_status == "fail":
                                 stage_success = False
                                 try_next_sequence = True

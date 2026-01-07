@@ -50,9 +50,7 @@ class IsaacSimRpcRobot(Robot):
             robot_joint_names = self._get_robot_joint_names()
             if len(robot_joint_names) != len(robot_init_arm_pose):
                 raise ValueError("robot_init_arm_pose length does not match joint_names length")
-            robot_init_arm_pose = {
-                robot_joint_names[i]: robot_init_arm_pose[i] for i in range(len(robot_joint_names))
-            }
+            robot_init_arm_pose = {robot_joint_names[i]: robot_init_arm_pose[i] for i in range(len(robot_joint_names))}
         self.client = RpcClient(client_host, robot_urdf)
         self.client.init_robot(
             robot_cfg=robot_cfg,
@@ -67,13 +65,9 @@ class IsaacSimRpcRobot(Robot):
         )
         self.cam_info = None
         if "omnipicker" in robot_cfg:
-            self.robot_gripper_2_grasp_gripper = np.array(
-                [[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]]
-            )
+            self.robot_gripper_2_grasp_gripper = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
         else:
-            self.robot_gripper_2_grasp_gripper = np.array(
-                [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]
-            )
+            self.robot_gripper_2_grasp_gripper = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
         self.robot_init_arm_pose = robot_init_arm_pose
         self.robot_init_arm_pose_noise = robot_init_arm_pose_noise
 
@@ -99,9 +93,7 @@ class IsaacSimRpcRobot(Robot):
         # Find project root directory
         project_root = current_dir
         while project_root != os.path.dirname(project_root):
-            config_path = os.path.join(
-                project_root, "config", "robot_cfg", "robot_joint_names.json"
-            )
+            config_path = os.path.join(project_root, "config", "robot_cfg", "robot_joint_names.json")
             if os.path.exists(config_path):
                 break
             project_root = os.path.dirname(project_root)
@@ -233,9 +225,7 @@ class IsaacSimRpcRobot(Robot):
         arm_name = content.get("arm", "right")
         goal_offset = content.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
         path_constraint = content.get("path_constraint", [])
-        offset_and_constraint_in_goal_frame = content.get(
-            "offset_and_constraint_in_goal_frame", True
-        )
+        offset_and_constraint_in_goal_frame = content.get("offset_and_constraint_in_goal_frame", True)
         disable_collision_links = content.get("disable_collision_links", [])
         motion_run_ratio = content.get("motion_run_ratio", 1.0)
         gripper_action_timing = content.get("gripper_action_timing", {})
@@ -295,9 +285,7 @@ class IsaacSimRpcRobot(Robot):
             # Create rotation object
             rot = Rotation.from_quat([quat_wxyz[1], quat_wxyz[2], quat_wxyz[3], quat_wxyz[0]])
             euler_angles = rot.as_euler("YZX", degrees=True)
-            logger.info(
-                f"Yaw: {euler_angles[0]}, Pitch: {euler_angles[1]}, Roll: {euler_angles[2]}"
-            )
+            logger.info(f"Yaw: {euler_angles[0]}, Pitch: {euler_angles[1]}, Roll: {euler_angles[2]}")
 
         elif type == "joint":
             state = self.client.set_joint_positions(content["position"])
@@ -323,9 +311,7 @@ class IsaacSimRpcRobot(Robot):
         return state
 
     def get_prim_world_pose(self, prim_path, camera=False):
-        rotation_x_180 = np.array(
-            [[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]]
-        )
+        rotation_x_180 = np.array([[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]])
         response = self.client.get_object_pose(prim_path=prim_path)
         x, y, z = (
             response.object_pose.position.x,

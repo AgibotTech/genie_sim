@@ -20,6 +20,7 @@ from datetime import datetime
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CompressedImage
+from std_msgs.msg import String
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
@@ -90,6 +91,16 @@ class ImageForwardRecorderNode(Node):
         self.is_recording = False
         self.should_stop = False
 
+        self.sub_task_name = ""
+        self.sub_task_name_received = False
+        self.sub_task_name_lock = threading.Lock()
+        self.sub_task_name_subscription = self.create_subscription(
+            String,
+            "/record/sub_task_name",
+            self.sub_task_name_callback,
+            10,
+        )
+
         self.topic_discovery_timer = self.create_timer(2.0, self.discover_topics)
 
         self.timeout_check_timer = self.create_timer(1.0, self.check_timeout)
@@ -99,6 +110,21 @@ class ImageForwardRecorderNode(Node):
         logger.info(f"Timeout: {self.timeout}s")
         if self.final_output_dir:
             logger.info(f"Final output directory (images & videos will be moved here): {self.final_output_dir}")
+
+    def sub_task_name_callback(self, msg):
+        """Callback for /record/sub_task_name topic"""
+        try:
+            if self.should_stop:
+                return
+            with self.sub_task_name_lock:
+                if msg and hasattr(msg, "data"):
+                    old_received = self.sub_task_name_received
+                    self.sub_task_name = msg.data
+                    self.sub_task_name_received = True
+                    if not old_received and self.subscribers and not self.is_recording:
+                        logger.info("Sub_task_name received, will start recording on next image message...")
+        except Exception as e:
+            logger.warning(f"Error in sub_task_name_callback: {e}")
 
     def discover_topics(self):
         topic_names_and_types = self.get_topic_names_and_types()
@@ -175,9 +201,21 @@ class ImageForwardRecorderNode(Node):
                 logger.warning("No /record/ topics discovered yet, skip starting rosbag recording.")
                 return
 
+            # Wait for sub_task_name to be received
+            with self.sub_task_name_lock:
+                if not self.sub_task_name_received or not self.sub_task_name:
+                    logger.info("Waiting for sub_task_name message before starting recording...")
+                    return
+                sub_task_name = self.sub_task_name
+
+            logger.info(f"Starting recording with sub_task_name: '{sub_task_name}'")
+
+            # Create output path: output/recording_data/{sub_task_name}/recording_{timestamp}/
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            recording_data_dir = os.path.join(self.output_dir, "recording_data", sub_task_name)
+            os.makedirs(recording_data_dir, exist_ok=True)
             bag_name = f"recording_{timestamp}"
-            bag_path = os.path.join(self.output_dir, bag_name)
+            bag_path = os.path.join(recording_data_dir, bag_name)
 
             topics = " ".join(self.subscribers.keys())
             command_str = f"""
@@ -233,15 +271,27 @@ class ImageForwardRecorderNode(Node):
         logger.info("Starting extraction and video conversion...")
 
         try:
-            bag_dirs = [d for d in Path(self.output_dir).iterdir() if d.is_dir() and d.name.startswith("recording_")]
+            # Get sub_task_name
+            with self.sub_task_name_lock:
+                sub_task_name = self.sub_task_name if self.sub_task_name else "unknown"
+
+            # Look for recording directories in output/recording_data/{sub_task_name}/
+            recording_data_dir = os.path.join(self.output_dir, "recording_data", sub_task_name)
+
+            if not os.path.exists(recording_data_dir):
+                logger.error(f"Recording data directory not found: {recording_data_dir}")
+                return
+
+            bag_dirs = [d for d in Path(recording_data_dir).iterdir() if d.is_dir() and d.name.startswith("recording_")]
 
             if not bag_dirs:
-                logger.error("No recording directory found")
+                logger.error(f"No recording directory found in {recording_data_dir}")
                 return
 
             bag_dir = max(bag_dirs, key=lambda x: x.stat().st_mtime)
             logger.info(f"Processing bag: {bag_dir}")
 
+            self.current_recording_dir = str(bag_dir)
             self.extract_images_from_bag(str(bag_dir))
 
             self.convert_images_to_video()
@@ -258,22 +308,16 @@ class ImageForwardRecorderNode(Node):
                 try:
                     os.makedirs(self.final_output_dir, exist_ok=True)
 
-                    if hasattr(self, "images_dir") and os.path.isdir(self.images_dir):
-                        dst_images = os.path.join(self.final_output_dir, "camera")
-                        if os.path.exists(dst_images):
-                            shutil.rmtree(dst_images)
-                        shutil.move(self.images_dir, dst_images)
-                        logger.info(f"Moved camera images to {dst_images}")
-
-                    for webm_file in Path(self.output_dir).glob("*.webm"):
-                        dst_file = os.path.join(self.final_output_dir, os.path.basename(webm_file))
-                        if os.path.exists(dst_file):
-                            os.remove(dst_file)
-                        shutil.move(str(webm_file), dst_file)
-                        logger.info(f"Moved video {webm_file} to {dst_file}")
+                    # Move the entire recording directory to final output
+                    recording_name = os.path.basename(bag_dir)
+                    dst_recording = os.path.join(self.final_output_dir, recording_name)
+                    if os.path.exists(dst_recording):
+                        shutil.rmtree(dst_recording)
+                    shutil.move(str(bag_dir), dst_recording)
+                    logger.info(f"Moved recording directory to {dst_recording}")
 
                 except Exception as e:
-                    logger.error(f"Error moving images/videos to final output dir: {e}")
+                    logger.error(f"Error moving recording to final output dir: {e}")
 
             logger.info("Extraction and conversion completed successfully")
 
@@ -377,7 +421,8 @@ class ImageForwardRecorderNode(Node):
 
     def extract_images_from_bag(self, bag_path):
         logger.info(f"Extracting images from {bag_path}")
-        self.images_dir = os.path.join(self.output_dir, "camera")
+        # Store images in camera subdirectory of the recording directory
+        self.images_dir = os.path.join(bag_path, "camera")
         os.makedirs(self.images_dir, exist_ok=True)
         self.topic_images = {}
         typestore = get_typestore(Stores.ROS2_JAZZY)
@@ -526,6 +571,18 @@ class ImageForwardRecorderNode(Node):
     def convert_images_to_video(self, fps=DEFAULT_FPS):
         logger.info("Converting images to video...")
 
+        # Determine the recording directory (parent of images_dir)
+        if hasattr(self, "current_recording_dir"):
+            recording_dir = self.current_recording_dir
+        elif hasattr(self, "images_dir"):
+            recording_dir = os.path.dirname(self.images_dir)
+        else:
+            recording_dir = self.output_dir
+
+        # Create video directory in the recording directory
+        video_dir = os.path.join(recording_dir, "video")
+        os.makedirs(video_dir, exist_ok=True)
+
         for camera_name, image_paths in self.topic_images.items():
             if len(image_paths) == 0:
                 logger.warning(f"No images found for camera {camera_name}, skipping video conversion")
@@ -535,8 +592,8 @@ class ImageForwardRecorderNode(Node):
                 # Prepare sequentially numbered frame files
                 input_pattern = self._prepare_video_frames(camera_name, image_paths)
 
-                # Output video path
-                output_video = os.path.join(self.output_dir, f"{camera_name}.webm")
+                # Output video path - save in video subdirectory of recording directory
+                output_video = os.path.join(video_dir, f"{camera_name}.webm")
 
                 logger.info(f"Creating video for {camera_name}: {output_video}")
 
@@ -553,15 +610,28 @@ class ImageForwardRecorderNode(Node):
     def cleanup(self):
         logger.info("Cleaning up...")
 
+        # Set should_stop flag first to prevent callbacks from processing
+        self.should_stop = True
+
         # Stop recording
         if self.is_recording:
             self.stop_recording()
 
         # Cancel timers
-        if hasattr(self, "topic_discovery_timer"):
-            self.topic_discovery_timer.cancel()
-        if hasattr(self, "timeout_check_timer"):
-            self.timeout_check_timer.cancel()
+        try:
+            if hasattr(self, "topic_discovery_timer"):
+                self.topic_discovery_timer.cancel()
+            if hasattr(self, "timeout_check_timer"):
+                self.timeout_check_timer.cancel()
+        except Exception as e:
+            logger.warning(f"Error canceling timers: {e}")
+
+        # Destroy subscriptions
+        try:
+            if hasattr(self, "sub_task_name_subscription"):
+                self.sub_task_name_subscription.destroy()
+        except Exception as e:
+            logger.warning(f"Error destroying sub_task_name_subscription: {e}")
 
         logger.info("Cleanup completed")
 
@@ -629,22 +699,35 @@ def main(args=None):
 
     try:
         while rclpy.ok() and not node.should_stop:
-            rclpy.spin_once(node, timeout_sec=0.1)
+            try:
+                rclpy.spin_once(node, timeout_sec=0.1)
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                # Log but continue to allow cleanup
+                logger.warning(f"Error in spin_once: {e}")
+                if node.should_stop:
+                    break
 
         logger.info("Node stopped, performing final cleanup...")
         node.cleanup()
 
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
+        node.should_stop = True
         node.cleanup()
     except Exception as e:
         logger.error(f"Error in main loop: {e}")
         import traceback
 
         traceback.print_exc()
+        node.should_stop = True
         node.cleanup()
     finally:
-        node.destroy_node()
+        try:
+            node.destroy_node()
+        except Exception as e:
+            logger.warning(f"Error destroying node: {e}")
         try:
             if rclpy.ok():
                 rclpy.shutdown()

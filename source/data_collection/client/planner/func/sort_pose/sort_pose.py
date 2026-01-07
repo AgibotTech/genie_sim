@@ -175,17 +175,13 @@ def get_hand_z_score(hand_quat, is_right, is_from_up_side=False):
     if is_right:
         scorer_azimuth = PiecewiseScorer(RIGHT_HAND_Z_AZIMUTH_TABLE_PICK_SCORE_CONFIG)
         if is_from_up_side:
-            scorer_elevation = PiecewiseScorer(
-                RIGHT_HAND_Z_ELEVATION_TABLE_PICK_FROM_UP_SIDE_SCORE_CONFIG
-            )
+            scorer_elevation = PiecewiseScorer(RIGHT_HAND_Z_ELEVATION_TABLE_PICK_FROM_UP_SIDE_SCORE_CONFIG)
         else:
             scorer_elevation = PiecewiseScorer(RIGHT_HAND_Z_ELEVATION_TABLE_PICK_SCORE_CONFIG)
     else:
         scorer_azimuth = PiecewiseScorer(LEFT_HAND_Z_AZIMUTH_TABLE_PICK_SCORE_CONFIG)
         if is_from_up_side:
-            scorer_elevation = PiecewiseScorer(
-                LEFT_HAND_Z_ELEVATION_TABLE_PICK_FROM_UP_SIDE_SCORE_CONFIG
-            )
+            scorer_elevation = PiecewiseScorer(LEFT_HAND_Z_ELEVATION_TABLE_PICK_FROM_UP_SIDE_SCORE_CONFIG)
         else:
             scorer_elevation = PiecewiseScorer(LEFT_HAND_Z_ELEVATION_TABLE_PICK_SCORE_CONFIG)
     azimuth_score = scorer_azimuth.batch_score(hand_azimuth)
@@ -289,10 +285,7 @@ def main(ik_info_file):
         joint_positions = ik_joint_positions[idx]
         joint_names = ik_joint_names[idx]
         joint_name_position_sorted.append(
-            {
-                joint_name: joint_positions[list(joint_names).index(joint_name)]
-                for joint_name in joint_names
-            }
+            {joint_name: joint_positions[list(joint_names).index(joint_name)] for joint_name in joint_names}
         )
     import os
 
@@ -304,10 +297,7 @@ def main(ik_info_file):
         joint_positions = ik_joint_positions[idx]
         joint_names = ik_joint_names[idx]
         origin_joint_name_position.append(
-            {
-                joint_name: joint_positions[list(joint_names).index(joint_name)]
-                for joint_name in joint_names
-            }
+            {joint_name: joint_positions[list(joint_names).index(joint_name)] for joint_name in joint_names}
         )
     with open(current_directory + "origin_joint_name_position.json", "w") as f:
         json.dump(origin_joint_name_position, f)

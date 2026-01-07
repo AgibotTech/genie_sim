@@ -87,15 +87,11 @@ class PiecewiseScorer:
 
         # Set base segment offset
         offsets[base_idx] = (
-            self.segments[base_idx]["orig_offset"]
-            if self.segments[base_idx]["orig_offset"] is not None
-            else 0.0
+            self.segments[base_idx]["orig_offset"] if self.segments[base_idx]["orig_offset"] is not None else 0.0
         )
 
         # Sort by range start value to find numerical adjacency
-        sorted_indices = sorted(
-            range(len(self.segments)), key=lambda i: self.segments[i]["range"][0]
-        )
+        sorted_indices = sorted(range(len(self.segments)), key=lambda i: self.segments[i]["range"][0])
 
         # Starting from base segment, expand offset calculation in both directions according to sorted order
         # First process segments before base segment (expand left)

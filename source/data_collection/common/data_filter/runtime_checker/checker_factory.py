@@ -21,9 +21,7 @@ class CheckerRegistry:
 
     def create_checker(self, checker_name: str, **kwargs):
         if checker_name not in self._checkers:
-            raise ValueError(
-                f"Checker '{checker_name}' not found. Available checkers: {list(self._checkers.keys())}"
-            )
+            raise ValueError(f"Checker '{checker_name}' not found. Available checkers: {list(self._checkers.keys())}")
         checker_class = self._checkers[checker_name]
         return checker_class(**kwargs)
 

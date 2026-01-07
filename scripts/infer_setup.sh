@@ -41,10 +41,14 @@ git clone -b "$BRANCH" "$REPO_URL" "$TARGET_DIR"
 echo "Successfully cloned $REPO_URL (branch: $BRANCH) to $TARGET_DIR"
 
 # Deploy local infer files
-cp $SCRIPT_DIR/infer_deps/serve_policy.Dockerfile $PROJECT_ROOT/openpi/scripts/docker/serve_policy.Dockerfile
-cp $SCRIPT_DIR/infer_deps/serve_policy.py $PROJECT_ROOT/openpi/scripts/serve_policy.py
-cp $SCRIPT_DIR/infer_deps/go1_policy.py $PROJECT_ROOT/openpi/src/openpi/policies/go1_policy.py
-cp $SCRIPT_DIR/infer_deps/config.py $PROJECT_ROOT/openpi/src/openpi/training/config.py
-cp $SCRIPT_DIR/infer_deps/data_loader.py $PROJECT_ROOT/openpi/src/openpi/training/data_loader.py
+cd $TARGET_DIR
+git apply $SCRIPT_DIR/infer_changes.patch
 
 echo "Successfully deployed local infer files"
+
+mkdir -p $TARGET_DIR/checkpoints/select_color
+mkdir -p $TARGET_DIR/checkpoints/size_recogize
+mkdir -p $TARGET_DIR/checkpoints/grasp_targets
+mkdir -p $TARGET_DIR/checkpoints/organize_items
+
+echo "Successfully created checkpoints directories"
