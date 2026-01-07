@@ -178,7 +178,7 @@ Clone [cuRobo](https://github.com/NVlabs/curobo) and install:
 export CUROBO_DIR=/path/to/cuRobo
 
 # Copy robot assets and configs
-cp -r config/curobo/assets/robot ${CUROBO_DIR}/src/curobo/content/assets
+cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot ${CUROBO_DIR}/src/curobo/content/assets
 cp -r config/curobo/configs ${CUROBO_DIR}/src/curobo/content/
 
 # Install cuRobo

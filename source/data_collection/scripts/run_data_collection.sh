@@ -194,6 +194,7 @@ CONTAINER_ID=$(docker run -d --name $CONTAINER_NAME \
     -e "OMNI_USER=geniesim" \
     -e "OMNI_PASS=geniesim" \
     -e "LOG_DIR=/geniesim/main/data_collection/logs/${TASK_NAME}" \
+    -e "SIM_ASSETS=/geniesim/main/source/geniesim/assets" \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
     -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
     -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \

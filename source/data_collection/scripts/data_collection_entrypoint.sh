@@ -126,7 +126,7 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     fi
 
     # Copy curobo assets
-    sudo cp -r ${SIM_REPO_ROOT}/config/curobo/assets/robot $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/assets/ 2>/dev/null || true
+    sudo cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/assets/ 2>/dev/null || true
     sudo cp -r ${SIM_REPO_ROOT}/config/curobo/configs $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/ 2>/dev/null || true
 
     echo "✓ entry_point.sh setup completed"

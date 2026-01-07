@@ -1,18 +1,20 @@
 
 ![image.png](./docs/image.png)
 <div align="center">
-  <p align="center"><a href="https://arxiv.org/abs/2601.02078"><img src='https://img.shields.io/badge/arXiv-Paper-red?logo=arxiv&logoColor=white' alt='arXiv'></a>
+  <a href="https://arxiv.org/abs/2601.02078" style="text-decoration:none;">
+    <img src="https://img.shields.io/badge/arXiv-2601.02078-red.svg?logo=arxiv&logoColor=white" alt="arXiv Paper: 2601.02078">
+  </a>
   <a href="https://github.com/AgibotTech/genie_sim">
     <img src="https://img.shields.io/badge/GitHub-grey?logo=GitHub" alt="GitHub">
+  </a>
+  <a href="http://agibot-world.com/genie-sim">
+    <img src="https://img.shields.io/badge/Webpage-GenieSim-green?" alt="Webpage">
   </a>
   <!-- <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
     <img src="https://img.shields.io/badge/HuggingFace-yellow?logo=HuggingFace" alt="HuggingFace">
   </a> -->
-  <a href="http://agibot-world.com/genie-sim">
-    <img src="https://img.shields.io/badge/Webpage-green?" alt="Webpage">
-  </a>
   <a href="https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset">
-    <img src="https://img.shields.io/badge/Modelscope-blue" alt="Genie Studio">
+    <img src="https://img.shields.io/badge/Dataset-ModelScope-FF6B35?logo=model&logoColor=white" alt="ModelScope Dataset">
   </a>
   <div align="center">
     <a href="https://agibot-world.com/videos/genieSim/modules/heroFullVideoEn.mp4" target="_blank">
@@ -34,7 +36,7 @@ The platform will significantly accelerate model development, reduce reliance on
 - **3DGS-based Reconstruction Pipeline**: Integrate 3DGS-based reconstruction process with visual generative model to synthesize realistic simulation environment with high-precision meshes.
 - **LLM-Driven Scene Generation**: Natural language-driven generation and generalization which instantly generates diverse simulation scenes through conversational interaction.
 - **Large-Scale Synthetic Dataset**: Over 10,000 hours open-source synthetic data across 200+ loco-manipulation tasks with multi-sensor streams, alongside multi-dimensional variations.
-- **Synthetic Data Generation**: Efficient toolkit for data collectoin with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [Download assets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
+- **Synthetic Data Generation**: Efficient toolkit for data collectoin with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [Download datasets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
 - **Robust and Diverse Benchmark**: Provide 100,000+ simulation scenarios and use LLM to autonomously generate task instructions and evaluation configurations. Discrepancy between simulation and real-world test results is less than 10%.
 - **VLM-based Auto-Evaluation System**: Full-spectrum evaluation criteria to provide model's capability profile covering manipulation skills, cognitive comprehension and task complexity.
 - **Zero-Shot Sim-to-Real Transfer**: Model trained with our synthetic data exhibits zero-shot sim-to-real transfer capability with superior task success rate compared to model trained with real data.
@@ -51,8 +53,7 @@ The platform will significantly accelerate model development, reduce reliance on
   - Add automatic evaluation script to run each task multiple times and record score of all steps
 - [6/25/2025] v2.1
   - Add 10 more manipulation tasks for Agibot World Challenge 2025 including all simulation assets
-  - Open-source synthetic datasets for 10 manipulation tasks on Huggingface
-  https://huggingface.co/datasets/agibot-world/AgiBotWorldChallenge-2025/tree/main/Manipulation-SimData
+  - Open-source synthetic datasets for 10 manipulation tasks on [Huggingface](https://huggingface.co/datasets/agibot-world/AgiBotWorldChallenge-2025/tree/main/Manipulation-SimData)
   - Integrate UniVLA policy and support model inference simulation evaluation
   - Update IK solver sdk which supports cross-embodiment IK solving for other robots
   - Optimize communication framework and improve simulation running speed by 2x

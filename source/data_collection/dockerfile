@@ -26,6 +26,4 @@ RUN apt-get -y install cuda-toolkit-12-8
 ENV CUDA_HOME="/usr/local/cuda-12.8"
 ENV TORCH_CUDA_ARCH_LIST="8.9"
 RUN cd /tmp/curobo && /isaac-sim/python.sh -m pip install --no-build-isolation .[isaacsim] -i https://pypi.tuna.tsinghua.edu.cn/simple
-COPY ./config/curobo/assets/robot /isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/assets/
-COPY ./config/curobo/configs /isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/
 CMD ["bash"]
