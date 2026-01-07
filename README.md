@@ -61,7 +61,7 @@ The platform will significantly accelerate model development, reduce reliance on
 # 4. Documentation
 
 Please refer to these links to install Genie Sim and download assets and dataset:
-- [User Guide](https://agibot-world.com/sim-evaluation/docs/#/v2)
+- [User Guide](https://agibot-world.com/sim-evaluation/docs/#/v3)
 - [Assets](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)
 - [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset)
 
