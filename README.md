@@ -32,11 +32,11 @@ The platform integrates 3D reconstruction with visual generation to create a hig
 The platform will significantly accelerate model development, reduce reliance on physical hardware, and empower innovation in embodied intelligence. Simulation assets, dataset, and code are fully open source.
 
 # 2. Features
-- **High-Fidelity Sim-Ready Assets**: 5,140 validated 3D assets covering five real-world operation fields: retail, industry, catering, home and office. [Download assets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
-- **3DGS-based Reconstruction Pipeline**: Integrate 3DGS-based reconstruction process with visual generative model to synthesize realistic simulation environment with high-precision meshes.
+- **High-Fidelity Sim-Ready Assets**: 5,140 validated 3D assets covering five real-world operation fields: retail, industry, catering, home and office. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
+- **3DGS-based Reconstruction Pipeline**: Integrate 3DGS-based reconstruction process with visual generative model to synthesize realistic simulation environment with high-precision meshes. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
 - **LLM-Driven Scene Generation**: Natural language-driven generation and generalization which instantly generates diverse simulation scenes through conversational interaction.
 - **Large-Scale Synthetic Dataset**: Over 10,000 hours open-source synthetic data across 200+ loco-manipulation tasks with multi-sensor streams, alongside multi-dimensional variations.
-- **Synthetic Data Generation**: Efficient toolkit for data collectoin with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [Download datasets on ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
+- **Synthetic Data Generation**: Efficient toolkit for data collectoin with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
 - **Robust and Diverse Benchmark**: Provide 100,000+ simulation scenarios and use LLM to autonomously generate task instructions and evaluation configurations. Discrepancy between simulation and real-world test results is less than 10%.
 - **VLM-based Auto-Evaluation System**: Full-spectrum evaluation criteria to provide model's capability profile covering manipulation skills, cognitive comprehension and task complexity.
 - **Zero-Shot Sim-to-Real Transfer**: Model trained with our synthetic data exhibits zero-shot sim-to-real transfer capability with superior task success rate compared to model trained with real data.
@@ -74,7 +74,7 @@ Please refer to these links to install Genie Sim and download assets and dataset
 - [x] More scenes and assets for each benchmark task
 - [x] Support Agibot World Challenge baseline model
 - [x] Scenario layout and manipulation trajectory generalization toolkit
-- [ ] Provide dockfile and tutorial for scene reconstruction pipeline
+- [x] Provide dockfile and tutorial for scene reconstruction pipeline
 - [ ] Upload all assets and dataset on Huggingface
 - [ ] Update motion control toolkit to support Genie G2 teleoperation in simulation
 - [ ] Human-in-the-loop and distributed reinforcement learning pipline
