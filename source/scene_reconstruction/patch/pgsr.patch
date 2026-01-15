@@ -1,0 +1,959 @@
+From 8d1bcde0e9a7ac973f2a9b12d739dcafb463add1 Mon Sep 17 00:00:00 2001
+From: Genie Sim Team
+Date: Sat, 3 Jan 2026 17:27:59 +0800
+Subject: [PATCH] remove whitspace
+
+---
+ arguments/__init__.py     |  13 +++--
+ scene/__init__.py         |   7 +--
+ scene/app_model.py        |   6 +-
+ scene/colmap_loader.py    |   2 +-
+ scene/dataset_readers.py  |  61 +++++++++++++-------
+ scene/gaussian_model.py   |  72 +++++++++++++----------
+ train.py                  | 116 +++++++++++++++++++++++++++++---------
+ utils/cuda_prefetcher.py  |  49 ++++++++++++++++
+ utils/dataloader_utils.py |  40 +++++++++++++
+ utils/pgsr_dataloader.py  |  92 ++++++++++++++++++++++++++++++
+ 10 files changed, 370 insertions(+), 88 deletions(-)
+ create mode 100644 utils/cuda_prefetcher.py
+ create mode 100644 utils/dataloader_utils.py
+ create mode 100644 utils/pgsr_dataloader.py
+
+diff --git a/arguments/__init__.py b/arguments/__init__.py
+index 8cd77f1..095173a 100644
+--- a/arguments/__init__.py
++++ b/arguments/__init__.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+@@ -25,7 +25,7 @@ class ParamGroup:
+                 shorthand = True
+                 key = key[1:]
+             t = type(value)
+-            value = value if not fill_none else None 
++            value = value if not fill_none else None
+             if shorthand:
+                 if t == bool:
+                     group.add_argument("--" + key, ("-" + key[0:1]), default=value, action="store_true")
+@@ -44,7 +44,7 @@ class ParamGroup:
+                 setattr(group, arg[0], arg[1])
+         return group
+ 
+-class ModelParams(ParamGroup): 
++class ModelParams(ParamGroup):
+     def __init__(self, parser, sentinel=False):
+         self.sh_degree = 3
+         self._source_path = ""
+@@ -54,7 +54,7 @@ class ModelParams(ParamGroup):
+         self._white_background = False
+         self.data_device = "cuda"
+         self.eval = False
+-        self.preload_img = True
++        self.preload_img = False
+         self.ncc_scale = 1.0
+         self.multi_view_num = 8
+         self.multi_view_max_angle = 30
+@@ -93,7 +93,7 @@ class OptimizationParams(ParamGroup):
+         self.densify_until_iter = 15_000
+         self.densify_grad_threshold = 0.0002
+         self.scale_loss_weight = 100.0
+-        
++
+         self.wo_image_weight = False
+         self.single_view_weight = 0.015
+         self.single_view_weight_from_iter = 7000
+@@ -108,7 +108,8 @@ class OptimizationParams(ParamGroup):
+         self.multi_view_sample_num = 102400
+         self.multi_view_pixel_noise_th = 1.0
+         self.wo_use_geo_occ_aware = False
+-
++        self.gpu_prefetch = 1
++        self.gpu_prefetch_depth = 1
+         self.opacity_cull_threshold = 0.005
+         self.densify_abs_grad_threshold = 0.0008
+         self.abs_split_radii2D_threshold = 20
+diff --git a/scene/__init__.py b/scene/__init__.py
+index 8bedecd..8ec8604 100644
+--- a/scene/__init__.py
++++ b/scene/__init__.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+@@ -42,8 +42,7 @@ class Scene:
+ 
+         self.train_cameras = {}
+         self.test_cameras = {}
+-
+-        if os.path.exists(os.path.join(args.source_path, "sparse")):
++        if os.path.exists(os.path.join(args.source_path, "sparse/0")):
+             scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.images, args.eval)
+         elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
+             print("Found transforms_train.json file, assuming Blender data set!")
+@@ -78,7 +77,7 @@ class Scene:
+             self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
+             print("Loading Test Cameras")
+             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
+-            
++
+             print("computing nearest_id")
+             self.world_view_transforms = []
+             camera_centers = []
+diff --git a/scene/app_model.py b/scene/app_model.py
+index d875ea5..7160cd6 100644
+--- a/scene/app_model.py
++++ b/scene/app_model.py
+@@ -7,13 +7,13 @@ def searchForMaxIteration(folder):
+     return max(saved_iters)
+ 
+ class AppModel(nn.Module):
+-    def __init__(self, num_images=1600):  
+-        super().__init__()   
++    def __init__(self, num_images=65535):
++        super().__init__()
+         self.appear_ab = nn.Parameter(torch.zeros(num_images, 2).cuda())
+         self.optimizer = torch.optim.Adam([
+                                 {'params': self.appear_ab, 'lr': 0.001, "name": "appear_ab"},
+                                 ], betas=(0.9, 0.99))
+-            
++
+     def save_weights(self, model_path, iteration):
+         out_weights_path = os.path.join(model_path, "app_model/iteration_{}".format(iteration))
+         os.makedirs(out_weights_path, exist_ok=True)
+diff --git a/scene/colmap_loader.py b/scene/colmap_loader.py
+index 5986dc7..d3cec5d 100644
+--- a/scene/colmap_loader.py
++++ b/scene/colmap_loader.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+diff --git a/scene/dataset_readers.py b/scene/dataset_readers.py
+index 94b6c87..e92bd1a 100644
+--- a/scene/dataset_readers.py
++++ b/scene/dataset_readers.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+@@ -22,6 +22,7 @@ from pathlib import Path
+ from plyfile import PlyData, PlyElement
+ from utils.sh_utils import SH2RGB
+ from scene.gaussian_model import BasicPointCloud
++import laspy
+ 
+ class CameraInfo(NamedTuple):
+     uid: int
+@@ -114,7 +115,7 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
+         image_name = os.path.basename(image_path).split(".")[0]
+ 
+         cam_info = CameraInfo(uid=uid, global_id=idx, R=R, T=T, FovY=FovY, FovX=FovX,
+-                              image_path=image_path, image_name=image_name, 
++                              image_path=image_path, image_name=image_name,
+                               width=width, height=height, fx=focal_length_x, fy=focal_length_y)
+         cam_infos.append(cam_info)
+     sys.stdout.write('\n')
+@@ -124,8 +125,30 @@ def fetchPly(path):
+     plydata = PlyData.read(path)
+     vertices = plydata['vertex']
+     positions = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
+-    colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T / 255.0
+-    normals = np.vstack([vertices['nx'], vertices['ny'], vertices['nz']]).T
++    if 'red' not in vertices._property_lookup.keys():
++        colors = np.vstack((None, None, None)).T
++    else:
++        colors = np.vstack([vertices['red'], vertices['green'], vertices['blue']]).T / 255.0
++    if hasattr(plydata, 'normal_x') and hasattr(plydata, 'normal_y') and hasattr(plydata, 'normal_z'):
++        nx = plydata.normal_x
++        ny = plydata.normal_y
++        nz = plydata.normal_z
++    else:
++        nx, ny, nz = None, None, None
++    normals = np.vstack((nx, ny, nz)).T if nx is not None else None
++    return BasicPointCloud(points=positions, colors=colors, normals=normals)
++
++def fetchLas(path):
++    lasdata = laspy.read(path)
++    positions = np.vstack([lasdata.x, lasdata.y, lasdata.z]).T
++    colors = np.vstack([lasdata.red, lasdata.green, lasdata.blue]).T / 255.0
++    if hasattr(lasdata, 'normal_x') and hasattr(lasdata, 'normal_y') and hasattr(lasdata, 'normal_z'):
++        nx = lasdata.normal_x
++        ny = lasdata.normal_y
++        nz = lasdata.normal_z
++    else:
++        nx, ny, nz = None, None, None
++    normals = np.vstack((nx, ny, nz)).T if nx is not None else None
+     return BasicPointCloud(points=positions, colors=colors, normals=normals)
+ 
+ def storePly(path, xyz, rgb):
+@@ -133,7 +156,7 @@ def storePly(path, xyz, rgb):
+     dtype = [('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
+             ('nx', 'f4'), ('ny', 'f4'), ('nz', 'f4'),
+             ('red', 'u1'), ('green', 'u1'), ('blue', 'u1')]
+-    
++
+     normals = np.zeros_like(xyz)
+ 
+     elements = np.empty(xyz.shape[0], dtype=dtype)
+@@ -147,20 +170,20 @@ def storePly(path, xyz, rgb):
+ 
+ def readColmapSceneInfo(path, images, eval, llffhold=8):
+     try:
+-        cameras_extrinsic_file = os.path.join(path, "sparse", "images.bin")
+-        cameras_intrinsic_file = os.path.join(path, "sparse", "cameras.bin")
++        cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
++        cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
+         cam_extrinsics = read_extrinsics_binary(cameras_extrinsic_file)
+         cam_intrinsics = read_intrinsics_binary(cameras_intrinsic_file)
+     except:
+-        cameras_extrinsic_file = os.path.join(path, "sparse", "images.txt")
+-        cameras_intrinsic_file = os.path.join(path, "sparse", "cameras.txt")
++        cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.txt")
++        cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.txt")
+         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
+         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
+     reading_dir = "images" if images == None else images
+     cam_infos_unsorted = readColmapCameras(cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir))
+     # cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : int(x.image_name.split('_')[-1]))
+     cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : x.image_name)
+-    
++
+     js_file = f"{path}/split.json"
+     train_list = None
+     test_list = None
+@@ -183,11 +206,11 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
+         test_cam_infos = []
+ 
+     nerf_normalization = getNerfppNorm(train_cam_infos)
+-
+-    ply_path = os.path.join(path, "sparse/points3D.ply")
+-    bin_path = os.path.join(path, "sparse/points3D.bin")
+-    txt_path = os.path.join(path, "sparse/points3D.txt")
+-    if not os.path.exists(ply_path) or True:
++    las_path = os.path.join(path, "sparse/0/points3D.las")
++    ply_path = os.path.join(path, "sparse/0/points3D.ply")
++    bin_path = os.path.join(path, "sparse/0/points3D.bin")
++    txt_path = os.path.join(path, "sparse/0/points3D.txt")
++    if not os.path.exists(ply_path):
+         print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
+         try:
+             xyz, rgb, _ = read_points3D_binary(bin_path)
+@@ -241,12 +264,12 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
+             image = Image.fromarray(np.array(arr*255.0, dtype=np.byte), "RGB")
+ 
+             fovy = focal2fov(fov2focal(fovx, image.size[0]), image.size[1])
+-            FovY = fovy 
++            FovY = fovy
+             FovX = fovx
+ 
+             cam_infos.append(CameraInfo(uid=idx, global_id=idx, R=R, T=T, FovY=FovY, FovX=FovX, image=image,
+                             image_path=image_path, image_name=image_name, width=image.size[0], height=image.size[1]))
+-            
++
+     return cam_infos
+ 
+ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
+@@ -254,7 +277,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
+     train_cam_infos = readCamerasFromTransforms(path, "transforms_train.json", white_background, extension)
+     print("Reading Test Transforms")
+     test_cam_infos = readCamerasFromTransforms(path, "transforms_test.json", white_background, extension)
+-    
++
+     if not eval:
+         train_cam_infos.extend(test_cam_infos)
+         test_cam_infos = []
+@@ -266,7 +289,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png"):
+         # Since this data set has no colmap data, we start with random points
+         num_pts = 100_000
+         print(f"Generating random point cloud ({num_pts})...")
+-        
++
+         # We create random points inside the bounds of the synthetic Blender scenes
+         xyz = np.random.random((num_pts, 3)) * 2.6 - 1.3
+         shs = np.random.random((num_pts, 3)) / 255.0
+diff --git a/scene/gaussian_model.py b/scene/gaussian_model.py
+index e7a691c..0828e98 100644
+--- a/scene/gaussian_model.py
++++ b/scene/gaussian_model.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+@@ -40,7 +40,7 @@ class GaussianModel:
+             actual_covariance = L @ L.transpose(1, 2)
+             symm = strip_symmetric(actual_covariance)
+             return symm
+-        
++
+         self.scaling_activation = torch.exp
+         self.scaling_inverse_activation = torch.log
+ 
+@@ -53,7 +53,7 @@ class GaussianModel:
+ 
+     def __init__(self, sh_degree : int):
+         self.active_sh_degree = 0
+-        self.max_sh_degree = sh_degree  
++        self.max_sh_degree = sh_degree
+         self._xyz = torch.empty(0)
+         self._knn_f = torch.empty(0)
+         self._features_dc = torch.empty(0)
+@@ -94,23 +94,23 @@ class GaussianModel:
+             self.optimizer.state_dict(),
+             self.spatial_lr_scale,
+         )
+-    
++
+     def restore(self, model_args, training_args):
+-        (self.active_sh_degree, 
+-        self._xyz, 
++        (self.active_sh_degree,
++        self._xyz,
+         self._knn_f,
+-        self._features_dc, 
++        self._features_dc,
+         self._features_rest,
+-        self._scaling, 
+-        self._rotation, 
++        self._scaling,
++        self._rotation,
+         self._opacity,
+-        self.max_radii2D, 
++        self.max_radii2D,
+         self.max_weight,
+-        xyz_gradient_accum, 
++        xyz_gradient_accum,
+         xyz_gradient_accum_abs,
+         denom,
+         denom_abs,
+-        opt_dict, 
++        opt_dict,
+         self.spatial_lr_scale,
+         ) = model_args
+         self.training_setup(training_args)
+@@ -123,25 +123,25 @@ class GaussianModel:
+     @property
+     def get_scaling(self):
+         return self.scaling_activation(self._scaling)
+-        
++
+     @property
+     def get_rotation(self):
+         return self.rotation_activation(self._rotation)
+-    
++
+     @property
+     def get_xyz(self):
+         return self._xyz
+-    
++
+     @property
+     def get_features(self):
+         features_dc = self._features_dc
+         features_rest = self._features_rest
+         return torch.cat((features_dc, features_rest), dim=1)
+-    
++
+     @property
+     def get_opacity(self):
+         return self.opacity_activation(self._opacity)
+-    
++
+     def get_smallest_axis(self, return_idx=False):
+         rotation_matrices = self.get_rotation_matrix()
+         smallest_axis_idx = self.get_scaling.min(dim=-1)[1][..., None, None].expand(-1, 3, -1)
+@@ -149,14 +149,14 @@ class GaussianModel:
+         if return_idx:
+             return smallest_axis.squeeze(dim=2), smallest_axis_idx[..., 0, 0]
+         return smallest_axis.squeeze(dim=2)
+-    
++
+     def get_normal(self, view_cam):
+         normal_global = self.get_smallest_axis()
+         gaussian_to_cam_global = view_cam.camera_center - self._xyz
+         neg_mask = (normal_global * gaussian_to_cam_global).sum(-1) < 0.0
+         normal_global[neg_mask] = -normal_global[neg_mask]
+         return normal_global
+-    
++
+     def get_rotation_matrix(self):
+         return quaternion_to_matrix(self.get_rotation)
+ 
+@@ -170,10 +170,16 @@ class GaussianModel:
+     def create_from_pcd(self, pcd : BasicPointCloud, spatial_lr_scale : float):
+         self.spatial_lr_scale = spatial_lr_scale
+         fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
+-        fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
+-        features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
+-        features[:, :3, 0 ] = fused_color
+-        features[:, 3:, 1:] = 0.0
++        if pcd.colors.all() != None:
++            fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
++            features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
++            features[:, :3, 0 ] = fused_color
++            features[:, 3:, 1:] = 0.0
++        else:
++            neutral_color = 0.5
++            features = torch.zeros((pcd.points.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
++            features[:, :3, 0 ] = neutral_color
++            features[:, 3:, 1:] = 0.0
+ 
+         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
+ 
+@@ -220,7 +226,7 @@ class GaussianModel:
+                                                     lr_final=training_args.position_lr_final*self.spatial_lr_scale,
+                                                     lr_delay_mult=training_args.position_lr_delay_mult,
+                                                     max_steps=training_args.position_lr_max_steps)
+-    
++
+     def clip_grad(self, norm=1.0):
+         for group in self.optimizer.param_groups:
+             torch.nn.utils.clip_grad_norm_(group["params"][0], norm)
+@@ -257,10 +263,19 @@ class GaussianModel:
+         opacities = self._opacity.detach().cpu().numpy()
+         scale = self._scaling.detach().cpu().numpy()
+         rotation = self._rotation.detach().cpu().numpy()
++        valid_mask = ~np.isnan(xyz).any(axis=1)
++        xyz_valid = xyz[valid_mask]
++        normals_valid = normals[valid_mask]
++        f_dc_valid = f_dc[valid_mask]
++        f_rest_valid = f_rest[valid_mask]
++        opacities_valid = opacities[valid_mask]
++        scale_valid = scale[valid_mask]
++        rotation_valid = rotation[valid_mask]
+ 
+         dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
+-        elements = np.empty(xyz.shape[0], dtype=dtype_full)
+-        attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
++        attributes = np.concatenate((xyz_valid, normals_valid, f_dc_valid, f_rest_valid, opacities_valid,
++                                     scale_valid, rotation_valid), axis=1)
++        elements = np.empty(xyz_valid.shape[0], dtype=dtype_full)
+         elements[:] = list(map(tuple, attributes))
+         el = PlyElement.describe(elements, 'vertex')
+         PlyData([el]).write(path)
+@@ -485,7 +500,7 @@ class GaussianModel:
+             samples = torch.normal(mean=means, std=stds)
+             rots = build_rotation(self._rotation[selected_pts_mask])
+             new_xyz = torch.bmm(rots, samples.unsqueeze(-1)).squeeze(-1) + self.get_xyz[selected_pts_mask]
+-            
++
+             new_features_dc = self._features_dc[selected_pts_mask]
+             new_features_rest = self._features_rest[selected_pts_mask]
+             new_opacities = self._opacity[selected_pts_mask]
+@@ -543,7 +558,7 @@ class GaussianModel:
+                                                 align_corners=True
+                                                 )[0, :, :, 0]
+         return map_z, mask
+-    
++
+     def get_points_from_depth(self, fov_camera, depth, scale=1):
+         st = int(max(int(scale/2)-1,0))
+         depth_view = depth.squeeze()[st::scale,st::scale]
+@@ -554,4 +569,3 @@ class GaussianModel:
+         T = torch.tensor(fov_camera.T).float().cuda()
+         pts = (pts-T)@R.transpose(-1,-2)
+         return pts
+-    
+\ No newline at end of file
+diff --git a/train.py b/train.py
+index 29508f0..1935dd9 100644
+--- a/train.py
++++ b/train.py
+@@ -3,7 +3,7 @@
+ # GRAPHDECO research group, https://team.inria.fr/graphdeco
+ # All rights reserved.
+ #
+-# This software is free for non-commercial, research and evaluation use 
++# This software is free for non-commercial, research and evaluation use
+ # under the terms of the LICENSE.md file.
+ #
+ # For inquiries contact  george.drettakis@inria.fr
+@@ -36,6 +36,14 @@ except ImportError:
+     TENSORBOARD_FOUND = False
+ import time
+ import torch.nn.functional as F
++from torch.utils.data import DataLoader
++from utils.pgsr_dataloader import (
++    PGSRPairDataset,
++    InfinitePermutationSampler,
++    pgsr_pair_collate,
++)
++from utils.dataloader_utils import load_rgb_gray_cpu
++from utils.cuda_prefetcher import CUDAPrefetcher
+ 
+ def setup_seed(seed):
+      torch.manual_seed(seed)
+@@ -58,11 +66,11 @@ def gen_virtul_cam(cam, trans_noise=1.0, deg_noise=15.0):
+     Rx = np.array([[1, 0, 0],
+                     [0, np.cos(rx), -np.sin(rx)],
+                     [0, np.sin(rx), np.cos(rx)]])
+-    
++
+     Ry = np.array([[np.cos(ry), 0, np.sin(ry)],
+                     [0, 1, 0],
+                     [-np.sin(ry), 0, np.cos(ry)]])
+-    
++
+     Rz = np.array([[np.cos(rz), -np.sin(rz), 0],
+                     [np.sin(rz), np.cos(rz), 0],
+                     [0, 0, 1]])
+@@ -74,7 +82,7 @@ def gen_virtul_cam(cam, trans_noise=1.0, deg_noise=15.0):
+     virtul_cam = Camera(100000, Rt[:3, :3].transpose(), Rt[:3, 3], cam.FoVx, cam.FoVy,
+                         cam.image_width, cam.image_height,
+                         cam.image_path, cam.image_name, 100000,
+-                        trans=np.array([0.0, 0.0, 0.0]), scale=1.0, 
++                        trans=np.array([0.0, 0.0, 0.0]), scale=1.0,
+                         preload_img=False, data_device = "cuda")
+     return virtul_cam
+ 
+@@ -97,10 +105,43 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+     scene = Scene(dataset, gaussians)
+     gaussians.training_setup(opt)
+ 
++
++    train_cameras = scene.getTrainCameras()
++    image_paths = [cam.image_path for cam in train_cameras]
++    rgb_sizes = [(cam.image_width, cam.image_height) for cam in train_cameras]
++    nearest_ids = [cam.nearest_id for cam in train_cameras]
++
++    pair_dataset = PGSRPairDataset(
++        image_paths=image_paths,
++        rgb_sizes=rgb_sizes,
++        nearest_ids=nearest_ids,
++        ncc_scale=dataset.ncc_scale,
++    )
++    pair_sample = InfinitePermutationSampler(len(train_cameras))
++
++
++    pair_loader = DataLoader(
++        pair_dataset,
++        batch_size=1,
++        sampler=pair_sample,
++        num_workers=4,
++        pin_memory=True,
++        persistent_workers=True,
++        prefetch_factor=2,
++        collate_fn=pgsr_pair_collate,
++    )
++    pair_iter = iter(pair_loader)
++
++    prefetcher = None
++    if int(getattr(opt, "gpu_prefetch", 1)) == 1:
++        depth = int(getattr(opt, "gpu_prefetch_depth", 1))
++        prefetcher = CUDAPrefetcher(pair_iter, depth=depth, device="cuda")
++
++
+     app_model = AppModel()
+     app_model.train()
+     app_model.cuda()
+-    
++
+     if checkpoint:
+         (model_params, first_iter) = torch.load(checkpoint)
+         gaussians.restore(model_params, opt)
+@@ -146,11 +187,25 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+             gaussians.oneupSHdegree()
+ 
+         # Pick a random Camera
+-        if not viewpoint_stack:
+-            viewpoint_stack = scene.getTrainCameras().copy()
+-        viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
++        if prefetcher is not None:
++            batch = prefetcher.next()
++        else:
++            batch = next(pair_iter)
++        ref_idx = int(batch["ref_idx"])
++        neighbor_idx = batch["neighbor_idx"]
++        viewpoint_cam = train_cameras[ref_idx]
++
++        if prefetcher is not None:
++            gt_image = batch["ref_rgb"]
++            gt_image_gray = batch["ref_gray"]
++            neighbor_gray_gpu = batch["neighbor_gray"]
++            neighbor_gray_cpu = None
++        else:
++            gt_image = batch["ref_rgb"].to("cuda", non_blocking=True)
++            gt_image_gray = batch["ref_gray"].to("cuda", non_blocking=True)
++            neighbor_gray_cpu = batch["neighbor_gray"]
++            neighbor_gray_gpu = None
+ 
+-        gt_image, gt_image_gray = viewpoint_cam.get_image()
+         if iteration > 1000 and opt.exposure_compensation:
+             gaussians.use_app = True
+ 
+@@ -163,7 +218,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+                             return_plane=iteration>opt.single_view_weight_from_iter, return_depth_normal=iteration>opt.single_view_weight_from_iter)
+         image, viewspace_point_tensor, visibility_filter, radii = \
+             render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
+-        
++
+         # Loss
+         ssim_loss = (1.0 - ssim(image, gt_image))
+         if 'app_image' in render_pkg and ssim_loss < 0.5:
+@@ -173,7 +228,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+             Ll1 = l1_loss(image, gt_image)
+         image_loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * ssim_loss
+         loss = image_loss.clone()
+-        
++
+         # scale loss
+         if visibility_filter.sum() > 0:
+             scale = gaussians.get_scaling[visibility_filter]
+@@ -197,11 +252,20 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+ 
+         # multi-view loss
+         if iteration > opt.multi_view_weight_from_iter:
+-            nearest_cam = None if len(viewpoint_cam.nearest_id) == 0 else scene.getTrainCameras()[random.sample(viewpoint_cam.nearest_id,1)[0]]
++            nearest_cam = None if neighbor_idx is None else train_cameras[int(neighbor_idx)]
+             use_virtul_cam = False
+             if opt.use_virtul_cam and (np.random.random() < opt.virtul_cam_prob or nearest_cam is None):
+                 nearest_cam = gen_virtul_cam(viewpoint_cam, trans_noise=dataset.multi_view_max_dis, deg_noise=dataset.multi_view_max_angle)
+                 use_virtul_cam = True
++            nearest_image_gray = None
++            if nearest_cam is not None and use_virtul_cam is False:
++                if prefetcher is not None:
++                    nearest_image_gray = neighbor_gray_gpu
++                else:
++                    if neighbor_gray_cpu is None:
++                        nearest_image_gray = None
++                    else:
++                        nearest_image_gray = neighbor_gray_cpu.to("cuda", non_blocking=True)
+             if nearest_cam is not None:
+                 patch_size = opt.multi_view_patch_size
+                 sample_num = opt.multi_view_sample_num
+@@ -221,7 +285,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+                 pts = gaussians.get_points_from_depth(viewpoint_cam, render_pkg['plane_depth'])
+                 pts_in_nearest_cam = pts @ nearest_cam.world_view_transform[:3,:3] + nearest_cam.world_view_transform[3,:3]
+                 map_z, d_mask = gaussians.get_points_depth_in_depth_map(nearest_cam, nearest_render_pkg['plane_depth'], pts_in_nearest_cam)
+-                
++
+                 pts_in_nearest_cam = pts_in_nearest_cam / (pts_in_nearest_cam[:,2:3])
+                 pts_in_nearest_cam = pts_in_nearest_cam * map_z.squeeze()[...,None]
+                 R = torch.tensor(nearest_cam.R).float().cuda()
+@@ -283,7 +347,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+                             pixels = pixels.reshape(-1,2)[valid_indices]
+                             offsets = patch_offsets(patch_size, pixels.device)
+                             ori_pixels_patch = pixels.reshape(-1, 1, 2) / viewpoint_cam.ncc_scale + offsets.float()
+-                            
++
+                             H, W = gt_image_gray.squeeze().shape
+                             pixels_patch = ori_pixels_patch.clone()
+                             pixels_patch[:, :, 0] = 2 * pixels_patch[:, :, 0] / (W - 1) - 1.0
+@@ -306,11 +370,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+ 
+                         ref_local_d = ref_local_d.reshape(-1)[valid_indices]
+                         H_ref_to_neareast = ref_to_neareast_r[None] - \
+-                            torch.matmul(ref_to_neareast_t[None,:,None].expand(ref_local_d.shape[0],3,1), 
++                            torch.matmul(ref_to_neareast_t[None,:,None].expand(ref_local_d.shape[0],3,1),
+                                         ref_local_n[:,:,None].expand(ref_local_d.shape[0],3,1).permute(0, 2, 1))/ref_local_d[...,None,None]
+                         H_ref_to_neareast = torch.matmul(nearest_cam.get_k(nearest_cam.ncc_scale)[None].expand(ref_local_d.shape[0], 3, 3), H_ref_to_neareast)
+                         H_ref_to_neareast = H_ref_to_neareast @ viewpoint_cam.get_inv_k(viewpoint_cam.ncc_scale)
+-                        
++
+                         ## compute neareast frame patch
+                         grid = patch_warp(H_ref_to_neareast.reshape(-1,3,3), ori_pixels_patch)
+                         grid[:, :, 0] = 2 * grid[:, :, 0] / (W - 1) - 1.0
+@@ -318,7 +382,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+                         _, nearest_image_gray = nearest_cam.get_image()
+                         sampled_gray_val = F.grid_sample(nearest_image_gray[None], grid.reshape(1, -1, 1, 2), align_corners=True)
+                         sampled_gray_val = sampled_gray_val.reshape(-1, total_patch_size)
+-                        
++
+                         ## compute loss
+                         ncc, ncc_mask = lncc(ref_gray_val, sampled_gray_val)
+                         mask = ncc_mask.reshape(-1)
+@@ -356,7 +420,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+             if (iteration in saving_iterations):
+                 print("\n[ITER {}] Saving Gaussians".format(iteration))
+                 scene.save(iteration)
+-                    
++
+             # Densification
+             if iteration < opt.densify_until_iter:
+                 # Keep track of max radii in image-space for pruning
+@@ -367,9 +431,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+ 
+                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
+                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
+-                    gaussians.densify_and_prune(opt.densify_grad_threshold, opt.densify_abs_grad_threshold, 
++                    gaussians.densify_and_prune(opt.densify_grad_threshold, opt.densify_abs_grad_threshold,
+                                                 opt.opacity_cull_threshold, scene.cameras_extent, size_threshold)
+-            
++
+             # multi-view observe trim
+             if opt.use_multi_view_trim and iteration % 1000 == 0 and iteration < opt.densify_until_iter:
+                 observe_the = 2
+@@ -398,11 +462,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
+                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
+                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
+                 app_model.save_weights(scene.model_path, iteration)
+-    
++
+     app_model.save_weights(scene.model_path, opt.iterations)
+     torch.cuda.empty_cache()
+ 
+-def prepare_output_and_logger(args):    
++def prepare_output_and_logger(args):
+     if not args.model_path:
+         if os.getenv('OAR_JOB_ID'):
+             unique_str=os.getenv('OAR_JOB_ID')
+@@ -410,7 +474,7 @@ def prepare_output_and_logger(args):
+             unique_str = str(uuid.uuid4())
+         args.model_path = os.path.join("./output/", unique_str[0:10])
+ 
+-        
++
+     # Set up output folder
+     print("Output folder: {}".format(args.model_path))
+     os.makedirs(args.model_path, exist_ok = True)
+@@ -434,7 +498,7 @@ def training_report(tb_writer, iteration, Ll1, loss, l1_loss, elapsed, testing_i
+     # Report test and samples of training set
+     if iteration in testing_iterations:
+         torch.cuda.empty_cache()
+-        validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()}, 
++        validation_configs = ({'name': 'test', 'cameras' : scene.getTestCameras()},
+                               {'name': 'train', 'cameras' : [scene.getTrainCameras()[idx % len(scene.getTrainCameras())] for idx in range(5, 30, 5)]})
+ 
+         for config in validation_configs:
+@@ -481,11 +545,11 @@ if __name__ == "__main__":
+     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
+     parser.add_argument("--save_iterations", nargs="+", type=int, default=[7_000, 30_000])
+     parser.add_argument("--quiet", action="store_true")
+-    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[])
++    parser.add_argument("--checkpoint_iterations", nargs="+", type=int, default=[7_000, 30_000])
+     parser.add_argument("--start_checkpoint", type=str, default = None)
+     args = parser.parse_args(sys.argv[1:])
+     args.save_iterations.append(args.iterations)
+-    
++
+     print("Optimizing " + args.model_path)
+ 
+     # Initialize system state (RNG)
+diff --git a/utils/cuda_prefetcher.py b/utils/cuda_prefetcher.py
+new file mode 100644
+index 0000000..c1f5c05
+--- /dev/null
++++ b/utils/cuda_prefetcher.py
+@@ -0,0 +1,49 @@
++from __future__ import annotations
++from collections import deque
++from typing import Any, Deque, Dict, Iterator, Optional, Tuple
++import torch
++
++class CUDAPrefetcher:
++    def __init__(self, iteration: Iterator[Dict[str, Any]], depth: int = 1, device: str = "cuda"):
++        if depth not in (1, 2):
++            raise ValueError("gpu_prefetcher_depth must be 1 or 2.")
++        self.iteration = iteration
++        self.depth = depth
++        self.device = torch.device(device)
++        self.stream = torch.cuda.Stream(device=self.device)
++        self.queue: Deque[Tuple[Dict[str, Any], torch.cuda.Event]] = deque()
++        self._warmup()
++
++    def _warmup(self) -> None:
++        for _ in range(self.depth):
++            self._enqueue_one()
++
++    def _enqueue_one(self) -> None:
++        batch_cpu = next(self.iteration)
++
++        with torch.cuda.stream(self.stream):
++            ref_rgb_gpu = batch_cpu["ref_rgb"].to(self.device, non_blocking=True)
++            ref_gray_gpu = batch_cpu["ref_gray"].to(self.device, non_blocking=True)
++
++            neighbor_gray_gpu = batch_cpu.get("neighbor_gray", None)
++            if neighbor_gray_gpu is None:
++                neighbor_gray_gpu = None
++            else:
++                neighbor_gray_gpu = neighbor_gray_gpu.to(self.device, non_blocking=True)
++
++            batch_gpu: Dict[str, Any] = {
++                "ref_idx": int(batch_cpu["ref_idx"]),
++                "ref_rgb": ref_rgb_gpu,
++                "ref_gray": ref_gray_gpu,
++                "neighbor_idx": batch_cpu["neighbor_idx"],
++                "neighbor_gray": neighbor_gray_gpu,
++            }
++            ready = torch.cuda.Event(enable_timing=False)
++            ready.record(self.stream)
++        self.queue.append((batch_gpu, ready))
++
++    def next(self) -> Dict[str, Any]:
++        batch_cpu, ready = self.queue.popleft()
++        torch.cuda.current_stream(device=self.device).wait_event(ready)
++        self._enqueue_one()
++        return batch_cpu
+\ No newline at end of file
+diff --git a/utils/dataloader_utils.py b/utils/dataloader_utils.py
+new file mode 100644
+index 0000000..f716e72
+--- /dev/null
++++ b/utils/dataloader_utils.py
+@@ -0,0 +1,40 @@
++from __future__ import annotations
++from typing import Tuple
++from PIL import Image
++import torch
++
++from utils.general_utils import PILtoTorch
++
++def load_rgb_gray_cpu(image_path: str,rgb_wh:Tuple[int,int],ncc_scale:float) -> Tuple[torch.Tensor,torch.Tensor]:
++    """
++    CPU-side image loader that mirrors scene/cameras.py#Camera.get_image (preload_img=False),
++      but returns CPU tensors (no .cuda()).
++
++      Returns:
++          rgb:   tensor [3, H, W] in [0, 1]
++          gray:  tensor [1, Hg, Wg] in [0, 1]
++
++    """
++    W, H = rgb_wh
++    with Image.open(image_path) as image:
++        resized_rgb_pil = image.resize((W, H))
++        rgb = PILtoTorch(resized_rgb_pil)[:3, ...].clamp(0.0, 1.0)
++
++        if ncc_scale != 1.0:
++            gray_pil = image.resize((int(W / ncc_scale), int(H / ncc_scale))).convert("L")
++        else:
++            gray_pil = resized_rgb_pil.convert("L")
++        gray = PILtoTorch(gray_pil).clamp(0.0, 1.0)
++        return rgb, gray
++
++def load_gray_cpu(image_path: str, rgb_wh: Tuple[int, int], ncc_scale: float) -> torch.Tensor:
++    W, H = rgb_wh
++    with Image.open(image_path) as image:
++        if ncc_scale != 1.0:
++            resized_for_gray = image.resize((int(W / ncc_scale), int(H / ncc_scale)))
++        else:
++            resized_for_gray = image.resize((W, H))
++
++        gray_pil = resized_for_gray.convert("L")
++        gray = PILtoTorch(gray_pil).clamp(0.0, 1.0)
++        return gray
+diff --git a/utils/pgsr_dataloader.py b/utils/pgsr_dataloader.py
+new file mode 100644
+index 0000000..6a1eed3
+--- /dev/null
++++ b/utils/pgsr_dataloader.py
+@@ -0,0 +1,92 @@
++from __future__ import annotations
++from dataclasses import dataclass
++from typing import List, Optional, Tuple, Iterator, Dict, Any
++import random
++import torch
++from torch.utils.data import Dataset, Sampler
++
++from utils.dataloader_utils import load_rgb_gray_cpu, load_gray_cpu
++
++@dataclass
++class PGSRPairSample:
++    ref_idx: int
++    neighbor_idx: Optional[int]
++    ref_rgb: torch.Tensor           #CPU,[3,H,W], float32
++    ref_gray: torch.Tensor          #CPU,[1,Hg,Wg], float32
++    neighbor_gray: Optional[torch.Tensor]   #CPU,[1,Hg,Wg], float32
++
++
++class InfinitePermutationSampler(Sampler[int]):
++    def __init__(self, n: int):
++        if n <= 0:
++            raise ValueError(f"n must be > 0")
++        self.n = n
++
++    def __iter__(self) -> Iterator[int]:
++        rng = random.Random()
++        while True:
++            perm = list(range(self.n))
++            rng.shuffle(perm)
++            for idx in perm:
++                yield int(idx)
++
++    def __len__(self) -> int:
++        return 2**31 - 1
++
++class PGSRPairDataset(Dataset):
++    def __init__(
++            self,
++            image_paths: List[str],
++            rgb_sizes: List[Tuple[int, int]],
++            nearest_ids: List[List[int]],
++            ncc_scale: float,
++    ):
++        if not (len(image_paths) == len(rgb_sizes) == len(nearest_ids)):
++            raise ValueError("image_paths/rgb_sizes/nearest_idx length mismatch")
++        self.image_paths = image_paths
++        self.rgb_sizes = rgb_sizes
++        self.nearest_ids = nearest_ids
++        self.ncc_scale = ncc_scale
++
++    def __len__(self) -> int:
++        return len(self.image_paths)
++
++    def __getitem__(self, ref_idx: int) -> PGSRPairSample:
++        ref_idx = int(ref_idx)
++        ref_path = self.image_paths[ref_idx]
++        ref_wh = self.rgb_sizes[ref_idx]
++        ref_rgb, ref_gray = load_rgb_gray_cpu(ref_path, ref_wh, self.ncc_scale)
++
++        candidates = self.nearest_ids[ref_idx]
++        neighbor_idx: Optional[int]
++        neighbor_gray: Optional[torch.Tensor]
++
++        if candidates:
++
++            cand_pos = int(torch.randint(low=0, high=len(candidates), size=(1,)).item())
++
++            neighbor_idx = int(candidates[cand_pos])
++            neighbor_path = self.image_paths[neighbor_idx]
++            neighbor_wh = self.rgb_sizes[neighbor_idx]
++            neighbor_gray = load_gray_cpu(neighbor_path, neighbor_wh, self.ncc_scale)
++        else:
++            neighbor_idx = None
++            neighbor_gray = None
++
++        return PGSRPairSample(
++            ref_idx=ref_idx,
++            neighbor_idx=neighbor_idx,
++            ref_rgb=ref_rgb,
++            ref_gray=ref_gray,
++            neighbor_gray=neighbor_gray,
++        )
++def pgsr_pair_collate(batch: List[PGSRPairSample]) -> Dict[str, Any]:
++    assert len(batch) == 1, "Only batch size of 1 is supported"
++    sample = batch[0]
++    return {
++        "ref_idx": sample.ref_idx,
++        "neighbor_idx": sample.neighbor_idx,
++        "ref_rgb": sample.ref_rgb,
++        "ref_gray": sample.ref_gray,
++        "neighbor_gray": sample.neighbor_gray,
++    }
+-- 
+2.34.1
+

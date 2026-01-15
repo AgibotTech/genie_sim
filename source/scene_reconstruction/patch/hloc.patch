@@ -1,0 +1,144 @@
+From 627587b70855415cda9440d5e0fe3babc54524ff Mon Sep 17 00:00:00 2001
+From: Genie Sim Team
+Date: Mon, 5 Jan 2026 17:09:27 +0800
+Subject: [PATCH] feat: modify indoor model
+
+---
+ hloc/extract_features.py   | 13 +++++++------
+ hloc/match_features.py     |  2 +-
+ hloc/matchers/superglue.py |  2 +-
+ hloc/reconstruction.py     | 30 +++++++++++++++---------------
+ 4 files changed, 24 insertions(+), 23 deletions(-)
+
+diff --git a/hloc/extract_features.py b/hloc/extract_features.py
+index ab9456a..5fccde8 100644
+--- a/hloc/extract_features.py
++++ b/hloc/extract_features.py
+@@ -31,11 +31,11 @@ confs = {
+         "model": {
+             "name": "superpoint",
+             "nms_radius": 3,
+-            "max_keypoints": 4096,
++            "max_keypoints": 32768,
+         },
+         "preprocessing": {
+             "grayscale": True,
+-            "resize_max": 1024,
++            "resize_max": 1600,
+         },
+     },
+     # Resize images to 1600px even if they are originally smaller.
+@@ -54,15 +54,16 @@ confs = {
+         },
+     },
+     "superpoint_inloc": {
+-        "output": "feats-superpoint-n4096-r1600",
++        "output": "feats-superpoint-n8192-r1600",
+         "model": {
+             "name": "superpoint",
+-            "nms_radius": 4,
+-            "max_keypoints": 4096,
++            "nms_radius": 2,   # 4
++            'keypoint_threshold': 0.003,
++            "max_keypoints": 8192,
+         },
+         "preprocessing": {
+             "grayscale": True,
+-            "resize_max": 1600,
++            "resize_max": 1600, # 1600
+         },
+     },
+     "r2d2": {
+diff --git a/hloc/match_features.py b/hloc/match_features.py
+index 679e81e..505ab8e 100644
+--- a/hloc/match_features.py
++++ b/hloc/match_features.py
+@@ -46,7 +46,7 @@ confs = {
+         "output": "matches-superglue",
+         "model": {
+             "name": "superglue",
+-            "weights": "outdoor",
++            "weights": "indoor",
+             "sinkhorn_iterations": 50,
+         },
+     },
+diff --git a/hloc/matchers/superglue.py b/hloc/matchers/superglue.py
+index 7e15723..531e9fa 100644
+--- a/hloc/matchers/superglue.py
++++ b/hloc/matchers/superglue.py
+@@ -9,7 +9,7 @@ from SuperGluePretrainedNetwork.models.superglue import SuperGlue as SG  # noqa:
+ 
+ class SuperGlue(BaseModel):
+     default_conf = {
+-        "weights": "outdoor",
++        "weights": "indoor",
+         "sinkhorn_iterations": 100,
+         "match_threshold": 0.2,
+     }
+diff --git a/hloc/reconstruction.py b/hloc/reconstruction.py
+index ea1e7fc..c0d21aa 100644
+--- a/hloc/reconstruction.py
++++ b/hloc/reconstruction.py
+@@ -111,7 +111,7 @@ def main(
+     matches: Path,
+     camera_mode: pycolmap.CameraMode = pycolmap.CameraMode.AUTO,
+     verbose: bool = False,
+-    skip_geometric_verification: bool = False,
++    skip_geometric_verification: bool = True,
+     min_match_score: Optional[float] = None,
+     image_list: Optional[List[str]] = None,
+     image_options: Optional[Dict[str, Any]] = None,
+@@ -120,12 +120,11 @@ def main(
+     assert features.exists(), features
+     assert pairs.exists(), pairs
+     assert matches.exists(), matches
+-
++    skip_geometric_verification = True
+     sfm_dir.mkdir(parents=True, exist_ok=True)
+     database = sfm_dir / "database.db"
+-
+-    create_empty_db(database)
+-    import_images(image_dir, database, camera_mode, image_list, image_options)
++    # create_empty_db(database)
++    # import_images(image_dir, database, camera_mode, image_list, image_options)
+     image_ids = get_image_ids(database)
+     import_features(image_ids, database, features)
+     import_matches(
+@@ -138,15 +137,16 @@ def main(
+     )
+     if not skip_geometric_verification:
+         estimation_and_geometric_verification(database, pairs, verbose)
+-    reconstruction = run_reconstruction(
+-        sfm_dir, database, image_dir, verbose, mapper_options
+-    )
+-    if reconstruction is not None:
+-        logger.info(
+-            f"Reconstruction statistics:\n{reconstruction.summary()}"
+-            + f"\n\tnum_input_images = {len(image_ids)}"
+-        )
+-    return reconstruction
++    # reconstruction = run_reconstruction(
++    #     sfm_dir, database, image_dir, verbose, mapper_options
++    # )
++    # if reconstruction is not None:
++    #     logger.info(
++    #         f"Reconstruction statistics:\n{reconstruction.summary()}"
++    #         + f"\n\tnum_input_images = {len(image_ids)}"
++    #     )
++    # return reconstruction
++    return True
+ 
+ 
+ if __name__ == "__main__":
+@@ -161,7 +161,7 @@ if __name__ == "__main__":
+     parser.add_argument(
+         "--camera_mode",
+         type=str,
+-        default="AUTO",
++        default="SINGLE",
+         choices=list(pycolmap.CameraMode.__members__.keys()),
+     )
+     parser.add_argument("--skip_geometric_verification", action="store_true")
+-- 
+2.34.1
+

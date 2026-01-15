@@ -1,0 +1,4022 @@
+From c3fb51df1c9859a09ca8adaefecd8dea910386e5 Mon Sep 17 00:00:00 2001
+From: Genie Sim Team
+Date: Wed, 7 Jan 2026 10:21:32 +0800
+Subject: [PATCH] feat: Add pixel-level alignment functions for camera poses
+ and point clouds.
+
+---
+ CMakeLists.txt                          |  28 +-
+ README.md                               |  41 +-
+ src/CMakeLists.txt                      |   3 +-
+ src/base/camera.h                       |  10 +
+ src/base/camera_models.h                |  11 +-
+ src/base/camera_rig.cc                  |  11 +-
+ src/base/cost_functions.h               |   1 +
+ src/base/database.h                     |   6 +-
+ src/base/database_cache.cc              |   5 +-
+ src/base/image.cc                       |  23 +-
+ src/base/image.h                        |  36 ++
+ src/base/reconstruction.cc              | 287 +++++++++++++-
+ src/base/reconstruction.h               |  14 +-
+ src/base/scene_clustering.cc            |   2 +-
+ src/controllers/bundle_adjustment.cc    |  13 +-
+ src/controllers/bundle_adjustment.h     |   2 +-
+ src/controllers/hierarchical_mapper.cc  |   9 +-
+ src/controllers/incremental_mapper.cc   | 169 ++++-----
+ src/controllers/incremental_mapper.h    |  16 +-
+ src/estimators/pose.cc                  |   8 +-
+ src/estimators/two_view_geometry.h      |   4 +-
+ src/exe/CMakeLists.txt                  |   2 +-
+ src/exe/colmap.cc                       |   2 +-
+ src/exe/feature.cc                      |   2 +-
+ src/exe/gui.cc                          |   2 -
+ src/exe/image.cc                        |   2 +-
+ src/exe/sfm.cc                          |   8 +-
+ src/feature/extraction.cc               |   5 +-
+ src/feature/sift.h                      |   4 +-
+ src/lidar/kdtree.h                      |   1 -
+ src/lidar/lidar_point.h                 |   2 +-
+ src/lidar/pcd_projection.cc             | 128 +++++--
+ src/lidar/pcd_projection.h              |  51 ++-
+ src/lidar/ply.cc                        |  58 +--
+ src/lidar/ply.h                         |  10 +-
+ src/lidar/pt_type.h                     |   6 +-
+ src/optim/bundle_adjustment.cc          |  69 ++--
+ src/optim/bundle_adjustment.h           |  10 +-
+ src/sfm/incremental_mapper.cc           | 482 +++++++++++++++++++-----
+ src/sfm/incremental_mapper.h            |  23 +-
+ src/ui/main_window.cc                   |  11 +-
+ src/ui/model_viewer_widget.cc           |  18 +-
+ src/ui/point_painter.cc                 |   1 -
+ src/ui/reconstruction_options_widget.cc |   4 +-
+ src/ui/thread_control_widget.h          |   2 +-
+ src/util/ceres_log.cc                   |  51 +++
+ src/util/logging.cc                     |  17 +
+ src/util/logging.h                      |   6 +-
+ src/util/misc.cc                        |  11 +
+ src/util/misc.h                         |   4 +
+ src/util/option_manager.h               |   2 +-
+ src/util/string.cc                      |  11 +
+ src/util/string.h                       |   1 +
+ src/util/timer.cc                       |   4 +
+ src/util/timer.h                        |   1 +
+ src/util/version.cc                     |   2 +-
+ 56 files changed, 1299 insertions(+), 413 deletions(-)
+ create mode 100644 src/util/ceres_log.cc
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d282db6..d5555e6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -31,12 +31,13 @@
+ 
+ cmake_minimum_required(VERSION 3.1)
+ 
+-project(COLMAP LANGUAGES C CXX)
++project(COLMAP-PCD LANGUAGES C CXX)
+ 
+ set(COLMAP_VERSION "3.8")
+ set(COLMAP_VERSION_NUMBER "3800")
+ 
+-set(CMAKE_CUDA_ARCHITECTURES "all-major")
++set(CMAKE_CUDA_COMPILER /usr/local/cuda-11.8/bin/nvcc)
++set(CMAKE_CUDA_ARCHITECTURES "89")
+ 
+ ################################################################################
+ # Include CMake dependencies
+@@ -56,7 +57,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeHelper.cmake NO_POLICY_SCOPE)
+ option(SIMD_ENABLED "Whether to enable SIMD optimizations" ON)
+ option(OPENMP_ENABLED "Whether to enable OpenMP parallelization" ON)
+ option(IPO_ENABLED "Whether to enable interprocedural optimization" ON)
+-option(CUDA_ENABLED "Whether to enable CUDA, if available" OFF)
++option(CUDA_ENABLED "Whether to enable CUDA, if available" ON)
+ option(GUI_ENABLED "Whether to enable the graphical UI" ON)
+ option(OPENGL_ENABLED "Whether to enable OpenGL, if available" ON)
+ option(TESTS_ENABLED "Whether to build test binaries" OFF)
+@@ -147,7 +148,7 @@ if(CUDA_ENABLED)
+ 
+             declare_imported_cuda_target(cudart ${CUDA_LIBRARIES})
+             declare_imported_cuda_target(curand ${CUDA_LIBRARIES})
+-            
++
+             set(CUDAToolkit_VERSION "${CUDA_VERSION_STRING}")
+             set(CUDAToolkit_BIN_DIR "${CUDA_TOOLKIT_ROOT_DIR}/bin")
+         endif()
+@@ -417,6 +418,7 @@ set(COLMAP_INTERNAL_LIBRARIES
+ include_directories(
+     lib
+     src
++    solvers
+     ${COLMAP_INCLUDE_DIRS}
+ )
+ 
+@@ -478,9 +480,9 @@ add_library(
+ 
+ # Prevent the library from being compiled automatically.
+ set_target_properties(
+-    ${COLMAP_SRC_ROOT_FOLDER} 
+-    PROPERTIES                
+-    EXCLUDE_FROM_ALL 1        
++    ${COLMAP_SRC_ROOT_FOLDER}
++    PROPERTIES
++    EXCLUDE_FROM_ALL 1
+     EXCLUDE_FROM_DEFAULT_BUILD 1)
+ 
+ 
+@@ -489,26 +491,26 @@ set_target_properties(
+ ################################################################################
+ 
+ # Install header files.
+-install(DIRECTORY src/     
+-        DESTINATION include/colmap
++install(DIRECTORY src/
++        DESTINATION include/colmap-pcd
+         FILES_MATCHING PATTERN "*.h")
+ install(DIRECTORY lib/
+-        DESTINATION include/colmap/lib
++        DESTINATION include/colmap-pcd/lib
+         FILES_MATCHING REGEX ".*[.]h|.*[.]hpp|.*[.]inl")
+ 
+ # Generate and install CMake configuration.
+ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeConfig.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfig.cmake" @ONLY)
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfig.cmake"
+-        DESTINATION "share/colmap")
++        DESTINATION "share/colmap-pcd")
+ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeConfigVersion.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfigVersion.cmake" @ONLY)
+ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/COLMAPConfigVersion.cmake"
+-        DESTINATION "share/colmap")
++        DESTINATION "share/colmap-pcd")
+ 
+ # Install find_package scripts for dependencies.
+ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake
+-        DESTINATION share/colmap
++        DESTINATION share/colmap-pcd
+         FILES_MATCHING PATTERN "Find*.cmake")
+ 
+ # Install batch scripts under Windows.
+diff --git a/README.md b/README.md
+index 11e93f1..3462fda 100644
+--- a/README.md
++++ b/README.md
+@@ -57,7 +57,7 @@ sudo make install
+ Launch Colmap-PCD.
+ 
+ ```
+-colmap gui
++colmap-pcd gui
+ ```
+ 
+ Download [Smith Hall Outdoor Dataset](https://drive.google.com/drive/folders/1P1J9cEWSSFCL_XmHSVYfuWgtmcgAWprB). We only need '25_images.zip', 'intrinsics.txt', and 'pointcloud_with_norm.ply' for quick testing, while we keep '450_images.zip' for full-scale testing later. After downloading, unzip '25_images.zip'. Then, [follow this instruction video](https://youtu.be/TuX8tCmJCC8) to load the example dataset to Colmap-PCD and start processing. The red lines illustrate the initial image-to-point cloud association. The blue and yellow lines illustrate the final associations for non-level and level surface points, respectively.
+@@ -120,8 +120,39 @@ The repository is licensed under BSD license.
+ 
+ This repository is based on the original [Colmap](https://colmap.github.io).
+ 
++## Prepare rig ba config
++Relative ref_camera's pose
++```json
++[
++    {
++        "ref_camera_id": 1,
++        "cameras": [
++            {
++                "camera_id": 1,
++                "image_prefix": "_0",
++                "rel_tvec": [0, 0, 0],
++                "rel_qvec": [1, 0, 0, 0]
++            },
++            {
++                "camera_id": 2,
++                "image_prefix": "_1",
++                "rel_tvec": [0, 0, 0],
++                "rel_qvec": [0.866025404, 0, 0.433012702, 0.25]
++            },
++            {
++                "camera_id": 3,
++                "image_prefix": "_2",
++                "rel_tvec": [0, 0, 0],
++                "rel_qvec": [0.866025404, -0.5, 0, 0]
++            },
++            {
++                "camera_id": 4,
++                "image_prefix": "_3",
++                "rel_tvec": [0, 0, 0],
++                "rel_qvec": [0.75, -0.4330127, 0.5, 0]
++            }
++        ]
++    }
++]
+ 
+-
+-
+-
+-
++```
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index b320a10..c13475d 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -88,7 +88,8 @@ if(CUDA_ENABLED)
+     target_link_libraries(colmap_cuda colmap)
+ 
+     target_link_libraries(colmap
+-        colmap_cuda ${COLMAP_INTERNAL_LIBRARIES} ${COLMAP_EXTERNAL_LIBRARIES})
++        colmap_cuda ${COLMAP_INTERNAL_LIBRARIES} ${COLMAP_EXTERNAL_LIBRARIES} ${COLMAP_DEP_LIBRARIES}
++    )
+ else()
+     target_link_libraries(colmap
+         ${COLMAP_INTERNAL_LIBRARIES} ${COLMAP_EXTERNAL_LIBRARIES})
+diff --git a/src/base/camera.h b/src/base/camera.h
+index 7238b7e..74b51ef 100644
+--- a/src/base/camera.h
++++ b/src/base/camera.h
+@@ -143,12 +143,16 @@ class Camera {
+   // and the principal point.
+   void Rescale(const double scale);
+   void Rescale(const size_t width, const size_t height);
++  inline Eigen::Isometry3d* GetExtrinsic();
++  inline void SetExtrinsic(Eigen::Isometry3d* ext);
+ 
+  private:
+   // The unique identifier of the camera. If the identifier is not specified
+   // it is set to `kInvalidCameraId`.
+   camera_t camera_id_;
+ 
++  Eigen::Isometry3d* extrinsic_ = nullptr;
++
+   // The identifier of the camera model. If the camera model is not specified
+   // the identifier is `kInvalidCameraModelId`.
+   int model_id_;
+@@ -164,6 +168,8 @@ class Camera {
+   // Whether there is a safe prior for the focal length,
+   // e.g. manually provided or extracted from EXIF
+   bool prior_focal_length_;
++
++  std::string name_;
+ };
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -206,6 +212,10 @@ double* Camera::ParamsData() { return params_.data(); }
+ 
+ void Camera::SetParams(const std::vector<double>& params) { params_ = params; }
+ 
++Eigen::Isometry3d* Camera::GetExtrinsic() { return extrinsic_; }
++void Camera::SetExtrinsic(Eigen::Isometry3d* ext) { extrinsic_ = ext; }
++
++
+ }  // namespace colmap
+ 
+ #endif  // COLMAP_SRC_BASE_CAMERA_H_
+diff --git a/src/base/camera_models.h b/src/base/camera_models.h
+index 2db6bb3..3a94f69 100644
+--- a/src/base/camera_models.h
++++ b/src/base/camera_models.h
+@@ -245,7 +245,7 @@ struct RadialCameraModel : public BaseCameraModel<RadialCameraModel> {
+ // See
+ // http://docs.opencv.org/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
+ struct OpenCVCameraModel : public BaseCameraModel<OpenCVCameraModel> {
+-  CAMERA_MODEL_DEFINITIONS(4, "OPENCV", 8)
++  CAMERA_MODEL_DEFINITIONS(4, "OPENCV", 9)
+ };
+ 
+ // OpenCV fish-eye camera model.
+@@ -830,7 +830,7 @@ void RadialCameraModel::Distortion(const T* extra_params, const T u, const T v,
+ // OpenCVCameraModel
+ 
+ std::string OpenCVCameraModel::InitializeParamsInfo() {
+-  return "fx, fy, cx, cy, k1, k2, p1, p2";
++  return "fx, fy, cx, cy, k1, k2, p1, p2, k3";
+ }
+ 
+ std::vector<size_t> OpenCVCameraModel::InitializeFocalLengthIdxs() {
+@@ -842,12 +842,12 @@ std::vector<size_t> OpenCVCameraModel::InitializePrincipalPointIdxs() {
+ }
+ 
+ std::vector<size_t> OpenCVCameraModel::InitializeExtraParamsIdxs() {
+-  return {4, 5, 6, 7};
++  return {4, 5, 6, 7, 8};
+ }
+ 
+ std::vector<double> OpenCVCameraModel::InitializeParams(
+     const double focal_length, const size_t width, const size_t height) {
+-  return {focal_length, focal_length, width / 2.0, height / 2.0, 0, 0, 0, 0};
++  return {focal_length, focal_length, width / 2.0, height / 2.0, 0, 0, 0, 0, 0};
+ }
+ 
+ template <typename T>
+@@ -891,12 +891,13 @@ void OpenCVCameraModel::Distortion(const T* extra_params, const T u, const T v,
+   const T k2 = extra_params[1];
+   const T p1 = extra_params[2];
+   const T p2 = extra_params[3];
++  const T k3 = extra_params[4];
+ 
+   const T u2 = u * u;
+   const T uv = u * v;
+   const T v2 = v * v;
+   const T r2 = u2 + v2;
+-  const T radial = k1 * r2 + k2 * r2 * r2;
++  const T radial = k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2;
+   *du = u * radial + T(2) * p1 * uv + p2 * (r2 + T(2) * u2);
+   *dv = v * radial + T(2) * p2 * uv + p1 * (r2 + T(2) * v2);
+ }
+diff --git a/src/base/camera_rig.cc b/src/base/camera_rig.cc
+index 072a89d..94fd16f 100644
+--- a/src/base/camera_rig.cc
++++ b/src/base/camera_rig.cc
+@@ -222,10 +222,17 @@ bool CameraRig::ComputeRelativePoses(const Reconstruction& reconstruction) {
+       rig_camera.second.rel_qvec =
+           AverageQuaternions(camera_rel_qvecs, rel_qvec_weights);
+       rig_camera.second.rel_tvec /= camera_rel_qvecs.size();
++        LOG(INFO) << "rig camera " << "\n"
++                  << rig_camera.first
++                  << "rel q: " << "\n"
++                  << rig_camera.second.rel_qvec
++                  << "rel t: " << "\n"
++                  << rig_camera.second.rel_tvec
++                  << "\n";
++      }
+     }
++    return true;
+   }
+-  return true;
+-}
+ 
+ void CameraRig::ComputeAbsolutePose(const size_t snapshot_idx,
+                                     const Reconstruction& reconstruction,
+diff --git a/src/base/cost_functions.h b/src/base/cost_functions.h
+index 4baaa50..0d2c992 100644
+--- a/src/base/cost_functions.h
++++ b/src/base/cost_functions.h
+@@ -289,6 +289,7 @@ class RigBundleAdjustmentCostFunction {
+   const double observed_y_;
+ };
+ 
++
+ // Cost function for refining two-view geometry based on the Sampson-Error.
+ //
+ // First pose is assumed to be located at the origin with 0 rotation. Second
+diff --git a/src/base/database.h b/src/base/database.h
+index b8f2183..e826734 100644
+--- a/src/base/database.h
++++ b/src/base/database.h
+@@ -156,9 +156,9 @@ class Database {
+   TwoViewGeometry ReadTwoViewGeometry(const image_t image_id1,
+                                       const image_t image_id2) const;
+   /**
+-   * @brief 
+-   * @param image_pair_ids 使用uint64_t代表的image_pair的id
+-   * @param two_view_geometries 记载image_pairs的双视图几何的structs
++   * @brief
++   * @param image_pair_ids
++   * @param two_view_geometries
+    */
+   void ReadTwoViewGeometries(
+       std::vector<image_pair_t>* image_pair_ids,
+diff --git a/src/base/database_cache.cc b/src/base/database_cache.cc
+index 95202ef..e2d45ed 100644
+--- a/src/base/database_cache.cc
++++ b/src/base/database_cache.cc
+@@ -66,7 +66,6 @@ void DatabaseCache::Load(const Database& database, const size_t min_num_matches,
+   timer.Start();
+   std::cout << "Loading cameras..." << std::flush;
+ 
+-  //导入相机模型
+   {
+     std::vector<class Camera> cameras = database.ReadAllCameras();
+     cameras_.reserve(cameras.size());
+@@ -104,7 +103,7 @@ void DatabaseCache::Load(const Database& database, const size_t min_num_matches,
+   };
+ 
+   //////////////////////////////////////////////////////////////////////////////
+-  // Load images 导入图像
++  // Load images
+   //////////////////////////////////////////////////////////////////////////////
+ 
+   timer.Restart();
+@@ -198,7 +197,7 @@ void DatabaseCache::Load(const Database& database, const size_t min_num_matches,
+ 
+   // Set number of observations and correspondences per image.
+   for (auto& image : images_) {
+-    
++
+     image.second.SetNumObservations(
+         correspondence_graph_.NumObservationsForImage(image.first));
+     // Get the number of correspondences per image.
+diff --git a/src/base/image.cc b/src/base/image.cc
+index e04517b..8339be9 100644
+--- a/src/base/image.cc
++++ b/src/base/image.cc
+@@ -30,7 +30,6 @@
+ // Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
+ 
+ #include "base/image.h"
+-
+ #include "base/pose.h"
+ #include "base/projection.h"
+ 
+@@ -55,7 +54,8 @@ Image::Image()
+       qvec_(1.0, 0.0, 0.0, 0.0),
+       tvec_(0.0, 0.0, 0.0),
+       qvec_prior_(kNaN, kNaN, kNaN, kNaN),
+-      tvec_prior_(kNaN, kNaN, kNaN) {}
++      tvec_prior_(kNaN, kNaN, kNaN) ,
++      pvec_prior_(kNaN, kNaN, kNaN){}
+ 
+ void Image::SetUp(const class Camera& camera) {
+   CHECK_EQ(camera_id_, camera.CameraId());
+@@ -92,6 +92,9 @@ void Image::SetPoint3DForPoint2D(const point2D_t point2D_idx,
+   point2D.SetPoint3DId(point3D_id);
+ }
+ 
++void Image::UpdatePose() {
++}
++
+ void Image::ResetPoint3DForPoint2D(const point2D_t point2D_idx) {
+   class Point2D& point2D = points2D_.at(point2D_idx);
+   if (point2D.HasPoint3D()) {
+@@ -135,6 +138,10 @@ void Image::DecrementCorrespondenceHasPoint3D(const point2D_t point2D_idx) {
+ 
+ void Image::NormalizeQvec() { qvec_ = NormalizeQuaternion(qvec_); }
+ 
++Eigen::Matrix3x4d  Image::PriorProjectionMatrix() const {
++  return ComposeProjectionMatrix(qvec_prior_, tvec_prior_);
++}
++
+ Eigen::Matrix3x4d Image::ProjectionMatrix() const {
+   return ComposeProjectionMatrix(qvec_, tvec_);
+ }
+@@ -143,6 +150,10 @@ Eigen::Matrix3x4d Image::InverseProjectionMatrix() const {
+   return InvertProjectionMatrix(ComposeProjectionMatrix(qvec_, tvec_));
+ }
+ 
++Eigen::Matrix3x4d Image::PriorInverseProjectionMatrix() const {
++  return InvertProjectionMatrix(ComposeProjectionMatrix(qvec_prior_, tvec_prior_));
++}
++
+ Eigen::Matrix3d Image::RotationMatrix() const {
+   return QuaternionToRotationMatrix(qvec_);
+ }
+@@ -151,6 +162,14 @@ Eigen::Vector3d Image::ProjectionCenter() const {
+   return ProjectionCenterFromPose(qvec_, tvec_);
+ }
+ 
++Eigen::Matrix3d Image::RotationMatrixPrior() const {
++  return QuaternionToRotationMatrix(qvec_prior_);
++}
++
++Eigen::Vector3d Image::ProjectionCenterPrior() const {
++  return ProjectionCenterFromPose(qvec_prior_, tvec_prior_);
++}
++
+ Eigen::Vector3d Image::ViewingDirection() const {
+   return RotationMatrix().row(2);
+ }
+diff --git a/src/base/image.h b/src/base/image.h
+index b67c006..ab69797 100644
+--- a/src/base/image.h
++++ b/src/base/image.h
+@@ -61,6 +61,8 @@ class Image {
+   void SetUp(const Camera& camera);
+   void TearDown();
+ 
++  void UpdatePose();
++
+   // Access the unique identifier of the image.
+   inline image_t ImageId() const;
+   inline void SetImageId(const image_t image_id);
+@@ -109,6 +111,7 @@ class Image {
+   // uniform distribution of observations results in more robust registration.
+   inline size_t Point3DVisibilityScore() const;
+ 
++
+   // Access quaternion vector as (qw, qx, qy, qz) specifying the rotation of the
+   // pose which is defined as the transformation from world to image space.
+   inline const Eigen::Vector4d& Qvec() const;
+@@ -133,6 +136,7 @@ class Image {
+   inline double& Tvec(const size_t idx);
+   inline void SetTvec(const Eigen::Vector3d& tvec);
+ 
++
+   // Translation prior, e.g. given by EXIF GPS tag.
+   inline const Eigen::Vector3d& TvecPrior() const;
+   inline Eigen::Vector3d& TvecPrior();
+@@ -141,6 +145,13 @@ class Image {
+   inline bool HasTvecPrior() const;
+   inline void SetTvecPrior(const Eigen::Vector3d& tvec);
+ 
++  inline const Eigen::Vector3d& PvecPrior() const;
++  inline Eigen::Vector3d& PvecPrior();
++  inline double PvecPrior(const size_t idx) const;
++  inline double& PvecPrior(const size_t idx);
++  inline bool HasPvecPrior() const;
++  inline void SetPvecPrior(const Eigen::Vector3d& pvec);
++
+   // Access the coordinates of image points.
+   inline const class Point2D& Point2D(const point2D_t point2D_idx) const;
+   inline class Point2D& Point2D(const point2D_t point2D_idx);
+@@ -180,14 +191,21 @@ class Image {
+   // Compose the projection matrix from world to image space.
+   Eigen::Matrix3x4d ProjectionMatrix() const;
+ 
++  // Compose the projection matrix from prior world to image space.
++  Eigen::Matrix3x4d PriorProjectionMatrix() const;
++
+   // Compose the inverse projection matrix from image to world space
+   Eigen::Matrix3x4d InverseProjectionMatrix() const;
+ 
++  Eigen::Matrix3x4d PriorInverseProjectionMatrix() const;
++
+   // Compose rotation matrix from quaternion vector.
+   Eigen::Matrix3d RotationMatrix() const;
++  Eigen::Matrix3d RotationMatrixPrior() const;
+ 
+   // Extract the projection center in world space.
+   Eigen::Vector3d ProjectionCenter() const;
++  Eigen::Vector3d ProjectionCenterPrior() const;
+ 
+   // Extract the viewing direction of the image.
+   Eigen::Vector3d ViewingDirection() const;
+@@ -232,6 +250,9 @@ class Image {
+   // The pose prior of the image, e.g. extracted from EXIF tags.
+   Eigen::Vector4d qvec_prior_;
+   Eigen::Vector3d tvec_prior_;
++  Eigen::Vector3d pvec_prior_; // camera position
++
++  Eigen::Isometry3d* car_pose_;
+ 
+   // All image points, including points that are not part of a 3D point track.
+   std::vector<class Point2D> points2D_;
+@@ -242,6 +263,7 @@ class Image {
+   // Data structure to compute the distribution of triangulated correspondences
+   // in the image. Note that this structure is only usable after `SetUp`.
+   VisibilityPyramid point3D_visibility_pyramid_;
++
+ };
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -343,6 +365,20 @@ inline bool Image::HasTvecPrior() const { return !IsNaN(tvec_prior_.sum()); }
+ 
+ void Image::SetTvecPrior(const Eigen::Vector3d& tvec) { tvec_prior_ = tvec; }
+ 
++const Eigen::Vector3d& Image::PvecPrior() const { return pvec_prior_; }
++
++Eigen::Vector3d& Image::PvecPrior() { return pvec_prior_; }
++
++inline double Image::PvecPrior(const size_t idx) const {
++  return pvec_prior_(idx);
++}
++
++inline double& Image::PvecPrior(const size_t idx) { return pvec_prior_(idx); }
++
++inline bool Image::HasPvecPrior() const { return !IsNaN(pvec_prior_.sum()); }
++
++void Image::SetPvecPrior(const Eigen::Vector3d& pvec) { pvec_prior_ = pvec; }
++
+ const class Point2D& Image::Point2D(const point2D_t point2D_idx) const {
+   return points2D_.at(point2D_idx);
+ }
+diff --git a/src/base/reconstruction.cc b/src/base/reconstruction.cc
+index f559cd7..98ac278 100644
+--- a/src/base/reconstruction.cc
++++ b/src/base/reconstruction.cc
+@@ -45,7 +45,7 @@
+ namespace colmap {
+ 
+ Reconstruction::Reconstruction()
+-    : correspondence_graph_(nullptr), num_added_points3D_(0) {}
++    : correspondence_graph_(nullptr), num_added_points3D_(0), has_load_prior_pose_(false) {}
+ 
+ std::unordered_set<point3D_t> Reconstruction::Point3DIds() const {
+   std::unordered_set<point3D_t> point3D_ids;
+@@ -265,7 +265,6 @@ void Reconstruction::DeletePoint3D(const point3D_t point3D_id) {
+     class Image& image = Image(track_el.image_id);
+     image.ResetPoint3DForPoint2D(track_el.point2D_idx);
+   }
+-
+   points3D_.erase(point3D_id);
+ }
+ 
+@@ -304,6 +303,7 @@ void Reconstruction::DeleteAllPoints2DAndPoints3D() {
+     new_image.SetQvecPrior(image.second.QvecPrior());
+     new_image.SetTvec(image.second.Tvec());
+     new_image.SetTvecPrior(image.second.TvecPrior());
++    new_image.SetPvecPrior(image.second.PvecPrior());
+     image.second = new_image;
+   }
+ }
+@@ -660,7 +660,7 @@ size_t Reconstruction::FilterLidarOutlier(const double max_proj_dist_error,const
+             num_filtered += 1;
+           }
+         }
+-        
++
+       }
+     }
+     return num_filtered;
+@@ -782,6 +782,55 @@ double Reconstruction::ComputeMeanReprojectionError() const {
+   }
+ }
+ 
++/*
++image_id, camera_id, name
++*/
++void Reconstruction::ReadImageList(const std::string &image_list_file) {
++  std::fstream fs(image_list_file, std::ios::in);
++  if (!fs.is_open()) {
++    return;
++  }
++
++  std::string line;
++  std::string item;
++  while(getline(fs, line)) {
++    StringTrim(&line);
++
++    if (line.empty() || line[0] == '#') {
++      continue;
++    }
++
++    std::stringstream line_stream1(line);
++    std::getline(line_stream1, item, ' ');
++
++    std::string image_file = item;
++
++    std::getline(line_stream1, item, ' ');
++    std::string image_name = item;
++
++    image_name_map_[image_name] = image_file;
++  }
++}
++
++void Reconstruction::ReadPrior(const std::string& path) {
++  if (has_load_prior_pose_) {
++    return;
++  }
++  if (ExistsFile(JoinPaths(path, "cameras.bin")) &&
++      ExistsFile(JoinPaths(path, "images.bin")) &&
++      ExistsFile(JoinPaths(path, "points3D.bin"))) {
++    ReadBinaryPrior(path);
++    has_load_prior_pose_ = true;
++  } else if (ExistsFile(JoinPaths(path, "cameras.txt")) &&
++             ExistsFile(JoinPaths(path, "images.txt")) &&
++             ExistsFile(JoinPaths(path, "points3D.txt"))) {
++    ReadTextPrior(path);
++    has_load_prior_pose_ = true;
++  } else {
++    LOG(FATAL) << "cameras, images, points3D files do not exist at " << path;
++  }
++}
++
+ void Reconstruction::Read(const std::string& path) {
+   if (ExistsFile(JoinPaths(path, "cameras.bin")) &&
+       ExistsFile(JoinPaths(path, "images.bin")) &&
+@@ -798,12 +847,21 @@ void Reconstruction::Read(const std::string& path) {
+ 
+ void Reconstruction::Write(const std::string& path) const { WriteBinary(path); }
+ 
++void Reconstruction::ReadTextPrior(const std::string& path) {
++  ReadImagesTextPrior(JoinPaths(path, "images.txt"));
++  LOG(INFO) << "ReadTextPrior";
++}
++
+ void Reconstruction::ReadText(const std::string& path) {
+   ReadCamerasText(JoinPaths(path, "cameras.txt"));
+   ReadImagesText(JoinPaths(path, "images.txt"));
+   ReadPoints3DText(JoinPaths(path, "points3D.txt"));
+ }
+ 
++void Reconstruction::ReadBinaryPrior(const std::string& path) {
++  ReadImagesBinaryPrior(JoinPaths(path, "images.bin"));
++}
++
+ void Reconstruction::ReadBinary(const std::string& path) {
+   ReadCamerasBinary(JoinPaths(path, "cameras.bin"));
+   ReadImagesBinary(JoinPaths(path, "images.bin"));
+@@ -889,9 +947,8 @@ bool Reconstruction::ExportNVM(const std::string& path,
+     } else if (camera.ModelId() == SimpleRadialCameraModel::model_id) {
+       k = -1 * camera.Params(SimpleRadialCameraModel::extra_params_idxs[0]);
+     } else {
+-      std::cout << "WARNING: NVM only supports `SIMPLE_RADIAL` "
+-                   "and pinhole camera models."
+-                << std::endl;
++      LOG(INFO) << "WARNING: NVM only supports `SIMPLE_RADIAL` "
++                   "and pinhole camera models.";
+       return false;
+     }
+ 
+@@ -980,9 +1037,8 @@ bool Reconstruction::ExportCam(const std::string& path,
+       k1 = camera.Params(RadialCameraModel::extra_params_idxs[0]);
+       k2 = camera.Params(RadialCameraModel::extra_params_idxs[1]);
+     } else {
+-      std::cout << "WARNING: CAM only supports `SIMPLE_RADIAL`, `RADIAL`, "
+-                   "and pinhole camera models."
+-                << std::endl;
++      LOG(INFO) << "WARNING: CAM only supports `SIMPLE_RADIAL`, `RADIAL`, "
++                   "and pinhole camera models.";
+       return false;
+     }
+ 
+@@ -1068,9 +1124,8 @@ bool Reconstruction::ExportRecon3D(const std::string& path,
+       k1 = -1 * camera.Params(RadialCameraModel::extra_params_idxs[0]);
+       k2 = -1 * camera.Params(RadialCameraModel::extra_params_idxs[1]);
+     } else {
+-      std::cout << "WARNING: Recon3D only supports `SIMPLE_RADIAL`, "
+-                   "`RADIAL`, and pinhole camera models."
+-                << std::endl;
++      LOG(INFO) << "WARNING: Recon3D only supports `SIMPLE_RADIAL`, "
++                   "`RADIAL`, and pinhole camera models.";
+       return false;
+     }
+ 
+@@ -1363,8 +1418,14 @@ bool Reconstruction::ExtractColorsForImage(const image_t image_id,
+                                            const std::string& path) {
+   const class Image& image = Image(image_id);
+ 
++  std::string image_file;
++  if (image_name_map_.find(image.Name()) != image_name_map_.end()) {
++    image_file = image_name_map_.at(image.Name());
++  } else {
++    image_file = JoinPaths(path, image.Name());
++  }
+   Bitmap bitmap;
+-  if (!bitmap.Read(JoinPaths(path, image.Name()))) {
++  if (!bitmap.Read(image_file)) {
+     return false;
+   }
+ 
+@@ -1623,6 +1684,124 @@ void Reconstruction::ReadCamerasText(const std::string& path) {
+   }
+ }
+ 
++void Reconstruction::ReadImagesTextPrior(const std::string& path) {
++  std::ifstream file(path);
++  CHECK(file.is_open()) << path;
++
++  std::string line;
++  std::string item;
++
++  while (std::getline(file, line)) {
++    StringTrim(&line);
++
++    if (line.empty() || line[0] == '#') {
++      continue;
++    }
++
++    std::stringstream line_stream1(line);
++
++    // ID
++    std::getline(line_stream1, item, ' ');
++    const image_t image_id = std::stoul(item);
++
++    class Image image;
++    image.SetImageId(image_id);
++
++    image.SetRegistered(true);
++
++    // QVEC (qw, qx, qy, qz)
++    std::getline(line_stream1, item, ' ');
++    image.Qvec(0) = std::stold(item);
++
++    std::getline(line_stream1, item, ' ');
++    image.Qvec(1) = std::stold(item);
++
++    std::getline(line_stream1, item, ' ');
++    image.Qvec(2) = std::stold(item);
++
++    std::getline(line_stream1, item, ' ');
++    image.Qvec(3) = std::stold(item);
++
++    image.NormalizeQvec();
++
++    // TVEC
++    std::getline(line_stream1, item, ' ');
++    image.Tvec(0) = std::stold(item);
++
++    std::getline(line_stream1, item, ' ');
++    image.Tvec(1) = std::stold(item);
++
++    std::getline(line_stream1, item, ' ');
++    image.Tvec(2) = std::stold(item);
++
++    // CAMERA_ID
++    std::getline(line_stream1, item, ' ');
++    image.SetCameraId(std::stoul(item));
++
++    // NAME
++    std::getline(line_stream1, item, ' ');
++    image.SetName(item);
++
++    // POINTS2D
++    if (!std::getline(file, line)) {
++      break;
++    }
++
++    StringTrim(&line);
++    std::stringstream line_stream2(line);
++
++    std::vector<Eigen::Vector2d> points2D;
++    std::vector<point3D_t> point3D_ids;
++
++    if (!line.empty()) {
++      while (!line_stream2.eof()) {
++        Eigen::Vector2d point;
++
++        std::getline(line_stream2, item, ' ');
++        point.x() = std::stold(item);
++
++        std::getline(line_stream2, item, ' ');
++        point.y() = std::stold(item);
++
++        points2D.push_back(point);
++
++        std::getline(line_stream2, item, ' ');
++        if (item == "-1") {
++          point3D_ids.push_back(kInvalidPoint3DId);
++        } else {
++          point3D_ids.push_back(std::stoll(item));
++        }
++      }
++    }
++
++    if (ExistsImage(image_id)) {
++      double invalid_value = -9999.0 + 1;
++      class Image &image_ = this->Image(image_id);
++      Eigen::Vector4d& q_vec = image.Qvec();
++      Eigen::Vector3d& t_vec = image.Tvec();
++      if (q_vec[0] > invalid_value
++          && q_vec[1] > invalid_value
++          && q_vec[2] > invalid_value
++          && q_vec[3] > invalid_value
++          && t_vec[0] > invalid_value
++          && t_vec[1] > invalid_value
++          && t_vec[2] > invalid_value) {
++        image_.SetQvecPrior(q_vec);
++        image_.SetTvecPrior(t_vec);
++      }
++
++
++      if (image_.HasQvecPrior() && image_.HasTvecPrior()) {
++        Eigen::Vector3d pvec_prior = ProjectionCenterFromPose(q_vec, t_vec);
++        image_.SetPvecPrior(pvec_prior);
++      } else {
++        image_.SetPvecPrior(t_vec);
++      }
++
++    }
++  }
++}
++
+ void Reconstruction::ReadImagesText(const std::string& path) {
+   images_.clear();
+ 
+@@ -1822,6 +2001,75 @@ void Reconstruction::ReadCamerasBinary(const std::string& path) {
+   }
+ }
+ 
++void Reconstruction::ReadImagesBinaryPrior(const std::string& path) {
++  std::ifstream file(path, std::ios::binary);
++  CHECK(file.is_open()) << path;
++
++  const size_t num_reg_images = ReadBinaryLittleEndian<uint64_t>(&file);
++  for (size_t i = 0; i < num_reg_images; ++i) {
++    class Image image;
++
++    image.SetImageId(ReadBinaryLittleEndian<image_t>(&file));
++
++    image.Qvec(0) = ReadBinaryLittleEndian<double>(&file);
++    image.Qvec(1) = ReadBinaryLittleEndian<double>(&file);
++    image.Qvec(2) = ReadBinaryLittleEndian<double>(&file);
++    image.Qvec(3) = ReadBinaryLittleEndian<double>(&file);
++    image.NormalizeQvec();
++
++    image.Tvec(0) = ReadBinaryLittleEndian<double>(&file);
++    image.Tvec(1) = ReadBinaryLittleEndian<double>(&file);
++    image.Tvec(2) = ReadBinaryLittleEndian<double>(&file);
++
++    image.SetCameraId(ReadBinaryLittleEndian<camera_t>(&file));
++
++    char name_char;
++    do {
++      file.read(&name_char, 1);
++      if (name_char != '\0') {
++        image.Name() += name_char;
++      }
++    } while (name_char != '\0');
++
++    const size_t num_points2D = ReadBinaryLittleEndian<uint64_t>(&file);
++
++    std::vector<Eigen::Vector2d> points2D;
++    points2D.reserve(num_points2D);
++    std::vector<point3D_t> point3D_ids;
++    point3D_ids.reserve(num_points2D);
++    for (size_t j = 0; j < num_points2D; ++j) {
++      const double x = ReadBinaryLittleEndian<double>(&file);
++      const double y = ReadBinaryLittleEndian<double>(&file);
++      points2D.emplace_back(x, y);
++      point3D_ids.push_back(ReadBinaryLittleEndian<point3D_t>(&file));
++    }
++
++    image_t image_id = image.ImageId();
++    if (ExistsImage(image_id)) {
++      double invalid_value = -9999.0 + 1;
++      class Image &image_ = this->Image(image_id);
++      Eigen::Vector4d& q_vec = image.Qvec();
++      Eigen::Vector3d& t_vec = image.Tvec();
++      if (q_vec[0] > invalid_value
++          && q_vec[1] > invalid_value
++          && q_vec[2] > invalid_value
++          && q_vec[3] > invalid_value
++          && t_vec[0] > invalid_value
++          && t_vec[1] > invalid_value
++          && t_vec[2] > invalid_value) {
++        image_.SetQvecPrior(image.Qvec());
++        image_.SetTvecPrior(image.Tvec());
++      }
++      if (image_.HasQvecPrior() && image_.HasTvecPrior()) {
++          Eigen::Vector3d pvec_prior = image_.ProjectionCenter();
++          image_.SetPvecPrior(pvec_prior);
++      } else {
++        image_.SetPvecPrior(t_vec);
++      }
++    }
++  }
++}
++
+ void Reconstruction::ReadImagesBinary(const std::string& path) {
+   std::ifstream file(path, std::ios::binary);
+   CHECK(file.is_open()) << path;
+@@ -2011,11 +2259,14 @@ void Reconstruction::WriteImagesText(const std::string& path) const {
+ 
+ void Reconstruction::WritePoints3DText(const std::string& path) const {
+   std::ofstream file(path, std::ios::trunc);
++
++  std::ofstream file_txt(path + "_3d.txt", std::ios::trunc);
+   CHECK(file.is_open()) << path;
++  CHECK(file_txt.is_open()) << path + "_3d.txt";
+ 
+   // Ensure that we don't loose any precision by storing in text.
+   file.precision(17);
+-
++  file_txt.precision(17);
+   file << "# 3D point list with one line of data per point:" << std::endl;
+   file << "#   POINT3D_ID, X, Y, Z, R, G, B, ERROR, "
+           "TRACK[] as (IMAGE_ID, POINT2D_IDX)"
+@@ -2033,6 +2284,14 @@ void Reconstruction::WritePoints3DText(const std::string& path) const {
+     file << static_cast<int>(point3D.second.Color(2)) << " ";
+     file << point3D.second.Error() << " ";
+ 
++    file_txt << point3D.second.XYZ()(0) << " ";
++    file_txt << point3D.second.XYZ()(1) << " ";
++    file_txt << point3D.second.XYZ()(2) << " ";
++    file_txt << static_cast<int>(point3D.second.Color(0)) << " ";
++    file_txt << static_cast<int>(point3D.second.Color(1)) << " ";
++    file_txt << static_cast<int>(point3D.second.Color(2)) << " ";
++    file_txt << std::endl;
++
+     std::ostringstream line;
+     line.precision(17);
+ 
+diff --git a/src/base/reconstruction.h b/src/base/reconstruction.h
+index 8e6e750..b2a327a 100644
+--- a/src/base/reconstruction.h
++++ b/src/base/reconstruction.h
+@@ -280,11 +280,16 @@ class Reconstruction {
+   double ComputeMeanReprojectionError() const;
+ 
+   // Read data from text or binary file. Prefer binary data if it exists.
++  void ReadImageList(const std::string &image_list_file);
++  void ReadPrior(const std::string& path);
++  void ReadExtrinsic(const std::string& path);
+   void Read(const std::string& path);
+   void Write(const std::string& path) const;
+ 
+   // Read data from binary/text file.
++  void ReadTextPrior(const std::string& path);
+   void ReadText(const std::string& path);
++  void ReadBinaryPrior(const std::string& path);
+   void ReadBinary(const std::string& path);
+ 
+   // Write data from binary/text file.
+@@ -407,9 +412,11 @@ class Reconstruction {
+                            const bool use_images) const;
+ 
+   void ReadCamerasText(const std::string& path);
++  void ReadImagesTextPrior(const std::string& path);
+   void ReadImagesText(const std::string& path);
+   void ReadPoints3DText(const std::string& path);
+   void ReadCamerasBinary(const std::string& path);
++  void ReadImagesBinaryPrior(const std::string& path);
+   void ReadImagesBinary(const std::string& path);
+   void ReadPoints3DBinary(const std::string& path);
+ 
+@@ -435,7 +442,7 @@ class Reconstruction {
+   EIGEN_STL_UMAP(point3D_t, class LidarPoint) lidar_points_;
+   //Lidar points found by Icp in global bundle
+   EIGEN_STL_UMAP(point3D_t, class LidarPoint) lidar_points_in_global_;
+-  
++
+   std::unordered_map<image_pair_t, ImagePairStat> image_pair_stats_;
+ 
+   // { image_id, ... } where `images_.at(image_id).registered == true`.
+@@ -443,7 +450,12 @@ class Reconstruction {
+ 
+   // Total number of added 3D points, used to generate unique identifiers.
+   point3D_t num_added_points3D_;
++  bool has_load_prior_pose_;
++  std::unordered_map<std::string, std::string> image_name_map_;
+ 
++  std::unordered_map<uint32_t, Eigen::Isometry3d> car_poses_;
++  std::unordered_map<uint32_t, uint32_t> image_car_poses_map_;
++  std::unordered_map<uint32_t, Eigen::Isometry3d> camera_extrinsics_;
+ };
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+diff --git a/src/base/scene_clustering.cc b/src/base/scene_clustering.cc
+index 75d454d..ae502d1 100644
+--- a/src/base/scene_clustering.cc
++++ b/src/base/scene_clustering.cc
+@@ -316,7 +316,7 @@ SceneClustering SceneClustering::Create(const Options& options,
+   std::vector<int> num_inliers;
+   database.ReadTwoViewGeometryNumInliers(&image_pairs, &num_inliers);
+ 
+-  std::cout << "Partitioning scene graph..." << std::endl;
++  std::cout << "Partitioning scene graph..." << image_pairs.size() << std::endl;
+   SceneClustering scene_clustering(options);
+   scene_clustering.Partition(image_pairs, num_inliers);
+   return scene_clustering;
+diff --git a/src/controllers/bundle_adjustment.cc b/src/controllers/bundle_adjustment.cc
+index 2937fb0..2211686 100644
+--- a/src/controllers/bundle_adjustment.cc
++++ b/src/controllers/bundle_adjustment.cc
+@@ -65,16 +65,17 @@ class BundleAdjustmentIterationCallback : public ceres::IterationCallback {
+ BundleAdjustmentController::BundleAdjustmentController(
+     const OptionManager& options, Reconstruction* reconstruction)
+     : options_(options), reconstruction_(reconstruction) {}
+-// bundle adjustment批优化
++// bundle adjustment
+ void BundleAdjustmentController::Run() {
+   CHECK_NOTNULL(reconstruction_);
+ 
+   PrintHeading1("Global bundle adjustment");
++  LOG(INFO)<< "Global bundle adjustment";
+ 
+   const std::vector<image_t>& reg_image_ids = reconstruction_->RegImageIds();
+ 
+   if (reg_image_ids.size() < 2) {
+-    std::cout << "ERROR: Need at least two views." << std::endl;
++    LOG(INFO) << "ERROR: Need at least two views.";
+     return;
+   }
+ 
+@@ -83,7 +84,7 @@ void BundleAdjustmentController::Run() {
+ 
+   BundleAdjustmentOptions ba_options = *options_.bundle_adjustment;
+   ba_options.solver_options.minimizer_progress_to_stdout = true;
+-  
++
+   BundleAdjustmentIterationCallback iteration_callback(this);
+   ba_options.solver_options.callbacks.push_back(&iteration_callback);
+ 
+@@ -102,7 +103,7 @@ void BundleAdjustmentController::Run() {
+     for (point3D_t point3d_id : reg_point3D_ids) {
+ 
+       ba_config.AddVariablePoint(point3d_id);
+-      
++
+       Point3D& point3D = reconstruction_->Point3D(point3d_id);
+       Eigen::Vector3d pt_xyz = point3D.XYZ();
+       Eigen::Vector6d lidar_pt;
+@@ -115,7 +116,7 @@ void BundleAdjustmentController::Run() {
+         LidarPoint lidar_point(l_pt,plane);
+         const double dist2plane = lidar_point.ComputeDist(pt_xyz);
+         const double dist2point = lidar_point.ComputePointToPointDist(pt_xyz);
+-        
++
+         if (dist2plane > 1 || dist2point > 2) continue;
+         if (std::abs(norm(1)/norm(0))>10 && std::abs(norm(1)/norm(2))>10) {
+           lidar_point.SetType(LidarPointType::IcpGround);
+@@ -148,7 +149,7 @@ void BundleAdjustmentController::Run() {
+   GetTimer().PrintMinutes();
+ }
+ 
+-void BundleAdjustmentController::LoadPointcloud(std::string& pointcloud_path, 
++void BundleAdjustmentController::LoadPointcloud(std::string& pointcloud_path,
+                                        const lidar::PcdProjectionOptions& pp_options){
+   lidar_pointcloud_process_.reset(new lidar::PointCloudProcess(pointcloud_path));
+   if (!lidar_pointcloud_process_->Initialize(pp_options)){
+diff --git a/src/controllers/bundle_adjustment.h b/src/controllers/bundle_adjustment.h
+index 4e032f2..b4798f0 100644
+--- a/src/controllers/bundle_adjustment.h
++++ b/src/controllers/bundle_adjustment.h
+@@ -49,7 +49,7 @@ class BundleAdjustmentController : public Thread {
+ 
+  private:
+   void Run();
+-  void LoadPointcloud(std::string& pointcloud_path, 
++  void LoadPointcloud(std::string& pointcloud_path,
+                       const lidar::PcdProjectionOptions& pp_options);
+   void ClearLidarPoints();
+   const OptionManager options_;
+diff --git a/src/controllers/hierarchical_mapper.cc b/src/controllers/hierarchical_mapper.cc
+index e654240..4c0a9f7 100644
+--- a/src/controllers/hierarchical_mapper.cc
++++ b/src/controllers/hierarchical_mapper.cc
+@@ -115,6 +115,7 @@ HierarchicalMapperController::HierarchicalMapperController(
+ 
+ void HierarchicalMapperController::Run() {
+   PrintHeading1("Partitioning the scene");
++  LogHeading1("Partitioning the scene");
+ 
+   //////////////////////////////////////////////////////////////////////////////
+   // Cluster scene
+@@ -125,6 +126,7 @@ void HierarchicalMapperController::Run() {
+   Database database(options_.database_path);
+ 
+   std::cout << "Reading images..." << std::endl;
++  LOG(INFO) << "Reading images..." << "\n";
+   const auto images = database.ReadAllImages();
+   for (const auto& image : images) {
+     image_id_to_name.emplace(image.ImageId(), image.Name());
+@@ -141,17 +143,20 @@ void HierarchicalMapperController::Run() {
+     std::cout << StringPrintf("  Cluster %d with %d images", i + 1,
+                               leaf_clusters[i]->image_ids.size())
+               << std::endl;
++    LOG(INFO) << StringPrintf("  Cluster %d with %d images", i + 1,
++                              leaf_clusters[i]->image_ids.size())<<"\n";
+   }
+ 
+   std::cout << StringPrintf("Clusters have %d images", total_num_images)
+             << std::endl;
++  LOG(INFO)<< StringPrintf("Clusters have %d images", total_num_images)<< "\n";
+ 
+   //////////////////////////////////////////////////////////////////////////////
+   // Reconstruct clusters
+   //////////////////////////////////////////////////////////////////////////////
+ 
+   PrintHeading1("Reconstructing clusters");
+-
++  LogHeading1("Reconstructing clusters");
+   // Determine the number of workers and threads per worker.
+   const int kMaxNumThreads = -1;
+   const int num_eff_threads = GetEffectiveNumThreads(kMaxNumThreads);
+@@ -215,6 +220,7 @@ void HierarchicalMapperController::Run() {
+   //////////////////////////////////////////////////////////////////////////////
+ 
+   PrintHeading1("Merging clusters");
++  LogHeading1("Merging clusters");
+ 
+   MergeClusters(*scene_clustering.GetRootCluster(), &reconstruction_managers);
+ 
+@@ -223,6 +229,7 @@ void HierarchicalMapperController::Run() {
+ 
+   std::cout << std::endl;
+   GetTimer().PrintMinutes();
++  GetTimer().LogMinutes();
+ }
+ 
+ }  // namespace colmap
+diff --git a/src/controllers/incremental_mapper.cc b/src/controllers/incremental_mapper.cc
+index eac0e92..6eacea7 100644
+--- a/src/controllers/incremental_mapper.cc
++++ b/src/controllers/incremental_mapper.cc
+@@ -38,11 +38,10 @@ namespace {
+ 
+ size_t TriangulateImage(const IncrementalMapperOptions& options,
+                         const Image& image, IncrementalMapper* mapper) {
+-  std::cout << "  => Continued observations: " << image.NumPoints3D()
+-            << std::endl;
++  LOG(INFO) << "  => Continued observations: " << image.NumPoints3D();
+   const size_t num_tris =
+       mapper->TriangulateImage(options.Triangulation(), image.ImageId());
+-  std::cout << "  => Added observations: " << num_tris << std::endl;
++  LOG(INFO) << "  => Added observations: " << num_tris << std::endl;
+   return num_tris;
+ }
+ 
+@@ -62,9 +61,10 @@ void AdjustGlobalBundle(const IncrementalMapperOptions& options,
+     custom_ba_options.solver_options.max_linear_solver_iterations = 200;
+   }
+ 
+-  PrintHeading1("Global bundle adjustment");
++  LOG(INFO) <<"Global bundle adjustment"<<"\n";
+   if (options.if_add_lidar_constraint) {
+-    mapper->AdjustGlobalBundleByLidar(options.Mapper(), custom_ba_options);  
++    LOG(INFO) <<"Global bundle adjustment by lidar";
++    mapper->AdjustGlobalBundleByLidar(options.Mapper(), custom_ba_options);
+   } else {
+     if (options.ba_global_use_pba && !options.fix_existing_images &&
+         num_reg_images >= kMinNumRegImagesForFastBA &&
+@@ -83,16 +83,16 @@ void IterativeLocalRefinement(const IncrementalMapperOptions& options,
+                               IncrementalMapper* mapper) {
+   // mapper->ClearLidarPoints();
+   auto ba_options = options.LocalBundleAdjustment();
++  LOG(INFO)<<"Local bundle adjustment"<<"\n";
+   for (int i = 0; i < options.ba_local_max_refinements; ++i) {
+     const auto report = mapper->AdjustLocalBundle(
+         options.Mapper(), ba_options, options.Triangulation(), image_id,
+         mapper->GetModifiedPoints3D());
+-    std::cout << "  => Merged observations: " << report.num_merged_observations
+-              << std::endl;
+-    std::cout << "  => Completed observations: "
+-              << report.num_completed_observations << std::endl;
+-    std::cout << "  => Filtered observations: "
+-              << report.num_filtered_observations << std::endl;
++    LOG(INFO) << "  => Merged observations: " << report.num_merged_observations;
++    LOG(INFO) << "  => Completed observations: "
++              << report.num_completed_observations;
++    LOG(INFO) << "  => Filtered observations: "
++              << report.num_filtered_observations;
+     const double changed =
+         report.num_adjusted_observations == 0
+             ? 0
+@@ -100,8 +100,7 @@ void IterativeLocalRefinement(const IncrementalMapperOptions& options,
+                report.num_completed_observations +
+                report.num_filtered_observations) /
+                   static_cast<double>(report.num_adjusted_observations);
+-    std::cout << StringPrintf("  => Changed observations: %.6f", changed)
+-              << std::endl;
++    LOG(INFO) << StringPrintf("  => Changed observations: %.6f", changed);
+     if (changed < options.ba_local_max_refinement_change) {
+       break;
+     }
+@@ -115,10 +114,10 @@ void IterativeLocalRefinement(const IncrementalMapperOptions& options,
+ 
+ void IterativeGlobalRefinement(const IncrementalMapperOptions& options,
+                                IncrementalMapper* mapper) {
+-  PrintHeading1("Retriangulation");
++  LOG(INFO)<< "Retriangulation";
+   CompleteAndMergeTracks(options, mapper);
+-  std::cout << "  => Retriangulated observations: "
+-            << mapper->Retriangulate(options.Triangulation()) << std::endl;
++  LOG(INFO) << "  => Retriangulated observations: "
++            << mapper->Retriangulate(options.Triangulation());
+ 
+   for (int i = 0; i < options.ba_global_max_refinements; ++i) {
+     const size_t num_observations =
+@@ -131,8 +130,7 @@ void IterativeGlobalRefinement(const IncrementalMapperOptions& options,
+         num_observations == 0
+             ? 0
+             : static_cast<double>(num_changed_observations) / num_observations;
+-    std::cout << StringPrintf("  => Changed observations: %.6f", changed)
+-              << std::endl;
++    LOG(INFO) << StringPrintf("  => Changed observations: %.6f", changed);
+     if (changed < options.ba_global_max_refinement_change) {
+       break;
+     }
+@@ -144,16 +142,15 @@ void IterativeGlobalRefinement(const IncrementalMapperOptions& options,
+ void ExtractColors(const std::string& image_path, const image_t image_id,
+                    Reconstruction* reconstruction) {
+   if (!reconstruction->ExtractColorsForImage(image_id, image_path)) {
+-    std::cout << StringPrintf("WARNING: Could not read image %s at path %s.",
++    LOG(INFO) << StringPrintf("WARNING: Could not read image %s at path %s.",
+                               reconstruction->Image(image_id).Name().c_str(),
+-                              image_path.c_str())
+-              << std::endl;
++                              image_path.c_str());
+   }
+ }
+ 
+ void WriteSnapshot(const Reconstruction& reconstruction,
+                    const std::string& snapshot_path) {
+-  PrintHeading1("Creating snapshot");
++  LOG(INFO)<< "Creating snapshot";
+   // Get the current timestamp in milliseconds.
+   const size_t timestamp =
+       std::chrono::duration_cast<std::chrono::milliseconds>(
+@@ -163,7 +160,7 @@ void WriteSnapshot(const Reconstruction& reconstruction,
+   const std::string path =
+       JoinPaths(snapshot_path, StringPrintf("%010d", timestamp));
+   CreateDirIfNotExists(path);
+-  std::cout << "  => Writing to " << path << std::endl;
++  LOG(INFO) << "  => Writing to " << path;
+   reconstruction.Write(path);
+ }
+ 
+@@ -173,15 +170,14 @@ size_t FilterPoints(const IncrementalMapperOptions& options,
+                     IncrementalMapper* mapper) {
+   const size_t num_filtered_observations =
+       mapper->FilterPoints(options.Mapper());
+-  std::cout << "  => Filtered observations: " << num_filtered_observations
+-            << std::endl;
++  LOG(INFO) << "  => Filtered observations: " << num_filtered_observations;
+   return num_filtered_observations;
+ }
+ 
+ size_t FilterImages(const IncrementalMapperOptions& options,
+                     IncrementalMapper* mapper) {
+   const size_t num_filtered_images = mapper->FilterImages(options.Mapper());
+-  std::cout << "  => Filtered images: " << num_filtered_images << std::endl;
++  LOG(INFO) << "  => Filtered images: " << num_filtered_images;
+   return num_filtered_images;
+ }
+ 
+@@ -189,19 +185,17 @@ size_t CompleteAndMergeTracks(const IncrementalMapperOptions& options,
+                               IncrementalMapper* mapper) {
+   const size_t num_completed_observations =
+       mapper->CompleteTracks(options.Triangulation());
+-  std::cout << "  => Completed observations: " << num_completed_observations
+-            << std::endl;
++  LOG(INFO) << "  => Completed observations: " << num_completed_observations;
+   const size_t num_merged_observations =
+       mapper->MergeTracks(options.Triangulation());
+-  std::cout << "  => Merged observations: " << num_merged_observations
+-            << std::endl;
++  LOG(INFO) << "  => Merged observations: " << num_merged_observations;
+   return num_completed_observations + num_merged_observations;
+ }
+ 
+ IncrementalMapper::Options IncrementalMapperOptions::Mapper() const {
+   IncrementalMapper::Options options = mapper;
+   options.first_image_fixed_frames = first_image_fixed_frames;
+-  options.min_proj_num = min_proj_num; 
++  options.min_proj_num = min_proj_num;
+   options.kdtree_max_search_range = kdtree_max_search_range;
+   options.kdtree_min_search_range = kdtree_min_search_range;
+   options.search_range_drop_speed = search_range_drop_speed;
+@@ -248,7 +242,7 @@ BundleAdjustmentOptions IncrementalMapperOptions::LocalBundleAdjustment()
+   options.icp_ground_lidar_constraint_weight = icp_ground_lidar_constraint_weight;
+ 
+   options.if_add_lidar_corresponding = if_add_lidar_corresponding;
+-  
++
+   options.ba_match_features_threshold = ba_match_features_threshold;
+ 
+   options.solver_options.function_tolerance = ba_local_function_tolerance;
+@@ -272,7 +266,7 @@ BundleAdjustmentOptions IncrementalMapperOptions::LocalBundleAdjustment()
+       BundleAdjustmentOptions::LossFunctionType::SOFT_L1;
+   return options;
+ }
+-lidar::PcdProjectionOptions IncrementalMapperOptions::PcdProjector() 
++lidar::PcdProjectionOptions IncrementalMapperOptions::PcdProjector()
+     const {
+   lidar::PcdProjectionOptions options;
+   options.depth_image_scale = depth_image_scale;
+@@ -286,7 +280,7 @@ lidar::PcdProjectionOptions IncrementalMapperOptions::PcdProjector()
+   options.depth_image_folder = depth_image_folder;
+   options.if_save_lidar_frame = if_save_lidar_frame;
+   options.lidar_frame_folder = lidar_frame_folder;
+-  options.submap_length = static_cast<float>(submap_length);//submap尺寸
++  options.submap_length = static_cast<float>(submap_length);
+   options.submap_width = static_cast<float>(submap_width);
+   options.submap_height = static_cast<float>(submap_height);
+ 
+@@ -359,13 +353,13 @@ bool IncrementalMapperOptions::Check() const {
+ 
+ IncrementalMapperController::IncrementalMapperController(
+     IncrementalMapperOptions* options, const std::string& image_path,
+-    const std::string& database_path, 
++    const std::string& database_path,
+     ReconstructionManager* reconstruction_manager)
+     : options_(options),
+       image_path_(image_path),
+       database_path_(database_path),
+       reconstruction_manager_(reconstruction_manager) {
+-  options ->original_image_folder = image_path; 
++  options ->original_image_folder = image_path;
+   CHECK(options_->Check());
+   RegisterCallback(INITIAL_IMAGE_PAIR_REG_CALLBACK);
+   RegisterCallback(NEXT_IMAGE_REG_CALLBACK);
+@@ -378,23 +372,20 @@ void IncrementalMapperController::Run() {
+     return;
+   }
+ 
+-  if (options_->if_import_pose_prior) {
+-    if (!LoadPose()) {
+-      return;
+-    }
+-  }
+-
+   IncrementalMapper::Options init_mapper_options = options_->Mapper();
+-
++  LOG(INFO) <<"Start  reconstruct-----------------------"<<"\n";
++  LOG(INFO) <<"ba global max_num_iterations: "<< options_->ba_global_max_num_iterations
++            <<" ba_global_max_refinements"<<  options_->ba_global_max_refinements<<"\n";
+   Reconstruct(init_mapper_options);
+ 
++  LOG(INFO) <<"IncrementalMapperController end recontruct---------------------";
+   const size_t kNumInitRelaxations = 2;
+   for (size_t i = 0; i < kNumInitRelaxations; ++i) {
+     if (reconstruction_manager_->Size() > 0 || IsStopped()) {
+       break;
+     }
+ 
+-    std::cout << "  => Relaxing the initialization constraints." << std::endl;
++
+     init_mapper_options.init_min_num_inliers /= 2;
+     Reconstruct(init_mapper_options);
+ 
+@@ -402,12 +393,13 @@ void IncrementalMapperController::Run() {
+       break;
+     }
+ 
+-    std::cout << "  => Relaxing the initialization constraints." << std::endl;
++    LOG(INFO) << "  => Relaxing the initialization tri_angle constraints.";
+     init_mapper_options.init_min_tri_angle /= 2;
+     Reconstruct(init_mapper_options);
+   }
+ 
+   GetTimer().PrintMinutes();
++  GetTimer().LogMinutes();
+ }
+ 
+ bool IncrementalMapperController::LoadDatabase() {
+@@ -427,19 +419,13 @@ bool IncrementalMapperController::LoadDatabase() {
+   timer.Start();
+ 
+   const size_t min_num_matches = static_cast<size_t>(options_->min_num_matches);
+-  // database_cache_: A class that caches the contents of the database in memory, 
++  // database_cache_: A class that caches the contents of the database in memory,
+   // used to quickly create new reconstruction instances when multiple models are reconstructed.
+   database_cache_.Load(database, min_num_matches, options_->ignore_watermarks,
+                        image_names);
+-  std::cout << std::endl;
+   timer.PrintMinutes();
+-
+-  std::cout << std::endl;
+-
+   if (database_cache_.NumImages() == 0) {
+-    std::cout << "WARNING: No images with matches found in the database."
+-              << std::endl
+-              << std::endl;
++    LOG(WARNING) << "WARNING: No images with matches found in the database.";
+     return false;
+   }
+ 
+@@ -461,12 +447,10 @@ void IncrementalMapperController::Reconstruct(
+   //////////////////////////////////////////////////////////////////////////////
+ 
+   IncrementalMapper mapper(&database_cache_);
+-  if (options_->if_import_pose_prior) {
+-    mapper.LoadExistedImagePoses(image_poses_);
+-  }
+ 
+   if (options_->if_add_lidar_constraint || options_->if_add_lidar_corresponding){
+     std::string path = options_->lidar_pointcloud_path;
++    LOG(INFO) <<"controllers incremental_mapper load point cloud--------------------"<<"\n";
+     mapper.LoadPointcloud(path, options_->PcdProjector());
+   }
+ 
+@@ -494,21 +478,25 @@ void IncrementalMapperController::Reconstruct(
+         reconstruction_manager_->Get(reconstruction_idx);
+     mapper.BeginReconstruction(&reconstruction);
+ 
++    if(options_->if_import_pose_prior)
++    {
++      LOG(INFO)<< "<-------------------Read camera pose  prior data------------------->";
++      reconstruction.ReadPrior(options_->image_pose_prior_path);
++    }
+     ////////////////////////////////////////////////////////////////////////////
+     // Register initial pair
+     ////////////////////////////////////////////////////////////////////////////
+-
+     if (reconstruction.NumRegImages() == 0) {
+       image_t image_id1 = static_cast<image_t>(options_->init_image_id1);
+       image_t image_id2 = static_cast<image_t>(options_->init_image_id2);
+ 
+       // Try to find good initial pair.
+       if (options_->init_image_id1 == -1 || options_->init_image_id2 == -1) {
+-        PrintHeading1("Finding good initial image pair");
++        LOG(INFO) <<"Finding good initial image pair";
+         const bool find_init_success = mapper.FindInitialImagePair(
+             init_mapper_options, &image_id1, &image_id2);
+         if (!find_init_success) {
+-          std::cout << "  => No good initial image pair found." << std::endl;
++          LOG(INFO) << "  => No good initial image pair found.";
+           mapper.EndReconstruction(kDiscardReconstruction);
+           reconstruction_manager_->Delete(reconstruction_idx);
+           break;
+@@ -516,35 +504,37 @@ void IncrementalMapperController::Reconstruct(
+       } else {
+         if (!reconstruction.ExistsImage(image_id1) ||
+             !reconstruction.ExistsImage(image_id2)) {
+-          std::cout << StringPrintf(
++          LOG(INFO) << StringPrintf(
+                            "  => Initial image pair #%d and #%d do not exist.",
+-                           image_id1, image_id2)
+-                    << std::endl;
++                           image_id1, image_id2);
+           mapper.EndReconstruction(kDiscardReconstruction);
+           reconstruction_manager_->Delete(reconstruction_idx);
+           return;
+         }
+       }
+-      PrintHeading1(StringPrintf("Initializing with image pair #%d and #%d",
+-                                 image_id1, image_id2));
++
++      std::cout<<StringPrintf("Initializing with image pair #%d and #%d",
++                                 image_id1, image_id2)<<std::endl;
++      LOG(INFO) <<StringPrintf("Initializing with image pair #%d and #%d",
++                                 image_id1, image_id2);
+       // input: IncrementalMapper::Options init_mapper_options
+       // input: initial image pair
+       bool reg_init_success;
+-      if (options_->if_add_lidar_constraint){
+-        reg_init_success = mapper.RegisterInitialImagePairByDepthProj(
+-          init_mapper_options, image_id1, image_id2);
++      if (options_->if_import_pose_prior){
++        LOG(INFO) <<"incremental_mapper RegisterInitialImagePairByPriorPose";
++        reg_init_success = mapper.RegisterInitialImagePairByPriorPose(
++             init_mapper_options, image_id1, image_id2);
+       } else {
+         reg_init_success = mapper.RegisterInitialImagePair(
+             init_mapper_options, image_id1, image_id2);
+-      } 
+-          
++      }
++
+       if (!reg_init_success) {
+-        std::cout << "  => Initialization failed - possible solutions:"
+-                  << std::endl
++        LOG(INFO) << "  => Initialization failed - possible solutions:"
++                  << "\n"
+                   << "     - try to relax the initialization constraints"
+-                  << std::endl
+-                  << "     - manually select an initial image pair"
+-                  << std::endl;
++                  << "\n"
++                  << "     - manually select an initial image pair";
+         mapper.EndReconstruction(kDiscardReconstruction);
+         reconstruction_manager_->Delete(reconstruction_idx);
+         break;
+@@ -554,10 +544,12 @@ void IncrementalMapperController::Reconstruct(
+ 
+       FilterPoints(*options_, &mapper);
+       FilterImages(*options_, &mapper);
+- 
++      LOG(INFO) <<"Initial image pair: "<< reconstruction.NumRegImages()
++                <<" points3D number: "<<reconstruction.NumPoints3D();
+       // Initial image pair failed to register.
+       if (reconstruction.NumRegImages() == 0 ||
+           reconstruction.NumPoints3D() == 0) {
++        // CLOG("Numregimages is 0 and points3d");
+         mapper.EndReconstruction(kDiscardReconstruction);
+         reconstruction_manager_->Delete(reconstruction_idx);
+         // If both initial images are manually specified, there is no need for
+@@ -573,7 +565,7 @@ void IncrementalMapperController::Reconstruct(
+         ExtractColors(image_path_, image_id1, &reconstruction);
+       }
+     }
+-    // After the initial image pair is registered, 
++    // After the initial image pair is registered,
+     // called callback in the thread to trigger the rendering mechanism in the mainwindow
+     Callback(INITIAL_IMAGE_PAIR_REG_CALLBACK);
+ 
+@@ -597,7 +589,7 @@ void IncrementalMapperController::Reconstruct(
+ 
+       const std::vector<image_t> next_images =
+           mapper.FindNextImages(options_->Mapper());
+-
++      LOG(INFO) <<"find not the next images: "<<next_images.empty();
+       if (next_images.empty()) {
+         break;
+       }
+@@ -605,13 +597,12 @@ void IncrementalMapperController::Reconstruct(
+         const image_t next_image_id = next_images[reg_trial];
+         const Image& next_image = reconstruction.Image(next_image_id);
+ 
+-        PrintHeading1(StringPrintf("Registering image #%d (%d)", next_image_id,
+-                                   reconstruction.NumRegImages() + 1));
++        LOG(INFO) <<StringPrintf("Registering image #%d (%d)", next_image_id,
++                                   reconstruction.NumRegImages() + 1);
+ 
+-        std::cout << StringPrintf("  => Image sees %d / %d points",
++        LOG(INFO) << StringPrintf("  => Image sees %d / %d points",
+                                   next_image.NumVisiblePoints3D(),
+-                                  next_image.NumObservations())
+-                  << std::endl;
++                                  next_image.NumObservations());
+ 
+         reg_next_success =
+             mapper.RegisterNextImage(options_->Mapper(), next_image_id);
+@@ -649,8 +640,7 @@ void IncrementalMapperController::Reconstruct(
+ 
+           break;
+         } else {
+-          std::cout << "  => Could not register, trying another image."
+-                    << std::endl;
++          LOG(INFO) << "  => Could not register, trying another image.";
+ 
+           // If initial pair fails to continue for some time,
+           // abort and try different initial pair.
+@@ -762,7 +752,7 @@ bool IncrementalMapperController::LoadPose() {
+         Eigen::AngleAxisd rollAngle(Eigen::AngleAxisd(roll,Eigen::Vector3d::UnitZ()));
+         Eigen::AngleAxisd pitchAngle(Eigen::AngleAxisd(pitch,Eigen::Vector3d::UnitX()));
+         Eigen::AngleAxisd yawAngle(Eigen::AngleAxisd(yaw,Eigen::Vector3d::UnitY()));
+-      
++
+         Eigen::Matrix3d rotation_matrix;
+         rotation_matrix = yawAngle * pitchAngle * rollAngle;
+         Eigen::Matrix3d R_wc = rotation_matrix;
+@@ -774,7 +764,7 @@ bool IncrementalMapperController::LoadPose() {
+         Eigen::Vector3d t_cw = - R_cw * t_wc;
+ 
+         Eigen::Quaterniond q_cw(R_cw);
+-        std::vector<double> trans_pose {t_cw(0), t_cw(1), t_cw(2), 
++        std::vector<double> trans_pose {t_cw(0), t_cw(1), t_cw(2),
+                               q_cw.w(), q_cw.x(), q_cw.y(), q_cw.z()};
+         image_poses_.emplace(std::make_pair(image_id,trans_pose));
+ 
+@@ -785,14 +775,13 @@ bool IncrementalMapperController::LoadPose() {
+       }
+     }
+   } else{
+-    std::cout << "Please note，failed to open the pose file!" << std::endl;
++    LOG(ERROR)<< "Please note，failed to open the pose file!";
+     return false;
+   }
+ 
+   read_pose.close();
+-  std::cout<<"Read " << image_poses_.size() << " poses from"<<std::endl
+-  << options_->image_pose_prior_path << std::endl
+-  << std::endl;
++  LOG(INFO) << "Read " << image_poses_.size()
++            << " poses from"<< options_->image_pose_prior_path;
+   return true;
+ 
+ }
+diff --git a/src/controllers/incremental_mapper.h b/src/controllers/incremental_mapper.h
+index 0b180c0..56ff29f 100644
+--- a/src/controllers/incremental_mapper.h
++++ b/src/controllers/incremental_mapper.h
+@@ -51,7 +51,7 @@ struct IncrementalMapperOptions {
+   // Lidar point cloud file
+   std::string lidar_pointcloud_path;
+   // If use image poses initial guess
+-  bool if_import_pose_prior = false; 
++  bool if_import_pose_prior = false;
+   // Image poses initial guess file
+   std::string image_pose_prior_path;
+   // File to save image poses
+@@ -66,8 +66,8 @@ struct IncrementalMapperOptions {
+   double search_range_drop_speed = 0.1;
+   // Sphere radius in global bundle adjustment
+   double ba_spherical_search_radius = 40;
+-  // Register a new image, 
+-  // lidar point cloud proj to this image 
++  // Register a new image,
++  // lidar point cloud proj to this image
+   // and images that have enough feature matches to this image
+   int ba_match_features_threshold = 200;
+   // Optimal weight for proj lidar point
+@@ -103,7 +103,7 @@ struct IncrementalMapperOptions {
+   double submap_length = 1.0;
+   double submap_width = 1.0;
+   double submap_height = 1.0;
+- 
++
+   // The minimum number of matches for inlier matches to be considered.
+   int min_num_matches = 15;
+ 
+@@ -128,7 +128,7 @@ struct IncrementalMapperOptions {
+   // The image identifiers used to initialize the reconstruction. Note that
+   // only one or both image identifiers can be specified. In the former case,
+   // the second image is automatically determined.
+-  int init_image_id1 = 1;
++  int init_image_id1 = -1;
+   int init_image_id2 = -1;
+ 
+   double init_image_x = 0;
+@@ -137,7 +137,7 @@ struct IncrementalMapperOptions {
+   double init_image_roll = 0;
+   double init_image_pitch = 0;
+   double init_image_yaw = 0;
+-  
++
+   // The number of trials to initialize the reconstruction.
+   int init_num_trials = 200;
+ 
+@@ -211,8 +211,6 @@ struct IncrementalMapperOptions {
+   IncrementalTriangulator::Options Triangulation() const;
+   BundleAdjustmentOptions LocalBundleAdjustment() const;
+   lidar::PcdProjectionOptions PcdProjector() const;
+-  // lidar::SearchClosestPointOptions ClosestSearcher() const; 
+-  // lidar::KdtreeOptions KdtreeSearcher() const; 
+   BundleAdjustmentOptions GlobalBundleAdjustment() const;
+   ParallelBundleAdjuster::Options ParallelGlobalBundleAdjustment() const;
+ 
+@@ -247,7 +245,7 @@ class IncrementalMapperController : public Thread {
+                               ReconstructionManager* reconstruction_manager);
+ 
+   int OriginImagesNum();
+-  DatabaseCache database_cache_;//数据都在这里面存着
++  DatabaseCache database_cache_;
+  private:
+   void Run();
+   bool LoadDatabase();
+diff --git a/src/estimators/pose.cc b/src/estimators/pose.cc
+index ed3db2f..517034c 100644
+--- a/src/estimators/pose.cc
++++ b/src/estimators/pose.cc
+@@ -296,8 +296,8 @@ bool RefineAbsolutePose(const AbsolutePoseRefinementOptions& options,
+   }
+ 
+   if (options.print_summary) {
+-    PrintHeading2("Pose refinement report");
+-    PrintSolverSummary(summary);
++    LOG(INFO)<< "Pose refinement report";
++    LogSolverSummary(summary);
+   }
+ 
+   if (problem.NumResiduals() > 0 && rot_tvec_covariance != nullptr) {
+@@ -480,8 +480,8 @@ bool RefineGeneralizedAbsolutePose(
+   }
+ 
+   if (options.print_summary) {
+-    PrintHeading2("Pose refinement report");
+-    PrintSolverSummary(summary);
++    LOG(INFO)<< "Pose refinement report";
++    LogSolverSummary(summary);
+   }
+ 
+   if (problem.NumResiduals() > 0 && rot_tvec_covariance != nullptr) {
+diff --git a/src/estimators/two_view_geometry.h b/src/estimators/two_view_geometry.h
+index 8d18841..2641a25 100644
+--- a/src/estimators/two_view_geometry.h
++++ b/src/estimators/two_view_geometry.h
+@@ -48,7 +48,7 @@ struct TwoViewGeometry {
+   enum ConfigurationType {
+     UNDEFINED = 0,
+     // Degenerate configuration (e.g., no overlap or not enough inliers).
+-    DEGENERATE = 1, 
++    DEGENERATE = 1,
+     // Essential matrix.
+     CALIBRATED = 2,
+     // Fundamental matrix.
+@@ -186,8 +186,6 @@ struct TwoViewGeometry {
+   // @param points2         Feature points in second image.
+   // @param matches         Feature matches between first and second image.
+   // @param options         Two-view geometry estimation options.
+-  // 函数内部计算两张图像之间匹配上的inliers的数目
+-  // 计算位姿r, t, tri_angle
+   bool EstimateRelativePose(const Camera& camera1,
+                             const std::vector<Eigen::Vector2d>& points1,
+                             const Camera& camera2,
+diff --git a/src/exe/CMakeLists.txt b/src/exe/CMakeLists.txt
+index 54b87db..0dada2b 100644
+--- a/src/exe/CMakeLists.txt
++++ b/src/exe/CMakeLists.txt
+@@ -43,7 +43,7 @@ COLMAP_ADD_EXECUTABLE(colmap_exe
+     mvs.cc
+     sfm.cc
+     vocab_tree.cc)
+-set_target_properties(colmap_exe PROPERTIES OUTPUT_NAME colmap)
++set_target_properties(colmap_exe PROPERTIES OUTPUT_NAME colmap-pcd)
+ 
+ COLMAP_ADD_SOURCES(
+     feature.h feature.cc
+diff --git a/src/exe/colmap.cc b/src/exe/colmap.cc
+index 5874a9a..28016b0 100644
+--- a/src/exe/colmap.cc
++++ b/src/exe/colmap.cc
+@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
+   commands.emplace_back("database_merger", &RunDatabaseMerger);
+   commands.emplace_back("delaunay_mesher", &RunDelaunayMesher);
+   commands.emplace_back("exhaustive_matcher", &RunExhaustiveMatcher);
+-  commands.emplace_back("feature_extractor", &RunFeatureExtractor);//第一步特征提取
++  commands.emplace_back("feature_extractor", &RunFeatureExtractor);
+   commands.emplace_back("feature_importer", &RunFeatureImporter);
+   commands.emplace_back("hierarchical_mapper", &RunHierarchicalMapper);
+   commands.emplace_back("image_deleter", &RunImageDeleter);
+diff --git a/src/exe/feature.cc b/src/exe/feature.cc
+index 67882ce..712c4a0 100644
+--- a/src/exe/feature.cc
++++ b/src/exe/feature.cc
+@@ -100,7 +100,7 @@ void UpdateImageReaderOptionsFromCameraMode(ImageReaderOptions& options,
+       break;
+   }
+ }
+-// feature extractor运行函数
++// feature extractor
+ int RunFeatureExtractor(int argc, char** argv) {
+   std::string image_list_path;
+   int camera_mode = -1;
+diff --git a/src/exe/gui.cc b/src/exe/gui.cc
+index ecfb882..38de894 100644
+--- a/src/exe/gui.cc
++++ b/src/exe/gui.cc
+@@ -49,7 +49,6 @@ int RunGraphicalUserInterface(int argc, char** argv) {
+   std::string import_path;
+ 
+   if (argc > 1) {
+-    //将import_path设置为必须要给入的default_option
+     options.AddDefaultOption("import_path", &import_path);
+     options.AddAllOptions();
+     options.Parse(argc, argv);
+@@ -66,7 +65,6 @@ int RunGraphicalUserInterface(int argc, char** argv) {
+   main_window.show();
+ 
+   if (!import_path.empty()) {
+-    // 只是打开一个已有项目开始重建的话不执行这条语句
+     main_window.ImportReconstruction(import_path);
+   }
+ 
+diff --git a/src/exe/image.cc b/src/exe/image.cc
+index 6066533..8b99df0 100644
+--- a/src/exe/image.cc
++++ b/src/exe/image.cc
+@@ -257,7 +257,7 @@ int RunImageRegistrator(int argc, char** argv) {
+     return EXIT_FAILURE;
+   }
+ 
+-  PrintHeading1("Loading database1号入口");
++  PrintHeading1("Loading database");
+ 
+   DatabaseCache database_cache;
+ 
+diff --git a/src/exe/sfm.cc b/src/exe/sfm.cc
+index 35f6190..1d25309 100644
+--- a/src/exe/sfm.cc
++++ b/src/exe/sfm.cc
+@@ -211,7 +211,7 @@ int RunMapper(int argc, char** argv) {
+   ReconstructionManager reconstruction_manager;
+   if (input_path != "") {
+     if (!ExistsDir(input_path)) {
+-      std::cerr << "ERROR: `input_path` is not a directory." << std::endl;
++      LOG(ERROR) << "ERROR: `input_path` is not a directory.";
+       return EXIT_FAILURE;
+     }
+     reconstruction_manager.Read(input_path);
+@@ -247,7 +247,7 @@ int RunMapper(int argc, char** argv) {
+   mapper.Wait();
+ 
+   if (reconstruction_manager.Size() == 0) {
+-    std::cerr << "ERROR: failed to create sparse model" << std::endl;
++    LOG(ERROR) << "ERROR: failed to create sparse model";
+     return EXIT_FAILURE;
+   }
+ 
+@@ -278,7 +278,7 @@ int RunHierarchicalMapper(int argc, char** argv) {
+   options.Parse(argc, argv);
+ 
+   if (!ExistsDir(output_path)) {
+-    std::cerr << "ERROR: `output_path` is not a directory." << std::endl;
++    LOG(ERROR) << "ERROR: `output_path` is not a directory.";
+     return EXIT_FAILURE;
+   }
+ 
+@@ -625,7 +625,7 @@ std::vector<CameraRig> ReadCameraRigConfig(const std::string& rig_config_path,
+       for (const auto& image_prefix : image_prefixes) {
+         if (StringContains(image.Name(), image_prefix)) {
+           const std::string image_suffix =
+-              StringGetAfter(image.Name(), image_prefix);
++              StringGetBefore(image.Name(), image_prefix);
+           snapshots[image_suffix].push_back(image_id);
+         }
+       }
+diff --git a/src/feature/extraction.cc b/src/feature/extraction.cc
+index c37c569..5c846b4 100644
+--- a/src/feature/extraction.cc
++++ b/src/feature/extraction.cc
+@@ -86,8 +86,7 @@ SiftFeatureExtractor::SiftFeatureExtractor(
+     const SiftExtractionOptions& sift_options)
+     : reader_options_(reader_options),
+       sift_options_(sift_options),
+-      database_(reader_options_.database_path),//database_使用database_path的string显式初始化，打开reader_options_.database_path文件
+-      //image_reader_初始化
++      database_(reader_options_.database_path),
+       image_reader_(reader_options_, &database_) {
+   CHECK(reader_options_.Check());
+   CHECK(sift_options_.Check());
+@@ -176,7 +175,7 @@ SiftFeatureExtractor::SiftFeatureExtractor(
+ }
+ 
+ void SiftFeatureExtractor::Run() {
+-  PrintHeading1("Feature extraction");//打印标题
++  PrintHeading1("Feature extraction");
+ 
+   for (auto& resizer : resizers_) {
+     resizer->Start();
+diff --git a/src/feature/sift.h b/src/feature/sift.h
+index 7fe803b..28ef3e4 100644
+--- a/src/feature/sift.h
++++ b/src/feature/sift.h
+@@ -104,9 +104,9 @@ struct SiftExtractionOptions {
+     // This normalization is usually better than standard L2-normalization.
+     // See "Three things everyone should know to improve object retrieval",
+     // Relja Arandjelovic and Andrew Zisserman, CVPR 2012.
+-    L1_ROOT, //对descriptor逐元素做平方根
++    L1_ROOT,
+     // Each vector is L2-normalized.
+-    L2, //L2归一化
++    L2,
+   };
+   Normalization normalization = Normalization::L1_ROOT;
+ 
+diff --git a/src/lidar/kdtree.h b/src/lidar/kdtree.h
+index 04b8f5b..6f96823 100644
+--- a/src/lidar/kdtree.h
++++ b/src/lidar/kdtree.h
+@@ -2,7 +2,6 @@
+ #define COLMAP_LIDAR_KDTREE_H
+ 
+ #include <vector>
+-#include <QCoreApplication>
+ #include <pcl/kdtree/kdtree_flann.h>
+ #include "lidar/pt_type.h"
+ 
+diff --git a/src/lidar/lidar_point.h b/src/lidar/lidar_point.h
+index 5c5899f..4d46f72 100644
+--- a/src/lidar/lidar_point.h
++++ b/src/lidar/lidar_point.h
+@@ -16,7 +16,7 @@ class LidarPoint{
+     void SetType(LidarPointType type);
+     inline void SetColor(Eigen::Vector3ub& color){color_ = color;}
+     inline void SetDist(const double& dist) { dist_ = dist; }
+-    inline void SetAngle(const double& angle) {angle_ = angle;} 
++    inline void SetAngle(const double& angle) {angle_ = angle;}
+ 
+     inline Eigen::Vector3d LidarXYZ(){
+         return xyz_;
+diff --git a/src/lidar/pcd_projection.cc b/src/lidar/pcd_projection.cc
+index 165ddf0..4c8cbaf 100644
+--- a/src/lidar/pcd_projection.cc
++++ b/src/lidar/pcd_projection.cc
+@@ -14,7 +14,7 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
+     Eigen::Quaterniond q_cw(image.Qvec()[0],image.Qvec()[1],image.Qvec()[2],image.Qvec()[3]);
+     Eigen::Matrix3d rot_cw = q_cw.toRotationMatrix();
+     Eigen::Vector3d t_cw = image.Tvec();
+-    
++
+     // Only for opencv camera model
+     std::vector<double> params = camera.Params();
+     double scale = options_.depth_image_scale;
+@@ -26,7 +26,7 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
+     for (const Point2D& point2D : image.Points2D()){
+         if (!point2D.HasPoint3D()) {
+             continue;
+-        } 
++        }
+         Eigen::Matrix<int,2,1> uv = (point2D.XY() * scale).cast<int>();
+         if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) continue;
+         features.insert(uv);
+@@ -44,16 +44,19 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
+ 
+     // Search which nodes in the map correspond to the current image
+     ImageMapType img_nodes;
+-
+-    SearchSubMap(img, img_nodes);
+-
++    // Search which nodes in the map correspond to the current image
++    if (prior_image_map_map_.find(image.ImageId()) != prior_image_map_map_.end()) {
++        img_nodes = prior_image_map_map_[image.ImageId()];
++    } else {
++        SearchSubMap(img, img_nodes);
++    }
+     // Project lidar points to image
+     ImageMapProj(img, img_nodes, camera);
+ 
+     for (const Point2D& point2D : image.Points2D()){
+         if (!point2D.HasPoint3D()) {
+             continue;
+-        } 
++        }
+ 
+         Eigen::Matrix<int,2,1> uv = (point2D.XY() * scale).cast<int>();
+         if (uv(0)<0 || uv(0)>=img_w || uv(1)<0 || uv(1)>=img_h ) continue;
+@@ -74,21 +77,51 @@ void PcdProj::SetNewImage(const Image& image, const Camera& camera, std::map<poi
+ 
+     if (options_.if_save_depth_image){
+         SaveDepthImage(img);
+-        std::cout<<"Saved depth image "<<img.img_name<<std::endl;
++        LOG(INFO)<<"Saved depth image "<<img.img_name;
+     }
+ }
+ 
+-void PcdProj::SetNewImage(const Image& image, 
+-            const Camera& camera, 
+-            std::vector<std::pair<Eigen::Vector2d, bool>,Eigen::aligned_allocator<std::pair<Eigen::Vector2d, bool>>>& pt_xys, 
++void PcdProj::ExtractImageMap(const colmap::Image& image, const colmap::Camera& camera) {
++    if (prior_image_map_map_.find(image.ImageId()) != prior_image_map_map_.end()) {
++        return;
++    }
++
++    Eigen::Quaterniond q_cw(image.QvecPrior()[0],image.QvecPrior()[1],image.QvecPrior()[2],image.QvecPrior()[3]);
++    Eigen::Matrix3d rot_cw = q_cw.toRotationMatrix();
++    Eigen::Vector3d t_cw = image.TvecPrior();
++
++    std::vector<double> params = camera.Params();
++    double scale = options_.depth_image_scale;
++    int img_h = static_cast<int>(camera.Height() * scale);
++    int img_w = static_cast<int>(camera.Width() * scale);
++
++    double fx = params[0] * scale;
++    double fy = params[1] * scale;
++    double cx = params[2] * scale;
++    double cy = params[3] * scale;
++
++    ImageMapType img_nodes;
++    SearchSubMap(rot_cw, t_cw, cx, cy, fx, fy, img_w, img_h, img_nodes);
++    prior_image_map_map_.insert(std::make_pair(image.ImageId(), img_nodes));
++}
++
++void PcdProj::SetNewImage(const Image& image,
++            const Camera& camera,
++            std::vector<std::pair<Eigen::Vector2d, bool>,Eigen::aligned_allocator<std::pair<Eigen::Vector2d, bool>>>& pt_xys,
+             std::vector<Eigen::Vector3d,Eigen::aligned_allocator<Eigen::Vector3d>>& pt_xyzs){
+     Eigen::Quaterniond q_cw(image.Qvec()[0],image.Qvec()[1],image.Qvec()[2],image.Qvec()[3]);
+     Eigen::Matrix3d rot_cw = q_cw.toRotationMatrix();
+     Eigen::Vector3d t_cw = image.Tvec();
+-    
++
+     // Only for OpenCV camera model
+     std::vector<double> params = camera.Params();
+     double scale = options_.depth_image_scale;
++    LOG(INFO)<<"Camera params: height "<< camera.Height()
++             <<"width: "<<camera.Width()
++             <<"fx: "<<params[0]
++             <<" fy: "<< params[1]
++             <<"  cx: "<<params[2]
++             <<"  cy: "<<params[3];
+     int img_h = static_cast<int>(camera.Height() * scale);
+     int img_w = static_cast<int>(camera.Width() * scale);
+ 
+@@ -110,9 +143,13 @@ void PcdProj::SetNewImage(const Image& image,
+     img.cy = params[3] * scale;
+ 
+     ImageMapType img_nodes;
+-
+-    SearchSubMap(img, img_nodes);
+-
++    if (prior_image_map_map_.find(image.ImageId()) != prior_image_map_map_.end()) {
++        img_nodes = prior_image_map_map_[image.ImageId()];
++    } else {
++        PrintHeading2(" SearchSubMap");
++        SearchSubMap(img, img_nodes);
++    }
++    PrintHeading2("pcd_projection ImageMapProj");
+     ImageMapProj(img, img_nodes, camera);
+ 
+     // Get the equation of the plane
+@@ -129,7 +166,7 @@ void PcdProj::SetNewImage(const Image& image,
+             Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
+             pt_xyzs.push_back(pt_xyz);
+             continue;
+-        } 
++        }
+ 
+         auto iter = img.feature_pts_map.find(uv);
+         if (iter != img.feature_pts_map.end()){
+@@ -159,8 +196,10 @@ void PcdProj::SetNewImage(const Image& image,
+             Eigen::Vector3d pt_xyz = Eigen::Vector3d::Zero();
+             pt_xyzs.push_back(pt_xyz);
+         }
+-    }    
++    }
+ }
++
++
+ void PcdProj::BuildSubMap(const MapType& ptr){
+     global_map_ptr_ = ptr;
+     for (PointType& pt : ptr->points){
+@@ -184,35 +223,49 @@ void PcdProj::BuildSubMap(const MapType& ptr){
+     }
+ }
+ 
+-void PcdProj::SearchSubMap(const LImage& img, ImageMapType& image_map){
+-
+-    Eigen::Matrix3f rot_wc = img.rot_cw.cast<float>().transpose();
+-    Eigen::Vector3f t_wc = - rot_wc * img.t_cw.cast<float>();
++void PcdProj::SearchSubMap(const Eigen::Matrix3d& rot_cw,
++                           const Eigen::Vector3d& t_cw,
++                           double cx,
++                           double cy,
++                           double fx,
++                           double fy,
++                           int img_width,
++                           int img_height,
++                           ImageMapType& image_map) {
++    Eigen::Matrix3f rot_wc = rot_cw.cast<float>().transpose();
++    Eigen::Vector3f t_wc = - rot_wc * t_cw.cast<float>();
+ 
+     Eigen::Vector3f center_v(0.0,0.0,1.0);
+     Eigen::Vector3f x_bar_v(1.0,0.0,0.0);
+     Eigen::Vector3f y_bar_v(0.0,1.0,0.0);
+-    float x_bar_min = -img.cx / img.fx;
+-    float x_bar_max = (img.img_width-img.cx) / img.fx;
+-    float y_bar_min = -img.cy / img.fy;
+-    float y_bar_max = (img.img_height - img.cy) / img.fy;
++    float x_bar_min = -cx / fx;
++    float x_bar_max = (img_width-cx) / fx;
++    float y_bar_min = - cy / fy;
++    float y_bar_max = (img_height - cy) / fy;
+ 
+     Eigen::Vector3f corner_1 = x_bar_v * x_bar_max  + y_bar_v * y_bar_max;
+     Eigen::Vector3f corner_2 = x_bar_v * x_bar_max  + y_bar_v * y_bar_min;
+     Eigen::Vector3f corner_3 = x_bar_v * x_bar_min  + y_bar_v * y_bar_min;
+     Eigen::Vector3f corner_4 = x_bar_v * x_bar_min  + y_bar_v * y_bar_max;
++
+     // Get the four corners of the pyramid
+     corner_1 = (t_wc + rot_wc * (center_v + corner_1) * options_.choose_meter).eval();
+     corner_2 = (t_wc + rot_wc * (center_v + corner_2) * options_.choose_meter).eval();
+     corner_3 = (t_wc + rot_wc * (center_v + corner_3) * options_.choose_meter).eval();
+     corner_4 = (t_wc + rot_wc * (center_v + corner_4) * options_.choose_meter).eval();
+ 
++
+     // Initialize the pyramid
+     QuadPyramid quad_pyramid(t_wc,corner_1,corner_2,corner_3,corner_4);
+-  
+     SearchImageMap(quad_pyramid,image_map);
+ }
+ 
++
++void PcdProj::SearchSubMap(const LImage& img, ImageMapType& image_map){
++    SearchSubMap(img.rot_cw, img.t_cw, img.cx, img.cy, img.fx, img.fy,
++                 img.img_width, img.img_height, image_map);
++}
++
+ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& camera){
+     Eigen::Matrix3f rot_cw = img.rot_cw.cast<float>();
+     Eigen::Vector3f t_cw = img.t_cw.cast<float>();
+@@ -222,7 +275,7 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+         std::string substr;
+         std::stringstream s_stream(img.img_name);
+         std::getline(s_stream, substr, '.');
+-        std::string point_cloud_write_path = options_.lidar_frame_folder + "/" 
++        std::string point_cloud_write_path = options_.lidar_frame_folder + "/"
+                                             + substr + ".txt";
+         ofs.open(point_cloud_write_path, std::ios::out | std::ios::trunc);
+     }
+@@ -230,6 +283,7 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+     # pragma omp parallel for
+     for (int i = 0; i < num; i++){
+         NodeType* node_ptr = image_map[i];
++        // std::cout << "NodeType size: " << node_ptr->size() << std::endl;
+         // for (NodeType** iter = image_map.begin(); iter != image_map.end(); iter++){
+         // NodeType* node_ptr = *iter;
+         for (PointType& pt : *node_ptr){
+@@ -244,7 +298,7 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+             if (pt_c(2) < 0) continue;
+             // Point's coordinate of the original image
+             std::vector<double> params = camera.Params();
+-            double fx = params[0]; 
++            double fx = params[0];
+             double fy = params[1];
+             double cx = params[2];
+             double cy = params[3];
+@@ -285,13 +339,13 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+             if (dist < options_.min_lidar_proj_dist) {
+                 continue;
+             } else if (options_.min_lidar_proj_dist <= dist && dist<= options_.min_proj_dist) {
+-                scale_x = static_cast<int>(max_proj_scale_x); 
++                scale_x = static_cast<int>(max_proj_scale_x);
+                 scale_y = static_cast<int>(max_proj_scale_y);
+             } else if (dist > options_.min_proj_dist){
+                 scale_x = static_cast<int>(a_x * dist + b_x);
+                 scale_y = static_cast<int>(a_y * dist + b_y);
+             } else {
+-                std::cout<<"Please resolve the parameter conflict"<<std::endl;
++                LOG(INFO) <<"Please resolve the parameter conflict";
+                 continue;
+             }
+             for (int u = u0 - scale_x; u <= u0 + scale_x; u++){
+@@ -314,8 +368,8 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+                         proj_mutex_.unlock();
+                     }
+ 
+-                } 
+-                
++                }
++
+                 if (img.feature_points.find(uv)==img.feature_points.end()) continue;
+                 // The distance of the lidar point from the center of the camera
+                 auto iter = img.feature_pts_map.find(uv);
+@@ -328,7 +382,7 @@ void PcdProj::ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& c
+                     img.feature_pts_map.insert({uv,std::make_pair(pt,dist)});
+                     proj_mutex_.unlock();
+                 }
+-                
++
+             }
+             }
+         }
+@@ -344,7 +398,7 @@ void PcdProj::SaveDepthImage(const LImage& img){
+     cv::Mat depth_image(img.img_height,img.img_width,CV_8UC3,cv::Scalar(255,255,255));
+     float color_scale = 255/options_.choose_meter;
+     for (auto iter : img.dist_map){
+-        
++
+         int u = iter.first(0);
+         int v = iter.first(1);
+         depth_image.at<cv::Vec3b>(v,u)[0] = cv::saturate_cast<uint8_t>(static_cast<int>(iter.second * color_scale));
+@@ -383,7 +437,7 @@ void PcdProj::SearchImageMap(QuadPyramid& quad, ImageMapType& image_map){
+     int y_max = round(y.back()/options_.submap_height);
+     int z_min = round(z.front()/options_.submap_width);
+     int z_max = round(z.back()/options_.submap_width);
+-    
++
+     for(int idx = x_min-1; idx <= x_max+1; idx++){
+         float x = idx * options_.submap_length;
+         for(int idy = y_min-1; idy <= y_max+1; idy++){
+@@ -402,15 +456,15 @@ void PcdProj::SearchImageMap(QuadPyramid& quad, ImageMapType& image_map){
+                     if (iter != submap_.end()){image_map.push_back(&(iter->second));}
+                 }
+             }
+-        } 
++        }
+     }
+     return ;
+ }
+ 
+ Eigen::Vector2d PcdProj::DistortOpenCV(Eigen::Vector2d& ori_uv, const Camera& camera){
+-    
++
+     std::vector<double> params = camera.Params();
+-    double fx = params[0]; 
++    double fx = params[0];
+     double fy = params[1];
+     double cx = params[2];
+     double cy = params[3];
+diff --git a/src/lidar/pcd_projection.h b/src/lidar/pcd_projection.h
+index 15ac7e9..ad20706 100644
+--- a/src/lidar/pcd_projection.h
++++ b/src/lidar/pcd_projection.h
+@@ -24,17 +24,18 @@
+ #include "base/track.h"
+ 
+ #include "lidar/pt_type.h"
++#include "util/misc.h"
+ 
+ namespace colmap{
+ namespace lidar{
+ 
+ struct PcdProjectionOptions {
+   double depth_image_scale = 0.2;
+-  bool if_save_depth_image = false;
+-  std::string depth_image_folder = "/Users/baixuxing/code/colmap/25-photos/test";
++  bool if_save_depth_image = true;
++  std::string depth_image_folder = "/tmp";
+   std::string original_image_folder;
+-  bool if_save_lidar_frame = false;
+-  std::string lidar_frame_folder = "/Users/baixuxing/code/colmap/25-photos/test_nodes_points";
++  bool if_save_lidar_frame = true;
++  std::string lidar_frame_folder = "/tmp";
+   int max_proj_scale = 10;
+   int min_proj_scale = 2;
+   double min_proj_dist = 2;
+@@ -57,12 +58,16 @@ class PcdProj{
+     explicit PcdProj(PcdProjectionOptions options) : options_(options){}
+     ~PcdProj(){}
+     void BuildSubMap(const MapType& ptr);
+-    void SetNewImage(const Image& image, 
+-                     const Camera& camera, 
++    void SetNewImage(const Image& image,
++                     const Camera& camera,
+                      std::map<point3D_t,Eigen::Matrix<double,6,1>>& map);
+-    void SetNewImage(const Image& image, 
+-            const Camera& camera, 
+-            std::vector<std::pair<Eigen::Vector2d, bool>,Eigen::aligned_allocator<std::pair<Eigen::Vector2d, bool>>>& pt_xys, 
++    void ExtractImageMap(const Image& image, const Camera& camera);
++
++
++
++    void SetNewImage(const Image& image,
++            const Camera& camera,
++            std::vector<std::pair<Eigen::Vector2d, bool>,Eigen::aligned_allocator<std::pair<Eigen::Vector2d, bool>>>& pt_xys,
+             std::vector<Eigen::Vector3d,Eigen::aligned_allocator<Eigen::Vector3d>>& pt_xyzs);
+     inline KeyType GetKeyType(const PointType& pt){
+       Eigen::Vector3f pt_cor = pt.getVector3fMap();
+@@ -98,15 +103,15 @@ class PcdProj{
+         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+         LImage(std::set<Eigen::Matrix<int,2,1>,fea_compare> feat,Eigen::Matrix3d& r,Eigen::Vector3d& t){
+           feature_points = feat;
+-          rot_cw = r; 
++          rot_cw = r;
+           t_cw = t;
+         }
+-        std::string img_name; 
+-        int img_height; 
+-        int img_width; 
++        std::string img_name;
++        int img_height;
++        int img_width;
+         Eigen::Matrix3d rot_cw;
+         Eigen::Vector3d t_cw;
+-        double cx; 
++        double cx;
+         double cy;
+         double fx;
+         double fy;
+@@ -118,12 +123,12 @@ class PcdProj{
+         // Distance between image feature points and corresponding lidar points
+         std::map<Eigen::Matrix<int,2,1>, std::pair<PointType, float>, fea_compare> feature_pts_map;
+     };
+-    
++
+   private:
+     // Pyramid struct
+     struct QuadPyramid{
+       EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+-      QuadPyramid(Eigen::Vector3f vertex, Eigen::Vector3f a, Eigen::Vector3f b, 
++      QuadPyramid(Eigen::Vector3f vertex, Eigen::Vector3f a, Eigen::Vector3f b,
+           Eigen::Vector3f c, Eigen::Vector3f d):
+           vertex(vertex),corner_1(a),corner_2(b),corner_3(c),corner_4(d){
+ 
+@@ -155,8 +160,16 @@ class PcdProj{
+       PlaneType plane_3;
+       PlaneType plane_4;
+ 
+-    };  
+-
++    };
++    void SearchSubMap(const Eigen::Matrix3d& rot_cw,
++                      const Eigen::Vector3d& t_cw,
++                      double cx,
++                      double cy,
++                      double fx,
++                      double fy,
++                      int img_width,
++                      int img_height,
++                      ImageMapType& image_map);
+     void SearchSubMap(const LImage& img, ImageMapType& image_map);
+     // void SearchSubMap(const TestImage& img, ImageMapType& image_map);
+     void ImageMapProj(LImage& img, ImageMapType& image_map, const Camera& camera);
+@@ -182,6 +195,8 @@ class PcdProj{
+ 
+     std::mutex proj_mutex_;
+ 
++    std::unordered_map<image_t, ImageMapType> prior_image_map_map_;
++
+ };
+ } //namespace lidar
+ } //namespace colmap
+diff --git a/src/lidar/ply.cc b/src/lidar/ply.cc
+index ab5b6d5..ae12b27 100644
+--- a/src/lidar/ply.cc
++++ b/src/lidar/ply.cc
+@@ -6,6 +6,25 @@
+ namespace colmap{
+ namespace lidar{
+ 
++bool PointCloudProcess::saveProjectedXyzs(
++    colmap::image_t image_id,
++    std::vector<Eigen::Vector3d>& pt_xyzs,
++    const Eigen::Matrix3x4d& inverse_projection_matrix) {
++  const std::string output_path = this->path_.substr(0, this->path_.rfind("/") + 1) + "image" + std::to_string(image_id) + "_xyz.txt";
++  std::ofstream ofs(output_path);
++
++  Eigen::Transform<double, 3, Eigen::Affine> transform;
++  transform.matrix().topLeftCorner<3, 4>() =
++      inverse_projection_matrix;
++  for (int i = 0; i < pt_xyzs.size(); ++i) {
++    // auto pt_trans = transform * pt_xyzs[i];
++    ofs << pt_xyzs[i].x() << " " << pt_xyzs[i].y() << " " << pt_xyzs[i].z() <<std::endl;
++    // ofs << pt_trans.x() << " " << pt_trans.y() << " " << pt_trans.z() <<std::endl;
++  }
++  ofs.close();
++}
++
++
+ const bool PointCloudProcess::Initialize(const PcdProjectionOptions& pp_options){
+     pcd_proj_ = std::make_shared<PcdProj>(pp_options);
+     kdtree_ptr_ = std::make_shared<Kdtree>();
+@@ -16,12 +35,11 @@ const bool PointCloudProcess::Initialize(const PcdProjectionOptions& pp_options)
+         return false;
+     }
+ 
+-    std::cout << "Read "
+-		<< ptr->width * ptr->height
+-		<< " points from "
+-        << path_ << std::endl;
+-    std::cout << std::endl;
+-    
++    LOG(INFO) << "Read "
++		      << ptr->width * ptr->height
++		      << " points from "
++              << path_ << "\n";
++
+     global_pcd_ptr_ = PointCloudDirectionTrans(ptr);
+     // Cut point cloud to nodes
+     pcd_proj_->BuildSubMap(global_pcd_ptr_);
+@@ -37,12 +55,12 @@ LidarPointcloudPtr PointCloudProcess::PointCloudDirectionTrans(const LidarPointc
+ 
+     for (int i = 0; i < pt_num; i++){
+         LidarPoint point_added;
+-        point_added.x = - ptr->points[i].y;
+-        point_added.y = - ptr->points[i].z;
+-        point_added.z = ptr->points[i].x;
+-        point_added.normal_x = - ptr->points[i].normal_y;
+-        point_added.normal_y = - ptr->points[i].normal_z;
+-        point_added.normal_z = ptr->points[i].normal_x;
++        point_added.x = ptr->points[i].x;
++        point_added.y = ptr->points[i].y;
++        point_added.z = ptr->points[i].z;
++        point_added.normal_x = ptr->points[i].normal_x;
++        point_added.normal_y = ptr->points[i].normal_y;
++        point_added.normal_z = ptr->points[i].normal_z;
+         if(std::isnan(point_added.x)||
+            std::isnan(point_added.y)||
+            std::isnan(point_added.z)||
+@@ -50,7 +68,7 @@ LidarPointcloudPtr PointCloudProcess::PointCloudDirectionTrans(const LidarPointc
+            std::isnan(point_added.normal_y)||
+            std::isnan(point_added.normal_z)){
+               continue;
+-        } 
++        }
+         new_ptr -> points.push_back(point_added);
+     }
+     return new_ptr;
+@@ -63,15 +81,13 @@ bool PointCloudProcess::LoadDownsizedMap(double filter_size){
+         std::string error = "Couldn't read file " + path_;
+         return false;
+     }
+-    std::cout << std::endl;
+-    std::cout << "Read "
+-		<< ptr->width * ptr->height
+-		<< " points from "
+-        << path_ << std::endl;
+-    std::cout << std::endl;
++    LOG(INFO) << "Read "
++		      << ptr->width * ptr->height
++		      << " points from "
++              << path_ << "\n";
+ 
+     global_pcd_ptr_ = PointCloudDirectionTrans(ptr);
+-    
++
+     // Point cloud down sample
+     pcl::VoxelGrid<LidarPoint> voxel_scan;
+     LidarPointcloudPtr new_ptr(new LidarPointcloud());
+@@ -99,7 +115,7 @@ bool PointCloudProcess::SearchNearestNeiborByKdtree(const Eigen::Vector3d& point
+ 
+         if (IsNaN(l_pt)) return false;
+         if (l_pt.block(3,0,3,1).norm() < 1e-6) return false;
+-        
++
+         return true;
+     } else {
+         return false;
+diff --git a/src/lidar/ply.h b/src/lidar/ply.h
+index 5cf88b7..ef0b817 100644
+--- a/src/lidar/ply.h
++++ b/src/lidar/ply.h
+@@ -5,6 +5,7 @@
+ #include "pt_type.h"
+ #include "pcd_projection.h"
+ #include "kdtree.h"
++#include "util/misc.h"
+ #include <cmath>
+ namespace colmap{
+ namespace lidar{
+@@ -16,7 +17,7 @@ class PointCloudProcess{
+      * @brief read and store the lidar point cloud
+      * @param lidar point cloud file path
+      */
+-    PointCloudProcess(const std::string& path):path_(path){} 
++    PointCloudProcess(const std::string& path):path_(path){}
+     ~PointCloudProcess(){}
+ 
+     const bool Initialize(const PcdProjectionOptions& pp_options);
+@@ -29,6 +30,13 @@ class PointCloudProcess{
+     LidarPointcloudPtr GetDownsizedMap();
+ 
+     bool SearchNearestNeiborByKdtree(const Eigen::Vector3d& point_3d, Eigen::Vector6d& l_pt);
++    bool ExtractPriorImageMap(const Image& image, const Camera& camera) {pcd_proj_->ExtractImageMap(image, camera);}
++
++    bool saveProjectedXyzs(
++        image_t image_id,
++        std::vector<Eigen::Vector3d>& pt_xyzs,
++        const Eigen::Matrix3x4d& inverse_projection_matrix);
++
+ 
+     std::shared_ptr<PcdProj> pcd_proj_;
+     std::shared_ptr<Kdtree> kdtree_ptr_;
+diff --git a/src/lidar/pt_type.h b/src/lidar/pt_type.h
+index ee6f2ee..e3bae3b 100644
+--- a/src/lidar/pt_type.h
++++ b/src/lidar/pt_type.h
+@@ -9,16 +9,16 @@
+ #include <pcl/pcl_base.h>
+ #include <pcl/impl/pcl_base.hpp>
+ 
+-namespace lidarpt 
++namespace lidarpt
+ {
+-  struct EIGEN_ALIGN16 Point 
++  struct EIGEN_ALIGN16 Point
+   {
+     PCL_ADD_POINT4D;
+     PCL_ADD_NORMAL4D
+ 
+     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+   };
+-}  // namespace lidarpt 
++}  // namespace lidarpt
+ 
+ POINT_CLOUD_REGISTER_POINT_STRUCT(lidarpt::Point,
+                                 (float, x, x)
+diff --git a/src/optim/bundle_adjustment.cc b/src/optim/bundle_adjustment.cc
+index 4696511..3a73f4b 100644
+--- a/src/optim/bundle_adjustment.cc
++++ b/src/optim/bundle_adjustment.cc
+@@ -80,8 +80,6 @@ BundleAdjustmentConfig::BundleAdjustmentConfig() {
+   lidar_searched_image_ids_.clear();
+   lidar_maps_.clear();
+ }
+-
+-// image_ids_是一个包含image_id的set
+ size_t BundleAdjustmentConfig::NumImages() const { return image_ids_.size(); }
+ 
+ size_t BundleAdjustmentConfig::NumPoints() const {
+@@ -233,7 +231,7 @@ void BundleAdjustmentConfig::AddVariablePoint(const point3D_t point3D_id) {
+ 
+ void BundleAdjustmentConfig::Project2Image(Reconstruction* reconstruction,const point3D_t& point3D_id, const image_t& image_id, const int& match_features_threshold) {
+   Point3D& point3D = reconstruction->Point3D(point3D_id);
+-  
++
+   const auto& track_els = point3D.Track().Elements();
+ 
+   for (auto& track_el : track_els){
+@@ -246,7 +244,7 @@ void BundleAdjustmentConfig::Project2Image(Reconstruction* reconstruction,const
+         }
+       }
+     }
+-    
++
+     auto ptr = lidar_searched_image_ids_.find(track_el.image_id);
+     if (ptr == lidar_searched_image_ids_.end()){
+       // The image has not been projected into pcd_projection
+@@ -267,7 +265,7 @@ void BundleAdjustmentConfig::MatchVariablePoint2LidarPoint(Reconstruction* recon
+   double angle = 360;
+   Eigen::Vector6d lidar_pt;
+ 
+-  const auto& track_els = point3D.Track().Elements(); 
++  const auto& track_els = point3D.Track().Elements();
+   for (auto& track_el : track_els){
+     auto iter = lidar_searched_image_ids_.find(track_el.image_id);
+     if (iter == lidar_searched_image_ids_.end()) continue;
+@@ -301,8 +299,8 @@ void BundleAdjustmentConfig::MatchVariablePoint2LidarPoint(Reconstruction* recon
+   }
+ }
+ 
+-void BundleAdjustmentConfig::MatchClosestLidarPoint(Reconstruction* reconstruction, 
+-                                                    const point3D_t& point3D_id, 
++void BundleAdjustmentConfig::MatchClosestLidarPoint(Reconstruction* reconstruction,
++                                                    const point3D_t& point3D_id,
+                                                     double& max_search_range){
+   Point3D& point3D = reconstruction->Point3D(point3D_id);
+   Eigen::Vector3d pt_xyz = point3D.XYZ();
+@@ -394,7 +392,7 @@ bool BundleAdjuster::Solve(Reconstruction* reconstruction) {
+   } else {
+     std::cout<<"The correct optimization type is missing, error occurred."<<std::endl;
+   }
+-  
++
+   if (problem_->NumResiduals() == 0) {
+     return false;
+   }
+@@ -441,8 +439,8 @@ bool BundleAdjuster::Solve(Reconstruction* reconstruction) {
+   }
+ 
+   if (options_.print_summary) {
+-    PrintHeading2("Bundle adjustment report");
+-    PrintSolverSummary(summary_);
++    LOG(INFO)<< "Bundle adjustment report";
++    LogSolverSummary(summary_);
+   }
+ 
+   TearDown(reconstruction);
+@@ -503,7 +501,7 @@ void BundleAdjuster::SetUpGlobalByLidar(Reconstruction* reconstruction,
+   for (const image_t image_id : config_.Images()) {
+       AddImageInSphereToProblem(image_id, reconstruction, loss_function);
+   }
+-  
++
+   for (const auto point3D_id : config_.VariablePoints()) {
+     AddPointToProblem(point3D_id, reconstruction, loss_function);
+   }
+@@ -527,7 +525,7 @@ void BundleAdjuster::SetUpAdjustWholeMapByLidar(Reconstruction* reconstruction,
+   for (const image_t image_id : config_.Images()) {
+       AddImageToProblem(image_id, reconstruction, loss_function);
+   }
+-  
++
+   for (const auto point3D_id : config_.VariablePoints()) {
+     AddPointToProblem(point3D_id, reconstruction, loss_function);
+   }
+@@ -595,7 +593,7 @@ void BundleAdjuster::AddImageInSphereToProblem(const image_t image_id,
+ 
+       problem_->AddResidualBlock(cost_function, loss_function,
+                                  point3D.XYZ().data(), camera_params_data);
+-    } 
++    }
+     else {
+       switch (camera.ModelId()) {
+ #define CAMERA_MODEL_CASE(CameraModel)                                   \
+@@ -674,7 +672,7 @@ void BundleAdjuster::AddImageToProblem(const image_t image_id,
+ 
+       problem_->AddResidualBlock(cost_function, loss_function,
+                                  point3D.XYZ().data(), camera_params_data);
+-    } 
++    }
+     else {
+       switch (camera.ModelId()) {
+ #define CAMERA_MODEL_CASE(CameraModel)                                   \
+@@ -765,7 +763,7 @@ void BundleAdjuster::AddPointToProblem(const point3D_t point3D_id,
+ void BundleAdjuster::AddLidarToProblem(const point3D_t point3D_id,
+                                        Reconstruction* reconstruction,
+                                        ceres::LossFunction* loss_function) {
+-                        
++
+   Point3D& point3D = reconstruction->Point3D(point3D_id);
+   auto ptr = config_.lidar_maps_.find(point3D_id);
+   if (ptr != config_.lidar_maps_.end()){
+@@ -774,7 +772,7 @@ void BundleAdjuster::AddLidarToProblem(const point3D_t point3D_id,
+     for (int i = 0; i < 4; i++){
+       if(std::isnan(abcd(i))){
+         return;
+-      } 
++      }
+     }
+ 
+     double w;
+@@ -790,11 +788,11 @@ void BundleAdjuster::AddLidarToProblem(const point3D_t point3D_id,
+       return;
+     }
+     ceres::CostFunction* cost_function = nullptr;
+-    cost_function =BundleAdjustmentLidarCostFunction::Create( 
+-            abcd,w); 
++    cost_function =BundleAdjustmentLidarCostFunction::Create(
++            abcd,w);
+     problem_->AddResidualBlock(cost_function, loss_function, point3D.XYZ().data());
+   }
+-  
++
+ }
+ 
+ void BundleAdjuster::ParameterizeCameras(Reconstruction* reconstruction) {
+@@ -949,8 +947,8 @@ bool ParallelBundleAdjuster::Solve(Reconstruction* reconstruction) {
+   TearDown(reconstruction);
+ 
+   if (options_.print_summary) {
+-    PrintHeading2("Bundle adjustment report");
+-    PrintSolverSummary(summary_);
++    LOG(INFO)<< "Bundle adjustment report";
++    LogSolverSummary(summary_);
+   }
+ 
+   return true;
+@@ -1179,8 +1177,8 @@ bool RigBundleAdjuster::Solve(Reconstruction* reconstruction,
+   }
+ 
+   if (options_.print_summary) {
+-    PrintHeading2("Rig Bundle adjustment report");
+-    PrintSolverSummary(summary_);
++    LOG(INFO)<< "Rig Bundle adjustment report";
++    LogSolverSummary(summary_);
+   }
+ 
+   TearDown(reconstruction, *camera_rigs);
+@@ -1516,4 +1514,29 @@ void PrintSolverSummary(const ceres::Solver::Summary& summary) {
+   std::cout << std::endl;
+ }
+ 
++void LogSolverSummary(const ceres::Solver::Summary& summary) {
++  std::stringstream ss;
++  ss << "Solver Summary:\n"
++     << std::right << std::setw(16) << "Residuals" << ": " << summary.num_residuals_reduced << "\n"
++     << std::right << std::setw(16) << "Parameters" << ": " << summary.num_effective_parameters_reduced << "\n"
++     << std::right << std::setw(16) << "Iterations" << ": "
++        << (summary.num_successful_steps + summary.num_unsuccessful_steps) << "\n"
++     << std::right << std::setw(16) << "Time" << ": "
++        << summary.total_time_in_seconds << " [s]\n"
++     << std::right << std::setw(16) << "Initial cost" << ": "
++        << std::setprecision(6) << std::sqrt(summary.initial_cost / summary.num_residuals_reduced) << " [px]\n"
++     << std::right << std::setw(16) << "Final cost" << ": "
++        << std::setprecision(6) << std::sqrt(summary.final_cost / summary.num_residuals_reduced) << " [px]\n"
++     << std::right << std::setw(16) << "Termination" << ": ";
++
++  switch (summary.termination_type) {
++    case ceres::CONVERGENCE:      ss << "Convergence"; break;
++    case ceres::NO_CONVERGENCE:   ss << "No convergence"; break;
++    case ceres::FAILURE:          ss << "Failure"; break;
++    case ceres::USER_SUCCESS:     ss << "User success"; break;
++    case ceres::USER_FAILURE:     ss << "User failure"; break;
++    default:                      ss << "Unknown"; break;
++  }
++  LOG(INFO) << ss.str();
++}
+ }  // namespace colmap
+diff --git a/src/optim/bundle_adjustment.h b/src/optim/bundle_adjustment.h
+index cafe6f4..16fbbc3 100644
+--- a/src/optim/bundle_adjustment.h
++++ b/src/optim/bundle_adjustment.h
+@@ -36,6 +36,7 @@
+ #include <unordered_set>
+ #include <fstream>
+ #include <Eigen/Core>
++#include <sstream>
+ 
+ #include <ceres/ceres.h>
+ #include "lidar/lidar_point.h"
+@@ -47,8 +48,6 @@
+ 
+ 
+ namespace colmap {
+-
+-//参数的结构，包括损失函数类型，
+ struct BundleAdjustmentOptions {
+   // Lidar poiny cloud file path
+   std::string lidar_pointcloud_path;
+@@ -135,7 +134,7 @@ class BundleAdjustmentConfig {
+   // Add / remove images from the configuration.
+   void AddImage(const image_t image_id);
+   void AddLidarPoint(const point3D_t& point3D_id, const class LidarPoint& lidar_point);
+-  // Add lidar point cloud 
++  // Add lidar point cloud
+   void AddPointcloud(std::shared_ptr<lidar::PointCloudProcess> ptr);
+ 
+   bool HasImage(const image_t image_id) const;
+@@ -229,7 +228,7 @@ class BundleAdjuster {
+ 
+   void AddImageToProblem(const image_t image_id, Reconstruction* reconstruction,
+                          ceres::LossFunction* loss_function);
+-  // Take the image position as the center of the circle to make a ball shape, 
++  // Take the image position as the center of the circle to make a ball shape,
+   // and add images inside the sphere to the optimization
+   void AddImageInSphereToProblem(const image_t image_id, Reconstruction* reconstruction,
+                          ceres::LossFunction* loss_function);
+@@ -237,7 +236,7 @@ class BundleAdjuster {
+   void AddPointToProblem(const point3D_t point3D_id,
+                          Reconstruction* reconstruction,
+                          ceres::LossFunction* loss_function);
+-  
++
+   void AddLidarToProblem(const point3D_t point3D_id,
+                          Reconstruction* reconstruction,
+                          ceres::LossFunction* loss_function);
+@@ -379,6 +378,7 @@ class RigBundleAdjuster : public BundleAdjuster {
+ };
+ 
+ void PrintSolverSummary(const ceres::Solver::Summary& summary);
++void LogSolverSummary(const ceres::Solver::Summary& summary);
+ 
+ }  // namespace colmap
+ 
+diff --git a/src/sfm/incremental_mapper.cc b/src/sfm/incremental_mapper.cc
+index 1c3fb57..0058d2b 100644
+--- a/src/sfm/incremental_mapper.cc
++++ b/src/sfm/incremental_mapper.cc
+@@ -30,11 +30,13 @@
+ // Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
+ 
+ #include "sfm/incremental_mapper.h"
++#include "controllers/incremental_mapper.h"
+ 
+ #include <array>
+ #include <fstream>
+ 
+ #include "base/projection.h"
++#include "base/pose.h"
+ #include "base/triangulation.h"
+ #include "estimators/pose.h"
+ #include "util/bitmap.h"
+@@ -147,17 +149,15 @@ void IncrementalMapper::EndReconstruction(const bool discard) {
+   reconstruction_ = nullptr;
+   triangulator_.reset();
+ }
+-void IncrementalMapper::LoadPointcloud(std::string& pointcloud_path, 
++void IncrementalMapper::LoadPointcloud(std::string& pointcloud_path,
+                                        const lidar::PcdProjectionOptions& pp_options){
++  LOG(INFO) <<"Enter IncrementalMapper LoadPointcloud ";
+   if (pointcloud_path == ""){
+-    std::cout << "Pose file path undefined." << std::endl;
+-    std::cout << std::endl;
+-  }                                    
++    LOG(INFO) << "Pose file path undefined.";
++  }
+   lidar_pointcloud_process_.reset(new lidar::PointCloudProcess(pointcloud_path));
+   if (!lidar_pointcloud_process_->Initialize(pp_options)){
+-    std::cout<< "Error reading point cloud." << std::endl;
+-    std::cout << std::endl;
+-
++    LOG(INFO) << "Error reading point cloud.";
+   }
+ }
+ bool IncrementalMapper::FindInitialImagePair(const Options& options,
+@@ -169,12 +169,14 @@ bool IncrementalMapper::FindInitialImagePair(const Options& options,
+   if (*image_id1 != kInvalidImageId && *image_id2 == kInvalidImageId) {
+     // Only *image_id1 provided.
+     if (!database_cache_->ExistsImage(*image_id1)) {
++      LOG(INFO) << "image_id1 is not exist";
+       return false;
+     }
+     image_ids1.push_back(*image_id1);
+   } else if (*image_id1 == kInvalidImageId && *image_id2 != kInvalidImageId) {
+     // Only *image_id2 provided.
+     if (!database_cache_->ExistsImage(*image_id2)) {
++      LOG(INFO) << "image_id2 is not exist";
+       return false;
+     }
+     image_ids1.push_back(*image_id2);
+@@ -237,12 +239,20 @@ std::vector<image_t> IncrementalMapper::FindNextImages(const Options& options) {
+   std::vector<std::pair<image_t, float>> other_image_ranks;
+ 
+   // Append images that have not failed to register before.
++  std::cout << "Reconstruction statistics: "<<std::endl
++            << "  Total images: " << reconstruction_->Images().size() << std::endl
++            << "  Number of reconstructed images: " << reconstruction_->NumRegImages()<<std::endl;
++  LOG(INFO) << "Reconstruction statistics:\n"
++            << "  Total images: " << reconstruction_->Images().size() << "\n"
++            << "  Number of reconstructed images: " << reconstruction_->NumRegImages()<<"\n";
+   for (const auto& image : reconstruction_->Images()) {
+     // Skip images that are already registered.
+     if (image.second.IsRegistered()) {
+       continue;
+     }
+ 
++    if (image.second.NumVisiblePoints3D() > 0)
++
+     // Only consider images with a sufficient number of visible points.
+     if (image.second.NumVisiblePoints3D() <
+         static_cast<size_t>(options.abs_pose_min_num_inliers)) {
+@@ -298,8 +308,8 @@ bool IncrementalMapper::RegisterInitialImagePair(const Options& options,
+   //////////////////////////////////////////////////////////////////////////////
+   // Estimate two-view geometry
+   //////////////////////////////////////////////////////////////////////////////
+-
+   if (!EstimateInitialTwoViewGeometry(options, image_id1, image_id2)) {
++    LOG(INFO) << "EstimateInitialTwoViewGeometry False";
+     return false;
+   }
+   image1.Qvec() = ComposeIdentityQuaternion();
+@@ -329,7 +339,6 @@ bool IncrementalMapper::RegisterInitialImagePair(const Options& options,
+                                                             image_id2);
+ 
+   const double min_tri_angle_rad = DegToRad(options.init_min_tri_angle);
+-
+   // Add 3D point tracks.
+   Track track;
+   track.Reserve(2);
+@@ -357,11 +366,10 @@ bool IncrementalMapper::RegisterInitialImagePair(const Options& options,
+ 
+   return true;
+ }
+-bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& options,
+-                                                            const image_t image_id1,
+-                                                            const image_t image_id2){
++bool IncrementalMapper::RegisterInitialImagePairPriorPosePoint3Ds(const Options& options,
++                                                 const image_t image_id1,
++                                                 const image_t image_id2) {
+   CHECK_NOTNULL(reconstruction_);
+-  CHECK_EQ(reconstruction_->NumRegImages(), 0);
+ 
+   CHECK(options.Check());
+ 
+@@ -374,62 +382,303 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
+       Database::ImagePairToPairId(image_id1, image_id2);
+   init_image_pairs_.insert(pair_id);
+ 
++  Image& image1 = reconstruction_->Image(image_id1);
++  const Camera& camera1 = reconstruction_->Camera(image1.CameraId());
++
++  Image& image2 = reconstruction_->Image(image_id2);
++  const Camera& camera2 = reconstruction_->Camera(image2.CameraId());
++
++  //////////////////////////////////////////////////////////////////////////////
++  // Update Reconstruction
++  //////////////////////////////////////////////////////////////////////////////
++
++  const CorrespondenceGraph& correspondence_graph =
++      database_cache_->CorrespondenceGraph();
++  const FeatureMatches& matches =
++      correspondence_graph.FindCorrespondencesBetweenImages(image_id1,
++                                                            image_id2);
++
++  std::vector<point2D_t> image1_idxs;
++  std::vector<point2D_t> image2_idxs;
++  std::vector<Eigen::Vector3d> tri_points3D;
++  for (const auto match : matches){
++    const Point2D point2D_1 = image1.Point2D(match.point2D_idx1);
++    if (!point2D_1.HasPoint3D()) {
++      continue;
++    }
++    image1_idxs.push_back(match.point2D_idx1);
++    image2_idxs.push_back(match.point2D_idx2);
++
++    Eigen::Vector3d& xyz = reconstruction_->Point3D(point2D_1.Point3DId()).XYZ();
++
++    tri_points3D.push_back(xyz);
++  }
++
++  std::vector<image_t> reg_image_ids = reconstruction_->RegImageIds();
++  EIGEN_STL_UMAP(camera_t, Camera) cameras = reconstruction_->Cameras();
++  for (const image_t image_id : reg_image_ids) {
++    reconstruction_->DeRegisterImage(image_id);
++    DeRegisterImageEvent(image_id);
++  }
++  for (auto camera : cameras) {
++    if(!reconstruction_->ExistsCamera(camera.first)) {
++      reconstruction_->AddCamera(camera.second);
++    }
++  }
++
++  reconstruction_->RegisterImage(image_id1);
++  reconstruction_->RegisterImage(image_id2);
++  RegisterImageEvent(image_id1);
++  RegisterImageEvent(image_id2);
++  Track track;
++  track.Reserve(2);
++  track.AddElement(TrackElement());
++  track.AddElement(TrackElement());
++  track.Element(0).image_id = image_id1;
++  track.Element(1).image_id = image_id2;
++
++  for (size_t i = 0; i < tri_points3D.size(); ++i) {
++    track.Element(0).point2D_idx = image1_idxs[i];
++    track.Element(1).point2D_idx = image2_idxs[i];
++    const Eigen::Vector3d xyz = tri_points3D[i];
++    reconstruction_->AddPoint3D(xyz, track);
++  }
++  LOG(INFO) << "RegisterInitialImagePairPriorPosePoint3Ds init NumPoints3D: " << reconstruction_->NumPoints3D();
++  return true;
++}
++
++bool IncrementalMapper::RegisterInitialImageListByPriorPose(const IncrementalTriangulator::Options &tri_options, int min_num_image) {
++  std::vector<image_t> image_ids;
++  // Append images that have not failed to register before.
++
++  camera_t camera_id = kInvalidCameraId;
++  for (const auto& image : reconstruction_->Images()) {
++    // Skip images that are already registered.
++    if (image.second.IsRegistered()) {
++      continue;
++    }
++
++    if (camera_id == kInvalidCameraId) {
++      camera_id = image.second.CameraId();
++    }
++
++    if (image.second.CameraId() != camera_id) {
++      continue;
++    }
++
++    image_ids.emplace_back(image.first);
++  }
++  std::sort(image_ids.begin(), image_ids.end());
++  if (min_num_image < 0) {
++    min_num_image = image_ids.size();
++  }
++
++  std::vector<image_t> image_ids_registered;
++  for (size_t i = 0; i < min_num_image; ++i) {
++    const image_t image_id = image_ids[i];
++    Image& image = reconstruction_->Image(image_id);
++    Camera& camera = reconstruction_->Camera(image.CameraId());
++
++    if (image.HasTvecPrior()) {
++      image.SetTvec(image.TvecPrior());
++      image.SetQvec(image.QvecPrior());
++    } else {
++      continue;
++    }
++    reconstruction_->RegisterImage(image_id);
++    RegisterImageEvent(image_id);
++    image_ids_registered.emplace_back(image_id);
++    init_num_reg_trials_[image_id] += 1;
++    num_reg_trials_[image_id] += 1;
++  }
++  for (size_t i = 0; i < image_ids_registered.size(); ++i) {
++    const image_t image_id = image_ids_registered[i];
++    Image& image = reconstruction_->Image(image_id);
++    Camera& camera = reconstruction_->Camera(image.CameraId());
++    const size_t num_existing_points3D = image.NumPoints3D();
++    TriangulateImage(tri_options, image_id);
++  }
++}
++
++void IncrementalMapper::SavePoint3ds(const std::string &filename) {
++    std::unordered_set<point3D_t> point3D_ids = reconstruction_->Point3DIds();
++    std::fstream fs(filename, std::ios::out);
++
++  for (const auto point3D_id : point3D_ids) {
++    if (!reconstruction_->ExistsPoint3D(point3D_id)) {
++      continue;
++    }
++
++    class Point3D& point3D = reconstruction_->Point3D(point3D_id);
++    fs << point3D.XYZ().transpose() << std::endl;
++  }
++  fs.close();
++}
++
++bool IncrementalMapper::RegisterInitialImagePairByPriorPose(const Options& options,
++                                                            const image_t image_id1,
++                                                            const image_t image_id2){
++  init_num_reg_trials_[image_id1] += 1;
++  init_num_reg_trials_[image_id2] += 1;
++  num_reg_trials_[image_id1] += 1;
++  num_reg_trials_[image_id2] += 1;
++
++  const image_pair_t pair_id =
++      Database::ImagePairToPairId(image_id1, image_id2);
++  init_image_pairs_.insert(pair_id);
++
+   Image& image1 = reconstruction_->Image(image_id1);
+   Camera& camera1 = reconstruction_->Camera(image1.CameraId());
+ 
+   Image& image2 = reconstruction_->Image(image_id2);
+   Camera& camera2 = reconstruction_->Camera(image2.CameraId());
+ 
+-  // Give initial pose to the first image
+-  double roll = DegToRad(options.init_image_roll);
+-  double pitch = -DegToRad(options.init_image_pitch);
+-  double yaw = -DegToRad(options.init_image_yaw);
+-  //Eigen::Vector3d eulerAngle(roll, pitch, yaw);
+-  Eigen::AngleAxisd rollAngle(Eigen::AngleAxisd(roll,Eigen::Vector3d::UnitZ()));
+-  Eigen::AngleAxisd pitchAngle(Eigen::AngleAxisd(pitch,Eigen::Vector3d::UnitX()));
+-  Eigen::AngleAxisd yawAngle(Eigen::AngleAxisd(yaw,Eigen::Vector3d::UnitY()));
+- 
+-  Eigen::Matrix3d rotation_matrix;
+-  rotation_matrix = yawAngle * pitchAngle * rollAngle;
+-
+-  Eigen::Vector3d t_init(-options.init_image_y, -options.init_image_z, options.init_image_x);
+-
+-  Eigen::Matrix3d R_wc = rotation_matrix;
+-  Eigen::Vector3d t_wc = t_init;
+-  Eigen::Matrix3d R_cw = R_wc.transpose();
+-  Eigen::Vector3d t_cw = - R_cw * t_wc;
+-  Eigen::Quaterniond q_cw(R_cw);
+-  Eigen::Vector4d q_cw_v;
+-  q_cw_v << q_cw.w(),q_cw.x(),q_cw.y(),q_cw.z();
+-
+-  image1.Qvec() = q_cw_v;
+-  image1.Tvec() = t_cw;
++   if (image1.HasTvecPrior()) {
++     image1.SetTvec(image1.TvecPrior());
++     image1.SetQvec(image1.QvecPrior());
++   }
++   if (image2.HasTvecPrior()) {
++     image2.SetTvec(image2.TvecPrior());
++     image2.SetQvec(image2.QvecPrior());
++   }
+ 
+-  if (if_import_pose_prior_) {
+-    auto iter = existed_poses_.find(image1.ImageId());
+-    if (iter != existed_poses_.end()){
+-      std::vector<double> pose1 = iter->second;
+-      Eigen::Vector4d q_cw1;
+-      Eigen::Vector3d t_cw1;
+-      t_cw1 << pose1[0], pose1[1], pose1[2];
+-      q_cw1 << pose1[3], pose1[4], pose1[5], pose1[6];
+-      image1.SetQvec(q_cw1);
+-      image1.SetTvec(t_cw1);
++  const CorrespondenceGraph& correspondence_graph =
++      database_cache_->CorrespondenceGraph();
++  const FeatureMatches matches =
++      correspondence_graph.FindCorrespondencesBetweenImages(image_id1,
++                                                            image_id2);
++  std::vector<std::pair<Eigen::Vector2d, bool>,Eigen::aligned_allocator<std::pair<Eigen::Vector2d, bool>>> image1_point2ds;
++  std::vector<Eigen::Vector2d,Eigen::aligned_allocator<Eigen::Vector2d>> image2_point2ds;
++  std::vector<Eigen::Vector3d,Eigen::aligned_allocator<Eigen::Vector3d>> image1_pt_xyzs;
++  image1_point2ds.reserve(matches.size());
++  image1_pt_xyzs.reserve(matches.size());
++
++  auto Tcw1 = image1.ProjectionMatrix();
++  auto Tcw2 = image2.ProjectionMatrix();
++
++  std::vector<Eigen::Vector3d> tri_points3D;
++  for (const auto match : matches){
++    const Point2D point2D_1 = image1.Point2D(match.point2D_idx1);
++    image1_point2ds.push_back({point2D_1.XY(),false});
++    const Point2D point2D_2 = image2.Point2D(match.point2D_idx2);
++    image2_point2ds.push_back(point2D_2.XY());
++    auto pos = TriangulatePoint(Tcw1,
++                                Tcw2,
++                                camera1.ImageToWorld(point2D_1.XY()),
++                                camera2.ImageToWorld(point2D_2.XY()));
++    if (!IsNaN(pos)) {
++      image1_pt_xyzs.push_back(pos);
++      image1_point2ds.back().second = true;
+     }
+-    iter = existed_poses_.find(image2.ImageId());
+-    if (iter != existed_poses_.end()){
+-      std::vector<double> pose2 = iter->second;
+-      Eigen::Vector4d q_cw2;
+-      Eigen::Vector3d t_cw2;
+-      t_cw2 << pose2[0], pose2[1], pose2[2];
+-      q_cw2 << pose2[3], pose2[4], pose2[5], pose2[6];
+-      image2.SetQvec(q_cw2);
+-      image2.SetTvec(t_cw2);
++  }
++
++  std::vector<Eigen::Vector2d> tri_points2D;
++
++  std::vector<point2D_t> image1_idxs;
++  std::vector<point2D_t> image2_idxs;
++
++  for (int i = 0; i < image1_point2ds.size(); i++){
++    if (image1_point2ds[i].second == false) continue;
++    tri_points3D.push_back(image1_pt_xyzs[i]);
++    tri_points2D.push_back(image2_point2ds[i]);
++
++    image1_idxs.push_back(matches[i].point2D_idx1);
++    image2_idxs.push_back(matches[i].point2D_idx2);
++  }
++
++  AbsolutePoseEstimationOptions abs_pose_options;
++  abs_pose_options.num_threads = options.num_threads;
++  abs_pose_options.num_focal_length_samples = 30;
++  abs_pose_options.min_focal_length_ratio = options.min_focal_length_ratio;
++  abs_pose_options.max_focal_length_ratio = options.max_focal_length_ratio;
++  abs_pose_options.ransac_options.max_error = options.abs_pose_max_error;
++  abs_pose_options.ransac_options.min_inlier_ratio =
++      options.abs_pose_min_inlier_ratio;
++  // Use high confidence to avoid preemptive termination of P3P RANSAC
++  // - too early termination may lead to bad registration.
++  abs_pose_options.ransac_options.min_num_trials = 100;
++  abs_pose_options.ransac_options.max_num_trials = 10000;
++  abs_pose_options.ransac_options.confidence = 0.99999;
++  abs_pose_options.estimate_focal_length = false;
++  AbsolutePoseRefinementOptions abs_pose_refinement_options;
++  abs_pose_refinement_options.refine_focal_length = false;
++  abs_pose_refinement_options.refine_extra_params = false;
++
++  size_t num_inliers;
++  std::vector<char> inlier_mask;
++  if (!EstimateAbsolutePose(abs_pose_options, tri_points2D, tri_points3D,
++                            &image2.Qvec(), &image2.Tvec(), &camera2, &num_inliers,
++                            &inlier_mask)) {
++    LOG(INFO) << "EstimateAbsolutePose False";
++    return false;
++  }
++
++  if (num_inliers < static_cast<size_t>(options.abs_pose_min_num_inliers)) {
++    LOG(INFO) << "num_inliers too little: " << num_inliers << "<" << options.abs_pose_min_num_inliers;
++    return false;
++  }
++
++  if (!RefineAbsolutePose(abs_pose_refinement_options, inlier_mask,
++                          tri_points2D, tri_points3D, &image2.Qvec(),
++                          &image2.Tvec(), &camera2)) {
++    LOG(INFO) << "RefineAbsolutePose False";
++    return false;
++  }
++
++  reconstruction_->RegisterImage(image_id1);
++  reconstruction_->RegisterImage(image_id2);
++  RegisterImageEvent(image_id1);
++  RegisterImageEvent(image_id2);
++  Track track;
++  track.Reserve(2);
++  track.AddElement(TrackElement());
++  track.AddElement(TrackElement());
++  track.Element(0).image_id = image_id1;
++  track.Element(1).image_id = image_id2;
++
++  for (size_t i = 0; i < inlier_mask.size(); ++i) {
++    if (inlier_mask[i]) {
++      track.Element(0).point2D_idx = image1_idxs[i];
++      track.Element(1).point2D_idx = image2_idxs[i];
++      const Eigen::Vector3d xyz = tri_points3D[i];
++      reconstruction_->AddPoint3D(xyz, track);
+     }
++  }
+ 
++  return true;
++}
++
++bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& options,
++                                                            const image_t image_id1,
++                                                            const image_t image_id2){
++  CHECK_NOTNULL(reconstruction_);
++  CHECK_EQ(reconstruction_->NumRegImages(), 0);
++
++  CHECK(options.Check());
++
++  init_num_reg_trials_[image_id1] += 1;
++  init_num_reg_trials_[image_id2] += 1;
++  num_reg_trials_[image_id1] += 1;
++  num_reg_trials_[image_id2] += 1;
++
++  const image_pair_t pair_id =
++      Database::ImagePairToPairId(image_id1, image_id2);
++  init_image_pairs_.insert(pair_id);
++
++  Image& image1 = reconstruction_->Image(image_id1);
++  Camera& camera1 = reconstruction_->Camera(image1.CameraId());
++
++  Image& image2 = reconstruction_->Image(image_id2);
++  Camera& camera2 = reconstruction_->Camera(image2.CameraId());
++
++  if (image1.HasTvecPrior()) {
++    image1.SetTvec(image1.TvecPrior());
++    image1.SetQvec(image1.QvecPrior());
++  }
++  if (image2.HasTvecPrior()) {
++    image2.SetTvec(image2.TvecPrior());
++    image2.SetQvec(image2.QvecPrior());
+   }
+-  // image1.Qvec() = ComposeIdentityQuaternion();
+-  // image1.Tvec() = Eigen::Vector3d(0, 0, 0);
+ 
+   const CorrespondenceGraph& correspondence_graph =
+       database_cache_->CorrespondenceGraph();
+@@ -446,13 +695,17 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
+     image1_point2ds.push_back({point2D_1.XY(),false});
+     const Point2D point2D_2 = image2.Point2D(match.point2D_idx2);
+     image2_point2ds.push_back(point2D_2.XY());
+-  }
+-  
++    }
++  LOG(INFO) <<"sfm incremental_mapper SetNewImage";
+   lidar_pointcloud_process_->pcd_proj_->SetNewImage(image1,camera1,image1_point2ds,image1_pt_xyzs);
+-  std::vector<Eigen::Vector2d> tri_points2D; 
+-  std::vector<Eigen::Vector3d> tri_points3D; 
++  std::vector<Eigen::Vector2d> tri_points2D;
++  std::vector<Eigen::Vector3d> tri_points3D;
+   std::vector<point2D_t> image1_idxs;
+   std::vector<point2D_t> image2_idxs;
++
++  std::fstream fs("point3ds.txt", std::ios::out);
++  LOG(INFO) << "image1_point2ds.size: " << image1_point2ds.size();
++  LOG(INFO) << "image1_pt_xyzs.size: " << image1_pt_xyzs.size();
+   for (int i = 0; i < image1_point2ds.size(); i++){
+     if (image1_point2ds[i].second == false) continue;
+ 
+@@ -460,7 +713,10 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
+     tri_points3D.push_back(image1_pt_xyzs[i]);
+     image1_idxs.push_back(matches[i].point2D_idx1);
+     image2_idxs.push_back(matches[i].point2D_idx2);
++
++    fs << image1_pt_xyzs[i].transpose() << std::endl;
+   }
++  fs.close();
+ 
+   AbsolutePoseEstimationOptions abs_pose_options;
+   abs_pose_options.num_threads = options.num_threads;
+@@ -470,8 +726,6 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
+   abs_pose_options.ransac_options.max_error = options.abs_pose_max_error;
+   abs_pose_options.ransac_options.min_inlier_ratio =
+       options.abs_pose_min_inlier_ratio;
+-  // Use high confidence to avoid preemptive termination of P3P RANSAC
+-  // - too early termination may lead to bad registration.
+   abs_pose_options.ransac_options.min_num_trials = 100;
+   abs_pose_options.ransac_options.max_num_trials = 10000;
+   abs_pose_options.ransac_options.confidence = 0.99999;
+@@ -482,19 +736,23 @@ bool IncrementalMapper::RegisterInitialImagePairByDepthProj(const Options& optio
+ 
+   size_t num_inliers;
+   std::vector<char> inlier_mask;
++  LOG(INFO) <<"EstimateAbsolutePose";
+   if (!EstimateAbsolutePose(abs_pose_options, tri_points2D, tri_points3D,
+                             &image2.Qvec(), &image2.Tvec(), &camera2, &num_inliers,
+                             &inlier_mask)) {
++    LOG(ERROR) << "EstimateAbsolutePose False";
+     return false;
+   }
+ 
+   if (num_inliers < static_cast<size_t>(options.abs_pose_min_num_inliers)) {
++    LOG(INFO) << "num_inliers too little: " << num_inliers << "<" << options.abs_pose_min_num_inliers;
+     return false;
+   }
+-
++  LOG(INFO) <<"RefineAbsolutePose";
+   if (!RefineAbsolutePose(abs_pose_refinement_options, inlier_mask,
+                           tri_points2D, tri_points3D, &image2.Qvec(),
+                           &image2.Tvec(), &camera2)) {
++    LOG(INFO) << "RefineAbsolutePose False";
+     return false;
+   }
+ 
+@@ -529,7 +787,9 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+ 
+   Image& image = reconstruction_->Image(image_id);
+   Camera& camera = reconstruction_->Camera(image.CameraId());
+-
++  if (image.CameraId() == 5) {
++    CHECK(options.Check());
++  }
+   CHECK(!image.IsRegistered()) << "Image cannot be registered multiple times";
+ 
+   num_reg_trials_[image_id] += 1;
+@@ -540,25 +800,24 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+     return false;
+   }
+ 
+-    if (if_import_pose_prior_) {
+-      auto iter = existed_poses_.find(image_id);
+-      if (iter != existed_poses_.end()){
+-        std::vector<double> pose = iter -> second;
+-        Eigen::Vector4d q_cw;
+-        Eigen::Vector3d t_cw;
+-        t_cw << pose[0], pose[1], pose[2];
+-        q_cw << pose[3], pose[4], pose[5], pose[6];
+-        image.SetQvec(q_cw);
+-        image.SetTvec(t_cw);
+-      }
+-
++  if (if_import_pose_prior_) {
++    auto iter = existed_poses_.find(image_id);
++    if (iter != existed_poses_.end()){
++      std::vector<double> pose = iter -> second;
++      Eigen::Vector4d q_cw;
++      Eigen::Vector3d t_cw;
++      t_cw << pose[0], pose[1], pose[2];
++      q_cw << pose[3], pose[4], pose[5], pose[6];
++      image.SetQvec(q_cw);
++      image.SetTvec(t_cw);
++    }
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////////
+   // Search for 2D-3D correspondences
+   //////////////////////////////////////////////////////////////////////////////
+ 
+-  
++
+   const CorrespondenceGraph& correspondence_graph =
+       database_cache_->CorrespondenceGraph();
+ 
+@@ -567,6 +826,9 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+   std::vector<Eigen::Vector3d> tri_points3D;
+ 
+   std::unordered_set<point3D_t> corr_point3D_ids;
++
++
++
+   for (point2D_t point2D_idx = 0; point2D_idx < image.NumPoints2D();
+        ++point2D_idx) {
+     const Point2D& point2D = image.Point2D(point2D_idx);
+@@ -575,10 +837,12 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+     for (const auto& corr :
+          correspondence_graph.FindCorrespondences(image_id, point2D_idx)) {
+       const Image& corr_image = reconstruction_->Image(corr.image_id);
++      const Camera& corr_camera = reconstruction_->Camera(corr_image.CameraId());
+       // If this image hasn't been registered, ignore this image
+       if (!corr_image.IsRegistered()) {
+         continue;
+       }
++
+       const Point2D& corr_point2D = corr_image.Point2D(corr.point2D_idx);
+       if (!corr_point2D.HasPoint3D()) {
+         continue;
+@@ -588,8 +852,21 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+       if (corr_point3D_ids.count(corr_point2D.Point3DId()) > 0) {
+         continue;
+       }
+-      const Camera& corr_camera =
+-          reconstruction_->Camera(corr_image.CameraId());
++
++      const auto& pm1 = image.PriorProjectionMatrix();
++      const auto& pm2 = corr_image.PriorProjectionMatrix();
++
++      auto world_point3d = TriangulatePoint(pm1,
++                                            pm2,
++                                  camera.ImageToWorld(point2D.XY()),
++                                  corr_camera.ImageToWorld(corr_point2D.XY()));
++      const Eigen::Vector3d world_point = pm1 * world_point3d.homogeneous();
++      auto proj_point2d = camera.WorldToImage(world_point.hnormalized());
++
++      double dis = (proj_point2d - point2D.XY()).norm();
++      if (dis > 6) {
++        continue;
++      }
+ 
+       // Avoid correspondences to images with bogus camera parameters.
+       if (corr_camera.HasBogusParams(options.min_focal_length_ratio,
+@@ -681,6 +958,7 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+   if (!EstimateAbsolutePose(abs_pose_options, tri_points2D, tri_points3D,
+                             &image.Qvec(), &image.Tvec(), &camera, &num_inliers,
+                             &inlier_mask)) {
++    LOG(INFO) << "RegisterNextImage[EstimateAbsolutePose] false";
+     return false;
+   }
+ 
+@@ -695,6 +973,7 @@ bool IncrementalMapper::RegisterNextImage(const Options& options,
+   if (!RefineAbsolutePose(abs_pose_refinement_options, inlier_mask,
+                           tri_points2D, tri_points3D, &image.Qvec(),
+                           &image.Tvec(), &camera)) {
++    LOG(INFO) << "RegisterNextImage[RefineAbsolutePose] false";
+     return false;
+   }
+ 
+@@ -749,7 +1028,7 @@ size_t IncrementalMapper::MergeTracks(
+ // incremental mapping optimization func
+ IncrementalMapper::LocalBundleAdjustmentReport
+ IncrementalMapper::AdjustLocalBundle(
+-    const Options& options, 
++    const Options& options,
+     const BundleAdjustmentOptions& ba_options,
+     const IncrementalTriangulator::Options& tri_options, const image_t image_id,
+     const std::unordered_set<point3D_t>& point3D_ids) {
+@@ -761,7 +1040,6 @@ IncrementalMapper::AdjustLocalBundle(
+   // Find images that have most 3D points with given image in common.
+   const std::vector<image_t> local_bundle = FindLocalBundle(options, image_id);
+ 
+-  std::cout<<std::endl;
+   // Do the bundle adjustment only if there is any connected images.
+   if (local_bundle.size() > 0) {
+     BundleAdjustmentConfig ba_config;
+@@ -782,11 +1060,11 @@ IncrementalMapper::AdjustLocalBundle(
+     // for (const image_t local_image_id : local_bundle) {
+     //   ba_config.AddImage(local_image_id);
+     // }
+-    if (ba_options.if_add_lidar_constraint && 
+-        if_first_image_exist && 
++    if (ba_options.if_add_lidar_constraint &&
++        if_first_image_exist &&
+         reconstruction_->NumRegImages() < options.first_image_fixed_frames){
+       ba_config.SetConstantPose(options.init_image_id1);
+-    } 
++    }
+ 
+     // Fix the existing images, if option specified.
+     if (options.fix_existing_images) {
+@@ -822,7 +1100,7 @@ IncrementalMapper::AdjustLocalBundle(
+         const image_t image_id1 = local_bundle[local_bundle.size() - 1];
+         const image_t image_id2 = local_bundle[local_bundle.size() - 2];
+         ba_config.SetConstantPose(image_id1);
+-        if (!options.fix_existing_images || 
++        if (!options.fix_existing_images ||
+             !existing_image_ids_.count(image_id2)) {
+           ba_config.SetConstantTvec(image_id2, {0});
+         }
+@@ -885,7 +1163,7 @@ IncrementalMapper::AdjustLocalBundle(
+       }
+     }
+ 
+-    
++
+     // Adjust the local bundle.
+     BundleAdjuster bundle_adjuster(ba_options, ba_config);
+     const BundleAdjuster::OptimazePhrase phrase = BundleAdjuster::OptimazePhrase::Local;
+@@ -975,7 +1253,7 @@ bool IncrementalMapper::AdjustGlobalBundle(
+ 
+   // Normalize scene for numerical stability and
+   // to avoid large scale changes in viewer.
+-  reconstruction_->Normalize();
++  // reconstruction_->Normalize();
+ 
+   return true;
+ }
+@@ -1015,12 +1293,16 @@ bool IncrementalMapper::AdjustGlobalBundleByLidar(
+   //     !existing_image_ids_.count(reg_image_ids[1])) {
+   //   ba_config.SetConstantTvec(reg_image_ids[1], {0});
+   // }
++
+   int num = reg_image_ids.size() - 1 ;
++  LOG(INFO) <<"reg_image_ids size: "<<reg_image_ids.size();
++
+   if (num < options.first_image_fixed_frames){
+-    ba_config.SetConstantPose(options.init_image_id1);
++    // ba_config.SetConstantPose(options.init_image_id1);
++    ba_config.SetConstantPose(reg_image_ids[0]);
+     num +=1;
+   }
+-    
++
+   // Variables inside the sphere that need to be optimized
+   image_t latest_image_id = reg_image_ids.back();
+   Eigen::Quaterniond latest_q_cw(reconstruction_->Image(latest_image_id).Qvec()[0],
+@@ -1068,14 +1350,12 @@ bool IncrementalMapper::AdjustGlobalBundleByLidar(
+       }
+     }
+   }
+-
++  LOG(INFO) <<"sphere optimize-------------------";
+   if (ba_options.if_add_lidar_constraint || ba_options.if_add_lidar_corresponding){
+     for (auto iter = variable_point3D_ids.begin(); iter != variable_point3D_ids.end(); iter++){
+       point3D_t point3D_id = *iter;
+       Point3D& point3D = reconstruction_->Point3D(point3D_id);
+       point3D.IfInSphere() = true;
+-      // int track_length = point3D.Track().Length();
+-      // double max_search_range = options.kdtree_max_search_range - (track_length - 3) * options.search_range_drop_speed;
+       int opt_num = point3D.GlobalOptNum();
+       double max_search_range = options.kdtree_max_search_range - opt_num * options.search_range_drop_speed;
+       if (max_search_range <= options.kdtree_min_search_range) {
+@@ -1109,13 +1389,14 @@ bool IncrementalMapper::AdjustGlobalBundleByLidar(
+       }
+     }
+   }
+-  
++
+   // Run bundle adjustment.
+   BundleAdjuster bundle_adjuster(ba_options, ba_config);
+   const BundleAdjuster::OptimazePhrase phrase = BundleAdjuster::OptimazePhrase::Global;
+   bundle_adjuster.SetOptimazePhrase(phrase);
+ 
+   if (!bundle_adjuster.Solve(reconstruction_)) {
++    CLOG("ba false");
+     return false;
+   }
+ 
+@@ -1604,9 +1885,14 @@ bool IncrementalMapper::EstimateInitialTwoViewGeometry(
+   // Estimate relative pose
+   if (!two_view_geometry.EstimateRelativePose(camera1, points1, camera2,
+                                               points2)) {
++    LOG(INFO) << "two_view_geometry EstimateRelativePose False";
+     return false;
+   }
+ 
++  LOG(INFO) << "EstimateInitialTwoViewGeometry" << image_id1 << "," << image_id2;
++  LOG(INFO) << "num_inliers: " << two_view_geometry.inlier_matches.size() << ">=" <<options.init_min_num_inliers;
++  LOG(INFO) << "tvec.z(): "  << std::abs(two_view_geometry.tvec.z()) << "<" << options.init_max_forward_motion;
++  LOG(INFO) << "tri_angle: " << RadToDeg(two_view_geometry.tri_angle) << ">" << options.init_min_tri_angle;
+   if (static_cast<int>(two_view_geometry.inlier_matches.size()) >=
+           options.init_min_num_inliers &&
+       std::abs(two_view_geometry.tvec.z()) < options.init_max_forward_motion &&
+@@ -1619,4 +1905,10 @@ bool IncrementalMapper::EstimateInitialTwoViewGeometry(
+   return false;
+ }
+ 
++image_t IncrementalMapper::FindFirstImageId(const Options& options)
++{
++  for (const auto& image : reconstruction_->Images()) {
++    return image.first;
++  }
++}
+ }  // namespace colmap
+diff --git a/src/sfm/incremental_mapper.h b/src/sfm/incremental_mapper.h
+index 5e42252..be003a9 100644
+--- a/src/sfm/incremental_mapper.h
++++ b/src/sfm/incremental_mapper.h
+@@ -166,6 +166,8 @@ class IncrementalMapper {
+   // life-time of the incremental mapper.
+   explicit IncrementalMapper(const DatabaseCache* database_cache);
+ 
++  void ReadImageList(const std::string &image_list_file);
++
+   // Load existed initial pose guess
+   void LoadExistedImagePoses(std::map<uint32_t, std::vector<double>>& poses);
+ 
+@@ -193,12 +195,20 @@ class IncrementalMapper {
+   // Attempt to seed the reconstruction from an image pair.
+   bool RegisterInitialImagePair(const Options& options, const image_t image_id1,
+                                 const image_t image_id2);
+-                                
++
+   // Attempt to seed tne reconstruction from an image pair and lidar pointcloud.
+   bool RegisterInitialImagePairByDepthProj(const Options& options,
+-                                                            const image_t image_id1,
+-                                                            const image_t image_id2);
+-
++                                           const image_t image_id1,
++                                           const image_t image_id2);
++  // Attempt to seed tne reconstruction from an image pair and lidar pointcloud.
++  bool RegisterInitialImagePairByPriorPose(const Options& options,
++                                           const image_t image_id1,
++                                           const image_t image_id2);
++  bool RegisterInitialImagePairPriorPosePoint3Ds(const Options& options,
++                                            const image_t image_id1,
++                                            const image_t image_id2);
++  bool RegisterInitialImageListByPriorPose(const IncrementalTriangulator::Options &tri_options, int min_num_image);
++  void SavePoint3ds(const std::string &filename="points3d_init.txt");
+   // Attempt to register image to the existing model. This requires that
+   // a previous call to `RegisterInitialImagePair` was successful.
+   bool RegisterNextImage(const Options& options, const image_t image_id);
+@@ -231,7 +241,7 @@ class IncrementalMapper {
+   // connected to the reference image, their observing images are set as
+   // constant in the adjustment.
+   LocalBundleAdjustmentReport AdjustLocalBundle(
+-      const Options& options, 
++      const Options& options,
+       const BundleAdjustmentOptions& ba_options,
+       const IncrementalTriangulator::Options& tri_options,
+       const image_t image_id, const std::unordered_set<point3D_t>& point3D_ids);
+@@ -264,8 +274,9 @@ class IncrementalMapper {
+   // Clear the collection of changed 3D points.
+   void ClearModifiedPoints3D();
+   void ClearLidarPoints();
+-  void LoadPointcloud(std::string& pointcloud_path, 
++  void LoadPointcloud(std::string& pointcloud_path,
+                       const lidar::PcdProjectionOptions& pp_options);
++  image_t FindFirstImageId(const Options& options);
+ 
+  private:
+   // Find seed images for incremental reconstruction. Suitable seed images have
+diff --git a/src/ui/main_window.cc b/src/ui/main_window.cc
+index 2cf8385..490d91d 100644
+--- a/src/ui/main_window.cc
++++ b/src/ui/main_window.cc
+@@ -285,14 +285,14 @@ void MainWindow::CreateActions() {
+                   tr("Dense reconstruction"), this);
+   connect(action_dense_reconstruction_, &QAction::triggered, this,
+           &MainWindow::DenseReconstruction);
+-  
+-  action_load_lidar_map_ = 
++
++  action_load_lidar_map_ =
+       new QAction(QIcon(":/media/lidar.png"),
+                   tr("Point cloud display on"), this);
+   connect(action_load_lidar_map_, &QAction::triggered, this,
+           &MainWindow::LoadLidarPoint);
+ 
+-  action_save_image_poses_ = 
++  action_save_image_poses_ =
+       new QAction(QIcon(":/media/pose.png"),
+                   tr("Save pose file"), this);
+   connect(action_save_image_poses_, &QAction::triggered, this,
+@@ -541,11 +541,10 @@ void MainWindow::CreateControllers() {
+   }
+ 
+   mapper_controller_.reset(new IncrementalMapperController(
+-      options_.mapper.get(), *options_.image_path, *options_.database_path, 
++      options_.mapper.get(), *options_.image_path, *options_.database_path,
+       &reconstruction_manager_));
+   mapper_controller_->AddCallback(
+       IncrementalMapperController::INITIAL_IMAGE_PAIR_REG_CALLBACK, [this]() {
+-        //如果这个线程没有停止
+         if (!mapper_controller_->IsStopped()) {
+           action_render_now_->trigger();
+         }
+@@ -1171,7 +1170,7 @@ void MainWindow::SaveImagePoses(){
+                     << static_cast<float>(yaw) << std::endl;
+     }
+   }
+-  
++
+   traj_writeout.close();
+ 
+   std::cout << std::endl;
+diff --git a/src/ui/model_viewer_widget.cc b/src/ui/model_viewer_widget.cc
+index 77fd53f..baa215b 100644
+--- a/src/ui/model_viewer_widget.cc
++++ b/src/ui/model_viewer_widget.cc
+@@ -284,7 +284,7 @@ void ModelViewerWidget::ReloadReconstruction() {
+   reg_image_ids = reconstruction->RegImageIds();
+ 
+   images.clear();// EIGEN_STL_UMAP(image_t, Image) images;
+-  
++
+   for (const image_t image_id : reg_image_ids) {
+     images[image_id] = reconstruction->Image(image_id);
+   }
+@@ -292,7 +292,7 @@ void ModelViewerWidget::ReloadReconstruction() {
+   statusbar_status_label->setText(QString().asprintf(
+       "%d Images - %d Points", static_cast<int>(reg_image_ids.size()),
+       static_cast<int>(points3D.size())));
+- 
++
+   Upload();
+ }
+ 
+@@ -666,7 +666,7 @@ void ModelViewerWidget::SetupPainters() {
+   }
+   lidar_map_painter_.Setup();
+   point_connection_painter_.Setup();
+-  
++
+   image_line_painter_.Setup();
+   image_triangle_painter_.Setup();
+   image_connection_painter_.Setup();
+@@ -765,7 +765,7 @@ void ModelViewerWidget::UploadLidarMapData() {
+ 
+   if (lidar_map_ptr_ == nullptr){
+     if (options_->mapper->lidar_pointcloud_path ==""){
+-      std::cout << "Point cloud path undefined." << std::endl; 
++      std::cout << "Point cloud path undefined." << std::endl;
+       return;
+     }
+     lidar_map_path_ = options_->mapper->lidar_pointcloud_path;
+@@ -921,13 +921,13 @@ void ModelViewerWidget::UploadLidarPointData(){
+ 
+     data.push_back(painter_lidar_point);
+   }
+-  
++
+   lidar_point_painter_.Upload(data);
+ }
+ 
+ void ModelViewerWidget::UploadPoint2LidarConnectionData(){
+   makeCurrent();
+-  
++
+   std::vector<LinePainter::Data> point_to_lidar_line_data;
+   point_to_lidar_line_data.reserve(lidar_points.size());
+ 
+@@ -936,7 +936,7 @@ void ModelViewerWidget::UploadPoint2LidarConnectionData(){
+     auto i_pt_iter = points3D.find(lidar_pt.first);
+     if (i_pt_iter == points3D.end()){
+       continue;
+-    } 
++    }
+     // lidar point
+     PointPainter::Data l_pt;
+ 
+@@ -973,7 +973,7 @@ void ModelViewerWidget::UploadPoint2LidarConnectionData(){
+ 
+ void ModelViewerWidget::UploadPoint2LidarConnectionInGlobalData(){
+   makeCurrent();
+-  
++
+   std::vector<LinePainter::Data> point_to_lidar_line_data;
+   point_to_lidar_line_data.reserve(lidar_points_in_global_.size());
+ 
+@@ -982,7 +982,7 @@ void ModelViewerWidget::UploadPoint2LidarConnectionInGlobalData(){
+     auto i_pt_iter = points3D.find(lidar_pt.first);
+     if (i_pt_iter == points3D.end()){
+       continue;
+-    } 
++    }
+     // lidar point
+     PointPainter::Data l_pt;
+ 
+diff --git a/src/ui/point_painter.cc b/src/ui/point_painter.cc
+index 0eb85f8..b593992 100644
+--- a/src/ui/point_painter.cc
++++ b/src/ui/point_painter.cc
+@@ -76,7 +76,6 @@ void PointPainter::Upload(const std::vector<PointPainter::Data>& data) {
+   vbo_.bind();
+ 
+   // Upload data array to GPU
+-  // buffer设置为DynamicDraw  buffer can be modified more times
+   vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+   vbo_.allocate(data.data(),
+                 static_cast<int>(data.size() * sizeof(PointPainter::Data)));
+diff --git a/src/ui/reconstruction_options_widget.cc b/src/ui/reconstruction_options_widget.cc
+index 0bd385e..2803b6e 100644
+--- a/src/ui/reconstruction_options_widget.cc
++++ b/src/ui/reconstruction_options_widget.cc
+@@ -176,7 +176,7 @@ MapperLidarConstraintingOptionsWidget::MapperLidarConstraintingOptionsWidget(QWi
+       AddOptionInt(&options->mapper->first_image_fixed_frames,"first_image_fixed_frames");
+       AddOptionBool(&options->mapper->if_add_lidar_constraint, "if_add_lidar_constraint");
+       AddOptionFilePath(&options->mapper->lidar_pointcloud_path, "lidar_map_path");
+-      AddOptionBool(&options->mapper->if_import_pose_prior, "if_import_image_pose_prior"); 
++      AddOptionBool(&options->mapper->if_import_pose_prior, "if_import_image_pose_prior");
+       AddOptionFilePath(&options->mapper->image_pose_prior_path, "image_pose_prior_path");
+       AddOptionDirPath(&options->mapper->image_pose_save_folder, "save_image_pose_folder");
+       AddOptionBool(&options->mapper->if_add_lidar_corresponding, "if_add_lidar_correspondence");
+@@ -232,7 +232,7 @@ ReconstructionOptionsWidget::ReconstructionOptionsWidget(QWidget* parent,
+   tab_widget->addTab(new MapperFilteringOptionsWidget(this, options),
+                      tr("Filter"));
+   tab_widget->addTab(new MapperLidarConstraintingOptionsWidget(this, options),
+-                     tr("Lidar"));                   
++                     tr("Lidar"));
+ 
+   grid->addWidget(tab_widget, 0, 0);
+ }
+diff --git a/src/ui/thread_control_widget.h b/src/ui/thread_control_widget.h
+index 69f9cb5..207709f 100644
+--- a/src/ui/thread_control_widget.h
++++ b/src/ui/thread_control_widget.h
+@@ -51,7 +51,7 @@ class ThreadControlWidget : public QWidget {
+                      const std::function<void()>& func);
+ 
+  private:
+-  QProgressDialog* progress_bar_;// 进度对话框
++  QProgressDialog* progress_bar_;
+   QAction* destructor_;
+   std::unique_ptr<Thread> thread_;
+ };
+diff --git a/src/util/ceres_log.cc b/src/util/ceres_log.cc
+new file mode 100644
+index 0000000..8c34d04
+--- /dev/null
++++ b/src/util/ceres_log.cc
+@@ -0,0 +1,51 @@
++# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
++# Author: Genie Sim Team
++# License: Mozilla Public License Version 2.0
++
++#include <glog/logging.h>
++#include <ceres/ceres.h>
++#include <iomanip>
++
++class CeresLogCallback : public ceres::IterationCallback {
++public:
++    explicit CeresLogCallback(const ceres::Solver::Options& options)
++        : options_(options) {}
++
++    ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary) override {
++        std::stringstream ss;
++        if (summary.iteration == 0) {
++            ss << std::setw(4) << "iter"
++               << std::setw(14) << "cost"
++               << std::setw(14) << "cost_change"
++               << std::setw(12) << "|gradient|"
++               << std::setw(12) << "|step|"
++               << std::setw(12) << "tr_ratio"
++               << std::setw(12) << "tr_radius"
++               << std::setw(8) << "ls_iter"
++               << std::setw(12) << "iter_time"
++               << std::setw(12) << "total_time";
++            LOG(INFO) << ss.str();
++            ss.str("");  // empty
++        }
++
++        ss << std::setw(4) << summary.iteration
++           << std::scientific << std::setprecision(6)
++           << std::setw(14) << summary.cost
++           << std::setw(14) << summary.cost_change
++           << std::setw(12) << summary.gradient_max_norm
++           << std::setw(12) << summary.step_norm
++           << std::setw(12) << summary.relative_decrease
++           << std::setw(12) << summary.trust_region_radius
++           << std::setw(8) << summary.line_search_iterations
++           << std::fixed << std::setprecision(2)
++           << std::setw(12) << summary.iteration_time_in_seconds
++           << std::setw(12) << summary.cumulative_time_in_seconds;
++
++        LOG(INFO) << ss.str();
++
++        return ceres::SOLVER_CONTINUE;
++    }
++
++private:
++    ceres::Solver::Options options_;
++};
+diff --git a/src/util/logging.cc b/src/util/logging.cc
+index 59175c1..969e155 100644
+--- a/src/util/logging.cc
++++ b/src/util/logging.cc
+@@ -33,11 +33,28 @@
+ 
+ namespace colmap {
+ 
++void setupLogging(const std::string& logDir) {
++  google::SetLogDestination(google::GLOG_INFO, (logDir + "/optpose_INFO_").c_str());
++  google::SetLogDestination(google::GLOG_WARNING, (logDir + "/optpose_WARNING_").c_str());
++  google::SetLogDestination(google::GLOG_ERROR, (logDir + "/optpose_ERROR_").c_str());
++  google::SetLogDestination(google::GLOG_FATAL, (logDir + "/optpose_FATAL_").c_str());
++
++  FLAGS_logbufsecs = 30;
++  FLAGS_stop_logging_if_full_disk = true;
++  FLAGS_max_log_size = 1024;  //1GB
++  FLAGS_alsologtostderr = false;
++  FLAGS_minloglevel = 0;
++
++}
++
+ void InitializeGlog(char** argv) {
+ #ifndef _MSC_VER  // Broken in MSVC
+   google::InstallFailureSignalHandler();
+ #endif
++  const std::string logdir(argv[5]);
++  setupLogging(GetParentDir(logdir));
+   google::InitGoogleLogging(argv[0]);
++  LOG(INFO)<< "Log initialize finished";
+ }
+ 
+ const char* __GetConstFileBaseName(const char* file) {
+diff --git a/src/util/logging.h b/src/util/logging.h
+index d346ffa..8e2058a 100644
+--- a/src/util/logging.h
++++ b/src/util/logging.h
+@@ -37,6 +37,7 @@
+ #include <glog/logging.h>
+ 
+ #include "util/string.h"
++#include "util/misc.h"
+ 
+ // Option checker macros. In contrast to glog, this function does not abort the
+ // program, but simply returns false on failure.
+@@ -51,7 +52,7 @@
+                            #val1, #val2, #op)) {                           \
+     return false;                                                          \
+   }
+-#define CHECK_OPTION_EQ(val1, val2) CHECK_OPTION_OP(_EQ, ==, val1, val2)//宏函数
++#define CHECK_OPTION_EQ(val1, val2) CHECK_OPTION_OP(_EQ, ==, val1, val2)
+ #define CHECK_OPTION_NE(val1, val2) CHECK_OPTION_OP(_NE, !=, val1, val2)
+ #define CHECK_OPTION_LE(val1, val2) CHECK_OPTION_OP(_LE, <=, val1, val2)
+ #define CHECK_OPTION_LT(val1, val2) CHECK_OPTION_OP(_LT, <, val1, val2)
+@@ -60,6 +61,7 @@
+ 
+ namespace colmap {
+ 
++void setupLogging(const std::string& logDir);
+ // Initialize glog at the beginning of the program.
+ void InitializeGlog(char** argv);
+ 
+@@ -70,7 +72,7 @@ void InitializeGlog(char** argv);
+ const char* __GetConstFileBaseName(const char* file);
+ 
+ bool __CheckOptionImpl(const char* file, const int line, const bool result,
+-                       const char* expr_str); 
++                       const char* expr_str);
+ 
+ template <typename T1, typename T2>
+ bool __CheckOptionOpImpl(const char* file, const int line, const bool result,
+diff --git a/src/util/misc.cc b/src/util/misc.cc
+index 057eb14..15c2c28 100644
+--- a/src/util/misc.cc
++++ b/src/util/misc.cc
+@@ -199,6 +199,17 @@ void PrintHeading2(const std::string& heading) {
+   std::cout << std::string(std::min<int>(heading.size(), 78), '-') << std::endl;
+ }
+ 
++void LogHeading1(const std::string& heading) {
++  LOG(INFO) << "\n" << std::string(78, '=') << "\n";
++  LOG(INFO) << heading << "\n";
++  LOG(INFO) << std::string(78, '=') << "\n" << "\n";
++}
++
++
++void log(const std::string& message, const char* file, int line) {
++    std::cout << "[" << file << ":" << line << "] " << message << std::endl;
++}
++
+ template <>
+ std::vector<std::string> CSVToVector(const std::string& csv) {
+   auto elems = StringSplit(csv, ",;");
+diff --git a/src/util/misc.h b/src/util/misc.h
+index ba8c7c5..a2e9548 100644
+--- a/src/util/misc.h
++++ b/src/util/misc.h
+@@ -50,6 +50,9 @@ namespace colmap {
+ #define STRINGIFY_(s) #s
+ #endif  // STRINGIFY
+ 
++#define CLOG(msg) log(msg, __FILE__, __LINE__)
++void log(const std::string& message, const char* file, int line);
++
+ enum class CopyType { COPY, HARD_LINK, SOFT_LINK };
+ 
+ // Append trailing slash to string if it does not yet end with a slash.
+@@ -109,6 +112,7 @@ void PrintHeading1(const std::string& heading);
+ 
+ // Print second-order heading with underscores to `std::cout`.
+ void PrintHeading2(const std::string& heading);
++void LogHeading1(const std::string& heading);
+ 
+ // Check if vector contains elements.
+ template <typename T>
+diff --git a/src/util/option_manager.h b/src/util/option_manager.h
+index 3013d5b..3d47534 100644
+--- a/src/util/option_manager.h
++++ b/src/util/option_manager.h
+@@ -103,7 +103,7 @@ class OptionManager {
+   template <typename T>
+   void AddRequiredOption(const std::string& name, T* option,
+                          const std::string& help_text = "");
+-  
++
+   template <typename T>
+   void AddDefaultOption(const std::string& name, T* option,
+                         const std::string& help_text = "");
+diff --git a/src/util/string.cc b/src/util/string.cc
+index 723be71..c4d524e 100644
+--- a/src/util/string.cc
++++ b/src/util/string.cc
+@@ -163,6 +163,17 @@ std::string StringGetAfter(const std::string& str, const std::string& key) {
+   return "";
+ }
+ 
++std::string StringGetBefore(const std::string& str, const std::string& key) {
++  if (key.empty()) {
++    return str;
++  }
++  std::size_t found = str.rfind(key);
++  if (found != std::string::npos) {
++    return str.substr(0, found);
++  }
++  return "";
++}
++
+ std::vector<std::string> StringSplit(const std::string& str,
+                                      const std::string& delim) {
+   std::vector<std::string> elems;
+diff --git a/src/util/string.h b/src/util/string.h
+index 0c0e12a..6bf1a2b 100644
+--- a/src/util/string.h
++++ b/src/util/string.h
+@@ -46,6 +46,7 @@ std::string StringReplace(const std::string& str, const std::string& old_str,
+                           const std::string& new_str);
+ 
+ std::string StringGetAfter(const std::string& str, const std::string& key);
++std::string StringGetBefore(const std::string& str, const std::string& key);
+ 
+ std::vector<std::string> StringSplit(const std::string& str,
+                                      const std::string& delim);
+diff --git a/src/util/timer.cc b/src/util/timer.cc
+index 2d3f55b..43f9b26 100644
+--- a/src/util/timer.cc
++++ b/src/util/timer.cc
+@@ -95,6 +95,10 @@ void Timer::PrintMinutes() const {
+             << std::endl;
+ }
+ 
++void Timer::LogMinutes() const {
++  LOG(INFO) << StringPrintf("Elapsed time: %.3f [minutes]", ElapsedMinutes()) << "\n";
++}
++
+ void Timer::PrintHours() const {
+   std::cout << StringPrintf("Elapsed time: %.3f [hours]", ElapsedHours())
+             << std::endl;
+diff --git a/src/util/timer.h b/src/util/timer.h
+index 1d2c73e..d01f64c 100644
+--- a/src/util/timer.h
++++ b/src/util/timer.h
+@@ -54,6 +54,7 @@ class Timer {
+   void PrintSeconds() const;
+   void PrintMinutes() const;
+   void PrintHours() const;
++  void LogMinutes() const;
+ 
+  private:
+   bool started_;
+diff --git a/src/util/version.cc b/src/util/version.cc
+index 390a126..8a8a27f 100644
+--- a/src/util/version.cc
++++ b/src/util/version.cc
+@@ -38,7 +38,7 @@ std::string GetVersionInfo() {
+ }
+ 
+ std::string GetBuildInfo() {
+-#ifdef CUDA_ENABLED 
++#ifdef CUDA_ENABLED
+   const std::string cuda_info = "with CUDA";
+ #else
+   const std::string cuda_info = "without CUDA";
+-- 
+2.34.1
+
