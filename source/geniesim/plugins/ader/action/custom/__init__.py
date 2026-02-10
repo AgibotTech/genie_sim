@@ -4,6 +4,7 @@
 
 from .onshelf import OnShelf
 from .inside import Inside
+from .inbbox import InBBox
 from .pickup_on_gripper import PickUpOnGripper
 from .ontop import Ontop
 from .fluid_inside import FluidInside
@@ -17,3 +18,7 @@ from .check_stain_clean import CheckStainClean
 from .gripper_passing import GripperPassing
 from .approach import Approach
 from .vlm import VLM
+from .liftup import LiftUp
+from .upright import Upright
+from .stable_grasp import StableGrasp
+from .chassis_at_target import ChassisAtTarget

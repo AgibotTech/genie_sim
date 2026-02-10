@@ -1,0 +1,31 @@
+vr_task_setting:
+  pvt_interval: 12
+  clip_filter_enable: true
+  feedforward_scale: 0.3
+  lpf_filter_enable: true
+  vel_scale: 1.0          #1.0
+  acc_scale: 1.2          #1.0
+  jerk_scale: 2.0
+  cutoff_freq: 5
+  enable_collision_check: false
+  debug_pub: true
+
+relexed_ik_setting:
+  ref_type: 1
+  use_groove_wrapper: false
+  position_cost: 60
+  pose_cost: 6
+  ref_pose_cost: 0.05
+  discontinuous_level: 10
+  damp_v_cost: 2.0
+  damp_a_cost: 1.0
+  damp_j_cost: 0.0
+  regular_cost: 0.0
+  singularity_cost: 0.0       # wight
+  singularity_lambda: 2     # range
+  bound_penalty: 1000
+  collision_penalty: 0
+  collision_tol: 0.02
+  balance_penalty: 10000000
+  mass_center_lb: [-0.15, -0.14]
+  mass_center_ub: [0.15, 0.14]      #[0.23, 0.21]

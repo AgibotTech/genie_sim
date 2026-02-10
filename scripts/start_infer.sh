@@ -5,9 +5,8 @@ CURRENT_DIR=$(pwd)
 
 echo $CURRENT_DIR
 xhost +local:
-docker run -itd --name pi05_infer\
+docker run -it --name pi05_infer\
     --gpus all \
-    --rm \
     --ipc=host \
     --ulimit memlock=-1 \
     --ulimit stack=67108864 \

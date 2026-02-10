@@ -218,10 +218,11 @@ class ImageForwardRecorderNode(Node):
             bag_path = os.path.join(recording_data_dir, bag_name)
 
             topics = " ".join(self.subscribers.keys())
+            ros_distro = os.getenv("ROS_DISTRO", "jazzy")
             command_str = f"""
             unset PYTHONPATH
             unset LD_LIBRARY_PATH
-            source /opt/ros/jazzy/setup.bash
+            source /opt/ros/{ros_distro}/setup.bash
             ros2 bag record -o {bag_path} {topics}
             """
 

@@ -1,4 +1,3 @@
-
 ![image.png](./docs/image.png)
 <div align="center">
   <a href="https://arxiv.org/abs/2601.02078" style="text-decoration:none;">
@@ -22,7 +21,6 @@
     </a>
   </div>
 </div>
-
 
 # 1. Genie Sim 3.0
 Genie Sim is the simulation platform from AgiBot. It provides developers with a complete toolchain for environment reconstruction, scene generalization, data collection, and automated evaluation. Its core module, Genie Sim Benchmark is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
@@ -60,13 +58,14 @@ The platform will significantly accelerate model development, reduce reliance on
   - Update automatic evaluation framework for more complicated long-range tasks
 
 # 4. Documentation
-
 Please refer to these links to install Genie Sim and download assets and dataset:
+
 - [User Guide](https://agibot-world.com/sim-evaluation/docs/#/v3)
 - [Assets](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)
 - [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset)
 
 ## 4.1 Support
+
 <img src="./docs/wechat.JPEG" width="30%"/>
 
 ## 4.2 Roadmap
@@ -80,6 +79,7 @@ Please refer to these links to install Genie Sim and download assets and dataset
 - [ ] Human-in-the-loop and distributed reinforcement learning pipline
 
 ## 4.3 License and Citation
+
 All the data and code within `source/geniesim` and `source/data_collection` are under `Mozilla Public License 2.0`. The `source/scene_reconstruction` project contains code under multiple licenses, for complete and updated licensing details, please see the LICENSE files
 
 Please consider citing our work either way below if it helps your research.
@@ -103,3 +103,11 @@ Please consider citing our work either way below if it helps your research.
 4. Isaac Lab [Source code]. https://github.com/isaac-sim/IsaacLab
 5. Omni Gibson [Source code]. https://github.com/StanfordVL/OmniGibson
 6. The Scene Language [Source code]. https://github.com/zzyunzhi/scene-language
+7. COAL [Source code]. https://github.com/coal-library/coal
+8. OCTOMAP [Source code]. https://github.com/OctoMap/octomap
+9. PINOCCHIO [Source code]. https://github.com/stack-of-tasks/pinocchio
+10. URDFDOM [Source code]. https://github.com/ros/urdfdom
+11. LIBCCD [Source code]. https://github.com/danfis/libccd
+12. LIBMINIZIP [Source code]. https://github.com/switch-st/libminizip
+13. LIBODE [Source code]. https://github.com/markmbaum/libode
+14. LIBURING [Source code]. https://github.com/axboe/liburing

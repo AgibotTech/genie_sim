@@ -30,13 +30,16 @@ class ServerNode(Node):
             self.callback_reset,
             1,
         )
-
+        self.subscriber_teleop_recording = self.create_subscription(
+            Bool, "/sim/is_recording", self.callback_recording, 1
+        )
         self.pub_clock = self.create_publisher(Clock, "/clock", 1)
-        self.publisher_6d_force = self.create_publisher(JointState, "/sim/eef_force", 1)
         self.playback_msg = False
         self.reset_msg = False
+        self.recording_msg = False
         self.playback_lock = threading.Lock()
         self.reset_lock = threading.Lock()
+        self.recording_lock = threading.Lock()
 
     def publish_clock(self, time_in_s):
         self.sec = int(time_in_s)
@@ -46,16 +49,11 @@ class ServerNode(Node):
         msg.clock.nanosec = self.nanosec
         self.pub_clock.publish(msg)
 
-    def publish_6d_force(self, position):
-        pub_msg = JointState()
-        # self.get_clock().now().to_msg()
-        pub_msg.header.stamp.sec = self.sec
-        pub_msg.header.stamp.nanosec = self.nanosec
-        pub_msg.position = [float(v) for v in position]
-        self.publisher_6d_force.publish(pub_msg)
-
     def callback_playback(self, msg):
         self.playback_msg = msg.data
+
+    def callback_recording(self, msg):
+        self.recording_msg = msg.data
 
     def callback_reset(self, msg):
         self.reset_msg = msg.data
@@ -67,3 +65,7 @@ class ServerNode(Node):
     def get_reset(self):
         with self.reset_lock:
             return self.reset_msg
+
+    def get_teleop_recording(self):
+        with self.recording_lock:
+            return self.recording_msg

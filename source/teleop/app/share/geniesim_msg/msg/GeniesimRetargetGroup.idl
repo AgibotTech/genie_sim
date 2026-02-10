@@ -1,0 +1,49 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geniesim_msg/msg/GeniesimRetargetGroup.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Pose.idl"
+#include "geometry_msgs/msg/Twist.idl"
+
+module geniesim_msg {
+  module msg {
+    module GeniesimRetargetGroup_Constants {
+      const int32 GROUP_HEAD_YAW = 0;
+      const int32 GROUP_HEAD_PITCH = 1;
+      const int32 GROUP_LEFT_ARM = 2;
+      const int32 GROUP_RIGHT_ARM = 3;
+      const int32 GROUP_LEFT_TOOL = 4;
+      const int32 GROUP_RIGHT_TOOL = 5;
+      const int32 GROUP_WAIST_LIFT = 6;
+      const int32 GROUP_WAIST_PITCH = 7;
+      const int32 GROUP_CHASSIS = 8;
+      const int32 GROUP_HEAD_ROLL = 9;
+      const int32 GROUP_WAIST = 10;
+    };
+    struct GeniesimRetargetGroup {
+      int32 group_id;
+
+      int32 control_type;
+
+      string frame_id;
+
+      sequence<string> target_frame_names;
+
+      sequence<geometry_msgs::msg::Pose> target_frame_poses;
+
+      sequence<geometry_msgs::msg::Pose> target_frame_poses_delta;
+
+      sequence<geometry_msgs::msg::Twist> target_frame_velocities;
+
+      sequence<string> reference_frame_names;
+
+      sequence<geometry_msgs::msg::Pose> reference_frame_poses;
+
+      sequence<double> target_joint_positions;
+
+      sequence<double> target_joint_positions_delta;
+
+      sequence<double> target_joint_velocities;
+    };
+  };
+};

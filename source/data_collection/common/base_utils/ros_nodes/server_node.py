@@ -75,10 +75,3 @@ class ServerNode(Node):
         msg = TFMessage()
         msg.transforms = transforms
         self.publisher_soft_code.publish(msg)
-
-    def publish_6d_force(self, position):
-        pub_msg = JointState()
-        pub_msg.header.stamp.sec = self.sec
-        pub_msg.header.stamp.nanosec = self.nanosec
-        pub_msg.position = [float(v) for v in position]
-        self.publisher_6d_force.publish(pub_msg)

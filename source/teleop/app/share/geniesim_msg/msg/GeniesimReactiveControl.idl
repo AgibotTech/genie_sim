@@ -1,0 +1,18 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geniesim_msg/msg/GeniesimReactiveControl.msg
+// generated code does not contain a copyright notice
+
+#include "geniesim_msg/msg/GeniesimRetargetGroup.idl"
+#include "std_msgs/msg/Header.idl"
+
+module geniesim_msg {
+  module msg {
+    struct GeniesimReactiveControl {
+      std_msgs::msg::Header header;
+
+      double lifetime;
+
+      sequence<geniesim_msg::msg::GeniesimRetargetGroup> retarget_groups;
+    };
+  };
+};

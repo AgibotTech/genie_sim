@@ -4,9 +4,13 @@
 
 import argparse
 from re import sub
-import os, sys
+import os
+import sys
 import glob
+import shutil
 from pathlib import Path
+
+import numpy as np
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
@@ -18,8 +22,8 @@ from geniesim.plugins.output_system import TaskEvaluation, EvaluationSummary
 from geniesim.plugins.tgs import ObjectSampler
 from geniesim.utils.data_courier import DataCourier
 import geniesim.utils.system_utils as system_utils
+from geniesim.utils.name_utils import robot_type_mapping
 from geniesim.benchmark.envs.demo_env import DemoEnv
-from geniesim.benchmark.envs.dummy_env import DummyEnv
 from geniesim.benchmark.policy.demopolicy import DemoPolicy
 from geniesim.plugins.tgs import TaskGenerator
 from geniesim.benchmark.hooks.task import TaskHook
@@ -50,6 +54,10 @@ class TaskBenchmark(object):
         self.env = None
         self.tasks = self.check_task()
         self.task_config = None
+
+        seed = getattr(args, "seed", 0)
+        np.random.seed(seed)
+        logger.info(f"Random seed set to: {seed}")
 
         self.data_courier = DataCourier(self.api_core, self.args.enable_ros, self.args.model_arc)
 
@@ -92,10 +100,8 @@ class TaskBenchmark(object):
             self.instruction = self.task_config.get("instruction", "")
             logger.info(f"sub_task_name: {self.args.sub_task_name}")
 
-            # Update api_core.sub_task_name and republish to ROS topic
             if hasattr(self.api_core, "sub_task_name"):
                 self.api_core.sub_task_name = self.args.sub_task_name
-                # Republish sub_task_name if ROS node is available
                 if hasattr(self.api_core, "benchmark_ros_node") and self.api_core.benchmark_ros_node is not None:
                     if hasattr(self.api_core.benchmark_ros_node, "set_sub_task_name"):
                         self.api_core.benchmark_ros_node.set_sub_task_name(self.args.sub_task_name)
@@ -106,10 +112,13 @@ class TaskBenchmark(object):
                 system_utils.benchmark_root_path(),
                 "saved_task/%s" % (self.task_config["task"]),
             )
+
+            gen_config = self.task_config.get("generalization", {})
+
             task_generator.generate_tasks(
                 save_path=task_folder,
-                task_num=self.args.num_episode,
                 task_name=self.task_config["task"],
+                gen_config=gen_config,
             )
             robot_position = task_generator.robot_init_pose["position"]
             robot_rotation = task_generator.robot_init_pose["quaternion"]
@@ -120,7 +129,7 @@ class TaskBenchmark(object):
             else:
                 robot_cfg = self.task_config["robot"]["robot_cfg"]
 
-            self.task_config["robot_cfg"] = robot_cfg.split(".")[0]
+            self.task_config["robot_cfg"] = robot_type_mapping(robot_cfg.split(".")[0])
             self.data_courier.set_robot_cfg(self.task_config["robot_cfg"])
 
             episode = 0
@@ -136,56 +145,68 @@ class TaskBenchmark(object):
 
                 self.create_policy()
                 self.create_env(specific_task_files[0], instance_id)
-                time.sleep(3)
+                time.sleep(0.5)
                 self.api_core.collect_init_physics()
-
                 self.evaluate_summary = EvaluationSummary(
                     os.path.join(system_utils.benchmark_output_path()), task, sub_task_name
                 )
 
-                if self.args.record:
-                    self.set_record_topics()
-                    self.env.start_recording(
-                        camera_prim_list=[],
-                        fps=self.args.fps,
-                        extra_prim_paths=[],
-                        record_topic_list=self.record_topic_list,
-                    )
+                for episode_file in specific_task_files:
+                    print("EPISODE FILE", episode_file)
+                    self.episode_content = system_utils.load_json(episode_file)
+                    self.update_init_env()
 
-                for episode_id in range(self.args.num_episode * len(self.env.task.instructions)):
-                    self.env.set_current_task(episode_id)
-                    if self.instruction != "":
-                        self.env.task.set_instruction(self.instruction)
-                    current_instruction = self.env.task.get_instruction()
-
-                    single_te = TaskEvaluation(task_name=self.task_name, sub_task_name=sub_task_name)
-                    single_te.update_from_dict(
-                        {
-                            "task_name": self.task_config["task"],
-                            "task_type": "benchmark",
-                            "robot_type": robot_cfg.split(".")[0],
-                            "start_time": system_utils.get_local_time(),
-                            "model_type": self.args.model_arc,
-                            "task_instruction": current_instruction[0],
-                        }
-                    )
-                    self.evaluate_summary.update_current(single_te)
-                    self.data_courier.pub_static_info_msg(
-                        self.evaluate_summary.to_static_msg_pub(
-                            episode, self.args.num_episode, self.data_courier.sim_time()
+                    if self.args.record:
+                        self.set_record_topics()
+                        self.env.start_recording(
+                            camera_prim_list=[],
+                            fps=self.args.fps,
+                            extra_prim_paths=[],
+                            record_topic_list=self.record_topic_list,
                         )
-                    )
-                    self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.to_dynamic_msg_pub())
-                    # one episode
-                    self.evaluate_episode(robot_cfg, single_te)
-                    episode += 1
-                    self.evaluate_summary.make_cache()
 
-                if self.args.record:
-                    self.env.stop_recording()
+                    self.apply_material_generalization()
 
-            self.env.stop()
+                    for episode_id in range(self.args.num_episode * len(self.env.task.instructions)):
+                        self.env.set_current_task(episode_id)
+                        if self.instruction != "":
+                            self.env.task.set_instruction(self.instruction)
+                        current_instruction = self.env.task.get_instruction()
+                        single_te = TaskEvaluation(task_name=self.task_name, sub_task_name=sub_task_name)
+                        single_te.update_from_dict(
+                            {
+                                "task_name": self.task_config["task"],
+                                "task_type": "benchmark",
+                                "robot_type": robot_cfg.split(".")[0],
+                                "start_time": system_utils.get_local_time(),
+                                "model_type": self.args.model_arc,
+                                "task_instruction": current_instruction[0],
+                            }
+                        )
+                        self.evaluate_summary.update_current(single_te)
+                        self.data_courier.pub_static_info_msg(
+                            self.evaluate_summary.to_static_msg_pub(
+                                episode, self.args.num_episode, self.data_courier.sim_time()
+                            )
+                        )
+                        self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.to_dynamic_msg_pub())
+                        # one episode
+                        self.evaluate_episode(robot_cfg, single_te)
+                        episode += 1
+                        self.evaluate_summary.make_cache()
+
+                    if self.args.record:
+                        self.env.stop_recording()
+
+                self.env.stop()
             self.api_core.stop()
+            try:
+                task_folder_abs = os.path.abspath(task_folder)
+                if os.path.isdir(task_folder_abs):
+                    shutil.rmtree(task_folder_abs)
+                    logger.info("Removed task folder: %s" % task_folder_abs)
+            except Exception as e:
+                logger.warning("Failed to remove task folder %s: %s" % (task_folder, e))
 
     def create_policy(self):
         if self.args.model_arc == "pi":
@@ -279,6 +300,23 @@ class TaskBenchmark(object):
 
         self.env.set_data_courier(self.data_courier)
         self.env.set_scene_info(scene_info)
+
+    def update_init_env(self):
+        self.api_core.update_robot_base(
+            self.episode_content["generalization_config"]["robot_init_pose"]["position"],
+            self.episode_content["generalization_config"]["robot_init_pose"]["quaternion"],
+        )
+        self.api_core.apply_light_config(self.episode_content["generalization_config"]["light_config"])
+
+    def apply_material_generalization(self):
+        gen_config = self.task_config.get("generalization", {})
+        num_material = gen_config.get("num_material", 1)
+
+        if num_material > 1:
+            material_info = self.api_core.collect_material_info()
+            for mesh_path, material_list in material_info.items():
+                material_path = np.random.choice(material_list)
+                self.api_core.change_material(mesh_path, material_path)
 
     def set_record_topics(self):
         if "G1" in self.task_config["robot"]["robot_cfg"]:

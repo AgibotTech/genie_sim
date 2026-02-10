@@ -1,0 +1,60 @@
+# waist_lift.yaml
+id: 4
+topic: '/hal/joint_cmd'
+end_frame_names: [waist_lift_link]
+joints:
+  - - name: idx01_body_joint1
+      type: revolute
+      position: [-1.059414856, 0] # updated position limits
+      position_threshold: 0.05 # threshold for this range
+      velocity: 1.21
+      acceleration: 2.0
+      jerk: 10
+      torque: 50
+      kp: 15000
+      kd: 300
+      weight: 5
+    - name: idx02_body_joint2
+      type: revolute
+      position: [0, 2.649409805] # updated position limits
+      position_threshold: 0.05 # threshold for this range
+      velocity: 1.21
+      acceleration: 2.0
+      jerk: 10
+      torque: 50
+      kp: 15000
+      kd: 300
+      weight: 5
+    - name: idx03_body_joint3
+      type: revolute
+      position: [-1.911135531, 1.570796327] # updated position limits
+      position_threshold: 0.03 # threshold for this range
+      velocity: 1.21
+      acceleration: 2.0
+      jerk: 10
+      torque: 50
+      kp: 15000
+      kd: 300
+      weight: 5
+    - name: idx04_body_joint4
+      type: revolute
+      position: [-0.429350996, 0.429350996] # updated position limits
+      position_threshold: 0.02 # threshold for this range
+      velocity: 1.21
+      acceleration: 2.0
+      jerk: 10
+      torque: 50
+      kp: 15000
+      kd: 300
+      weight: 5
+    - name: idx05_body_joint5
+      type: revolute
+      position: [-3.050835532, 3.050835532] # updated position limits
+      position_threshold: 0.05 # threshold for this range
+      velocity: 1.21
+      acceleration: 2.0
+      jerk: 10
+      torque: 50
+      kp: 15000
+      kd: 300
+      weight: 5

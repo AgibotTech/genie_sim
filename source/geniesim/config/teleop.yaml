@@ -1,0 +1,36 @@
+_const:
+  _enable_ros: &enable_ros true
+
+app:
+  physics_step: 60
+  rendering_step: 60
+  enable_curobo: false
+  reset_fallen: false
+  enable_ros: *enable_ros
+  record_img: true
+  record_video: true
+  render_mode: "RaytracedLighting"
+  disable_physics: false
+  data_convert: false
+  enable_gpu_dynamics: false
+  enable_rate_limit: false
+  enable_playback: true
+  enable_pub_depth_camera: true
+benchmark:
+  client_host: "localhost:50051"
+  num_episode: 1
+  policy_class: "DemoPolicy"
+  env_class: "DummyEnv"
+  task_name: "home_g2"
+  sub_task_name: "open_door"
+  output_dir: "output"
+  fps: 30
+  record: false
+  infer_host: "localhost"
+  infer_port: 8999
+  model_arc: ""
+  enable_ros: *enable_ros
+layout:
+  seed: 0
+  autogen_ratio: 0.5
+  num_obj: 1

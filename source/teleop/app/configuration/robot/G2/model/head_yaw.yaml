@@ -1,0 +1,15 @@
+# head_yaw.yaml
+id: 0
+topic: '/hal/joint_cmd'
+end_frame_names: [head_link1]
+joints:
+  - - name: idx11_head_joint1
+      type: revolute
+      position: [-1.570796327, 1.570796327] # updated position limits
+      position_threshold: 0.01 # threshold for this range
+      velocity: 2.5
+      acceleration: 40
+      jerk: 80
+      torque: 50
+      kp: 100
+      kd: 1

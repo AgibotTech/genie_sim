@@ -81,6 +81,10 @@ ADER (Action Domain Evaluation Rule) is a benchmark evaluation framework for rob
 - Syntax: `"Onfloor": "obj_id|ref_z"`
 - Type: ActionCancelBase (cancel action class)
 
+**Upright (Upright Detection)**
+- Function: Detects whether an object is upright
+- Syntax: `"Upright": "obj_id|angle_thresh"`
+
 ### 3.2 Grasping and Manipulation Evaluation
 
 **PickUpOnGripper (Grasp Detection)**
@@ -104,6 +108,10 @@ ADER (Action Domain Evaluation Rule) is a benchmark evaluation framework for rob
 **GripperPassing (Gripper Passing)**
 - Function: Detects object passing between grippers
 - Syntax: `"GripperPassing": "obj_id|is_passing"`
+
+**LiftUp (Lift Up Detection)**
+- Function: Detects whether an object is lifted up
+- Syntax: `"LiftUp": "obj_id|z_thresh"`
 
 ### 3.3 Joint and State Evaluation
 
@@ -219,7 +227,7 @@ Actions support placeholder replacement, format is `{@placeholder_name}`, which 
 
 ### 6.1 Typical Applications
 
-1. **Grasping Task Evaluation**: Use PickUpOnGripper to detect successful grasping, use Onfloor to detect object dropping
+1. **Grasping Task Evaluation**: Use PickUpOnGripper, LiftUp to detect successful grasping, use Onfloor to detect object dropping
 2. **Placement Task Evaluation**: Use Inside, Ontop, OnShelf to detect object placement position
 3. **Manipulation Task Evaluation**: Use PushPull to detect drawer opening/closing, use Follow to detect approach actions
 4. **Complex Task Evaluation**: Combine multiple actions, use ActionSetWaitAny to implement multi-path success conditions

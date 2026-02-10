@@ -10,6 +10,7 @@ import omni
 from pxr import Usd, UsdGeom, UsdShade, Sdf, Gf, UsdPhysics, PhysxSchema
 from isaacsim.core.utils.prims import get_prim_at_path, get_prim_object_type
 from isaacsim.core.prims import SingleXFormPrim, SingleArticulation
+from isaacsim.core.utils.xforms import get_world_pose
 
 from pprint import pprint
 import re
@@ -27,58 +28,38 @@ def get_articulated_object_prims(articulate_object_name):
 
 
 def is_valid_path(path):
-    pattern = r"^/World/Objects/[^/]+$"
+    pattern = r"^/World/objects/[^/]+$"
     return re.fullmatch(pattern, path) is not None
 
 
 def get_rigidbody_collider_prims(robot_name, extra_prim_paths=None):
-    # Get the current USD stage
     stage = omni.usd.get_context().get_stage()
 
-    # List to store prims with both RigidBody and Collider
-    xform_prims = []
-    candid_prims = []
-    for prim in stage.Traverse():
-        if extra_prim_paths is not None and str(prim.GetPrimPath()) in extra_prim_paths:
-            candid_prims.append(prim)
-            continue
+    objects_path = "/World/objects"
+    objects_prim = stage.GetPrimAtPath(objects_path)
 
-        if prim.GetTypeName() == "Xform":
-            if not robot_name:
-                xform_prims.append(prim)
-            else:
-                if robot_name not in str(prim.GetPrimPath()):
-                    xform_prims.append(prim)
+    if not objects_prim.IsValid():
+        print(f"warning: {objects_path} not found")
+        return []
 
-    valid_prims = []
-    for prim in xform_prims:
-        if not is_valid_path(str(prim.GetPrimPath())):
-            continue
-        if prim.HasAPI(UsdPhysics.MassAPI):
-            mass_attr = prim.GetAttribute("physics:mass")
-            if mass_attr.IsValid():
-                mass = mass_attr.Get()
-                # Ensure mass is a number and > 0
-                if isinstance(mass, (float, int)) and mass > 0:
-                    valid_prims.append(prim)
+    direct_children = []
 
-    for prim in valid_prims:
-        has_cld = set()
-        for descendant in stage.Traverse():
-            if not str(descendant.GetPrimPath()).startswith(str(prim.GetPrimPath())):
-                continue
+    if extra_prim_paths is not None:
+        for prim_path in extra_prim_paths:
+            prim = stage.GetPrimAtPath(prim_path)
+            if prim.IsValid() and prim not in direct_children:
+                direct_children.append(prim)
 
-            has_cld.add(descendant.HasAPI(PhysxSchema.PhysxCollisionAPI))
+    for child_prim in objects_prim.GetAllChildren():
+        if child_prim not in direct_children:
+            entity_prim = child_prim.GetChild("entity")
+            if entity_prim:
+                direct_children.append(entity_prim)
 
-        has_cld.add(prim.HasAPI(PhysxSchema.PhysxCollisionAPI))
-
-        if has_cld.intersection({True}):
-            candid_prims.append(prim)
-
-    return candid_prims
+    return direct_children
 
 
-def get_camera_prims(robot_name):
+def get_camera_prims(robot_path):
     # Get the current USD stage
     stage = omni.usd.get_context().get_stage()
 
@@ -86,10 +67,10 @@ def get_camera_prims(robot_name):
     camera_prims = []
     for prim in stage.Traverse():
         if prim.GetTypeName() == "Camera":
-            if not robot_name:
+            if not robot_path:
                 camera_prims.append(prim)
             else:
-                robot_id = str(robot_name).split("_")[0]
+                robot_id = str(robot_path).split("/")[-1]
                 if robot_id in str(prim.GetPrimPath()):
                     camera_prims.append(prim)
 
@@ -102,7 +83,7 @@ def collect_physics(physics_info):
         physics_info["articulation"] = []
         physics_info["rigidbody"] = []
 
-    ignore_keys = ["background", "G1", "G2"]
+    ignore_keys = ["background", "G1", "G2", "genie"]
     stage = omni.usd.get_context().get_stage()
     for prim in stage.Traverse():
         prim_path = str(prim.GetPrimPath())
@@ -113,7 +94,8 @@ def collect_physics(physics_info):
         if prim_type == "articulation":
             logger.info(f"{prim_path}")
             logger.info("  -articulation")
-            physics_info["articulation"].append(prim_path)
+            if prim.IsActive():
+                physics_info["articulation"].append(prim_path)
         else:
             if prim.GetAttribute("physics:rigidBodyEnabled"):
                 logger.info(f"{prim_path}")
@@ -136,13 +118,11 @@ def store_history_physics(robot_articulation, physics_info, history_info, timest
     single_frame = {"articulation": {}}
     for prim_path in physics_info.get("rigidbody", []):
         try:
-            object = get_prim_at_path(prim_path)
-            pos, quat = object.get_world_pose()
+            pos, quat = get_world_pose(prim_path)
             single_frame[prim_path] = list(pos) + list(quat)
         except:
             continue
-        object = get_prim_at_path(prim_path)
-        pos, quat = object.get_world_pose()
+        pos, quat = get_world_pose(prim_path)
         single_frame[prim_path] = list(pos) + list(quat)
 
     for prim_path in physics_info.get("articulation", []):

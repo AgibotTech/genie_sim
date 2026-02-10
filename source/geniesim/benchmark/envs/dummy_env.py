@@ -6,6 +6,7 @@ from .base_env import BaseEnv
 from geniesim.plugins.logger import Logger
 from geniesim.benchmark.tasks.demo_task import DemoTask
 from geniesim.benchmark.tasks.dummy_task import DummyTask
+from geniesim.utils.name_utils import *
 
 logger = Logger()  # Create singleton instance
 
@@ -52,8 +53,8 @@ class DummyEnv(BaseEnv):
         need_update = False
         if self.current_step != 1 and self.current_step % 30 == 0:
             observaion = self.get_observation()
-            self.task.step(self)
-            self.action_update()
+            # self.task.step(self)
+            # self.action_update()
             need_update = True
 
         if self.data_courier.enable_ros:
@@ -71,3 +72,49 @@ class DummyEnv(BaseEnv):
 
     def stop_recording(self):
         self.api_core.stop_recording()
+
+    def reset(self):
+        init_gripper = [1 - v for v in self.init_gripper]
+        self.robot_joint_indices = self.api_core.get_robot_joint_indices()
+        if self.robot_cfg == "G1_omnipicker":
+            self.api_core.set_joint_positions(
+                self.init_arm,
+                joint_indices=[self.robot_joint_indices[v] for v in G1_DUAL_ARM_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                self.init_waist,
+                joint_indices=[self.robot_joint_indices[v] for v in G1_WAIST_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                self.init_head,
+                joint_indices=[self.robot_joint_indices[v] for v in G1_HEAD_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                init_gripper,
+                joint_indices=[self.robot_joint_indices[v] for v in OMNIPICKER_AJ_NAMES],
+                is_trajectory=False,
+            )
+        elif self.robot_cfg == "G2_omnipicker":
+            self.api_core.set_joint_positions(
+                self.init_arm,
+                joint_indices=[self.robot_joint_indices[v] for v in G2_DUAL_ARM_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                self.init_waist,
+                joint_indices=[self.robot_joint_indices[v] for v in G2_WAIST_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                self.init_head,
+                joint_indices=[self.robot_joint_indices[v] for v in G2_HEAD_JOINT_NAMES],
+                is_trajectory=False,
+            )
+            self.api_core.set_joint_positions(
+                init_gripper,
+                joint_indices=[self.robot_joint_indices[v] for v in OMNIPICKER_AJ_NAMES],
+                is_trajectory=False,
+            )

@@ -109,6 +109,7 @@ class AppConfig:
     enable_gpu_dynamics: bool = False
     enable_rate_limit: bool = False
     enable_playback: bool = False
+    enable_pub_depth_camera: bool = False
 
 
 @dataclass
@@ -126,6 +127,11 @@ class BenchmarkConfig:
     model_arc: str = "pi"
     enable_ros: bool = False
     interactive: bool = False
+    num_material: int = 1
+    num_lights: int = 1
+    num_init_base: int = 1
+    num_init_joint: int = 1
+    seed: int = 1
 
 
 @dataclass

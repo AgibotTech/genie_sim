@@ -1,0 +1,23 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geniesim_msg/msg/GeniesimJointState.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module geniesim_msg {
+  module msg {
+    struct GeniesimJointState {
+      std_msgs::msg::Header header;
+
+      sequence<string> name;
+
+      sequence<double> motor_position;
+
+      sequence<double> motor_velocity;
+
+      sequence<double> effort;
+
+      sequence<int32> error_code;
+    };
+  };
+};

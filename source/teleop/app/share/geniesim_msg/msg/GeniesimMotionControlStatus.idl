@@ -1,0 +1,25 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geniesim_msg/msg/GeniesimMotionControlStatus.msg
+// generated code does not contain a copyright notice
+
+
+module geniesim_msg {
+  module msg {
+    module GeniesimMotionControlStatus_Constants {
+      const uint8 MODE_STOP = 0;
+      const uint8 MODE_SERVO = 1;
+      const uint8 MODE_PLANNING = 2;
+      const uint8 MODE_COLLISION_ESCAPE = 3;
+      const uint8 MODE_ARM_FOURIER_TEST = 4;
+      const uint8 MODE_REACTIVE_CONTROL = 5;
+      const uint8 MODE_REPLAY = 6;
+    };
+    struct GeniesimMotionControlStatus {
+      uint8 mode;
+
+      sequence<string> collision_pairs_1;
+
+      sequence<string> collision_pairs_2;
+    };
+  };
+};

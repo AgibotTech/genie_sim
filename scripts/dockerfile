@@ -29,7 +29,8 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip python3-venv \
     libvulkan1 vulkan-tools \
     libx11-6 libxrandr2 libxss1 libxcursor1 libxi6 libglu1-mesa \
-    libgl1 libegl1 libnss3 libxcomposite1 libxdamage1 libxext6
+    libgl1 libegl1 libnss3 libxcomposite1 libxdamage1 libxext6 \
+    liburing2 liburing-dev
 
 RUN usermod -aG sudo isaac-sim
 RUN echo "isaac-sim ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/isaac-sim && chmod 0440 /etc/sudoers.d/isaac-sim
@@ -74,6 +75,12 @@ RUN /geniesim/generator_env/bin/pip install -r /tmp/requirements.generator.txt -
 RUN python3 -m venv /geniesim/record_env
 RUN /geniesim/record_env/bin/pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN /geniesim/record_env/bin/pip install rosbags pyyaml opencv-python rosbags.image "numpy<2.0" -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+#create teleop venv
+COPY ./source/teleop/requirements.txt /tmp/requirements.teleop.txt
+RUN python3 -m venv /geniesim/teleop_env
+RUN /geniesim/teleop_env/bin/pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN /geniesim/teleop_env/bin/pip install -r /tmp/requirements.teleop.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 RUN sudo rm -rf /var/lib/apt/lists/*
 

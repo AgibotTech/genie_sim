@@ -11,8 +11,8 @@ import json
 from pathlib import Path
 import asyncio
 import subprocess
-import signal
-from pxr import Usd, UsdGeom, UsdShade, Sdf, Gf, UsdPhysics, PhysxSchema
+import signal, random, shutil
+from pxr import Usd, UsdGeom, UsdShade, Sdf, Gf, UsdPhysics, PhysxSchema, UsdLux
 import rclpy
 
 import omni
@@ -28,7 +28,7 @@ from isaacsim.core.api.materials import PhysicsMaterial, OmniPBR, OmniGlass
 from isaacsim.core.prims import SingleXFormPrim, SingleGeometryPrim, SingleRigidPrim
 from isaacsim.core.utils.prims import get_prim_at_path, get_prim_object_type, delete_prim
 from isaacsim.core.utils.bounds import compute_aabb, create_bbox_cache
-from isaacsim.core.utils.stage import add_reference_to_stage
+from isaacsim.core.utils.stage import add_reference_to_stage, update_stage
 from isaacsim.core.utils.stage import get_current_stage
 from isaacsim.core.utils.xforms import get_world_pose
 
@@ -50,6 +50,10 @@ from geniesim.config.params import Config
 from geniesim.app.ros_publisher.base import USDBase
 from geniesim.app.ros_publisher.robot_interface import RobotInterface
 from geniesim.app.workflow.ui_builder import UIBuilder
+from geniesim.robot.utils import quaternion_rotate
+from geniesim.utils.name_utils import *
+
+import time
 
 
 class APICore:
@@ -98,12 +102,15 @@ class APICore:
         self._physics_info = {}
         self._history_info = deque(maxlen=1000)
         self._on_play_back = False
+        self.teleop_recording = False
+        self.arm_base_prim_path = "arm_base_link"
         self._current_mode = "realtime"
         self._stage = omni.usd.get_context().get_stage()
 
         # app config
         self.enable_physics = not config.app.disable_physics
         self.enable_curobo = config.app.enable_curobo
+        self.enable_pub_depth_camera = getattr(config.app, "enable_pub_depth_camera", False)
         self.reset_fallen = config.app.reset_fallen
         self.rendering_step = config.app.rendering_step
         self.enable_ros = config.app.enable_ros
@@ -120,6 +127,8 @@ class APICore:
         # task config
         self.task_name = config.benchmark.task_name
         self.sub_task_name = config.benchmark.sub_task_name
+        task_config_file = os.path.join(system_utils.benchmark_conf_path(), "eval_tasks", self.task_name + ".json")
+        self.task_config = system_utils.load_json(task_config_file)
 
         # robot data
         self.sensor_base = USDBase()
@@ -136,6 +145,9 @@ class APICore:
         self.sensor_base_initialized = False
         self.robot_initialized = False
         self.index = 0
+        self.wait_recording = True
+        self.recording_wait_num = 0
+        self.robot_joint_indices = {}
 
         # robot ros
         if not rclpy.get_default_context().ok():
@@ -181,6 +193,8 @@ class APICore:
 
     def render_step(self):
         try:
+            self._on_recording()
+            self._on_playback()
             task = self.task_queue_on_render_loop.get_nowait()
         except queue.Empty:
             return
@@ -245,12 +259,11 @@ class APICore:
         return aabb
 
     def get_obj_joint(self, prim_path):
-        if prim_path not in self.articulat_objects.keys():
-            self.articulat_objects[prim_path] = SingleArticulation(prim_path)
-        self.articulat_objects[prim_path].initialize()
-        dof_names = self.articulat_objects[prim_path].dof_names
-        positions = self.articulat_objects[prim_path].get_joint_positions()
-        velocities = self.articulat_objects[prim_path].get_joint_velocities()
+
+        articulation = self.articulat_objects[prim_path]
+        dof_names = articulation.dof_names
+        positions = articulation.get_joint_positions()
+        velocities = articulation.get_joint_velocities()
         return {
             "joint_names": dof_names,
             "joint_positions": positions,
@@ -328,6 +341,7 @@ class APICore:
         light_prim,
         light_temperature,
         light_intensity,
+        light_position,
         light_rotation,
         light_texture,
     ):
@@ -337,9 +351,13 @@ class APICore:
             light_prim,
             light_temperature,
             light_intensity,
+            light_position,
             light_rotation,
             light_texture,
         )
+
+    def apply_light_config(self, light_config):
+        self.run_on_render_loop(self._apply_light_config, light_config)
 
     def reset(self):
         self.run_on_render_loop(self._on_reset)
@@ -364,6 +382,9 @@ class APICore:
 
     def collect_init_physics(self):
         self.run_on_render_loop(self._collect_init_physics)
+
+    def dump_recording_info(self):
+        self.run_on_render_loop(self._dump_recording_info)
 
     def reset_env(self):
         self.run_on_render_loop(self._reset_env)
@@ -396,15 +417,105 @@ class APICore:
     def get_trigger_action(self, prim_path: str):
         return str(og.Controller.attribute(prim_path).get())
 
+    def set_prim_visibility(self, prim_path: str, visible: bool):
+        """Set the visibility of a prim and all its descendants."""
+
+        def _set_visibility():
+            stage = get_current_stage()
+            prim = stage.GetPrimAtPath(prim_path)
+            if not prim.IsValid():
+                logger.warning(f"Prim path {prim_path} is not valid")
+                return
+
+            # Set visibility for the prim and all its descendants
+            for p in Usd.PrimRange(prim):
+                if p.IsA(UsdGeom.Imageable):
+                    imageable = UsdGeom.Imageable(p)
+                    visibility_attr = imageable.GetVisibilityAttr()
+                    if visibility_attr:
+                        visibility_attr.Set("inherited" if visible else "invisible")
+
+        self.run_on_render_loop(_set_visibility)
+
+    def collect_material_info(self):
+        return self.run_on_render_loop(self._collect_material_info)
+
+    def change_material(self, mesh_path: str, material_path):
+        return self.run_on_render_loop(self._change_material, mesh_path, material_path)
+
+    def update_robot_base(self, pos, quat):
+        self.run_on_render_loop(self._update_robot_base, pos, quat)
+
     ######################===================== New API END ======================================
 
     ######################===================== Private Methods BEGIN ===================================
+    def _change_material(self, mesh_path: str, material_path):
+        stage = get_current_stage()
+        mesh_prim = stage.GetPrimAtPath(mesh_path)
+        material = UsdShade.Material.Get(stage, Sdf.Path(material_path))
+        UsdShade.MaterialBindingAPI(mesh_prim).UnbindAllBindings()
+        UsdShade.MaterialBindingAPI(mesh_prim).Bind(material)
+
+    def _collect_material_info(self):
+        stage = get_current_stage()
+
+        if not stage:
+            return {}
+
+        all_results = {}
+        processed_meshes = set()
+
+        for prim in stage.Traverse():
+            if prim.IsA(UsdGeom.Xform):
+                for mesh_prim in Usd.PrimRange(prim):
+                    if mesh_prim.IsA(UsdGeom.Mesh):
+                        mesh_path = str(mesh_prim.GetPath())
+
+                        if mesh_path in processed_meshes:
+                            continue
+                        if "Objects" not in mesh_path:
+                            continue
+                        processed_meshes.add(mesh_path)
+                        material_paths = []
+                        binding_api = UsdShade.MaterialBindingAPI(mesh_prim)
+                        material, binding_rel = binding_api.ComputeBoundMaterial()
+
+                        if material:
+                            material_path = str(material.GetPath())
+                            material_prim = stage.GetPrimAtPath(material_path)
+                            if material_prim.IsValid():
+                                parent_prim = material_prim.GetParent()
+                                if parent_prim.IsValid():
+                                    for sub_prim in Usd.PrimRange(parent_prim):
+                                        if sub_prim.IsA(UsdShade.Material):
+                                            sub_material_path = str(sub_prim.GetPath())
+                                            if sub_material_path not in material_paths:
+                                                material_paths.append(sub_material_path)
+
+                        if not material_paths:
+                            direct_binding_rel = binding_api.GetDirectBindingRel()
+                            if direct_binding_rel:
+                                binding_targets = direct_binding_rel.GetTargets()
+                                for target_path in binding_targets:
+                                    target_prim = stage.GetPrimAtPath(target_path)
+                                    if target_prim.IsValid():
+                                        for sub_prim in Usd.PrimRange(target_prim):
+                                            if sub_prim.IsA(UsdShade.Material):
+                                                sub_material_path = str(sub_prim.GetPath())
+                                                if sub_material_path not in material_paths:
+                                                    material_paths.append(sub_material_path)
+
+                        if len(material_paths) > 1:
+                            all_results[mesh_path] = list(set(material_paths))
+
+        return all_results
 
     def _collect_init_physics(self):
         robot_articulation = self._get_articulation()
         self._physics_info = {}
         collect_physics(self._physics_info)
         if robot_articulation:
+            update_stage()
             self.init_frame_info = store_init_physics(robot_articulation, self._physics_info)
 
     def _get_joint_state_dict(self):
@@ -440,18 +551,133 @@ class APICore:
         self.past_rotation = [1, 0, 0, 0]
 
         self.robot_interface.register_joint_state(self._get_articulation())
+        self.robot_joint_indices = {name: idx for idx, name in enumerate(self.robot_interface.get_joint_state_names())}
         self.robot_interface.register_robot_tf(self._stage, self.robot_prim_path)
         if robot.perception:
             self.robot_interface.register_perception(self._stage, self.robot_prim_path)
         # cams
         for camera in self.robot_cfg.cameras:
-            self.robot_interface.register_camera(camera, self.robot_cfg.cameras[camera], 1)
+            self.robot_interface.register_camera(
+                camera,
+                self.robot_cfg.cameras[camera],
+                (
+                    int(round((1 / self.ui_builder.my_world.get_physics_dt()) / self.robot_cfg.cameras[camera][2]))
+                    if 2 < len(self.robot_cfg.cameras[camera])
+                    else 10
+                ),
+            )
+        if self.enable_pub_depth_camera:
+            self.pub_depth_camera()
         if self.enable_ros and not self.ros_node_initialized:
             self.server_ros_node = ServerNode(robot_name=self.robot_name)
             # joint_states
             logger.info(f"sensor_ros.publish_joint {self.robot_prim_path} {self.robot_name}")
             self.sensor_base.publish_joint(robot_prim=self.robot_prim_path)
             self.ros_node_initialized = True
+
+    def _reload_scenes(self, sub_usd_path):
+        ws_prim = get_prim_at_path("/Workspace")
+        workspace_replaced = False
+        if sub_usd_path != "":
+            if ws_prim.IsValid():
+                delete_prim(ws_prim.GetPath())
+                workspace_replaced = True
+                logger.info(f"Deleted old Workspace prim")
+                self.articulat_objects.clear()
+                self.usd_objects.clear()
+
+            add_reference_to_stage(
+                sub_usd_path,
+                "/Workspace",
+            )
+            logger.info(f"Added new Workspace from: {sub_usd_path}")
+
+        if workspace_replaced:
+            if hasattr(self.ui_builder, "my_world") and self.ui_builder.my_world:
+
+                world = self.ui_builder.my_world
+
+                was_playing = world.is_playing()
+                if was_playing:
+                    world.stop()
+                    logger.info("Stopped physics simulation to reset views")
+                    time.sleep(0.1)
+
+                world.play()
+                logger.info("Restarted physics simulation")
+
+                update_stage()
+
+                logger.info("Physics views initialized for new Workspace articulations")
+
+            if hasattr(self.ui_builder, "initialize_articulation"):
+                self.ui_builder.initialize_articulation()
+                logger.info("Re-initialized robot articulation from scene")
+            elif hasattr(self.ui_builder, "articulation") and self.ui_builder.articulation:
+                self.ui_builder.articulation.initialize()
+                logger.info("Re-initialized robot articulation directly")
+
+            robot_articulation = self._get_articulation()
+            if robot_articulation:
+                try:
+                    self.robot_interface.register_joint_state(robot_articulation)
+                    logger.info("Re-registered robot joint state after Workspace replacement")
+                except Exception as e:
+                    logger.error(f"Failed to register joint state: {e}")
+            else:
+                logger.warning("Failed to get robot articulation after Workspace replacement")
+
+    def _initialize_all_scene_articulations(self):
+        stage = get_current_stage()
+        if not stage:
+            logger.warning("USD stage not available")
+            return
+
+        scene = self.ui_builder.my_world.scene
+        robot_prim_path = getattr(self.ui_builder, "robot_prim_path", None)
+
+        articulation_paths = []
+        for prim in stage.Traverse():
+            prim_path = str(prim.GetPath())
+            if robot_prim_path and prim_path == robot_prim_path:
+                continue
+
+            prim_type = get_prim_object_type(prim_path)
+            if prim_type == "articulation":
+                articulation_paths.append(prim_path)
+
+        logger.info(f"Found {len(articulation_paths)} articulation(s) in scene")
+
+        for prim_path in articulation_paths:
+            print(f"initializing articulation {prim_path}")
+            try:
+                if scene._scene_registry.name_exists(prim_path):
+                    articulation = scene.get_object(prim_path)
+                    logger.info(f"Found existing articulation in scene for {prim_path}")
+                else:
+                    articulation = SingleArticulation(prim_path=prim_path)
+                    logger.info(f"Created new articulation for {prim_path}")
+
+                articulation.initialize()
+
+                self.articulat_objects[prim_path] = articulation
+                logger.info(f"Registered articulation {prim_path} to api_core")
+
+            except Exception as e:
+                logger.error(f"Failed to initialize articulation {prim_path}: {e}")
+                continue
+
+    def pub_depth_camera(self):
+        sensors = []
+        for camera in self.robot_cfg.cameras:
+            sensor = {}
+            sensor["path"] = camera
+            sensor["frequency"] = 30.0
+            sensor["resolution"] = {}
+            sensor["resolution"]["width"] = self.robot_cfg.cameras[camera][0]
+            sensor["resolution"]["height"] = self.robot_cfg.cameras[camera][1]
+            sensors.append(sensor)
+        self.sensor_base.init_depth_camera(sensors)
 
     def _init_robot_cfg(
         self,
@@ -461,23 +687,14 @@ class APICore:
         init_rotation=[1, 0, 0, 0],
         sub_usd_path="",
     ):
-        ws_prim = get_prim_at_path("/Workspace")
-        if sub_usd_path != "":
-            b_return = False
-            if ws_prim.IsValid():
-                delete_prim(ws_prim.GetPath())
-                b_return = True
-            add_reference_to_stage(
-                sub_usd_path,
-                "/Workspace",
-            )
-            if b_return:
-                return
+        self._reload_scenes(sub_usd_path)
         self.robot_cfg = RobotCfg(str(system_utils.app_root_path()) + "/robot_cfg/" + robot_cfg)
         robot_usd_path = str(system_utils.assets_path()) + "/" + self.robot_cfg.robot_usd
-        scene_usd_path = str(system_utils.assets_path()) + "/" + scene_usd
+        scene_usd = random.choice(scene_usd) if type(scene_usd) == list else scene_usd
+        scene_usd_path = str(system_utils.assets_path()) + "/" + str(scene_usd)
         add_reference_to_stage(robot_usd_path, self.robot_cfg.robot_prim_path)
         add_reference_to_stage(scene_usd_path, "/World")
+        self._filter_objects(scene_usd_path)
         self.usd_objects["robot"] = SingleXFormPrim(
             prim_path=self.robot_cfg.robot_prim_path,
             position=init_position,
@@ -511,9 +728,11 @@ class APICore:
         # Set camera based on robot type
         viewport.set_active_camera("/G1/head_link2/Head_Camera")
         if "G2" in self.robot_name:
-            viewport.set_active_camera("/G2/head_link3/head_front_Camera")
+            viewport.set_active_camera("/genie/head_link3/head_front_Camera")
         time.sleep(1)
         self._play()
+        time.sleep(1)
+        self._initialize_all_scene_articulations()
 
     def _set_joint_positions(self, target_pose, target_joint_indices, is_trajectory):
         if not len(self.target_joints_pose):
@@ -676,21 +895,196 @@ class APICore:
         except Exception as e:
             logger.error(f"Failed to set mass for prim {prim_path}: {e}")
 
+    def _apply_light_config(self, light_config):
+        stage = self._stage
+        if not stage:
+            logger.warning("Stage is not available, cannot apply light config")
+            return
+
+        temperature = light_config.get("temperature")
+        intensity = light_config.get("intensity")
+        if temperature is None or intensity is None:
+            logger.warning("No light generalization")
+            return
+
+        light_prims = []
+        for prim in stage.Traverse():
+            prim_type = prim.GetTypeName()
+            if prim_type in ["DomeLight", "SphereLight", "DiskLight", "RectLight", "DistantLight", "CylinderLight"]:
+                light_prims.append(prim)
+
+        for light_prim in light_prims:
+            try:
+                if light_prim.GetTypeName() == "DomeLight":
+                    light = UsdLux.DomeLight(light_prim)
+                elif light_prim.GetTypeName() == "SphereLight":
+                    light = UsdLux.SphereLight(light_prim)
+                elif light_prim.GetTypeName() == "DiskLight":
+                    light = UsdLux.DiskLight(light_prim)
+                elif light_prim.GetTypeName() == "RectLight":
+                    light = UsdLux.RectLight(light_prim)
+                elif light_prim.GetTypeName() == "DistantLight":
+                    light = UsdLux.DistantLight(light_prim)
+                elif light_prim.GetTypeName() == "CylinderLight":
+                    light = UsdLux.CylinderLight(light_prim)
+                else:
+                    continue
+
+                color_temp_attr = light.GetColorTemperatureAttr()
+                if color_temp_attr.IsValid():
+                    color_temp_attr.Set(temperature)
+                else:
+                    light.CreateColorTemperatureAttr().Set(temperature)
+
+                enable_color_temp_attr = light.GetEnableColorTemperatureAttr()
+                if enable_color_temp_attr.IsValid():
+                    enable_color_temp_attr.Set(True)
+                else:
+                    light.CreateEnableColorTemperatureAttr().Set(True)
+
+                intensity_attr = light.GetIntensityAttr()
+                if intensity_attr.IsValid():
+                    intensity_attr.Set(intensity)
+                else:
+                    light.CreateIntensityAttr().Set(intensity)
+
+                logger.info(
+                    f"Applied light config to {light_prim.GetPath()}: temperature={temperature}, intensity={intensity}"
+                )
+
+            except Exception as e:
+                logger.error(f"Failed to apply light config to {light_prim.GetPath()}: {e}")
+
+    def _filter_objects(self, scene_usd_path: str):
+        stage = self._stage
+        if not stage:
+            logger.warning("Stage is not available, cannot filter objects")
+            return
+
+        json_path = os.path.splitext(scene_usd_path)[0] + ".json"
+
+        if not os.path.exists(json_path):
+            logger.info(f"JSON configuration file not found: {json_path}, skipping object filtering")
+            return
+
+        try:
+            # Load JSON configuration
+            config_data = system_utils.load_json(json_path)
+
+            # Get objects dictionary
+            if "objects" not in config_data:
+                logger.warning(f"No 'objects' field found in {json_path}, skipping object filtering")
+                return
+
+            objects = config_data["objects"]
+            if not isinstance(objects, dict):
+                logger.warning(f"'objects' field is not a dictionary in {json_path}, skipping object filtering")
+                return
+
+            # Process each object group
+            total_kept = 0
+            total_deactivated = 0
+            all_prim_paths = []
+
+            for group_name, group_config in objects.items():
+                if not isinstance(group_config, dict):
+                    logger.warning(f"Group '{group_name}' is not a dictionary, skipping")
+                    continue
+
+                # Get prim_path list for this group
+                if "prim_path" not in group_config:
+                    logger.warning(f"No 'prim_path' field in group '{group_name}', skipping")
+                    continue
+
+                prim_paths = group_config["prim_path"]
+                if not isinstance(prim_paths, list):
+                    logger.warning(f"'prim_path' in group '{group_name}' is not a list, skipping")
+                    continue
+
+                if not prim_paths:
+                    logger.warning(f"Empty prim_path list in group '{group_name}', skipping")
+                    continue
+
+                # Get Reserve_num for this group
+                reserve_num = group_config.get("Reserve_num", len(prim_paths))
+                if not isinstance(reserve_num, int) or reserve_num < 0:
+                    logger.warning(f"Invalid Reserve_num ({reserve_num}) in group '{group_name}', using all objects")
+                    reserve_num = len(prim_paths)
+
+                # Limit reserve_num to the number of available prim_paths
+                reserve_num = min(reserve_num, len(prim_paths))
+
+                # First, activate all prim_paths in the JSON list to ensure they are active
+                group_activated = 0
+                for prim_path in prim_paths:
+                    prim = stage.GetPrimAtPath(prim_path)
+                    if prim.IsValid():
+                        try:
+                            prim.SetActive(True)
+                            group_activated += 1
+                        except Exception as e:
+                            logger.error(f"Failed to activate prim {prim_path}: {e}")
+                    else:
+                        logger.warning(f"Prim path not found in stage: {prim_path}")
+
+                # Randomly select prim_paths to keep for this group
+                if reserve_num < len(prim_paths):
+                    selected_indices = np.random.choice(len(prim_paths), size=reserve_num, replace=False)
+                    prim_paths_to_keep = [prim_paths[i] for i in selected_indices]
+                else:
+                    prim_paths_to_keep = prim_paths
+
+                # Deactivate prims that are not in the keep list for this group
+                group_deactivated = 0
+                for prim_path in prim_paths:
+                    if prim_path not in prim_paths_to_keep:
+                        prim = stage.GetPrimAtPath(prim_path)
+                        if prim.IsValid():
+                            try:
+                                prim.SetActive(False)
+                                group_deactivated += 1
+                                logger.info(f"Deactivated object: {prim_path} (group: {group_name})")
+                            except Exception as e:
+                                logger.error(f"Failed to deactivate prim {prim_path}: {e}")
+                        else:
+                            logger.warning(f"Prim path not found in stage: {prim_path}")
+
+                total_kept += len(prim_paths_to_keep)
+                total_deactivated += group_deactivated
+                all_prim_paths.extend(prim_paths)
+
+                logger.info(
+                    f"Group '{group_name}': activated {group_activated} objects, "
+                    f"kept {len(prim_paths_to_keep)}/{len(prim_paths)} objects, "
+                    f"deactivated {group_deactivated} objects"
+                )
+
+            logger.info(
+                f"Object filtering completed: kept {total_kept}/{len(all_prim_paths)} objects across all groups, "
+                f"deactivated {total_deactivated} objects"
+            )
+
+        except Exception as e:
+            logger.error(f"Error filtering objects from {json_path}: {e}")
+
     def _set_light(
         self,
         light_type,
         light_prim,
         light_temperature,
         light_intensity,
+        light_position,
         light_rotation,
         light_texture,
     ):
+
         light = Light(
             light_type=light_type,
             prim_path=light_prim,
             stage=self._stage,
             intensity=light_intensity,
             color=light_temperature,
+            position=light_position,
             orientation=light_rotation,
             texture_file=light_texture,
         )
@@ -705,10 +1099,59 @@ class APICore:
         self.frame_status = []
 
     def _start_recording(self, camera_prim_list, fps, extra_prim_paths, record_topic_list):
-        pass
+        logger.info("Start recording")
+        self.fps = fps
+        self.process_recording_path()
+        self.camera_prim_list = camera_prim_list
+        self.process_camera_info_list()
+        self.record_topic_list = record_topic_list
+        self.record_rosbag()
+
+        if not self.enable_physics:
+            self.ui_builder.my_world.stop()
+            disable_physics(self._physics_info)
+            self._play()
+        self.recording_started = True
 
     def _stop_recording(self):
-        pass
+        logger.info("Stop recording")
+        self.recording_started = False
+        for process in self.record_process:
+            os.killpg(os.getpgid(process.pid), signal.SIGINT)
+            process.wait(timeout=10)
+            time.sleep(1.0)
+
+        self.record_process = []
+
+    def _dump_recording_info(self):
+        logger.info("Dump recording info")
+        new_info = {
+            "bag_file": self.path_to_save_record,
+            "output_dir": self.path_to_save_record,
+            "robot_init_position": self.robot_init_position,
+            "robot_init_rotation": self.robot_init_rotation,
+            "camera_info": self.camera_info_list,
+            "scene_name": self.scene_name,
+            "scene_usd": self.scene_usd,
+            "scene_glb": self.scene_glb,
+            "object_names": self.object_prims,
+            "fps": self.fps,
+            "robot_name": self.robot_name,
+            "frame_status": self.frame_status,
+            "light_config": self.light_config,
+            "gripper_names": self.gripper_names,
+            "with_img": self.record_images,
+            "with_video": self.record_video,
+            "arm_base_prim_path": self.arm_base_prim_path,
+            "playback_timerange": self.playback_timerange,
+        }
+        file_path = os.path.join(self.path_to_save_record, "recording_info.json")
+        os.makedirs(self.path_to_save_record, exist_ok=True)
+
+        with open(file_path, "w") as f:
+            json.dump(new_info, f, indent=4)
+
+        logger.info(f"Recording info saved to {file_path}")
 
     def _reset_env(self):
         robot_articulation = self._get_articulation()
@@ -807,27 +1250,52 @@ class APICore:
 
         logger.info("Scene shuffle completed")
 
+    def _update_robot_base(self, pos, quat):
+        self.usd_objects["robot"].set_world_pose(pos, quat)
+
     ######################===================== Private Methods END ===================================
+    def get_robot_joint_indices(self):
+        return self.robot_joint_indices
 
     def process_recording_path(self):
-        recording_path = os.path.join(system_utils.recording_output_path(), self.task_name)
-        if os.path.isdir(recording_path):
-            folder_index = 1
-            while os.path.isdir(os.path.join(recording_path, str(folder_index))):
-                folder_index += 1
-            recording_path = os.path.join(recording_path, str(folder_index))
+        recording_path = os.path.join(system_utils.recording_output_path(), self.sub_task_name)
+        folder_index = 1
+        while os.path.isdir(os.path.join(recording_path, str(folder_index))):
+            folder_index += 1
+        recording_path = os.path.join(recording_path, str(folder_index))
+        if not os.path.exists(recording_path):
+            os.makedirs(recording_path, exist_ok=True)
         self.path_to_save_record = recording_path
+
+    def get_camera_intrinsic_info(self):
+        camera_info = [
+            "omni:lensdistortion:model",
+            "omni:lensdistortion:opencvPinhole:cx",
+            "omni:lensdistortion:opencvPinhole:cy",
+            "omni:lensdistortion:opencvPinhole:fx",
+            "omni:lensdistortion:opencvPinhole:fy",
+            "omni:lensdistortion:opencvPinhole:imageSize",
+            "omni:lensdistortion:opencvPinhole:k1",
+            "omni:lensdistortion:opencvPinhole:k2",
+            "omni:lensdistortion:opencvPinhole:k3",
+            "omni:lensdistortion:opencvPinhole:p1",
+            "omni:lensdistortion:opencvPinhole:p2",
+        ]
+        stage = omni.usd.get_context().get_stage()
+        camera_intrinsic_info = {}
+        for prim in self.camera_prim_list:
+            camera_intrinsic_info[prim] = {}
+            camera_prim = stage.GetPrimAtPath(prim)
+            for info in camera_info:
+                value = camera_prim.GetAttribute(info).Get()
+                info = info.split(":")[-1]
+                camera_intrinsic_info[prim][info] = str(value)
+        return camera_intrinsic_info
 
     def process_camera_info_list(self):
         self.camera_info_list = {}
+        camera_intrinsic_info = self.get_camera_intrinsic_info()
         for prim in self.camera_prim_list:
-            image = self._capture_camera(
-                prim_path=prim,
-                isRGB=False,
-                isDepth=False,
-                isSemantic=False,
-                isGN=False,
-            )
             prim_name = prim.split("/")[-1]
             if "G1" in self.robot_name:
                 if "Fisheye_Camera" in prim_name:
@@ -846,8 +1314,19 @@ class APICore:
                     prim_name = "hand_left"
                 elif "top" in prim_name:
                     prim_name = "head_front_fisheye"
+            if "G2" in self.robot_name:
+                if "Right_Camera" in prim_name:
+                    prim_name = "hand_right_color"
+                elif "Left_Camera" in prim_name:
+                    prim_name = "hand_left_color"
+                elif "head_front" in prim_name:
+                    prim_name = "head_color"
+                elif "head_left" in prim_name:
+                    prim_name = "head_stereo_left_color"
+                elif "head_right" in prim_name:
+                    prim_name = "head_stereo_right_color"
             self.camera_info_list[prim_name] = {
-                "intrinsic": image["camera_info"],
+                "intrinsic": camera_intrinsic_info[prim],
                 "output": {
                     "rgb": "camera/" + "{frame_num}/" + f"{prim_name}.jpg",
                     "video": f"{prim_name}.mp4",
@@ -855,13 +1334,28 @@ class APICore:
             }
             if "fisheye" not in prim_name:
                 self.camera_info_list[prim_name]["output"]["depth"] = (
-                    "camera/" + "{frame_num}/" + f"{prim_name}_depth.png"
+                    "camera/" + "{frame_num}/" + f"{prim_name[:-6]}_depth.png"
                 )
 
-            if self.data["render_semantic"]:
+            if "semantic" not in prim_name:
                 self.camera_info_list[prim_name]["output"]["semantic"] = (
                     "camera/" + "{frame_num}/" + f"{prim_name}_semantic.png"
                 )
+
+    def record_rosbag(self):
+        if self.enable_ros:
+            if os.path.isdir(self.path_to_save_record):
+                shutil.rmtree(self.path_to_save_record)
+            ros_distro = os.getenv("ROS_DISTRO", "jazzy")
+            command_str = f"""
+            unset PYTHONPATH
+            unset LD_LIBRARY_PATH
+            source /opt/ros/{ros_distro}/setup.bash
+            ros2 bag record -o {self.path_to_save_record} {' '.join(self.record_topic_list)}
+            """
+            process = subprocess.Popen(command_str, shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+            logger.info("started record")
+            self.record_process.append(process)
 
     def _init_gripper_contact_end(self):
         if "omnipicker" in self.robot_cfg.robot_usd:
@@ -893,43 +1387,82 @@ class APICore:
             )
             self.server_ros_node.publish_clock(self.ui_builder.my_world.current_time)
             self._on_play_back = self.server_ros_node.get_playback_state()
+            self.teleop_recording = self.server_ros_node.get_teleop_recording()
 
-    def on_playback(self):
-        robot_articulation = self._get_articulation()
+    def _on_recording(self):
+        if self.teleop_recording and self.wait_recording:
+            self.set_record_topics()
+            camera_prim_list = self.task_config["recording_setting"]["camera_list"]
+            self._start_recording(
+                camera_prim_list=camera_prim_list,
+                fps=30,
+                extra_prim_paths=[],
+                record_topic_list=self.record_topic_list,
+            )
+            self.wait_recording = False
+        if not self.wait_recording and self.recording_wait_num < 100:
+            self.recording_wait_num += 1
+            if self.recording_wait_num == 100:
+                self._dump_recording_info()
 
-        if robot_articulation:
-            # playback
-            if not self._physics_info or self.add_object_flag:
-                collect_physics(self._physics_info)
-            if self._on_play_back and self._current_mode == "realtime":
-                disable_physics(self._physics_info)
-                self._current_mode = "playback"
+    def set_record_topics(self):
+        if "G2" in self.task_config["robot"]["robot_cfg"]:
+            self.record_topic_list = [
+                "/tf",
+                "/tf_static",
+                "/joint_states",
+                "/genie_sim/camera_rgb",
+                "/genie_sim/head_front_camera_rgb",
+                "/genie_sim/left_camera_rgb",
+                "/genie_sim/right_camera_rgb",
+                "/genie_sim/static_info",
+                "/genie_sim/head_front_Camera_depth",
+                "/genie_sim/Left_Camera_depth",
+                "/genie_sim/Right_Camera_depth",
+                "/genie_sim/head_left_camera_rgb",
+                "/genie_sim/head_right_camera_rgb",
+            ]
+        else:
+            raise ValueError("Invalid robot cfg")
 
-            if self._current_mode == "playback" and not self._on_play_back:
-                restore_physics(self._physics_info)
-                # Who knows ehy?
-                disable_physics(self._physics_info)
-                restore_physics(self._physics_info)
-                self._current_mode = "realtime"
-                self.playback_end = self.ui_builder.my_world.current_time
-                self.playback_timerange.append([self.playback_start, self.playback_end])
+    def _on_playback(self):
+        if self.enable_playback:
+            robot_articulation = self._get_articulation()
 
-            if self._current_mode == "playback":
-                logger.info("In playback mode")
-                playback_timestamp = playback_once(robot_articulation, self._history_info)
-                # udpate timestamp
-                if playback_timestamp > 0:
-                    self.playback_start = playback_timestamp
-            else:
-                # store history
-                store_history_physics(
-                    robot_articulation,
-                    self._physics_info,
-                    self._history_info,
-                    self.ui_builder.my_world.current_time,
-                )
-            return self._current_mode == "playback"
-        return False
+            if robot_articulation:
+                # playback
+                if not self._physics_info or self.add_object_flag:
+                    collect_physics(self._physics_info)
+                if self._on_play_back and self._current_mode == "realtime":
+                    disable_physics(self._physics_info)
+                    self._current_mode = "playback"
+
+                if self._current_mode == "playback" and not self._on_play_back:
+                    restore_physics(self._physics_info)
+                    disable_physics(self._physics_info)
+                    restore_physics(self._physics_info)
+                    self._current_mode = "realtime"
+                    self.playback_end = self.ui_builder.my_world.current_time
+                    self.playback_timerange.append([self.playback_start, self.playback_end])
+                    if self.teleop_recording:
+                        self._dump_recording_info()
+
+                if self._current_mode == "playback":
+                    logger.info("In playback mode")
+                    playback_timestamp = playback_once(robot_articulation, self._history_info)
+                    # udpate timestamp
+                    if playback_timestamp > 0:
+                        self.playback_start = playback_timestamp
+                else:
+                    # store history
+                    store_history_physics(
+                        robot_articulation,
+                        self._physics_info,
+                        self._history_info,
+                        self.ui_builder.my_world.current_time,
+                    )
+                return self._current_mode == "playback"
+            return False
 
     # 1. Photo capturing function, prim path of Input camera in isaac side scene and whether to use Gaussian Noise, return
     def _capture_camera(self, prim_path: str, isRGB, isDepth, isSemantic, isGN: bool):

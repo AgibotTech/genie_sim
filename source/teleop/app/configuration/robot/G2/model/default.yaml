@@ -1,0 +1,78 @@
+order:
+  - waist.yaml
+  - head_yaw.yaml
+  - head_roll.yaml
+  - head_pitch.yaml
+  - left_arm.yaml
+  - right_arm.yaml
+  - left_tool.yaml # optional, will skip if not exists
+  - right_tool.yaml # optional, will skip if not exists
+
+standalone_groups:
+  - left_tool.yaml # optional, will skip if not exists
+  - right_tool.yaml # optional, will skip if not exists
+
+groups:
+  - name: Default
+    includes:
+      - waist.yaml
+      - head_yaw.yaml
+      - head_roll.yaml
+      - head_pitch.yaml
+      - left_arm.yaml
+      - right_arm.yaml
+
+  - name: Head
+    includes:
+      - head_yaw.yaml
+      - head_roll.yaml
+      - head_pitch.yaml
+
+  - name: Left_Arm
+    includes:
+      - left_arm.yaml
+
+  - name: Waist
+    includes:
+      - waist.yaml
+
+  - name: Left_Arm_Waist
+    includes:
+      - waist.yaml
+      - left_arm.yaml
+
+  - name: Right_Arm
+    includes:
+      - right_arm.yaml
+
+  - name: Right_Arm_Waist
+    includes:
+      - waist.yaml
+      - right_arm.yaml
+
+  - name: Dual_Arm
+    includes:
+      - left_arm.yaml
+      - right_arm.yaml
+
+  - name: Dual_Arm_Head
+    includes:
+      - head_yaw.yaml
+      - head_roll.yaml
+      - head_pitch.yaml
+      - left_arm.yaml
+
+  - name: Dual_Arm_Waist
+    includes:
+      - waist.yaml
+      - left_arm.yaml
+      - right_arm.yaml
+
+  - name: Dual_Arm_Waist_Head
+    includes:
+      - waist.yaml
+      - left_arm.yaml
+      - right_arm.yaml
+      - head_yaw.yaml
+      - head_roll.yaml
+      - head_pitch.yaml

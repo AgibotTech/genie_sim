@@ -1,28 +1,72 @@
-Based on the following sequential images from multiple viewpoints across different time steps, determine whether the description is satisfied:
+Based on the following images from multiple views, evaluate the completion status of the description by identifying and scoring individual scoring points:
 
 Description: {description}
 
 {images_placeholder}
 
-The images are organized by steps (step0, step1, step2, ...) showing the progression of the task over time. Each step contains multiple viewpoints (head, left_hand, right_hand, etc.).
+The images are from multiple camera views (head, left_hand, right_hand, camera<third view>, etc.) showing the current state of the scene.
 
-Please follow these steps:
-1. Analyze the description and understand the specific requirements
-2. Examine the image sequence chronologically to understand the task progression
-3. For each step, examine all viewpoint images comprehensively (use head view as main reference, other views as supplementary)
-4. Determine whether the description is satisfied based on the complete sequence
-5. Provide your reasoning, referencing specific steps if relevant
+Instructions:
+1. First, identify ALL distinct scoring points from the description. Number them sequentially (1., 2., 3., ...).
+2. Examine all provided images from different views to understand the current state.
+3. For EACH scoring point, write detailed reasoning and conclude with [TRUE] or [FALSE] in brackets.
+4. After analyzing all scoring points, count the [TRUE] tags to get SATISFIED_COUNT.
+5. Count total scoring points to get TOTAL_COUNT.
+6. Finally, calculate SCORE = SATISFIED_COUNT / TOTAL_COUNT.
 
-IMPORTANT RULES:
-- If the object mentioned in the description is NOT visible in the LATEST step's viewpoints, then the task is considered SUCCESSFUL by default. This means the object has likely been moved out of view or the task has been completed.
-- Use the temporal progression to understand the task execution (e.g., object movement, gripper state changes)
-- Focus more on the latest steps as they represent the current state
+Important Evaluation Rules:
+- Break down the description into distinct scoring points. Example: "move A to B and move C to D" = 2 scoring points.
+- Each scoring point is independent and should be evaluated separately.
+- Visibility rules:
+  * If an object mentioned in a scoring point is NOT visible in the current images because it was moved/completed (e.g., moved to a different location, placed in a container), consider it [TRUE] (task likely completed).
+  * If an object is NOT visible because the view is blocked/occluded (e.g., blocked by other objects, out of camera view, partially hidden), consider the scoring point [FALSE] (cannot verify completion).
+  * If you cannot clearly see or verify the state of an object due to occlusion or poor visibility, mark the scoring point as [FALSE].
+- Orientation rules (for "upright", "standing upright", "placed upright", "orientation", "direction", etc.):
+  * When judging object orientation or direction (e.g., whether an object is upright, standing upright, or placed in a specific orientation), DO NOT rely solely on the head view. The head view is a top-down/overhead perspective which can cause visual distortion and make it difficult to accurately assess vertical alignment or orientation.
+  * ALWAYS use the camera view (third view) as the primary reference for orientation judgments, as it provides a side or angled perspective that allows for accurate assessment of vertical alignment and object orientation.
+  * Combine multiple views if available, but prioritize the camera view when making orientation-related evaluations.
+- Focus on the current images as they represent the current state of the scene.
 
-Your response MUST follow this exact format:
+Your response MUST follow this exact format (output in this order):
 
-RESULT: [True/False]
-REASONING: [Detailed explanation of why the condition is satisfied or not satisfied. Reference specific steps if relevant. If not satisfied, clearly explain what is missing or incorrect.]
+SCORING_POINTS:
+1. [First scoring point description]
+2. [Second scoring point description]
+3. [Third scoring point description]
+...
 
-Example responses:
-- If satisfied: "RESULT: True\nREASONING: The robot successfully grasped the red apple. In step0, the gripper approached the apple. By step2, the head view shows the gripper firmly holding the red apple."
-- If not satisfied: "RESULT: False\nREASONING: The description requires grasping a red apple. While step0-step2 show the gripper approaching, the latest step (step3) still shows the apple on the table and the gripper is empty, indicating the task has not been completed."
+REASONING:
+Scoring point 1: [Detailed analysis referencing specific camera views. Conclude with [TRUE] or [FALSE]]
+Scoring point 2: [Detailed analysis referencing specific camera views. Conclude with [TRUE] or [FALSE]]
+Scoring point 3: [Detailed analysis referencing specific camera views. Conclude with [TRUE] or [FALSE]]
+...
+
+SATISFIED_COUNT: [Count of [TRUE] tags in REASONING above]
+TOTAL_COUNT: [Count of items in SCORING_POINTS above]
+SCORE: [SATISFIED_COUNT / TOTAL_COUNT, as decimal 0.0-1.0]
+
+Examples (FORMAT REFERENCE ONLY - DO NOT COPY CONTENT):
+
+Example 1 (FORMAT ONLY):
+SCORING_POINTS:
+1. Place book on shelf
+2. Close drawer
+3. Turn off light
+
+REASONING:
+Scoring point 1: In the head view, I can see a book positioned on the middle shelf. The book's spine is visible and it appears to be properly placed upright on the shelf. In the camera view, this placement is confirmed from a side angle. [TRUE]
+Scoring point 2: The drawer in the head view appears to be fully closed with no visible gap. The camera view also shows the drawer is flush with the cabinet frame. [TRUE]
+Scoring point 3: Looking at the light switch in both head and camera views, the switch is in the upward position which typically indicates ON state. The light is also visibly illuminated in the scene. [FALSE]
+
+SATISFIED_COUNT: 2
+TOTAL_COUNT: 3
+SCORE: 0.67
+
+IMPORTANT: The example above is a FORMAT REFERENCE ONLY. You MUST evaluate the actual images and description provided at the top of this prompt. Do NOT copy or reuse the example content.
+
+Critical Requirements:
+1. Output sections in this exact order: SCORING_POINTS → REASONING → SATISFIED_COUNT → TOTAL_COUNT → SCORE
+2. In REASONING, end each scoring point analysis with [TRUE] or [FALSE] in brackets
+3. SATISFIED_COUNT must equal the number of [TRUE] tags in REASONING
+4. TOTAL_COUNT must equal the number of items in SCORING_POINTS
+5. SCORE must equal SATISFIED_COUNT / TOTAL_COUNT (verify the math)

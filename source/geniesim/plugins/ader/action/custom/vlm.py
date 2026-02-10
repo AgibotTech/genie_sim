@@ -27,23 +27,32 @@ class VLM(EvaluateAction):
         self.description = VLM_TEMPLATE.get(self.task_id, instruction)
         # Store accumulated image observations for evaluation.
         self._image_history = []
+        # Store the last evaluation score
+        self._last_score = 0.0
+        self._use_history = False
+        self._debug = False
 
     def update(self, delta_time: float) -> float:
         if not self.is_running():
             return 0.0
         self._update_counter += 1
         if self._update_counter % self._check_interval == 0:
-
             try:
+                if not self._use_history:
+                    self._image_history = []
                 image_dict = self.get_observation_image()
                 self._image_history.append(image_dict)
 
-                result, reasoning = auto_score(self.description, self._image_history)
-                if result:
+                score, reasoning = auto_score(
+                    self.description, self._image_history, target_size=(640, 480), save_debug_images=self._debug
+                )
+                self._last_score = score
+                # Consider task done if score is 1.0 (all scoring points satisfied)
+                if score >= 1.0:
                     self._done_flag = True
-                    logger.info(f"VLM checker: Description '{self.description}' is satisfied")
+                    logger.info(f"VLM checker: Description  is fully satisfied (score: {score:.3f})")
                 else:
-                    logger.warning(f"VLM checker: Description '{self.description}' is NOT satisfied")
+                    logger.info(f"VLM checker: Description partially satisfied (score: {score:.3f})")
 
             except Exception as e:
                 logger.error(f"VLM checker error: {e}")
@@ -57,6 +66,7 @@ class VLM(EvaluateAction):
         """Reset the stored image history, typically when starting a new task."""
         # Clear previously saved images.
         self._image_history = []
+        self._last_score = 0.0
         logger.info("VLM: Image history has been reset")
 
     def update_progress(self):
@@ -72,4 +82,5 @@ class VLM(EvaluateAction):
         elif event == ActionEvent.CANCELED:
             pass
         elif event == ActionEvent.FINISHED:
-            self.progress_info["SCORE"] = 1
+            # Use the last evaluation score
+            self.progress_info["SCORE"] = self._last_score

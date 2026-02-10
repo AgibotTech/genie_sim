@@ -90,3 +90,5 @@ Use ADER (Action Domain Evaluation Rule) for evaluation configuration
 | OnShelf | The object is inside a specific region | EvaluateAction | `"OnShelf": "obj_id|target_id|bbox|height"` |
 | Onfloor | Check if a specified object has fallen below a reference height `ref_z`; if so, exit | ActionCancelBase | `"Inside": "obj_id|ref_z"` |
 | Cover | Object A covers object B | EvaluateAction | `"Cover": "active_obj|passive_obj"` |
+|| LiftUp | Check if an object is lifted above a specified height threshold | EvaluateAction | `"LiftUp": "obj_id|lift_threshold"` |
+|| Upright | Check if an object is upright (z-axis aligned with world z-axis within a tilt angle threshold) | EvaluateAction | `"Upright": "obj_id|tilt_threshold"` |

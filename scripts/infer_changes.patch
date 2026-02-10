@@ -1,26 +1,71 @@
 diff --git a/scripts/docker/serve_policy.Dockerfile b/scripts/docker/serve_policy.Dockerfile
-index 1c4cd68..09b1f86 100644
+index 1c4cd68..5070550 100644
 --- a/scripts/docker/serve_policy.Dockerfile
 +++ b/scripts/docker/serve_policy.Dockerfile
-@@ -7,7 +7,7 @@
- # Run the container:
- # docker run --rm -it --network=host -v .:/app --gpus=all openpi_server /bin/bash
-
+@@ -1,34 +1,40 @@
+-# Dockerfile for serving a PI policy.
+-# Based on UV's instructions: https://docs.astral.sh/uv/guides/integration/docker/#developing-in-a-container
+-
+-# Build the container:
+-# docker build . -t openpi_server -f scripts/docker/serve_policy.Dockerfile
+-
+-# Run the container:
+-# docker run --rm -it --network=host -v .:/app --gpus=all openpi_server /bin/bash
+-
 -FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04@sha256:2d913b09e6be8387e1a10976933642c73c840c0b735f0bf3c28d97fc9bc422e0
 +FROM nvcr.io/nvidia/cuda@sha256:2d913b09e6be8387e1a10976933642c73c840c0b735f0bf3c28d97fc9bc422e0
  COPY --from=ghcr.io/astral-sh/uv:0.5.1 /uv /uvx /bin/
 
  WORKDIR /app
-@@ -21,6 +21,9 @@ ENV UV_LINK_MODE=copy
- # Write the virtual environment outside of the project directory so it doesn't
- # leak out of the container when we mount the application code.
- ENV UV_PROJECT_ENVIRONMENT=/.venv
-+ENV XLA_PYTHON_CLIENT_MEM_FRACTION=0.1
-+ENV XLA_PYTHON_CLIENT_PREALLOCATE=false
-+ENV XLA_PYTHON_CLIENT_ALLOCATOR=platform
 
- # Install the project's dependencies using the lockfile and settings
- RUN uv venv --python 3.11.9 $UV_PROJECT_ENVIRONMENT
+-# Needed because LeRobot uses git-lfs.
+-RUN apt-get update && apt-get install -y git git-lfs linux-headers-generic build-essential clang
++RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
++    sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
++    apt-get update && apt-get install -y --no-install-recommends \
++    python3.11 python3.11-venv python3.11-dev \
++    git git-lfs linux-headers-generic build-essential clang && \
++    git lfs install && \
++    rm -rf /var/lib/apt/lists/*
+
+-# Copy from the cache instead of linking since it's a mounted volume
+-ENV UV_LINK_MODE=copy
++RUN git config --global http.postBuffer 524288000 && \
++    git config --global http.lowSpeedLimit 0 && \
++    git config --global http.lowSpeedTime 999999 && \
++    git config --global core.compression 0
+
+-# Write the virtual environment outside of the project directory so it doesn't
+-# leak out of the container when we mount the application code.
+-ENV UV_PROJECT_ENVIRONMENT=/.venv
++ENV UV_LINK_MODE=copy \
++    UV_PROJECT_ENVIRONMENT=/.venv \
++    UV_PYTHON_DOWNLOADS=never \
++    UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
++    HF_ENDPOINT=https://hf-mirror.com
++
++RUN uv venv --python python3.11 $UV_PROJECT_ENVIRONMENT
+
+-# Install the project's dependencies using the lockfile and settings
+-RUN uv venv --python 3.11.9 $UV_PROJECT_ENVIRONMENT
+ RUN --mount=type=cache,target=/root/.cache/uv \
+     --mount=type=bind,source=uv.lock,target=uv.lock \
+     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+-    --mount=type=bind,source=packages/openpi-client/pyproject.toml,target=packages/openpi-client/pyproject.toml \
+-    --mount=type=bind,source=packages/openpi-client/src,target=packages/openpi-client/src \
+-    GIT_LFS_SKIP_SMUDGE=1 uv sync --frozen --no-install-project --no-dev
++    --mount=type=bind,source=packages,target=packages \
++    uv sync \
++    --frozen \
++    --no-install-project \
++    --no-dev \
++    --verbose
++
++COPY . .
+
+-CMD /bin/bash -c "uv run scripts/serve_policy.py $SERVER_ARGS"
++RUN --mount=type=cache,target=/root/.cache/uv \
++    uv sync --frozen --no-dev
 diff --git a/scripts/serve_policy.py b/scripts/serve_policy.py
 index 36b1668..3e60928 100644
 --- a/scripts/serve_policy.py
@@ -157,8 +202,54 @@ index 0000000..11d0189
 +    """Outputs for the Go1 policy."""
 +    def __call__(self, data: dict) -> dict:
 +        return {"actions": np.asarray(data["actions"][:, :22])}
+diff --git a/src/openpi/policies/policy_config.py b/src/openpi/policies/policy_config.py
+index 365c752..fb219c5 100644
+--- a/src/openpi/policies/policy_config.py
++++ b/src/openpi/policies/policy_config.py
+@@ -46,8 +46,8 @@ def create_trained_policy(
+         # that the policy is using the same normalization stats as the original training process.
+         if data_config.asset_id is None:
+             raise ValueError("Asset id is required to load norm stats.")
++        print(checkpoint_dir, data_config.asset_id)
+         norm_stats = _checkpoints.load_norm_stats(checkpoint_dir / "assets", data_config.asset_id)
+-
+     return _policy.Policy(
+         model,
+         transforms=[
+diff --git a/src/openpi/training/checkpoints.py b/src/openpi/training/checkpoints.py
+index f32a831..31e1d81 100644
+--- a/src/openpi/training/checkpoints.py
++++ b/src/openpi/training/checkpoints.py
+@@ -68,12 +68,13 @@ def save_state(
+     data_loader: _data_loader.DataLoader,
+     step: int,
+ ):
+-    def save_assets(directory: epath.Path):
++    asset_dir = checkpoint_manager.directory / f"{step}" / "assets"
++    def save_assets(directory: epath.Path = asset_dir):
+         # Save the normalization stats.
+         data_config = data_loader.data_config()
+         norm_stats = data_config.norm_stats
+         if norm_stats is not None and data_config.asset_id is not None:
+-            _normalize.save(directory / data_config.asset_id, norm_stats)
++            _normalize.save(directory, norm_stats)
+
+     # Split params that can be used for inference into a separate item.
+     with at.disable_typechecking():
+@@ -108,7 +109,10 @@ def restore_state(
+
+
+ def load_norm_stats(assets_dir: epath.Path | str, asset_id: str) -> dict[str, _normalize.NormStats] | None:
+-    norm_stats_dir = epath.Path(assets_dir) / asset_id
++    if "/" in asset_id or isinstance(asset_id, list):
++        norm_stats_dir = epath.Path(assets_dir)
++    else:
++        norm_stats_dir = epath.Path(assets_dir) / asset_id
+     norm_stats = _normalize.load(norm_stats_dir)
+     logging.info(f"Loaded norm stats from {norm_stats_dir}")
+     return norm_stats
 diff --git a/src/openpi/training/config.py b/src/openpi/training/config.py
-index 32b55ba..43eb517 100644
+index 32b55ba..8cac810 100644
 --- a/src/openpi/training/config.py
 +++ b/src/openpi/training/config.py
 @@ -1,3 +1,7 @@
@@ -446,7 +537,7 @@ index 32b55ba..43eb517 100644
 +        name="select_color",
 +        model=pi0.Pi0Config(pi05=True),
 +        data=LerobotGo1DataConfig(
-+            repo_id="/root/openpi/checkpoints/select_color/29999",
++            repo_id="/root/openpi/data/select_color/",
 +            norm_stats="/root/openpi/checkpoints/select_color/29999/norm_stats.json",
 +            default_prompt="",
 +            use_delta_joint_actions=True,
@@ -463,7 +554,7 @@ index 32b55ba..43eb517 100644
 +        name="recognize_size",
 +        model=pi0.Pi0Config(pi05=True),
 +        data=LerobotGo1DataConfig(
-+            repo_id="/root/openpi/checkpoints/recognize_size/29999",
++            repo_id="/root/openpi/data/recognize_size/",
 +            norm_stats="/root/openpi/checkpoints/recognize_size/29999/norm_stats.json",
 +            default_prompt="",
 +            use_delta_joint_actions=True,
@@ -480,7 +571,7 @@ index 32b55ba..43eb517 100644
 +        name="grasp_targets",
 +        model=pi0.Pi0Config(pi05=True),
 +        data=LerobotGo1DataConfig(
-+            repo_id="/root/openpi/checkpoints/grasp_targets/29999",
++            repo_id="/root/openpi/data/grasp_targets/",
 +            norm_stats="/root/openpi/checkpoints/grasp_targets/29999/norm_stats.json",
 +            default_prompt="",
 +            use_delta_joint_actions=True,
@@ -497,7 +588,7 @@ index 32b55ba..43eb517 100644
 +        name="organize_items",
 +        model=pi0.Pi0Config(pi05=True),
 +        data=LerobotGo1DataConfig(
-+            repo_id="/root/openpi/checkpoints/organize_items/29999",
++            repo_id="/root/openpi/data/organize_items/",
 +            norm_stats="/root/openpi/checkpoints/organize_items/29999/norm_stats.json",
 +            default_prompt="",
 +            use_delta_joint_actions=True,
@@ -514,7 +605,7 @@ index 32b55ba..43eb517 100644
      # RoboArena configs.
      #
 diff --git a/src/openpi/training/data_loader.py b/src/openpi/training/data_loader.py
-index 8e02dcd..675ae95 100644
+index 8e02dcd..a047ffe 100644
 --- a/src/openpi/training/data_loader.py
 +++ b/src/openpi/training/data_loader.py
 @@ -1,7 +1,12 @@
@@ -566,7 +657,7 @@ index 8e02dcd..675ae95 100644
 +                    d,
 +                    [
 +                        _transforms.PromptFromHighlevelInstruction(
-+                            dataset_metas[n].info["instruction_segments"], use_pause=data_config.use_pause
++                            dataset_metas[n].info["instruction_segments"]
 +                        )
 +                    ],
 +                )
@@ -589,7 +680,7 @@ index 8e02dcd..675ae95 100644
 +                dataset,
 +                [
 +                    _transforms.PromptFromHighlevelInstruction(
-+                        dataset_meta.info["instruction_segments"], use_pause=data_config.use_pause
++                        dataset_meta.info["instruction_segments"]
 +                    )
 +                ],
 +            )
@@ -656,3 +747,170 @@ index 8e02dcd..675ae95 100644
          )
 
      @property
+diff --git a/src/openpi/training/sampler.py b/src/openpi/training/sampler.py
+new file mode 100755
+index 0000000..10635b3
+--- /dev/null
++++ b/src/openpi/training/sampler.py
+@@ -0,0 +1,118 @@
++
++import torch
++import random
++from tqdm import tqdm
++import lerobot.common.datasets.lerobot_dataset as lerobot_dataset
++
++
++
++def sample_subtask(dataset):
++    valid_intervals = []
++    # remove static frames
++    if isinstance(dataset._dataset, lerobot_dataset.MultiLeRobotDataset):
++        episode_data_index, instruction_segment = {'from': torch.tensor([], dtype=torch.int64), 'to': torch.tensor([], dtype=torch.int64)}, {}
++
++        N_frames, N_episodes = 0, 0
++        for dataset_id in range(len(dataset._dataset._datasets)):
++            if dataset_id > 0:
++                N_frames = dataset._dataset._datasets[dataset_id-1]._dataset.episode_data_index['to'][-1]
++                N_episodes = 1 + max(int(key) for key in instruction_segment.keys()) if len(instruction_segment) > 0 else 0
++
++
++            dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['from'] = dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['from'] + N_frames
++            dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['to'] = dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['to'] + N_frames
++            episode_data_index['from'] = torch.cat([episode_data_index['from'], dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['from']])
++            episode_data_index['to'] = torch.cat([episode_data_index['to'], dataset._dataset._datasets[dataset_id]._dataset.episode_data_index['to']])
++
++            for key in dataset._dataset._datasets[dataset_id]._dataset.meta.info['instruction_segments'].keys():
++                instruction_segment[str(int(key)+N_episodes)] = dataset._dataset._datasets[dataset_id]._dataset.meta.info['instruction_segments'][key]
++    else:
++        if isinstance(dataset._dataset, lerobot_dataset.LeRobotDataset):
++            episode_data_index = dataset._dataset.episode_data_index
++            instruction_segment = dataset._dataset.meta.info.get('instruction_segments', {})
++        else:
++            episode_data_index = dataset._dataset._dataset.episode_data_index
++            instruction_segment = dataset._dataset._dataset.meta.info.get('instruction_segments', {})
++
++
++    for index in tqdm(range(len(episode_data_index["from"])), total=len(episode_data_index["from"])):
++        init_frame_index = episode_data_index["from"][index]
++
++
++        start_index = instruction_segment[str(index)][0]["start_frame_index"] + init_frame_index
++        end_index = instruction_segment[str(index)][-1]["end_frame_index"] + init_frame_index
++
++        # print(f"{start_index} -> {end_index}")
++
++        for subtask_id in range(len(instruction_segment[str(index)])):
++            start_index = instruction_segment[str(index)][subtask_id]["start_frame_index"] + init_frame_index
++            end_index = instruction_segment[str(index)][subtask_id]["success_frame_index"] + init_frame_index
++
++            # proccess reset action
++            instruction = instruction_segment[str(index)][subtask_id]["instruction"].lower()
++            if 'reset' in instruction or 'return' in instruction or 'default' in instruction:
++                origin_end_index = end_index
++                if end_index - start_index > 90:
++                    end_index = start_index + 45
++                # print(f"{start_index} -> {end_index}  |  {origin_end_index}")
++            else:
++                pass
++                # print(f"{start_index} -> {end_index}")
++
++            # Add interval to data structure
++            valid_intervals.append((start_index, end_index))
++
++    print(f"Total {len(valid_intervals)} valid intervals")
++    return valid_intervals
++
++
++class FrameSampler(torch.utils.data.Sampler):
++    """
++    Custom sampler that only samples data indices falling within specified intervals
++    """
++    def __init__(self, dataset, sampler_type):
++        valid_intervals = self.parse_dataset(dataset, sampler_type)
++        self.sample_frames(valid_intervals, len(dataset))
++
++    def parse_dataset(self, dataset, sampler_type):
++        """
++        Args:
++            intervals: List of (start_index, end_index) tuples
++        """
++        if sampler_type == 'subtask':
++            return sample_subtask(dataset)
++        else:
++            raise ValueError(f"Invalid sampler type: {sampler_type}")
++
++
++
++    def sample_frames(self, intervals, dataset_size):
++        """
++        Args:
++            intervals: List of (start_index, end_index) tuples
++            dataset_size: Total size of the dataset
++        """
++        self.intervals = intervals
++        self.dataset_size = dataset_size
++
++        # Pre-compute all valid indices
++        self.valid_indices = []
++        for start_idx, end_idx in intervals:
++            # Ensure indices are within dataset bounds
++            start_idx = max(0, start_idx)
++            end_idx = min(dataset_size - 1, end_idx)
++
++            # Add all indices within the interval
++            self.valid_indices.extend(range(start_idx, end_idx + 1))
++
++        # Remove duplicates and sort
++        self.valid_indices = sorted(list(set(self.valid_indices)))
++        print(f"Total {len(self.valid_indices)} valid indices,", 'original:', dataset_size)
++        import random
++        random.shuffle(self.valid_indices)
++
++    def __iter__(self):
++        return iter(self.valid_indices)
++
++    def __len__(self):
++        return len(self.valid_indices)
+diff --git a/src/openpi/transforms.py b/src/openpi/transforms.py
+index 272375e..beaa8b4 100644
+--- a/src/openpi/transforms.py
++++ b/src/openpi/transforms.py
+@@ -323,6 +323,38 @@ class PromptFromLeRobotTask(DataTransformFn):
+
+         return {**data, "prompt": prompt}
+
++@dataclasses.dataclass(frozen=True)
++class PromptFromHighlevelInstruction(DataTransformFn):
++    """Extracts a prompt from the current LeRobot dataset task."""
++
++    # Contains the LeRobot dataset tasks (dataset.meta.tasks).
++    instruction_segments: dict
++    use_pause: bool = False
++
++    def __call__(self, data: DataDict) -> DataDict:
++        if "episode_index" not in data:
++            raise ValueError('Cannot extract prompt without "task_index"')
++
++        episode_index = int(data["episode_index"])
++        frame_index = int(data["frame_index"])
++        segments = self.instruction_segments.get(str(episode_index))
++
++        segment_id = None
++        segment_id = len(segments) - 1
++        segments[0]['start_frame_index'] = 0
++        for i, segment in enumerate(segments):
++            if frame_index >= segment['start_frame_index'] and frame_index < segment['end_frame_index']:
++                if self.use_pause and segment['end_frame_index']-frame_index<50:
++                    data['action'][segment['end_frame_index']-frame_index:, :] = data['action'][segment['end_frame_index']-frame_index, :]
++                segment_id = i
++                break
++
++        if segment_id is not None:
++            segment = segments[segment_id]
++            instruction = segment['instruction']
++        else:
++            raise ValueError(f"No segment found for episode {episode_index} and frame {frame_index}")
++        return {**data, "prompt": instruction}
+
+ @dataclasses.dataclass(frozen=True)
+ class PadStatesAndActions(DataTransformFn):

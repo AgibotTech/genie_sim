@@ -1,0 +1,15 @@
+# head_roll.yaml
+id: 9
+topic: '/hal/joint_cmd'
+end_frame_names: [head_link2]
+joints:
+  - - name: idx12_head_joint2
+      type: revolute
+      position: [-0.34906585, 0.34906585] # updated position limits
+      position_threshold: 0.005 # threshold for this range
+      velocity: 2.5
+      acceleration: 40
+      jerk: 80
+      torque: 50
+      kp: 100
+      kd: 1

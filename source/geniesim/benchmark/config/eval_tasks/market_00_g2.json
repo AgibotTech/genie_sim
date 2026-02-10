@@ -1,0 +1,89 @@
+{
+  "generalization": {
+    "init_base": {
+      "num": 1,
+      "x_thresh": 0.1,
+      "y_thresh": 0.1
+    },
+    "init_joint": {
+      "num": 1,
+      "thresh": 0.1
+    },
+    "lights": {
+      "intensity": [
+        5000,
+        10000
+      ],
+      "num": 1,
+      "temperature": [
+        5000,
+        10000
+      ]
+    },
+    "num_material": 1
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_base_link/Left_Camera",
+      "/genie/gripper_r_base_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "right",
+    "robot_cfg": "G2_omnipicker.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          0.53,
+          -0.6501577213695806,
+          0.0
+        ],
+        "quaternion": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          -4.03,
+          -0.032,
+          0.80621
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "gm_supermarket_01/workspace_00",
+    "scene_info_dir": "background/market_00/",
+    "scene_usd": "background/market_00/market_00.usda"
+  },
+  "stages": [],
+  "task": "market_00_g2"
+}

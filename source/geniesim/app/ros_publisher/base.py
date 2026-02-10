@@ -37,6 +37,28 @@ class USDBase:
                 if sensor["type"] == "IMU":
                     self._init_imu(sensor)
 
+    def init_depth_camera(self, sensors):
+        from .camera import (
+            Camera,
+            publish_depth,
+        )
+
+        for sensor in sensors:
+            camera = Camera(
+                prim_path=sensor["path"],
+                frequency=sensor["frequency"],
+                resolution=(
+                    sensor["resolution"]["width"],
+                    sensor["resolution"]["height"],
+                ),
+            )
+            camera.initialize()
+
+            rendering_fps = int(60)
+            step_size = int(rendering_fps / sensor["frequency"])
+            publish_depth(camera, step_size, "")
+            camera.initialize()
+
     def _init_lidar(self, param):
         from omni.isaac.sensor import LidarRtx
         from .lidar import publish_lidar_pointcloud, publish_lidar_scan

@@ -1,0 +1,24 @@
+#----------------------- solver setting -----------------------
+enable_print: false
+enable_collision: false
+enable_ref: false
+enable_contrast: false
+
+qp_max_iter: 2000
+qp_max_fail: 5
+
+epsilon: 0.001
+sqp_time_limit: 0.5
+sqp_h: 0.4
+min_de: 0.1
+dump: 0.000001 #0.000001
+
+ref_k: 0.001
+ref_weight: [1.0,1.0,  1.0,1.0,1.0,1.0,1.0,1.0,1.0,  1.0,1.0,1.0,1.0,1.0,1.0,1.0]
+
+
+#----------------------- test setting -----------------------
+query_num: 1
+test_num: 1000
+# kDual_Arm, kDual_Arm_Waist, kLeft_Arm, kLeft_Arm_Waist, kRight_Arm, kRight_Arm_Waist
+task_list: [1, 2, 3, 4, 5, 6]

@@ -15,7 +15,7 @@ mkdir -p ~/docker/isaac-sim/pkg
 sudo chown -R 1234:1234 ~/docker/isaac-sim
 
 xhost +local:
-docker run -it --name genie_sim_benchmark \
+docker run -itd --name genie_sim_benchmark \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
     --rm \
@@ -35,4 +35,4 @@ docker run -it --name genie_sim_benchmark \
     -v $CURRENT_DIR:/geniesim/main:rw \
     -w /geniesim/main \
     registry.agibot.com/genie-sim/open_source:latest \
-    bash
+    tail -f /dev/null

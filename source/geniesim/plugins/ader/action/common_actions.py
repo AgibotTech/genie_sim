@@ -265,8 +265,33 @@ class EvaluateAction(ActionBase):
     def get_world_pose(self, prim_path):
         return self.api_core.get_obj_world_pose(prim_path)
 
-    def get_observation_image(self):
-        return self.api_core.get_observation_image(dir={})
+    def get_observation_image(self, disable_robot=True):
+        if not disable_robot:
+            return self.api_core.get_observation_image(dir={})
+
+        robot_prim_path = None
+        if hasattr(self.api_core, "robot_prim_path"):
+            robot_prim_path = getattr(self.api_core, "robot_prim_path", None)
+
+        if robot_prim_path:
+            try:
+                self.api_core.set_prim_visibility(robot_prim_path, False)
+                import time
+
+                time.sleep(1)
+            except Exception as e:
+                logger.warning(f"Failed to set robot visibility to invisible: {e}")
+
+        try:
+            image_dict = self.api_core.get_observation_image(dir={})
+        finally:
+            if robot_prim_path:
+                try:
+                    self.api_core.set_prim_visibility(robot_prim_path, True)
+                except Exception as e:
+                    logger.warning(f"Failed to restore robot visibility: {e}")
+
+        return image_dict
 
     def get_world_pose_matrix(self, prim_path):
         pos, quat = self.api_core.get_obj_world_pose(prim_path)

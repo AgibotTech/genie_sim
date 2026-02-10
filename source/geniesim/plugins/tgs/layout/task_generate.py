@@ -2,8 +2,11 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+from copy import deepcopy
 import os
 import json
+import glob
+import shutil
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -11,6 +14,7 @@ from scipy.spatial.transform import Rotation as R
 from geniesim.utils.object import OmniObject
 import geniesim.utils.system_utils as system_utils
 from geniesim.plugins.logger import Logger
+
 from .utils.object import LayoutObject
 from .solver_2d.solver import LayoutSolver2D
 
@@ -226,6 +230,7 @@ class TaskGenerator:
             "object_with_material": task_template.get("object_with_material", {}),
             "lights": task_template.get("lights", {}),
             "objects": [],
+            "robot_init_pose": None,
         }
         constraint = task_template.get("constraints")
         robot_init_workspace_id = scene_info["scene_id"].split("/")[-1]
@@ -245,7 +250,6 @@ class TaskGenerator:
             if isinstance(scene_info["robot_init_pose"], list):
                 scene_info["robot_init_pose"] = list_to_dict(scene_info["robot_init_pose"])
             self.robot_init_pose = scene_info["robot_init_pose"][robot_init_workspace_id]
-        self.robot_init_pose
         if isinstance(workspaces, list):
             workspaces = list_to_dict(workspaces)
             workspaces = {"0": workspaces[robot_init_workspace_id]}
@@ -269,28 +273,120 @@ class TaskGenerator:
                 fix_obj_ids=self.fix_obj_ids,
             )
 
-    def generate_tasks(self, save_path, task_num, task_name):
+    def shuffle_robot_init_pose(self, idx, x_thresh=0.1, y_thresh=0.1):
+        if idx == 0:
+            return deepcopy(self.robot_init_pose)
+        robot_init_pose = deepcopy(self.robot_init_pose)
+        robot_init_pose["position"][0] += np.random.uniform(-x_thresh, x_thresh)
+        robot_init_pose["position"][1] += np.random.uniform(-y_thresh, y_thresh)
+        return robot_init_pose
+
+    def shuffle_robot_init_arm(self, idx, joint_thresh=0.1):
+        if idx == 0:
+            return list(np.zeros(14))
+        return list(np.random.uniform(-joint_thresh, joint_thresh, 14))
+
+    def generate_tasks(self, save_path, task_name, gen_config):
+        lights_config = gen_config["lights"]
+        num_lights = lights_config["num"]
+        light_temperature = lights_config.get("temperature", [])
+        light_intensity = lights_config.get("intensity", [])
+
+        has_light_values = (isinstance(light_temperature, list) and len(light_temperature) > 0) or (
+            isinstance(light_intensity, list) and len(light_intensity) > 0
+        )
+        need_light_generalization = num_lights > 1 and has_light_values
+
+        init_base_config = gen_config["init_base"]
+        num_init_base = init_base_config["num"]
+        x_thresh = init_base_config["x_thresh"]
+        y_thresh = init_base_config["y_thresh"]
+
+        init_joint_config = gen_config["init_joint"]
+        num_init_joint = init_joint_config["num"]
+        joint_thresh = init_joint_config["thresh"]
+
+        num_material = gen_config["num_material"]
+
+        need_generalization = need_light_generalization or num_init_base > 1 or num_init_joint > 1 or num_material > 1
+
+        if os.path.exists(save_path):
+            try:
+                shutil.rmtree(save_path)
+                logger.info(f"Removed existing directory: {save_path}")
+            except Exception as e:
+                logger.warning(f"Failed to remove directory {save_path}: {e}")
+
         os.makedirs(save_path, exist_ok=True)
 
-        for i in range(task_num):
-            output_file = os.path.join(save_path, f"{task_name}_%d.json" % (i))
+        cnt = 0
+
+        if not need_generalization:
+            output_file = os.path.join(save_path, f"{task_name}_0.json")
+            robot_init_pose = self.shuffle_robot_init_pose(0)
+            rand_init_arm = self.shuffle_robot_init_arm(0)
             self.task_template["objects"] = []
             self.task_template["objects"] += self.fix_obj_infos
 
-            flag_failed = False
             for key in self.layouts:
                 obj_infos = self.layouts[key]()
-                if not obj_infos:
-                    if obj_infos is None:
-                        flag_failed = True
-                        break
-                    continue
-                self.task_template["objects"] += obj_infos
+                if obj_infos:
+                    self.task_template["objects"] += obj_infos
 
-            if flag_failed:
-                logger.error(f"Failed to place key object, skipping")
-                continue
+            self.task_template["generalization_config"] = {
+                "light_config": {},
+                "robot_init_pose": robot_init_pose,
+                "rand_init_arm": rand_init_arm,
+            }
 
-            logger.info("Saved task json to %s" % output_file)
+            logger.info("Saved task json to %s (no generalization)" % output_file)
             with open(output_file, "w") as f:
                 json.dump(self.task_template, f, indent=4)
+            return
+
+        light_configs = []
+        if need_light_generalization:
+            for i in range(num_lights):
+                config = {}
+                if isinstance(light_temperature, list) and len(light_temperature) > 0:
+                    config["temperature"] = int(np.random.choice(light_temperature))
+                if isinstance(light_intensity, list) and len(light_intensity) > 0:
+                    config["intensity"] = int(np.random.choice(light_intensity))
+                light_configs.append(config)
+        else:
+            light_configs = [{}]
+
+        for light_idx, light_config in enumerate(light_configs):
+            for j in range(num_init_base):
+                robot_init_pose = self.shuffle_robot_init_pose(j, x_thresh=x_thresh, y_thresh=y_thresh)
+                for k in range(num_init_joint):
+                    rand_init_arm = self.shuffle_robot_init_arm(k, joint_thresh=joint_thresh)
+                    for m in range(num_material):
+                        output_file = os.path.join(save_path, f"{task_name}_%d.json" % (cnt))
+                        cnt += 1
+                        self.task_template["objects"] = []
+                        self.task_template["objects"] += self.fix_obj_infos
+
+                        flag_failed = False
+                        for key in self.layouts:
+                            obj_infos = self.layouts[key]()
+                            if not obj_infos:
+                                if obj_infos is None:
+                                    flag_failed = True
+                                    break
+                                continue
+                            self.task_template["objects"] += obj_infos
+
+                        if flag_failed:
+                            logger.error(f"Failed to place key object, skipping")
+                            continue
+
+                        self.task_template["generalization_config"] = {
+                            "light_config": light_config,
+                            "robot_init_pose": robot_init_pose,
+                            "rand_init_arm": rand_init_arm,
+                        }
+
+                        logger.info("Saved task json to %s" % output_file)
+                        with open(output_file, "w") as f:
+                            json.dump(self.task_template, f, indent=4)

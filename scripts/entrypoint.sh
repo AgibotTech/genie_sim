@@ -10,6 +10,18 @@ export ISAACSIM_HOME=/isaac-sim
 sudo setfacl -m u:1234:rwX /geniesim/main
 sudo setfacl -m u:1234:rwX /geniesim/main/source
 sudo setfacl -m u:1234:rwX /geniesim/main/source/geniesim/benchmark/saved_task
+sudo setfacl -m u:1234:rwX /geniesim/main/source/teleop
+sudo setfacl -m u:1234:rwX /geniesim/main/source/teleop/app/bin
+sudo setfacl -m u:1234:rwX /geniesim/main/source/teleop/app/share
+sudo mkdir -p /geniesim/main/source/teleop/app/bin/.cache
+sudo mkdir -p /geniesim/main/source/teleop/app/bin/logs
+sudo mkdir -p /geniesim/main/source/teleop/app/bin/logs/dylog
+sudo chown -R 1234:1234 /geniesim/main/source/teleop/app/bin/.cache
+sudo chown -R 1234:1234 /geniesim/main/source/teleop/app/bin/logs
+sudo chown -R 1234:1234 /geniesim/main/source/teleop/app/share
+sudo setfacl -m u:1234:rwX /geniesim/main/source/teleop/app/bin/.cache
+sudo setfacl -m u:1234:rwX /geniesim/main/source/teleop/app/bin/logs
+sudo setfacl -R -m u:1234:rwX /geniesim/main/source/teleop/app/share
 sudo setfacl -m u:1234:rwX /isaac-sim/.cache
 sudo setfacl -m u:1234:rwX /isaac-sim/.nv/ComputeCache
 sudo setfacl -m u:1234:rwX /isaac-sim/.nvidia-omniverse/logs

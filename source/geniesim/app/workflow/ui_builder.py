@@ -11,6 +11,7 @@
 import numpy as np
 from pxr import Usd
 import omni
+import omni.usd
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.prims import (

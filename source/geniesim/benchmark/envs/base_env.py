@@ -6,6 +6,7 @@ import json
 import time
 from PIL.Image import logger
 import numpy as np
+from numpy.random import rand
 from scipy.spatial.transform import Rotation as R, Slerp
 
 from geniesim.plugins.ader import AderEnv, AderParams
@@ -13,6 +14,7 @@ from geniesim.app.controllers.api_core import APICore
 from geniesim.utils.data_courier import DataCourier
 from geniesim.utils.infer_pre_process import TaskInfo
 from geniesim.benchmark.config.robot_init_states import TASK_INFO_DICT
+from geniesim.utils.name_utils import robot_type_mapping
 
 
 class BaseEnv(AderEnv):
@@ -34,21 +36,25 @@ class BaseEnv(AderEnv):
         self.init_task_config = init_task_config
         self.specific_task_name = self.init_task_config["specific_task_name"]
         self.sub_task_name = self.init_task_config["sub_task_name"]
-        self.robot_cfg = self.init_task_config["robot_cfg"]
+        self.robot_cfg = robot_type_mapping(self.init_task_config["robot_cfg"])
+
         task_info_cfg = TASK_INFO_DICT.get(self.sub_task_name, {}).get(self.robot_cfg)
+        self.load(task_file)
         if task_info_cfg is not None:
             logger.info(f"Config task info for {self.sub_task_name} with {self.robot_cfg}")
-            self.task_info = TaskInfo(task_info_cfg, self.robot_cfg)
+            self.robot_task_info = TaskInfo(task_info_cfg, self.robot_cfg)
             (
                 self.init_arm,
                 self.init_head,
                 self.init_waist,
                 self.init_hand,
                 self.init_gripper,
-            ) = self.task_info.init_pose()
-
+            ) = self.robot_task_info.init_pose()
+            gen_config = self.task_info.get("generalization_config", {})
+            rand_init_arm = gen_config.get("rand_init_arm", [0] * 14)
+            self.init_arm = list(np.array(self.init_arm) + np.array(rand_init_arm))
         self.task = None
-        self.load(task_file)
+
         if need_setup:
             self.load_task_setup()
 
@@ -149,6 +155,7 @@ class BaseEnv(AderEnv):
                     cfg["light_prim"],
                     cfg["light_temperature"],
                     cfg["light_intensity"],
+                    cfg["position"],
                     cfg["rotation"],
                     cfg["texture"],
                 )

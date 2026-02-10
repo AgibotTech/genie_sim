@@ -28,14 +28,16 @@ class PushPull(EvaluateAction):
     def update(self, delta_time: float) -> float:
         if not self.is_running():
             return 0.0
+
         prismatic_joint = self.get_prismatic_joint(self.obj_name)
+        logger.info(f"prismatic_joint: {prismatic_joint}, target_index: {self.joint_index}")
 
         condition_met = self.thresh_min <= prismatic_joint[self.joint_index] <= self.thresh_max
 
         if condition_met:
             self._pass_frame += 1
 
-        if self._pass_frame > 2:
+        if self._pass_frame > 1:
             self._done_flag = True
         return super().update(delta_time)
 
@@ -56,4 +58,7 @@ class PushPull(EvaluateAction):
         elif event == ActionEvent.CANCELED:
             pass
         elif event == ActionEvent.FINISHED:
-            self.progress_info["SCORE"] = 1
+            if self._done_flag:
+                self.progress_info["SCORE"] = 1
+            else:
+                self.progress_info["SCORE"] = 0

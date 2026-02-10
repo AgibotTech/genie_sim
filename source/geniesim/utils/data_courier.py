@@ -120,3 +120,6 @@ class DataCourier:
         if not self.enable_ros:
             return None
         return self.sim_ros_node.get_shuffle()
+
+    def get_teleop_recording(self):
+        return self.sim_ros_node.get_teleop_recording()

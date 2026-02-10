@@ -1,0 +1,19 @@
+DEFAULT:
+  deny_to: []
+
+PASSIVE:
+  allow_to:
+    - STOP
+
+STOP:
+  allow_to:
+    - PLANNING
+    - REACTIVE_CONTROL
+
+REACTIVE_CONTROL:
+  allow_to:
+    - STOP
+
+PLANNING:
+  allow_to:
+    - STOP

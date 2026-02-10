@@ -1,0 +1,95 @@
+{
+  "camera": {
+    "/World/Camera": [
+      848,
+      480
+    ],
+    "/genie/gripper_l_base_link/Left_Camera": [
+      1280,
+      1056,
+      30
+    ],
+    "/genie/gripper_r_base_link/Right_Camera": [
+      1280,
+      1056,
+      30
+    ],
+    "/genie/head_link3/head_front_Camera": [
+      640,
+      400,
+      30
+    ]
+  },
+  "closed_positions": {
+    "left": [
+      0,
+      0
+    ],
+    "right": [
+      0,
+      0
+    ]
+  },
+  "gripper": {
+    "closed_velocities": {
+      "left": [
+        -50,
+        -50
+      ],
+      "right": [
+        -50,
+        -50
+      ]
+    },
+    "end_effector_name": {
+      "left": "gripper_l_center_link",
+      "right": "gripper_r_center_link"
+    },
+    "end_effector_prim_path": {
+      "left": "/genie/gripper_l_center_link",
+      "right": "/genie/gripper_r_center_link"
+    },
+    "finger_names": {
+      "left": [
+        "idx41_gripper_l_outer_joint1",
+        "idx31_gripper_l_inner_joint1"
+      ],
+      "right": [
+        "idx81_gripper_r_outer_joint1",
+        "idx71_gripper_r_inner_joint1"
+      ]
+    },
+    "gripper_control_joint": {
+      "left": "/genie/joints/idx41_gripper_l_outer_joint1",
+      "right": "/genie/joints/idx81_gripper_r_outer_joint1"
+    },
+    "gripper_name": {
+      "left": "zhiyuan_gripper_omnipicker",
+      "right": "zhiyuan_gripper_omnipicker"
+    },
+    "gripper_type": "angular",
+    "max_force": -1,
+    "opened_positions": {
+      "left": [
+        2,
+        2
+      ],
+      "right": [
+        2,
+        2
+      ]
+    }
+  },
+  "robot": {
+    "arm": "right",
+    "base_prim_path": "/genie",
+    "dof_nums": 7,
+    "initial_position": [],
+    "joint_delta_time": 0.01,
+    "lock_joints": [],
+    "robot_description": "/G2_omnipicker/config.yaml",
+    "robot_name": "G2_omnipicker",
+    "robot_usd": "robot/G2_omnipicker/robot_scoop.usda",
+    "urdf_name": "/G2_omnipicker/G2_omnipicker.urdf"
+  }
+}

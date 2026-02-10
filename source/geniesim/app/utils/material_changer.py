@@ -149,12 +149,13 @@ class material_changer:
 
 
 class Light:
-    def __init__(self, prim_path, stage, light_type, intensity, color, orientation, texture_file):
+    def __init__(self, prim_path, stage, light_type, intensity, color, position, orientation, texture_file):
         self.prim_path = prim_path
         self.light_type = light_type
         self.stage = stage
         self.intensity = intensity
         self.color = color
+        self.position = position
         self.orientation = orientation
         base_folder = str(system_utils.assets_path()) + "/" + texture_file
         for file in os.listdir(base_folder):
@@ -162,7 +163,6 @@ class Light:
                 self.texture_file = os.path.join(base_folder, file)
 
     def initialize(self):
-        # selection between different light types
         if self.light_type == "Dome":
             light = UsdLux.DomeLight.Define(self.stage, Sdf.Path(self.prim_path))
             light.CreateIntensityAttr(self.intensity)
@@ -186,6 +186,6 @@ class Light:
             light.CreateColorTemperatureAttr(self.color)
 
         light.CreateEnableColorTemperatureAttr().Set(True)
-        lightPrim = SingleXFormPrim(self.prim_path, orientation=self.orientation)
+        lightPrim = SingleXFormPrim(self.prim_path, position=self.position, orientation=self.orientation)
 
         return lightPrim

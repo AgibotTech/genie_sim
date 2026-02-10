@@ -8,6 +8,7 @@ from .common_actions import *
 from .custom import (
     PickUpOnGripper,
     Inside,
+    InBBox,
     FluidInside,
     Onfloor,
     Ontop,
@@ -21,6 +22,10 @@ from .custom import (
     GripperPassing,
     Approach,
     VLM,
+    LiftUp,
+    Upright,
+    StableGrasp,
+    ChassisAtTarget,
 )
 import geniesim.utils.system_utils as system_utils
 
@@ -165,6 +170,16 @@ def parse_action(obj: dict, task_progress, env) -> ActionBase:
             act = Inside(env, params[0], params[1], params[2])
             record_act_obj(act, task_progress)
             return act
+        elif key == "InBBox":
+            # Format: "object_id|center_x,center_y,center_z|len_x,len_y,len_z"
+            params = value.split("|")
+            center_values = params[1].split(",")
+            size_values = params[2].split(",")
+            bbox_center = [float(center_values[0]), float(center_values[1]), float(center_values[2])]
+            bbox_size = [float(size_values[0]), float(size_values[1]), float(size_values[2])]
+            act = InBBox(env, params[0], bbox_center, bbox_size)
+            record_act_obj(act, task_progress)
+            return act
         elif key == "FluidInside":
             params = value.split("|")
             act = FluidInside(env, params[0], params[1])
@@ -259,6 +274,27 @@ def parse_action(obj: dict, task_progress, env) -> ActionBase:
                 act = VLM(env, params[0], "")
             else:
                 act = VLM(env, params[0], params[1])
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "LiftUp":
+            params = value.split("|")
+            act = LiftUp(env, params[0], float(params[1]))
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "Upright":
+            params = value.split("|")
+            act = Upright(env, params[0], float(params[1]))
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "StableGrasp":
+            params = value.split("|")
+            act = StableGrasp(env, params[0], params[1])
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "ChassisAtTarget":
+            # Format: "[x,y,yaw]|[x_thresh,y_thresh,yaw_thresh]"
+            params = value.split("|")
+            act = ChassisAtTarget(env, params[0], params[1])
             record_act_obj(act, task_progress)
             return act
         else:

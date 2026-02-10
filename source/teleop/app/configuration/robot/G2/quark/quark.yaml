@@ -1,0 +1,91 @@
+initial_state: REACTIVE_CONTROL
+
+config:
+  dir: configuration/robot/G2
+  alternatives:
+    - real_robot.yaml
+    - default.yaml
+
+plugins:
+  - library: libquark_builtin.so
+  - library: libquark_plugin_ros.so
+
+loggers:
+  - name: default_logger
+    logformat: "%(time) <%(thread_id):%(log_level)> %(short_source_location) - %(message)"
+    sinks:
+      - type: console
+      - type: rotating_file
+        options:
+          file: $package_root/bin/logs/motion-control.log
+          max_file_size: 512MB
+          max_backup_files: 4
+
+  - name: planning_logger
+    logformat: "%(time) - %(message)"
+    sinks:
+      - type: console
+      - type: rotating_file
+        options:
+          file: $package_root/bin/logs/wbc.log
+          max_file_size: 128MB
+          max_backup_files: 4
+
+executors:
+  - name: default_executor
+    type: single_thread_executor
+    # priority: 'FIFO:50'
+    # affinity: '6,7'
+
+  - name: planning_executor
+    type: single_thread_executor
+    # priority: 'FIFO:80'
+    # affinity: '5,6'
+
+  - name: control_executor
+    type: single_thread_executor
+    # priority: 'FIFO:80'
+    # affinity: '4'
+
+  - name: test_executor
+    type: single_thread_executor
+    # priority: 'FIFO:30'
+    # affinity: '7'
+
+publishers:
+  # control command
+  - name: general_joint_command_ros
+    topic: /hal/joint_cmd
+    enable: false
+    backends: [ros]
+    qos:
+      depth: 10
+
+subscribers:
+  # dual-arm + waist + head joint state subscription
+  - name: g2_general_joint_state_ros
+    topic: /hal/joint_state
+    backends: [ros]
+    wait_ready: true
+    qos:
+      depth: 10
+
+  # remap command
+  - name: retarget_subscriber_ros
+    topic: /wbc/retarget
+    backends: [ros]
+
+runners:
+  - name: reactive_ik_solve
+    period: 0.001
+    executor: planning_executor
+    active_modes: [REACTIVE_CONTROL]
+
+  - name: reactive_controler
+    period: 0.001
+    executor: control_executor
+    active_modes: [REACTIVE_CONTROL]
+
+  - name: motion_control_status
+    period: 0.01
+    executor: default_executor

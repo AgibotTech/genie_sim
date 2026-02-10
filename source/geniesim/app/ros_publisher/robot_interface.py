@@ -8,6 +8,10 @@ logger = Logger()  # Create singleton instance
 
 from omni.usd import get_world_transform_matrix
 import omni.replicator.core as rep
+from isaacsim.core.prims import SingleArticulation
+from isaacsim.core.prims import SingleXFormPrim, SingleGeometryPrim, SingleRigidPrim
+from isaacsim.core.utils.prims import get_prim_at_path, get_prim_object_type
+from geniesim.utils.usd_utils import *
 
 import numpy as np
 
@@ -168,6 +172,7 @@ class RobotInterface(Node):
 
         self._static_tf_tree = []
         self._dynamic_tf_tree = []
+        self.articulat_objects = {}
         self.build_tf_tree(stage, stage.GetPrimAtPath(f"/{robot_ns}/base_link"), None, None)
 
         def _build_tf_list(tf_tree):
@@ -175,9 +180,70 @@ class RobotInterface(Node):
             for prim, parent in tf_tree:
                 tf = TransformStamped()
                 tf.header.frame_id = parent.GetName() if parent else "odom"
-                tf.child_frame_id = prim.GetName()
-                tfs.append(tf)
+                if prim:
+                    name = prim.GetName()
+                    if "link" in name or "Camera" in name:
+                        tf.child_frame_id = prim.GetName()
+                    else:
+                        tf.child_frame_id = str(prim.GetPrimPath()).split("/")[-2]
+                    tfs.append(tf)
             return tfs
+
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/arm_l_end_link"),
+                None,
+            )
+        )
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/arm_r_end_link"),
+                None,
+            )
+        )
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/arm_base_link"),
+                None,
+            )
+        )
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/head_link3/head_front_Camera"),
+                None,
+            )
+        )
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/gripper_l_base_link/Left_Camera"),
+                None,
+            )
+        )
+        self._dynamic_tf_tree.append(
+            (
+                stage.GetPrimAtPath(f"/genie/gripper_r_base_link/Right_Camera"),
+                None,
+            )
+        )
+        for prim in stage.Traverse():
+            prim_path = str(prim.GetPrimPath())
+            prim_type = get_prim_object_type(prim_path)
+            if prim_type == "articulation" and prim_path.startswith("/World/Objects"):
+                self.articulat_objects[prim_path] = SingleArticulation(prim_path)
+                print("DOF", self.articulat_objects[prim_path].num_dof)
+        logger.info(f"record {len(self.articulat_objects)} articulated prim(s) TF:")
+
+        self.register_articulated_obj(self.articulat_objects)
+
+        # enable tf pub
+        rigidbody_collider_prims = get_rigidbody_collider_prims(
+            robot_name="",
+            extra_prim_paths=[],
+        )
+        logger.info(f"record {len(rigidbody_collider_prims)} prim(s) TF with RigidBody and Collider:")
+        for prim in rigidbody_collider_prims:
+            if prim.IsValid() and prim.IsActive():
+                self.register_obj_tf(prim)
 
         self._static_tfs_prebuilt = _build_tf_list(self._static_tf_tree)
         self._dynamic_tfs_prebuilt = _build_tf_list(self._dynamic_tf_tree)
@@ -296,9 +362,10 @@ class RobotInterface(Node):
         self._articulation_vel = self._articulation.get_joint_velocities()
         self._articulation_eff = self._articulation.get_measured_joint_efforts()
 
-        np.copyto(self._dof_pos_cache, self._articulation_pos)
-        np.copyto(self._dof_vel_cache, self._articulation_vel)
-        np.copyto(self._dof_eff_cache, self._articulation_eff)
+        # Ensure data is float64 type before copying
+        np.copyto(self._dof_pos_cache, np.asarray(self._articulation_pos, dtype=np.float64))
+        np.copyto(self._dof_vel_cache, np.asarray(self._articulation_vel, dtype=np.float64))
+        np.copyto(self._dof_eff_cache, np.asarray(self._articulation_eff, dtype=np.float64))
 
         # tf
         for tf, (prim, parent) in zip(self._dynamic_tfs_prebuilt, self._dynamic_tf_tree):
@@ -389,6 +456,8 @@ class RobotInterface(Node):
             return
 
         eef_6d_forces = articulation.get_measured_joint_forces(self.joint_indices_ee)
+        if eef_6d_forces is None:
+            return
 
         msg = JointState()
         msg.header = self._header

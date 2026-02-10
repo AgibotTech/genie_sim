@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geniesim_msg/msg/GeniesimSetControlMode.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module geniesim_msg {
+  module msg {
+    module GeniesimSetControlMode_Constants {
+      const uint8 INPUT_HMI = 0;
+      const uint8 MODE_STOP = 0;
+      const uint8 MODE_SERVO = 1;
+    };
+    struct GeniesimSetControlMode {
+      std_msgs::msg::Header header;
+
+      uint8 input_type;
+
+      uint8 control_mode;
+    };
+  };
+};
