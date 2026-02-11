@@ -80,9 +80,9 @@ class ChassisAtTarget(EvaluateAction):
             return super().update(delta_time)
 
         # Get robot type dynamically
-        robot_cfg = getattr(self.env, 'robot_cfg', None)
+        robot_cfg = getattr(self.env, "robot_cfg", None)
         if robot_cfg is None:
-            robot_cfg = getattr(self.env, 'init_task_config', {}).get('robot_cfg', 'G2_omnipicker')
+            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
 
         # Determine chassis prim path (G1 uses /G1, G2 uses /genie)
         if "G1" in robot_cfg:
@@ -110,8 +110,9 @@ class ChassisAtTarget(EvaluateAction):
         if position_ok and orientation_ok:
             self._done_flag = True
             self.success_detected = True
-            logger.info(f"[ChassisAtTarget] Target reached: pos=({current_x:.3f}, {current_y:.3f}), "
-                       f"yaw={current_yaw:.1f}°")
+            logger.info(
+                f"[ChassisAtTarget] Target reached: pos=({current_x:.3f}, {current_y:.3f}), " f"yaw={current_yaw:.1f}°"
+            )
 
         return super().update(delta_time)
 

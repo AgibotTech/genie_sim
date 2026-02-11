@@ -43,16 +43,20 @@ class Follow(EvaluateAction):
         aa, bb = self.get_obj_aabb(self.obj_name, self.bbox)
 
         # Get robot type
-        robot_cfg = getattr(self.env, 'robot_cfg', None)
+        robot_cfg = getattr(self.env, "robot_cfg", None)
         if robot_cfg is None:
-            robot_cfg = getattr(self.env, 'init_task_config', {}).get('robot_cfg', 'G2_omnipicker')
+            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
         # Determine robot base prim path (G1 uses /G1, G2 uses /genie)
         if "G1" in robot_cfg:
             robot_base = "/G1"
         else:
             robot_base = "/genie"
         # Get gripper pose
-        link_prim_path = f"{robot_base}/gripper_r_center_link" if "right" in self.gripper_id else f"{robot_base}/gripper_l_center_link"
+        link_prim_path = (
+            f"{robot_base}/gripper_r_center_link"
+            if "right" in self.gripper_id
+            else f"{robot_base}/gripper_l_center_link"
+        )
 
         g_pos, _ = self.get_world_pose(link_prim_path)
         if self.aabb_contains_point(g_pos, (aa, bb)):

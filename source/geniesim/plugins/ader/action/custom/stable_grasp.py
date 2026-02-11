@@ -22,7 +22,7 @@ class StableGrasp(EvaluateAction):
 
         # Threshold parameters
         self.distance_threshold = 0.1  # Distance threshold (meters)
-        self.required_frames = 2       # Required consecutive stable frames
+        self.required_frames = 2  # Required consecutive stable frames
 
         # Status record
         self._done_flag = False
@@ -51,10 +51,10 @@ class StableGrasp(EvaluateAction):
             return super().update(delta_time)
 
         # Get robot type dynamically
-        robot_cfg = getattr(self.env, 'robot_cfg', None)
+        robot_cfg = getattr(self.env, "robot_cfg", None)
         if robot_cfg is None:
             # Fallback: try to get from init_task_config
-            robot_cfg = getattr(self.env, 'init_task_config', {}).get('robot_cfg', 'G2_omnipicker')
+            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
 
         # Determine robot base prim path (G1 uses /G1, G2 uses /genie)
         # See: G1_omnipicker.json -> base_prim_path: "/G1"
@@ -65,7 +65,11 @@ class StableGrasp(EvaluateAction):
             robot_base = "/genie"
 
         # Get gripper pose
-        link_prim_path = f"{robot_base}/gripper_r_center_link" if "right" in self.gripper_id else f"{robot_base}/gripper_l_center_link"
+        link_prim_path = (
+            f"{robot_base}/gripper_r_center_link"
+            if "right" in self.gripper_id
+            else f"{robot_base}/gripper_l_center_link"
+        )
 
         try:
             gripper_pose = self.get_world_pose_matrix(link_prim_path)

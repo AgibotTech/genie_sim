@@ -15,7 +15,7 @@ f4e5c2a401dc7350255f9a6de7a51310
 # Build Dockerfile
 # git clone codebase and cd source/scene_reconstruction
 ```bash
-docker build . -t xxx 
+docker build . -t xxx
 
 # Or use proxy to build
 docker build . -t xxx --build-arg http_proxy="http://ip_addr:port" --build-arg https_proxy="https://ip_addr:port"

@@ -20,6 +20,7 @@ def get_sub_task_name_from_yaml(config_path: Path) -> str | None:
     text = config_path.read_text(encoding="utf-8")
     try:
         import yaml
+
         data = yaml.safe_load(text)
         return (data or {}).get("benchmark", {}).get("sub_task_name")
     except Exception:
@@ -102,9 +103,7 @@ def main():
     if not sub_task_name:
         print(f"Warning: could not read sub_task_name from {args.config}", file=sys.stderr)
         return 0
-    n = patch_recording_info(
-        args.base, sub_task_name, teleop_result=args.teleop_result, dry_run=args.dry_run
-    )
+    n = patch_recording_info(args.base, sub_task_name, teleop_result=args.teleop_result, dry_run=args.dry_run)
     if n:
         print(f"Patched {n} file(s).")
     return 0

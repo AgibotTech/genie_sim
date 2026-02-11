@@ -531,9 +531,7 @@ import math
 _POLE_LIMIT = 1.0 - 1e-6
 
 
-def matrix_to_euler_angles(
-    mat: np.ndarray, degrees: bool = False, extrinsic: bool = True
-) -> np.ndarray:
+def matrix_to_euler_angles(mat: np.ndarray, degrees: bool = False, extrinsic: bool = True) -> np.ndarray:
     """Convert rotation matrix to Euler XYZ extrinsic or intrinsic angles.
 
     Args:

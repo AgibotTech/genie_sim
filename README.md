@@ -74,8 +74,8 @@ Please refer to these links to install Genie Sim and download assets and dataset
 - [x] Support Agibot World Challenge baseline model
 - [x] Scenario layout and manipulation trajectory generalization toolkit
 - [x] Provide dockfile and tutorial for scene reconstruction pipeline
+- [x] Update motion control toolkit to support Genie G2 teleoperation in simulation
 - [ ] Upload all assets and dataset on Huggingface
-- [ ] Update motion control toolkit to support Genie G2 teleoperation in simulation
 - [ ] Human-in-the-loop and distributed reinforcement learning pipline
 
 ## 4.3 License and Citation

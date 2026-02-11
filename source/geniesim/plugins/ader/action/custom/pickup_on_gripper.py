@@ -69,16 +69,20 @@ class PickUpOnGripper(EvaluateAction):
             return super().update(delta_time)
 
         # Get robot type
-        robot_cfg = getattr(self.env, 'robot_cfg', None)
+        robot_cfg = getattr(self.env, "robot_cfg", None)
         if robot_cfg is None:
-            robot_cfg = getattr(self.env, 'init_task_config', {}).get('robot_cfg', 'G2_omnipicker')
+            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
         # Determine robot base prim path (G1 uses /G1, G2 uses /genie)
         if "G1" in robot_cfg:
             robot_base = "/G1"
         else:
             robot_base = "/genie"
         # Get gripper pose
-        link_prim_path = f"{robot_base}/gripper_r_center_link" if "right" in self.gripper_id else f"{robot_base}/gripper_l_center_link"
+        link_prim_path = (
+            f"{robot_base}/gripper_r_center_link"
+            if "right" in self.gripper_id
+            else f"{robot_base}/gripper_l_center_link"
+        )
         current_gripper_pose = self.get_world_pose_matrix(link_prim_path)
         current_obj_pose = self.get_obj_pose(self.obj_name)
 

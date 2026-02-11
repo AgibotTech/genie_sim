@@ -3,21 +3,22 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+
 class TeleopDevice(object):
     """
     Teleop device
     Input: device input
     Output: xyz, rpy in body center
     """
+
     def __init__(self):
-        self.output = {"left": [0,0,0,0,0,0], "right": [0,0,0,0,0,0]}
+        self.output = {"left": [0, 0, 0, 0, 0, 0], "right": [0, 0, 0, 0, 0, 0]}
 
     def initialize(self):
         pass
 
     def update(self):
         pass
-
 
     def reset(self):
         pass

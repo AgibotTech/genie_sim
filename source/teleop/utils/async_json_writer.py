@@ -94,9 +94,7 @@ class AsyncJSONWriter:
             try:
                 try:
                     # wait for data or timeout (for periodic flush)
-                    data, file_path = await asyncio.wait_for(
-                        self.data_queue.get(), timeout=self.flush_interval
-                    )
+                    data, file_path = await asyncio.wait_for(self.data_queue.get(), timeout=self.flush_interval)
                     self._pending_writes[file_path] = data
                     if len(self._pending_writes) >= self.batch_size:
                         await self._flush_all()
