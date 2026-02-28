@@ -74,6 +74,7 @@ class DummyEnv(BaseEnv):
         self.api_core.stop_recording()
 
     def reset(self):
+        self._followed_objects = set()  # Clear on new scene/episode (scene generalization)
         init_gripper = [1 - v for v in self.init_gripper]
         self.robot_joint_indices = self.api_core.get_robot_joint_indices()
         if self.robot_cfg == "G1_omnipicker":

@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 G1_DEFAULT_STATES = {
-    "body_state": [0.0, 0.4363, 0.8727, 0.42],
+    "body_state": [0.0, 0.4363, 0.8727, 0.4],
     "init_arm": [
         -1.0751,
         0.6109,
@@ -111,6 +111,71 @@ G2_STATES_3 = {
     "init_hand": [0.0, 0.0],
 }
 
+G2_STATES_4 = {
+    "body_state": [1.57, 0.0, -0.31939525311, 1.34390352404, -1.04545222194],
+    "head_state": [0.0, 0.0, 0.11464],
+    "init_arm": [
+        0.739033,
+        -0.717023,
+        -1.524419,
+        -1.537612,
+        0.27811,
+        -0.925845,
+        -0.839257,
+        -0.739033,
+        -0.717023,
+        1.524419,
+        -1.537612,
+        -0.27811,
+        -0.925845,
+        0.839257,
+    ],
+    "init_hand": [0.0, 0.0],
+}
+
+G2_STATES_5 = {
+    "body_state": [0.0, 0.0, -0.3617, 1.583, -0.8342],
+    "head_state": [0.0, 0.0, 0.1745],
+    "init_arm": [
+        0.7459,
+        -0.7458,
+        -1.5375,
+        -1.5828,
+        0.2801,
+        -0.8858,
+        -0.8803,
+        -0.7279,
+        -0.6707,
+        1.5386,
+        -1.54,
+        -0.283,
+        -0.911,
+        0.8175,
+    ],
+    "init_hand": [0.0, 0.0],
+}
+
+G2_STATES_6 = {
+    "body_state": [0.0, 0.0, -0.181514, 1.2172, -0.83423],
+    "head_state": [0.0, 0.0, 0.0],
+    "init_arm": [
+        0.739033,
+        -0.717023,
+        -1.524419,
+        -1.537612,
+        0.27811,
+        -0.925845,
+        -0.839257,
+        -0.739033,
+        -0.717023,
+        1.524419,
+        -1.537612,
+        -0.27811,
+        -0.925845,
+        0.839257,
+    ],
+    "init_hand": [0.0, 0.0],
+}
 
 TASK_INFO_DICT = {
     "pick_billards_color": {
@@ -181,6 +246,10 @@ TASK_INFO_DICT = {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
     },
+    "stable_grasp": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
     "place_object_into_box_position": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
@@ -214,7 +283,7 @@ TASK_INFO_DICT = {
     "open_door": {"G2_omnipicker": G2_STATES_1},
     "bimanual_hold_ball": {"G2_omnipicker": G2_STATES_1},
     "take_book": {"G2_omnipicker": G2_STATES_1},
-    "clean_the_desktop": {"G2_omnipicker": G2_STATES_1},
+    "clean_the_desktop": {"G2_omnipicker": G2_DEFAULT_STATES},
     "empty_desktop_bin": {"G2_omnipicker": G2_DEFAULT_STATES},
     "dump_trash_kitchen": {"G2_omnipicker": G2_STATES_1},
     "throw_away_garbage": {"G2_omnipicker": G2_DEFAULT_STATES},
@@ -225,4 +294,18 @@ TASK_INFO_DICT = {
     "put_pen_into_penholder": {"G2_omnipicker": G2_STATES_1},
     "store_objects_in_drawer": {"G2_omnipicker": G2_STATES_3},
     "pick_common_sense": {"G2_omnipicker": G2_DEFAULT_STATES},
+    "pour_workpiece": {"G2_omnipicker": G2_STATES_1},
+    "scoop_popcorn": {"G2_omnipicker": G2_STATES_6},
+    "sorting_packages": {"G2_omnipicker": G2_STATES_4},
+    "sorting_packages_continuous": {"G2_omnipicker": G2_STATES_4},
+    "chassis_at_target": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "take_wrong_item_shelf": {
+        "G2_omnipicker": G2_STATES_5,
+    },
+    "stock_and_straighten_shelf": {
+        "G2_omnipicker": G2_STATES_1,
+    },
 }

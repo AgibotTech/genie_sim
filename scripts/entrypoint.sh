@@ -46,6 +46,7 @@ echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
 echo "alias geniesim='omni_python /geniesim/main/source/geniesim/app/app.py'" >>~/.bashrc
 
 sudo rm -rf /geniesim/main/source/GenieSim.egg-info
+/isaac-sim/python.sh -m pip install /geniesim/main/3rdparty/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl
 /isaac-sim/python.sh -m pip install -e /geniesim/main/source
 
 exec "$@"

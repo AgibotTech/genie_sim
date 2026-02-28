@@ -42,17 +42,27 @@ def mat2xyzrpy(mat):
 
 
 class IKFKSolver:
-    def __init__(self, arm_init_joint_position, head_init_position, waist_init_position):
+    def __init__(self, arm_init_joint_position, head_init_position, waist_init_position, robot_cfg="G1_omnipicker"):
+        if "G2" in robot_cfg:
+            urdf_name, config_name = "G2_NO_GRIPPER.urdf", "g2_solver.yaml"
+        else:
+            urdf_name, config_name = "G1_NO_GRIPPER.urdf", "g1_solver.yaml"
+
+        sdk_dir = os.path.join(current_dir, "IK-SDK")
+        urdf_path = os.path.join(sdk_dir, urdf_name)
+        config_path = os.path.join(sdk_dir, config_name)
+
         self.left_solver = ik_solver.Solver(
             part=ik_solver.RobotPart.LEFT_ARM,
-            urdf_path=os.path.join(current_dir, "urdf_solver", "G1_NO_GRIPPER.urdf"),
-            config_path=os.path.join(current_dir, "urdf_solver", "g1_solver.yaml"),
+            urdf_path=urdf_path,
+            config_path=config_path,
         )
         self.right_solver = ik_solver.Solver(
             part=ik_solver.RobotPart.RIGHT_ARM,
-            urdf_path=os.path.join(current_dir, "urdf_solver", "G1_NO_GRIPPER.urdf"),
-            config_path=os.path.join(current_dir, "urdf_solver", "g1_solver.yaml"),
+            urdf_path=urdf_path,
+            config_path=config_path,
         )
+
         self.left_solver.set_debug_mode(False)
         self.right_solver.set_debug_mode(False)
         self.left_solver.sync_target_with_joints(arm_init_joint_position[:7])
@@ -86,111 +96,3 @@ class IKFKSolver:
             joint_actions.append(left_joints.tolist() + right_joints.tolist() + l_gripper + r_gripper)
 
         return joint_actions
-
-    # def compute_abs_eef_from_base(self, actions, arm_joint_states):
-    #     actions_np = np.array(actions)
-    #     # eefrot_xyzrpy in base_link frame
-    #     eefrot_left_xyzrpy_last, eefrot_right_xyzrpy_last = (
-    #         self.compute_abs_eef_in_base(arm_joint_states)
-    #     )
-    #     abs_eef_actions = []
-
-    #     for _, action in enumerate(actions_np):
-    #         eefrot_left_xyzrpy_cur = eefrot_left_xyzrpy_last + action[0:6]
-    #         eefrot_right_xyzrpy_cur = eefrot_right_xyzrpy_last + action[6:12]
-
-    #         eefrot_left_xyzrpy_last = eefrot_left_xyzrpy_cur
-    #         eefrot_right_xyzrpy_last = eefrot_right_xyzrpy_cur
-
-    #         eefrot_left_mat_cur_center = self.center_T_base @ xyzrpy2mat(
-    #             eefrot_left_xyzrpy_cur
-    #         )
-    #         eefrot_left_xyzrpy_cur_center = mat2xyzrpy(eefrot_left_mat_cur_center)
-
-    #         eefrot_right_mat_cur_center = self.center_T_base @ xyzrpy2mat(
-    #             eefrot_right_xyzrpy_cur
-    #         )
-    #         eefrot_right_xyzrpy_cur_center = mat2xyzrpy(eefrot_right_mat_cur_center)
-
-    #         abs_eef_actions.append(
-    #             eefrot_left_xyzrpy_cur_center.tolist()
-    #             + eefrot_right_xyzrpy_cur_center.tolist()
-    #             + action[12:14].tolist()
-    #         )
-
-    #     return abs_eef_actions
-
-    # def compute_abs_eef_from_center(self, actions, arm_joint_state):
-    #     actions_np = np.array(actions)
-    #     left_joint_state = arm_joint_state[:7]
-    #     right_joint_state = arm_joint_state[7:14]
-
-    #     left_arm_T = self._solver.compute_part_fk(
-    #         q_part=np.array(left_joint_state, dtype=np.float32),
-    #         part=ik_solver.RobotPart.LEFT_ARM,
-    #         from_base=False,
-    #     )
-    #     right_arm_T = self._solver.compute_part_fk(
-    #         q_part=np.array(right_joint_state, dtype=np.float32),
-    #         part=ik_solver.RobotPart.RIGHT_ARM,
-    #         from_base=False,
-    #     )
-
-    #     eefrot_left_xyzrpy = mat2xyzrpy(left_arm_T @ self.left_arm_to_gripper_transform)
-    #     eefrot_right_xyzrpy = mat2xyzrpy(
-    #         right_arm_T @ self.right_arm_to_gripper_transform
-    #     )
-
-    #     eefrot_left_xyzrpy_last = eefrot_left_xyzrpy
-    #     eefrot_right_xyzrpy_last = eefrot_right_xyzrpy
-    #     abs_eef_actions = []
-
-    #     for _, action in enumerate(actions_np):
-    #         eefrot_left_xyzrpy_cur = eefrot_left_xyzrpy_last + action[0:6]
-    #         eefrot_right_xyzrpy_cur = eefrot_right_xyzrpy_last + action[6:12]
-
-    #         eefrot_left_xyzrpy_last = eefrot_left_xyzrpy_cur
-    #         eefrot_right_xyzrpy_last = eefrot_right_xyzrpy_cur
-
-    #         abs_eef_actions.append(
-    #             eefrot_left_xyzrpy_cur.tolist()
-    #             + eefrot_right_xyzrpy_cur.tolist()
-    #             + action[12:14].tolist()
-    #         )
-
-    #     return abs_eef_actions
-
-    # def compute_abs_eef_in_base(self, arm_joint_states):
-    #     left_joint_state = arm_joint_states[:7]
-    #     right_joint_state = arm_joint_states[7:14]
-
-    #     """
-    #     left_arm_T:  left arm end -> center
-    #     right_arm_T: right arm end -> center
-    #     """
-
-    #     left_arm_T = self._solver.compute_part_fk(
-    #         q_part=np.array(left_joint_state, dtype=np.float32),
-    #         part=ik_solver.RobotPart.LEFT_ARM,
-    #         from_base=False,
-    #     )
-    #     right_arm_T = self._solver.compute_part_fk(
-    #         q_part=np.array(right_joint_state, dtype=np.float32),
-    #         part=ik_solver.RobotPart.RIGHT_ARM,
-    #         from_base=False,
-    #     )
-
-    #     """
-    #     gripper -> base_bot = center -> base_bot @ arm end -> center @ gripper center -> arm end
-    #     """
-    #     left_arm_base = (
-    #         self.base_T_center @ left_arm_T @ self.left_arm_to_gripper_transform
-    #     )
-    #     eefrot_left_xyzrpy = mat2xyzrpy(left_arm_base)
-
-    #     right_arm_base = (
-    #         self.base_T_center @ right_arm_T @ self.right_arm_to_gripper_transform
-    #     )
-    #     eefrot_right_xyzrpy = mat2xyzrpy(right_arm_base)
-
-    #     return eefrot_left_xyzrpy, eefrot_right_xyzrpy

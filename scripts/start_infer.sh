@@ -6,6 +6,7 @@ CURRENT_DIR=$(pwd)
 echo $CURRENT_DIR
 xhost +local:
 docker run -it --name pi05_infer\
+    --rm \
     --gpus all \
     --ipc=host \
     --ulimit memlock=-1 \
@@ -17,4 +18,4 @@ docker run -it --name pi05_infer\
     -v $CURRENT_DIR/openpi:/root/openpi:rw \
     -w /root/openpi \
     openpi_server:latest \
-    bash
+    bash ./scripts/entrypoint.sh

@@ -44,8 +44,8 @@ TASK_STEPS = {
     "empty_desktop_bin": ["VLM"],
     "hang_tableware": ["VLM"],
     "heat_food": ["VLM"],
-    "hold_pot": ["VLM"],
-    "open_door": ["VLM"],
+    "hold_pot": ["LiftUp"],
+    "open_door": ["PushPull"],
     "pick_billards_color": ["Follow", "PickUpOnGripper"],
     "pick_block_color": ["Follow", "PickUpOnGripper"],
     "pick_block_number": ["Follow", "PickUpOnGripper"],
@@ -68,6 +68,13 @@ TASK_STEPS = {
     "straighten_object": ["VLM"],
     "take_book": ["VLM"],
     "throw_away_garbage": ["VLM"],
+    "sorting_packages": ["Follow", "PickUpOnGripper", "Inside", "Upright", "PickUpOnGripper", "Inside"],
+    "sorting_packages_continuous": ["Upright", "Upright", "Upright", "Upright"],
+    "pour_workpiece": ["Inside", "Inside", "Inside", "Inside"],
+    "stock_and_straighten_shelf": ["Follow", "PickUpOnGripper", "InBBox", "Follow", "Upright"],
+    "scoop_popcorn": ["VLM"],
+    "place_block_into_box": ["Follow", "PickUpOnGripper", "Inside"],
+    "take_wrong_item_shelf": ["Follow", "Inside"],
 }
 
 TASK_IDS = {}
@@ -273,6 +280,8 @@ def get_statistics(evaluate_results, steps):
         sub_task_scores[task_key] = avg_scores
 
     statistics["scores"] = sub_task_scores
+    all_scores = [s for scores in sub_task_scores.values() for s in scores]
+    statistics["average"] = sum(all_scores) / len(all_scores) if all_scores else 0.0
     statistics["timecost"] = time_cost
     statistics["task_counts"] = task_counts
 

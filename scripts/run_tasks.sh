@@ -103,8 +103,7 @@ for SUB_TASK_NAME in "${SUB_TASKS[@]}"; do
     cp "${TEMPLATE_YAML}" "${TEMP_YAML}"
 
     # Replace values in the temporary yaml file using sed
-    sed -i "s|infer_host:.*|infer_host: \"${INFER_HOST}\"|g" "${TEMP_YAML}"
-    sed -i "s|infer_port:.*|infer_port: ${INFER_PORT}|g" "${TEMP_YAML}"
+    sed -i "s|infer_host:.*|infer_host: \"${INFER_HOST}:${INFER_PORT}\"|g" "${TEMP_YAML}"
     sed -i "s|num_episode:.*|num_episode: ${NUM_EPISODE}|g" "${TEMP_YAML}"
     sed -i "s|task_name:.*|task_name: \"${TASK_NAME}\"|g" "${TEMP_YAML}"
     sed -i "s|sub_task_name:.*|sub_task_name: \"${SUB_TASK_NAME}\"|g" "${TEMP_YAML}"

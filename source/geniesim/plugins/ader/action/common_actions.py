@@ -193,7 +193,7 @@ class EvaluateAction(ActionBase):
         self.api_core: APICore = env.api_core
 
     def _analyze_obj_name(self, obj_name):
-        if obj_name.startswith("/World"):
+        if obj_name.startswith("/World") or obj_name.startswith("/Workspace"):
             return obj_name
 
         if not self.env.init_task_config.get("sub_task_name"):
@@ -301,6 +301,76 @@ class EvaluateAction(ActionBase):
         matrix[:3, 3] = pos
 
         return matrix
+
+    @staticmethod
+    def parse_obj_input(obj_input: str) -> list:
+        """Parse object input string, supporting both single object and list formats.
+
+        Backward compatible with single object string input, and also supports
+        comma-separated or JSON list formats for specifying multiple objects.
+
+        Supported formats:
+            - Single object: "obj1"
+            - Comma-separated: "obj1,obj2,obj3"
+
+        Args:
+            obj_input: Object name string, can be a single name or comma-separated names.
+
+        Returns:
+            A list of object name strings.
+        """
+        if not obj_input or not isinstance(obj_input, str):
+            return [obj_input] if obj_input else []
+
+        # Check for comma-separated list
+        if "," in obj_input:
+            return [obj.strip() for obj in obj_input.split(",") if obj.strip()]
+
+        # Single object
+        return [obj_input]
+
+    def check_any_object(self, obj_list: list, check_func: callable) -> bool:
+        """Check if any object in the list satisfies the given condition.
+
+        Iterates through the object list and applies check_func to each object.
+        Returns True as soon as any object passes the check (short-circuit evaluation).
+
+        Args:
+            obj_list: List of object name strings to check.
+            check_func: A callable that takes an object name (str) and returns bool.
+
+        Returns:
+            True if any object in the list satisfies the condition, False otherwise.
+        """
+        for obj_name in obj_list:
+            try:
+                if check_func(obj_name):
+                    return True
+            except Exception as e:
+                logger.warning(f"[check_any_object] Error checking object '{obj_name}': {e}")
+                continue
+        return False
+
+    def find_matching_object(self, obj_list: list, check_func: callable):
+        """Find the first object in the list that satisfies the given condition.
+
+        Similar to check_any_object but returns the matching object name instead of bool.
+
+        Args:
+            obj_list: List of object name strings to check.
+            check_func: A callable that takes an object name (str) and returns bool.
+
+        Returns:
+            The name of the first matching object, or None if no match found.
+        """
+        for obj_name in obj_list:
+            try:
+                if check_func(obj_name):
+                    return obj_name
+            except Exception as e:
+                logger.warning(f"[find_matching_object] Error checking object '{obj_name}': {e}")
+                continue
+        return None
 
 
 class DebugAction(EvaluateAction):

@@ -12,13 +12,13 @@ mkdir -p ~/docker/isaac-sim/data/documents
 mkdir -p ~/docker/isaac-sim/data/Kit
 mkdir -p ~/docker/isaac-sim/logs
 mkdir -p ~/docker/isaac-sim/pkg
+mkdir -p $CURRENT_DIR/source/geniesim/benchmark/saved_task
 sudo chown -R 1234:1234 ~/docker/isaac-sim
 
 xhost +local:
 docker run -itd --name genie_sim_benchmark \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
-    --rm \
     --gpus all \
     --network=host \
     --privileged \

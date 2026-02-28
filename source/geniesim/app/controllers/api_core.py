@@ -515,7 +515,9 @@ class APICore:
         self._physics_info = {}
         collect_physics(self._physics_info)
         if robot_articulation:
-            update_stage()
+            for i in range(20):
+                update_stage()
+                time.sleep(0.01)
             self.init_frame_info = store_init_physics(robot_articulation, self._physics_info)
 
     def _get_joint_state_dict(self):

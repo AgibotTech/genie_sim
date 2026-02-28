@@ -10,8 +10,8 @@ import time
 
 def relabel_gripper_state(obs, limit):
     state_dict = obs["states"]
-    state_dict[14] = min(max(1 - state_dict[14] / limit, 0), 1)
-    state_dict[15] = min(max(1 - state_dict[15] / limit, 0), 1)
+    state_dict[14] = min(max(1 - state_dict[14] / limit, 0), 1) * 100 + 20
+    state_dict[15] = min(max(1 - state_dict[15] / limit, 0), 1) * 100 + 20
 
 
 def relabel_gripper_action(action, limit):
@@ -40,7 +40,7 @@ def process_action(ikfk_solver, arm_joint_state, action: np.ndarray, type, smoot
 
 
 def filter_abs_joint(arm_joint_state, action, alpha):
-    # return action
+    return action
     return list((1 - alpha) * np.array(arm_joint_state) + alpha * np.array(action[0:14])) + list(action[14:])
     return list(arm_joint_state) + list(action[14:])
     ret = []

@@ -2,12 +2,100 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+# # Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# # Author: Genie Sim Team
+# # License: Mozilla Public License Version 2.0
+
+# from helper import *
+
+# """
+# scene_name: tilted_beverage_bottle_scene
+# description: Randomly place one of three beverage bottles at specific positions with 30-degree tilt
+# """
+
+
+# @register()
+# def place_tilted_beverage_bottle() -> Shape:
+#     """
+#     Randomly select one of three positions and place the corresponding beverage bottle with 30-degree tilt.
+#     Position 1: (-0.3258698616779385, -0.961097970731979, 1.1171925071287725) -> genie_beverage_bottle_007
+#     Position 2: (-0.3258698616779385, -0.6978373934951332, 1.1171925071287725) -> genie_beverage_bottle_008
+#     Position 3: (-0.3258698616779385, -0.46964291938826225, 1.1171925071287725) -> genie_beverage_bottle_009
+#     """
+#     # Define three position options with corresponding object IDs
+#     position_options = [
+#         ((-0.3258698616779385, -0.961097970731979, 1.1171925071287725), "genie_beverage_bottle_007"),
+#         ((-0.3258698616779385, -0.6978373934951332, 1.1171925071287725), "genie_beverage_bottle_008"),
+#         ((-0.3258698616779385, -0.46964291938826225, 1.1171925071287725), "genie_beverage_bottle_009"),
+#     ]
+
+#     # Randomly select one position and object
+#     selected_index = np.random.choice(len(position_options))
+#     selected_position, selected_oid = position_options[selected_index]
+
+#     # Create beverage bottle object
+#     bottle_shape = library_call(
+#         "usd",
+#         oid=selected_oid,
+#         keywords=["beverage_bottle", "bottle", "drink", f"bottle_{selected_index + 7}"],
+#     )
+
+#     # Get object center for rotation
+#     bottle_center = compute_shape_center(bottle_shape)
+
+#     # Apply 30-degree tilt around X-axis (forward tilt)
+#     tilt_angle = math.pi / 6  # 30 degrees in radians
+#     bottle_shape = transform_shape(
+#         bottle_shape, rotation_matrix(angle=tilt_angle, direction=(1, 0, 0), point=bottle_center)
+#     )
+
+#     # Get object info after rotation for proper placement
+#     object_info = get_object_info(bottle_shape)
+#     object_center = object_info["center"]
+
+#     # Translate to selected position
+#     final_shape = transform_shape(bottle_shape, translation_matrix(np.array(selected_position) - object_center))
+
+#     return final_shape
+
+
+# @register()
+# def root_scene() -> Shape:
+#     return place_tilted_beverage_bottle()
+
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+
 from helper import *
+import numpy as np
 
 """
 scene_name: table_with_drinks_and_fruit
 description: A table with two randomly selected drinks and one fruit placed randomly on its surface without overlap. Drinks are rotated to have their local z-axis pointing up and then given a random spin around the world Z-axis. The fruit is also given a random rotation.
 """
+
+
+def find_desktop_surface(table_shape: Shape) -> Tuple[P, P]:
+    """
+    Calculates the world coordinates of the desktop's top surface center and its size.
+    table_000 has a subpart named 'desktop'.
+
+    Args:
+        table_shape (Shape): The shape of the table object.
+
+    Returns:
+        Tuple[P, P]: The center position of the top surface and its dimensions.
+    """
+    table_info = get_object_info(table_shape)
+    desktop_subpart = get_subpart_info(object_id="table_000", subpart_id="desktop")
+
+    desktop_center_xy = table_info["center"][:2] + desktop_subpart["center"][:2]
+    desktop_top_z = table_info["center"][2] + desktop_subpart["xyz_max"][2]
+    surface_pos = np.array([desktop_center_xy[0], desktop_center_xy[1], desktop_top_z])
+    surface_size = desktop_subpart["size"]
+
+    return surface_pos, surface_size
 
 
 def get_table_top_info(table_center: P, table_rotation) -> Tuple[P, P]:
@@ -67,11 +155,13 @@ def positions_overlap(pos1: P, pos2: P, radius1: float, radius2: float, min_dist
 @register()
 def place_drinks_and_fruit() -> Shape:
     # Table information from the user query
-    TABLE_CENTER = [2.92, 0.76, 0.8]
+    TABLE_CENTER = [0.0, 0.0, 0.0]
     TABLE_ROTATION = (0.70711, 0.70711, 0.0, 0.0)  # Identity quaternion
 
-    # Get table top info
-    top_center, top_size = get_table_top_info(TABLE_CENTER, TABLE_ROTATION)
+    # Load table_000 and place at TABLE_CENTER, then get desktop surface for placement
+    table_shape = library_call("usd", oid="table_000", keywords=["minimalist_table", "white", "furniture", "center"])
+    table_shape = transform_shape(table_shape, translation_matrix(TABLE_CENTER))
+    top_center, top_size = find_desktop_surface(table_shape)
 
     # Available drink and fruit IDs (extracted from data_info_dir as instructed)
     drink_ids = [
@@ -162,8 +252,8 @@ def place_drinks_and_fruit() -> Shape:
     drink2_tag = "left" if drink2_y > table_y_center else "right"
     fruit_tag = "left" if fruit_y > table_y_center else "right"
 
-    # Apply final transformations
-    final_objects = []
+    # Apply final transformations (table first, then drinks and fruit)
+    final_objects = [table_shape]
 
     # Process drinks
     for i, (oid, name, pos, tag) in enumerate(

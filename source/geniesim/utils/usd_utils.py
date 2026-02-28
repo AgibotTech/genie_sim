@@ -84,12 +84,13 @@ def collect_physics(physics_info):
         physics_info["rigidbody"] = []
 
     ignore_keys = ["background", "G1", "G2", "genie"]
+    preserved_keys = ["genie_"]
     stage = omni.usd.get_context().get_stage()
     for prim in stage.Traverse():
         prim_path = str(prim.GetPrimPath())
         prim_type = get_prim_object_type(prim_path)
 
-        if any(key in prim_path for key in ignore_keys):
+        if any(key in prim_path for key in ignore_keys) and not any(key in prim_path for key in preserved_keys):
             continue
         if prim_type == "articulation":
             logger.info(f"{prim_path}")

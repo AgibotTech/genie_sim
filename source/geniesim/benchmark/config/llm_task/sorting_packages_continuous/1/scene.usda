@@ -1,0 +1,244 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (0.25318364472947397, -0.1868942875629288, 1.879323124948599)
+                double3 target = (0.3528182057364487, 4.301358739150229, -1.270865695128722)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./scene.usda"
+        }
+        dictionary renderSettings = {
+        }
+    }
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_carton_dd2ffc11" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_030/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.19519, -0.5481709, -0.48552197, 0.65243995)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.48117308433081457, 0.7725361855911184, 1.0999999999999952)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                quatf xformOp:orient = (0.70711, 0.70710355, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "benchmark_carton_f458eacd" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_029/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.281023, 0.11871495, -0.34161586, 0.88894963)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.2594532015535773, 0.7549023202673809, 1.1000000000000159)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                quatf xformOp:orient = (0.70711, 0.70710355, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "benchmark_carton_00364e8c" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_028/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.567499, -0.6952316, -0.13741912, -0.41918236)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.48527622964273837, 0.6491285434886979, 1.100000000000002)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                quatf xformOp:orient = (0.70711, 0.70710355, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "benchmark_carton_8fe5bc84" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_020/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.71617, 0.27116686, -0.6361627, -0.09415995)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.3035799676360612, 0.6401116316128015, 1.1000000000000005)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                quatf xformOp:orient = (0.70711, 0.70710355, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "benchmark_carton_872c57ed" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_008/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.625347, 0, 0, 0.780347)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.672, 1.217, 1.224)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_61e51d7c" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_008/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.60307, 0, 0, 0.797688)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.063, 1.175, 1.224)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_ad2b53a1" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.622563, 0, 0, 0.78257)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.312, 1.204, 1.228)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_40f71e9c" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.696983, 0, 0, 0.717088)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.435, 1.002, 1.228)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_8e3cb750" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.77251, 0, 0, -0.635002)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.222, 1.032, 1.228)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_22ee63a1" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.611252, 0, 0, 0.791436)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.052, 1.001, 1.228)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_f8718eb5" (
+            prepend payload = @../../../../../assets/objects/benchmark/carton/benchmark_carton_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.772257, 0, 0, -0.63531)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.632, 1.008, 1.228)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:dlss:frameGeneration = 0
+                bool omni:rtx:material:db:nonVisualMaterialCSV:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:lightcache:cached:dontResolveConflicts = 1
+                int omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                int omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                uint omni:rtx:viewTile:limit = 4294967295
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+        }
+    }
+}

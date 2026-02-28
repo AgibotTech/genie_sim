@@ -159,4 +159,28 @@ TASK_MAPPING = {
         "background": {"G2": "kitchen_04_g2"},
         "eval_dims": {"manip": "turn", "cognition": "semantic"},
     },
+    "sorting_packages": {
+        "background": {"G2": "table_task_g2"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
+    },
+    "sorting_packages_continuous": {
+        "background": {"G2": "table_task_g2"},
+        "eval_dims": {"manip": "planar_pick_place_", "cognition": "semantic"},
+    },
+    "pour_workpiece": {
+        "background": {"G2": "laboratory_06_g2"},
+        "eval_dims": {"manip": "pour", "cognition": "semantic"},
+    },
+    "scoop_popcorn": {
+        "background": {"G2": "popcorn_g2"},
+        "eval_dims": {"manip": "scoop", "cognition": "semantic"},
+    },
+    "take_wrong_item_shelf": {
+        "background": {"G2": "market_01_g2"},
+        "eval_dims": {"manip": "pick", "cognition": "semantic"},
+    },
+    "stock_and_straighten_shelf": {
+        "background": {"G2": "market_00_g2"},
+        "eval_dims": {"manip": "stock", "cognition": "semantic"},
+    },
 }

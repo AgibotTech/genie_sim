@@ -10,10 +10,11 @@ from collections import deque
 
 
 class BasePolicy:
-    def __init__(self, task_name="") -> None:
+    def __init__(self, task_name="", sub_task_name="") -> None:
+        self.task_name = task_name
+        self.sub_task_name = sub_task_name
         self.data_courier: DataCourier = None
-        self.action_buffer = deque(maxlen=30)
-        pass
+        self.action_buffer = deque()
 
     def init_ros_node(self):
         pass

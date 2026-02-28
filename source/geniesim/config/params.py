@@ -122,8 +122,7 @@ class BenchmarkConfig:
     output_dir: str = "output"
     fps: int = 30
     record: bool = False
-    infer_host: str = "127.0.0.1"
-    infer_port: str = 8999
+    infer_host: str = "127.0.0.1:8999"
     model_arc: str = "pi"
     enable_ros: bool = False
     interactive: bool = False

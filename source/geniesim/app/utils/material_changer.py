@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 import os, sys
-import random
+import numpy as np
 import omni.usd
 import omni.kit.commands
 from pxr import Sdf, UsdShade, Gf, UsdLux
@@ -46,7 +46,7 @@ class material_changer:
         subfolders = [f.path for f in os.scandir(base_folder) if f.is_dir()]
         if not subfolders:
             raise FileNotFoundError("No subfolders found!")
-        selected_folder = random.choice(subfolders)
+        selected_folder = subfolders[np.random.randint(len(subfolders))]
         base_color = None
         orm = None
         normal_map = None

@@ -270,10 +270,9 @@ def parse_action(obj: dict, task_progress, env) -> ActionBase:
             return act
         elif key == "VLM":
             params = value.split("|")
-            if len(params) == 1:
-                act = VLM(env, params[0], "")
-            else:
-                act = VLM(env, params[0], params[1])
+            task_id = params[0]
+            interval = params[1]
+            act = VLM(env, task_id, int(interval))
             record_act_obj(act, task_progress)
             return act
         elif key == "LiftUp":

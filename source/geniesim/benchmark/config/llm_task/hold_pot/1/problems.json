@@ -6,7 +6,24 @@
           {
             "ActionSetWaitAny": [
               {
-                "VLM": "hold_pot"
+                "LiftUp": "benchmark_pot_1373e322|0.1"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "InBBox": "benchmark_pot_1373e322|0.3605, -1.1624, 0.9351|0.2,0.2,0.2"
+                  },
+                  {
+                    "Upright": "benchmark_pot_1373e322|10"
+                  }
+                ]
               },
               {
                 "StepOut": 900

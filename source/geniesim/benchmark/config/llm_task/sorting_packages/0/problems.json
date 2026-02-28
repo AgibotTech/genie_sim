@@ -1,0 +1,70 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "benchmark_carton_00364e8c|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_carton_00364e8c|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "Inside": "benchmark_carton_00364e8c|/World/background/benchmark_scanner_000|0.8"
+                  },
+                  {
+                    "Upright": "benchmark_carton_00364e8c|5.0"
+                  }
+                ]
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_carton_00364e8c|right_gripper"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Inside": "benchmark_carton_00364e8c|/World/background/benchmark_material_tray_000|0.8"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "sorting_packages"
+  }
+}

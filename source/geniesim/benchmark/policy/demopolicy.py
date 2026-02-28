@@ -8,8 +8,8 @@ import rclpy
 
 
 class DemoPolicy(BasePolicy):
-    def __init__(self, task_name) -> None:
-        super().__init__(task_name)
+    def __init__(self, task_name, sub_task_name="") -> None:
+        super().__init__(task_name=task_name, sub_task_name=sub_task_name)
         self.init_ros_node()
 
     def init_ros_node(self):

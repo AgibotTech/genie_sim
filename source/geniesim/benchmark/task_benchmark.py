@@ -82,7 +82,7 @@ class TaskBenchmark(object):
         return tasks
 
     def config_task(self):
-        if self.args.model_arc in ["pi"]:
+        if self.args.model_arc in ["pi", "abs_pose"]:
             self.task_mode = "infer"
         else:
             self.task_mode = "empty"
@@ -138,18 +138,19 @@ class TaskBenchmark(object):
             if sub_task_name != "":
                 sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
                 scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
+
+            self.evaluate_summary = EvaluationSummary(
+                os.path.join(system_utils.benchmark_output_path()), task, sub_task_name
+            )
             for instance_id in scene_instance_ids:
                 # one instance
                 self.task_config["scene"]["scene_instance_id"] = instance_id
-                specific_task_files = glob.glob(task_folder + "/*.json")
+                specific_task_files = sorted(glob.glob(task_folder + "/*.json"))
 
                 self.create_policy()
                 self.create_env(specific_task_files[0], instance_id)
                 time.sleep(0.5)
                 self.api_core.collect_init_physics()
-                self.evaluate_summary = EvaluationSummary(
-                    os.path.join(system_utils.benchmark_output_path()), task, sub_task_name
-                )
 
                 for episode_file in specific_task_files:
                     print("EPISODE FILE", episode_file)
@@ -208,27 +209,45 @@ class TaskBenchmark(object):
             except Exception as e:
                 logger.warning("Failed to remove task folder %s: %s" % (task_folder, e))
 
+    @staticmethod
+    def _parse_infer_host(infer_host: str):
+        """Parse infer_host in 'host:port' form to (host, port). Default port 8999 if omitted."""
+        if ":" in infer_host:
+            host, port_str = infer_host.rsplit(":", 1)
+            return host.strip(), int(port_str.strip())
+        return infer_host.strip(), 8999
+
     def create_policy(self):
-        if self.args.model_arc == "pi":
+        host, port = self._parse_infer_host(self.args.infer_host)
+        logger.info(f"Infer service address: {host}:{port}")
+        if self.args.model_arc == "pi" or self.args.model_arc == "abs_pose":
             from geniesim.benchmark.policy.pipolicy import PiPolicy
 
             self.policy = PiPolicy(
                 task_name=self.args.task_name,
-                host_ip=self.args.infer_host,
-                port=self.args.infer_port,
+                host_ip=host,
+                port=port,
+                sub_task_name=self.args.sub_task_name,
             )
         elif self.args.model_arc == "":
             from geniesim.benchmark.policy.base import BasePolicy
 
             self.policy = BasePolicy(
                 task_name=self.args.task_name,
+                sub_task_name=self.args.sub_task_name,
             )
         elif self.args.policy_class == "DemoPolicy":
-            self.policy = DemoPolicy(task_name=self.args.task_name)
+            self.policy = DemoPolicy(
+                task_name=self.args.task_name,
+                sub_task_name=self.args.sub_task_name,
+            )
         else:
 
             if self.args.policy_class == "DemoPolicy":
-                self.policy = DemoPolicy(task_name=self.args.task_name)
+                self.policy = DemoPolicy(
+                    task_name=self.args.task_name,
+                    sub_task_name=self.args.sub_task_name,
+                )
             elif False:
                 # placeholder, customize your own policy here
                 pass
@@ -287,6 +306,10 @@ class TaskBenchmark(object):
             from geniesim.benchmark.envs.pi_env import PiEnv
 
             self.env = PiEnv(self.api_core, episode_file, self.task_config)
+        elif self.args.model_arc == "abs_pose":
+            from geniesim.benchmark.envs.abs_pose_env import AbsPoseEnv
+
+            self.env = AbsPoseEnv(self.api_core, episode_file, self.task_config)
         elif self.args.model_arc == "":
             from geniesim.benchmark.envs.dummy_env import DummyEnv
 
