@@ -69,17 +69,8 @@ class PiEnv(DummyEnv):
             for name in G2_WAIST_JOINT_NAMES[::-1]:
                 states.append(full_joint_states[name])
         obs = {"images": images, "states": states}
-        # Left/right gripper center eef pose [x, y, z, qw, qx, qy, qz];
-        default_7d = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
-        eef = {"left": default_7d.copy(), "right": default_7d.copy()}
-        ee_paths = getattr(self.api_core, "end_effector_prim_path", None)
-        if isinstance(ee_paths, dict):
-            for hand in ("left", "right"):
-                pos, rot = self.api_core.get_obj_world_pose(ee_paths[hand])
-                pos = np.asarray(pos, dtype=np.float64)
-                rot = np.asarray(rot, dtype=np.float64)
-                eef[hand] = np.concatenate([pos, rot]).tolist()
-        obs["eef"] = eef
+        # Left/right gripper center eef pose [x, y, z, qw, qx, qy, qz]
+        obs["eef"] = self.ikfk_solver.compute_eef(self.cur_arm)
         relabel_gripper_state(obs, self.LIMIT_VAL)
         return obs
 

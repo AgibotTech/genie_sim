@@ -15,6 +15,7 @@ from geniesim.utils.data_courier import DataCourier
 from geniesim.utils.infer_pre_process import TaskInfo
 from geniesim.benchmark.config.robot_init_states import TASK_INFO_DICT
 from geniesim.utils.name_utils import robot_type_mapping
+from geniesim.utils.ikfk_utils import IKFKSolver
 
 
 class BaseEnv(AderEnv):
@@ -53,6 +54,13 @@ class BaseEnv(AderEnv):
             gen_config = self.task_info.get("generalization_config", {})
             rand_init_arm = gen_config.get("rand_init_arm", [0] * 14)
             self.init_arm = list(np.array(self.init_arm) + np.array(rand_init_arm))
+
+        self.ikfk_solver = IKFKSolver(
+            self.init_arm,
+            self.init_head,
+            self.init_waist,
+            robot_cfg=self.robot_cfg,
+        )
         self.task = None
 
         if need_setup:

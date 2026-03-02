@@ -2,7 +2,6 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-import json
 import numpy as np
 
 from .pi_env import PiEnv
@@ -14,27 +13,17 @@ logger = Logger()  # Create singleton instance
 from geniesim.utils.name_utils import *
 from geniesim.utils.infer_pre_process import *
 from geniesim.utils.infer_post_process import *
-from geniesim.utils.ikfk_utils import IKFKSolver
-import geniesim.utils.system_utils as system_utils
 
 
 class AbsPoseEnv(PiEnv):
     """
     AbsPoseEnv extends PiEnv with IK/FK solver support for end-effector control.
     The main difference is in the step() method which uses abs_pose action type.
+    IKFKSolver is inherited from BaseEnv.
     """
 
     def __init__(self, api_core, task_file: str, init_task_config, need_setup=True):
-        # Initialize parent class first
         super().__init__(api_core, task_file, init_task_config, need_setup)
-
-        # Initialize IK/FK solver for end-effector control
-        self.ikfk_solver = IKFKSolver(
-            self.init_arm,
-            self.init_head,
-            self.init_waist,
-            robot_cfg=self.robot_cfg,
-        )
 
     def step(self, action):
         """
