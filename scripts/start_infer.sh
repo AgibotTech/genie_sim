@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# current folder as WORD_DIR
-CURRENT_DIR=$(pwd)
-
-echo $CURRENT_DIR
+HOST_ROOT_DIR=$(readlink -f .)
 xhost +local:
-docker run -it --name pi05_infer\
+
+# 기존 컨테이너 삭제
+docker rm -f pi05_infer 2>/dev/null
+
+docker run -it --name pi05_infer \
     --rm \
     --gpus all \
     --ipc=host \
@@ -15,7 +16,7 @@ docker run -it --name pi05_infer\
     --privileged \
     -e DISPLAY \
     -v /dev/input:/dev/input:rw \
-    -v $CURRENT_DIR/openpi:/root/openpi:rw \
-    -w /root/openpi \
+    -v "$HOST_ROOT_DIR":/geniesim/main:rw \
+    -w /geniesim/main \
     openpi_server:latest \
-    bash ./scripts/entrypoint.sh
+    /bin/bash ./scripts/entrypoint.sh /bin/bash
