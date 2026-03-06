@@ -135,8 +135,8 @@ RUN cd ./third_party && git clone https://github.com/cvg/Hierarchical-Localizati
     git apply ../../patch/hloc.patch
 
 ENV PYTHONPATH=/root/third_party/Hierarchical-Localization:$PYTHONPATH
-RUN /opt/conda/envs/pgsr/bin/python -m pip install -r requirements.txt && \
-    cd /root/third_party/Hierarchical-Localization && \
+RUN cd /root/third_party/Hierarchical-Localization && \
+    /opt/conda/envs/pgsr/bin/python -m pip install -r requirements.txt && \
     /opt/conda/envs/pgsr/bin/python -m pip install e . && \
     rm -rf /root/.cache/pip
 
