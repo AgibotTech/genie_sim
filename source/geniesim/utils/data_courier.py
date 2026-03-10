@@ -92,6 +92,22 @@ class DataCourier:
         else:
             raise ValueError(f"Invalid robot cfg: {self.robot_cfg}")
 
+    def get_observation_depth(self):
+        if self.robot_cfg == "G1_omnipicker":
+            return self.api_core.get_observation_depth(
+                {"head": "head_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
+            )
+        elif self.robot_cfg == "G2_omnipicker":
+            return self.api_core.get_observation_depth(
+                {
+                    "head": "head_front_camera",
+                    "left_hand": "left_camera",
+                    "right_hand": "right_camera",
+                }
+            )
+        else:
+            raise ValueError(f"Invalid robot cfg: {self.robot_cfg}")
+
     def set_joint_state(self, name, position):
         if self.enable_ros:
             self.sim_ros_node.set_joint_state(name, position)

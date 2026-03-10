@@ -95,6 +95,7 @@ class RobotInterface(Node):
 
         # cache
         self.annotators = {}
+        self.depth_annotators = {}
         self.parameters = {}
         self.publisher_map = {}
 
@@ -322,6 +323,10 @@ class RobotInterface(Node):
         self.annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("rgb")
         self.annotators[camera_id].attach(rp)
 
+        if "Fisheye" not in camera_prim and "Top" not in camera_prim:
+            self.depth_annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("distance_to_image_plane")
+            self.depth_annotators[camera_id].attach(rp)
+
         img = Image()
         img.header.frame_id = "camera_optical_frame"
         img.width = resolution[0]
@@ -541,6 +546,18 @@ class RobotInterface(Node):
         else:
             for k, v in dir.items():
                 ret[k] = self.annotators[v].get_data()[..., :3]  # Remove Alpha channel, (H, W, 3)
+
+        return ret
+
+    def get_observation_depth(self, dir):
+        ret = {}
+        if dir == {}:
+            for k in self.depth_annotators.keys():
+                ret[k] = self.depth_annotators[k].get_data().squeeze()  # (H, W) float32
+        else:
+            for k, v in dir.items():
+                if v in self.depth_annotators:
+                    ret[k] = self.depth_annotators[v].get_data().squeeze()
 
         return ret
 

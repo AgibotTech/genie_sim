@@ -45,10 +45,12 @@ class PiEnv(DummyEnv):
     def get_observation(self):
         for i in range(10):
             images = self.data_courier.get_observation_image()
-            if images == {}:
+            depth = self.data_courier.get_observation_depth()
+            if images == {} or depth == {}:
                 time.sleep(0.1)
             else:
                 break
+
         full_joint_states = self.data_courier.get_joint_state_dict()
         states = []
         if "G1" in self.robot_cfg:
@@ -68,7 +70,7 @@ class PiEnv(DummyEnv):
         if "G2" in self.robot_cfg:
             for name in G2_WAIST_JOINT_NAMES[::-1]:
                 states.append(full_joint_states[name])
-        obs = {"images": images, "states": states}
+        obs = {"images": images, "states": states, "depth": depth}
         # Left/right gripper center eef pose [x, y, z, qw, qx, qy, qz]
         obs["eef"] = self.ikfk_solver.compute_eef(self.cur_arm)
         relabel_gripper_state(obs, self.LIMIT_VAL)

@@ -51,6 +51,11 @@ class PiPolicy(BasePolicy):
                 "hand_left": np.transpose(obs["images"]["left_hand"], (2, 0, 1)),
                 "hand_right": np.transpose(obs["images"]["right_hand"], (2, 0, 1)),
             },
+            "depth": {
+                "top_head": np.array(obs["depth"]["head"] * 1000, dtype=np.uint16),
+                "hand_left": np.array(obs["depth"]["left_hand"] * 10000, dtype=np.uint16),
+                "hand_right": np.array(obs["depth"]["right_hand"] * 10000, dtype=np.uint16),
+            },
             "prompt": task_instruction,
             "task_name": self.sub_task_name,
         }
