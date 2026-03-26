@@ -44,7 +44,7 @@ TASK_STEPS = {
     "empty_desktop_bin": ["VLM"],
     "hang_tableware": ["VLM"],
     "heat_food": ["VLM"],
-    "hold_pot": ["LiftUp"],
+    "hold_pot": ["LiftUp", "InBBox", "Upright"],
     "open_door": ["PushPull"],
     "pick_billards_color": ["Follow", "PickUpOnGripper"],
     "pick_block_color": ["Follow", "PickUpOnGripper"],

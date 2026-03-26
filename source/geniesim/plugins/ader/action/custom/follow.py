@@ -34,7 +34,7 @@ class Follow(EvaluateAction):
         super().__init__(env)
         # Parse obj_name: supports single object, placeholder, or comma-separated list
         self._holder_name, self._obj_name = self.placeholder_sparser(obj_name)
-        self._obj_name_list = self.parse_obj_input(obj_name) if not self._holder_name else None
+        self._obj_candidates = self.parse_obj_input(obj_name) if not self._holder_name else None
         self._done_flag = False
         self.bbox = ast.literal_eval(bbox)
         self.env = env
@@ -47,7 +47,7 @@ class Follow(EvaluateAction):
             self.env._followed_objects = set()
 
         logger.info(
-            f"[Follow] Initialized with obj_name_list={self._obj_name_list}, "
+            f"[Follow] Initialized with obj_name_list={self.obj_name_list}, "
             f"bbox={self.bbox}, gripper_id={self._gripper_id}, "
             f"already_followed={self.env._followed_objects}"
         )
@@ -63,10 +63,17 @@ class Follow(EvaluateAction):
         """Return the resolved list of object names to check, excluding already-followed objects."""
         if self._holder_name:
             # Placeholder mode: resolve the single placeholder value
-            return [getattr(self, self._obj_name)]
-        # Filter out objects that have already been followed in previous rounds
+            resolved = getattr(self, self._obj_name)
+            # If placeholder resolved to empty string, fall back to _matched_obj if available
+            if not resolved and self._matched_obj:
+                return [self._matched_obj]
+            return [resolved] if resolved else []
+        # Filter out objects that have already been followed in previous rounds,
+        # but always keep at least one candidate to avoid an empty list
         followed = getattr(self.env, '_followed_objects', set())
-        filtered = [name for name in self._obj_name_list if name not in followed]
+        filtered = [name for name in self._obj_candidates if name not in followed]
+        if not filtered and self._obj_candidates:
+            filtered = [self._obj_candidates[0]]
         return filtered
 
     @property
@@ -121,8 +128,15 @@ class Follow(EvaluateAction):
             # Check if gripper follows any of the target objects (excluding already-followed)
             candidates = self.obj_name_list
             if not candidates:
-                logger.warning("[Follow] No remaining candidates (all objects already followed)")
-                return super().update(delta_time)
+                if self._matched_obj:
+                    candidates = [self._matched_obj]
+                    logger.info(
+                        f"[Follow] Placeholder resolved to already-followed object "
+                        f"'{self._matched_obj}', re-using it for follow check"
+                    )
+                else:
+                    logger.warning("[Follow] No remaining candidates (all objects already followed)")
+                    return super().update(delta_time)
 
             matched = self.find_matching_object(candidates, self._check_gripper_follows_obj)
             if matched is not None:

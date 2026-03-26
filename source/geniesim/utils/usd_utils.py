@@ -16,6 +16,82 @@ from pprint import pprint
 import re
 
 
+def overwrite_physics_material(root_prim, static_friction: float, dynamic_friction: float):
+    stage = omni.usd.get_context().get_stage()
+    if stage is None:
+        raise RuntimeError("USD stage is not available")
+
+    root_prim = stage.GetPrimAtPath(root_prim) if isinstance(root_prim, str) else root_prim
+    if not root_prim or not root_prim.IsValid():
+        raise ValueError(f"Invalid root prim: {root_prim}")
+
+    static_friction = float(static_friction)
+    dynamic_friction = float(dynamic_friction)
+
+    stats = {
+        "materials_total": 0,
+        "materials_updated": 0,
+    }
+
+    def _set_existing_float_attr(prim: Usd.Prim, name: str, value: float) -> bool:
+        attr = prim.GetAttribute(name)
+        if attr and attr.IsValid():
+            attr.Set(value)
+            return True
+        return False
+
+    def _is_physics_material_prim(mat_prim: Usd.Prim) -> bool:
+        try:
+            if mat_prim.HasAPI(UsdPhysics.MaterialAPI):
+                return True
+        except Exception:
+            pass
+        return False
+
+    for prim in Usd.PrimRange(root_prim):
+        if prim.GetTypeName() != "Material" and not prim.IsA(UsdShade.Material):
+            continue
+        if not _is_physics_material_prim(prim):
+            continue
+
+        stats["materials_total"] += 1
+        mat_prim = prim
+        material_api = UsdPhysics.MaterialAPI.Apply(mat_prim)
+        PhysxSchema.PhysxMaterialAPI.Apply(mat_prim)
+
+        material_api.CreateStaticFrictionAttr().Set(static_friction)
+        material_api.CreateDynamicFrictionAttr().Set(dynamic_friction)
+
+        physx_material_api = PhysxSchema.PhysxMaterialAPI(mat_prim)
+        if physx_material_api is not None:
+            try:
+                attr = physx_material_api.GetStaticFrictionAttr()
+                if attr:
+                    attr.Set(static_friction)
+            except Exception:
+                _set_existing_float_attr(mat_prim, "physxMaterial:staticFriction", static_friction)
+
+            try:
+                attr = physx_material_api.GetDynamicFrictionAttr()
+                if attr:
+                    attr.Set(dynamic_friction)
+            except Exception:
+                _set_existing_float_attr(mat_prim, "physxMaterial:dynamicFriction", dynamic_friction)
+
+            fric_combine_mode = physx_material_api.GetFrictionCombineModeAttr().Get()
+            if fric_combine_mode is None:
+                physx_material_api.CreateFrictionCombineModeAttr().Set("max")
+            elif fric_combine_mode != "max":
+                physx_material_api.GetFrictionCombineModeAttr().Set("max")
+
+            stats["materials_updated"] += 1
+
+    logger.info(
+        f"overwrite_physics_material: materials={stats['materials_total']} updated={stats['materials_updated']}"
+    )
+    return stats
+
+
 def get_articulated_object_prims(articulate_object_name):
     # Get the current USD stage
     stage = omni.usd.get_context().get_stage()

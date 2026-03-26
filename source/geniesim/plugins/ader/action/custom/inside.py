@@ -17,11 +17,17 @@ logger = Logger()
 class Inside(EvaluateAction):
     def __init__(self, env, active_obj, passive_obj, scale):
         super().__init__(env)
-        self.active_obj = active_obj
+        self._holder_name, self._active_obj = self.placeholder_sparser(active_obj)
         self.passive_obj = passive_obj
         self._done_flag = False
         self._pass_frame = 0
         self.scale = float(scale)
+
+    @property
+    def active_obj(self) -> str:
+        if self._holder_name:
+            return getattr(self, self._active_obj)
+        return self._active_obj
 
     def update(self, delta_time: float) -> float:
         pose_A = self.get_obj_pose(self.active_obj)
@@ -50,7 +56,7 @@ class Inside(EvaluateAction):
             self.progress_info["STATUS"] = "SUCCESS"
 
     def handle_action_event(self, action: ActionBase, event: ActionEvent) -> None:
-        logger.info("Action [Inside] evt: %d" % (event.value))
+        logger.info(f"Action [Inside] active_obj: {self.active_obj}, evt: {event.value}")
 
         if event == ActionEvent.STARTED:
             pass

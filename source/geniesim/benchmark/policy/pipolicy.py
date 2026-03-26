@@ -40,6 +40,12 @@ class PiPolicy(BasePolicy):
         eef = obs["eef"]
         left_eef = np.asarray(eef["left"], dtype=np.float64)
         right_eef = np.asarray(eef["right"], dtype=np.float64)
+
+        def _encode_depth(depth_map: np.ndarray, scale: int) -> np.ndarray:
+            depth = np.nan_to_num(depth_map, nan=0.0, posinf=0.0, neginf=0.0)
+            depth = np.clip(depth * scale, 0, np.iinfo(np.uint16).max)
+            return depth.astype(np.uint16)
+
         payload = {
             "state": states,
             "eef": {
@@ -52,9 +58,9 @@ class PiPolicy(BasePolicy):
                 "hand_right": np.transpose(obs["images"]["right_hand"], (2, 0, 1)),
             },
             "depth": {
-                "top_head": np.array(obs["depth"]["head"] * 1000, dtype=np.uint16),
-                "hand_left": np.array(obs["depth"]["left_hand"] * 10000, dtype=np.uint16),
-                "hand_right": np.array(obs["depth"]["right_hand"] * 10000, dtype=np.uint16),
+                "top_head": _encode_depth(obs["depth"]["head"], 1000),
+                "hand_left": _encode_depth(obs["depth"]["left_hand"], 10000),
+                "hand_right": _encode_depth(obs["depth"]["right_hand"], 10000),
             },
             "prompt": task_instruction,
             "task_name": self.sub_task_name,

@@ -259,15 +259,13 @@ class APICore:
         return aabb
 
     def get_obj_joint(self, prim_path):
-
-        articulation = self.articulat_objects[prim_path]
-        dof_names = articulation.dof_names
-        positions = articulation.get_joint_positions()
-        velocities = articulation.get_joint_velocities()
+        articulation = self.articulat_objects.get(prim_path) or self.articulat_objects.get(prim_path + "/entity")
+        if articulation is None:
+            return {}
         return {
-            "joint_names": dof_names,
-            "joint_positions": positions,
-            "joint_velocities": velocities,
+            "joint_names": articulation.dof_names,
+            "joint_positions": articulation.get_joint_positions(),
+            "joint_velocities": articulation.get_joint_velocities(),
         }
 
     def get_releated_objs(self):
@@ -599,7 +597,7 @@ class APICore:
                 "/Workspace",
             )
             logger.info(f"Added new Workspace from: {sub_usd_path}")
-
+            overwrite_physics_material("/Workspace", 0.5, 0.3)
         if workspace_replaced:
             if hasattr(self.ui_builder, "my_world") and self.ui_builder.my_world:
 

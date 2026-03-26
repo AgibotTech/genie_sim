@@ -253,10 +253,7 @@ class EvaluateAction(ActionBase):
 
     def get_prismatic_joint(self, obj_name):
         info = self.api_core.get_obj_joint(self._analyze_obj_name(obj_name))
-        prismatic_joint = []
-        for v in info["joint_positions"]:
-            prismatic_joint.append(v)
-        return prismatic_joint
+        return list(info["joint_positions"])
 
     def aabb_contains_point(self, point, container):
         lower, upper = container
