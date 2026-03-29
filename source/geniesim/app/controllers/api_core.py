@@ -259,6 +259,9 @@ class APICore:
         return aabb
 
     def get_obj_joint(self, prim_path):
+        return self.run_on_physics_loop(self._get_obj_joint, prim_path)
+
+    def _get_obj_joint(self, prim_path):
         articulation = self.articulat_objects.get(prim_path) or self.articulat_objects.get(prim_path + "/entity")
         if articulation is None:
             return {}
