@@ -235,4 +235,9 @@ TASK_MAPPING = {
         "background": {"G1": "table_task_g1", "G2": "table_task_2_g2"},
         "eval_dims": {"manip": "spatial_pick_place", "cognition": "position"},
     },
+    "geniesim_place_workpiece": {
+        "background": {"G2": "place_workpiece_task_g2"},
+        "eval_dims": {"manip": "place", "cognition": "semantic"},
+        "mjcf": "mujoco/place_workpiece.xml",
+    },
 }

@@ -29,6 +29,7 @@ from .custom import (
     Stack,
     RelativePositionChecker,
     MixedRules,
+    PlaceOnRivet,
 )
 import geniesim.utils.system_utils as system_utils
 
@@ -324,6 +325,23 @@ def parse_action(obj: dict, task_progress, env) -> ActionBase:
             rules = value["rules"]
             check_interval = value.get("check_interval", 1)
             act = MixedRules(env, rules, check_interval)
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "PlaceOnRivet":
+            # Format: "active_obj|passive_obj|rel_x,rel_y,rel_z|qw,qx,qy,qz|xy_tol|z_tol|orient_tol|still_thresh|still_steps"
+            params = value.split("|")
+            act = PlaceOnRivet(
+                env,
+                active_obj=params[0],
+                passive_obj=params[1],
+                target_rel_pos=params[2],
+                target_quat=params[3],
+                xy_tol=float(params[4]) if len(params) > 4 else 0.02,
+                z_tol=float(params[5]) if len(params) > 5 else 0.01,
+                orient_tol=float(params[6]) if len(params) > 6 else 0.15,
+                still_thresh=float(params[7]) if len(params) > 7 else 0.02,
+                still_steps=int(params[8]) if len(params) > 8 else 15,
+            )
             record_act_obj(act, task_progress)
             return act
         else:

@@ -25,3 +25,4 @@ from .chassis_at_target import ChassisAtTarget
 from .stack import Stack
 from .relative_position_checker import RelativePositionChecker
 from .mixed_rules import MixedRules
+from .place_on_rivet import PlaceOnRivet

@@ -1,0 +1,8 @@
+# Request: name of the MuJoCo body to query
+string object_name
+---
+# Response
+bool success
+string message
+float64[] position        # [x, y, z] in world frame
+float64[] quaternion_wxyz # [w, x, y, z]

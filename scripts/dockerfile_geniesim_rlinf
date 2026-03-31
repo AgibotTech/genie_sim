@@ -1,0 +1,70 @@
+# HOWTO build:
+#   Use the dedicated build script (recommended):
+#     bash main/scripts/build_geniesim_rlinf_image.sh
+#
+#   Or manually (build context is main/scripts/ to avoid sending large assets):
+#     docker build \
+#       -f dockerfile_geniesim_rlinf \
+#       -t geniesim-rlinf:latest \
+#       /path/to/main/scripts/
+#
+# Bases on the existing GenieSim open_source image which already provides:
+#   - Isaac Sim 5.1 (/isaac-sim)
+#   - ROS 2 Jazzy (/opt/ros/jazzy)
+#   - colcon, ros-dev-tools
+#   - Python 3.12 (Ubuntu 24.04 / Noble)
+#
+# This layer adds the RL-specific runtime requirements:
+#   - MuJoCo + Python runtime deps in system python3
+#     (mujoco_ros_node.py subprocess uses sys.executable = python3 by default)
+#   - Entrypoint that builds the geniesim_rl_interfaces ROS workspace on first start
+
+FROM registry.agibot.com/genie-sim/open_source:latest
+
+ENV ACCEPT_EULA=Y
+ENV PRIVACY_CONSENT=Y
+ENV GENIESIM_CONTAINER=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+USER root
+
+# ------------------------------------------------------------
+# System python3 — MuJoCo + runtime deps
+#
+# Ubuntu 24.04 enforces "externally managed environment", so we need
+# --break-system-packages to install into the system python.
+# mujoco_ros_node.py uses sys.executable (system python3) by default;
+# it also imports rclpy which lives in the ROS apt install, so the same
+# python3 must have access to both mujoco AND rclpy.
+# ------------------------------------------------------------
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends libhidapi-hidraw0 && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --break-system-packages \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    "mujoco>=3.1.0" \
+    numpy \
+    "gymnasium>=0.29" \
+    pyyaml \
+    omegaconf \
+    uv
+
+# Ensure /geniesim exists and is owned by the isaac-sim user (uid 1234).
+RUN mkdir -p /geniesim && chown 1234:1234 /geniesim
+
+# ------------------------------------------------------------
+# Switch to isaac-sim user for remaining steps
+# ------------------------------------------------------------
+USER 1234:1234
+
+# ------------------------------------------------------------
+# Scripts
+# ------------------------------------------------------------
+WORKDIR /geniesim/main
+COPY ./entrypoint_geniesim_rlinf.sh /entrypoint_geniesim_rlinf.sh
+COPY ./run_rlinf.sh /geniesim/scripts/run_rlinf.sh
+RUN sudo chmod +x /entrypoint_geniesim_rlinf.sh /geniesim/scripts/run_rlinf.sh
+
+ENTRYPOINT ["/entrypoint_geniesim_rlinf.sh"]
+CMD ["tail", "-f", "/dev/null"]
