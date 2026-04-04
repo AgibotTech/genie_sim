@@ -1,11 +1,50 @@
 services:
-  mcp-server:
+  mcp-server_vl:
+    profiles:
+      - vl
     build:
       context: ./server
-      dockerfile: dockerfile
-    container_name: assets-retrieval-agent
+      dockerfile: mcp_vl_embedding/dockerfile
+    container_name: assets-retrieval-agent_vl
     ports:
       - "8765:8765"
+    volumes:
+      - ..:/geniesim
+      - ./server_chromadb_vl:/tmp/chromadb_cache_vl:rw
+    command:
+      [
+        "mcpo",
+        "--config",
+        "/geniesim/generator/server/mcp_config.json",
+        "--port",
+        "8765",
+      ]
+    working_dir: /geniesim
+    environment:
+      - EMBEDDING_MODE=vl
+      - VL_EMBEDDING_MODEL=Qwen3-VL-Embedding-2B
+      - PERMANENT_MODEL_IN_GPU=False
+      - USE_RERANKER=False
+      - BATCH_SIZE=10
+    restart: unless-stopped
+    deploy:
+      resources:
+          reservations:
+              devices:
+                  - driver: "nvidia"
+                    count: "all"
+                    capabilities: ["gpu"]
+  mcp-server_text:
+    profiles:
+      - text
+    build:
+      context: ./server
+      dockerfile: mcp_text_embedding/dockerfile
+    container_name: assets-retrieval-agent_text
+    ports:
+      - "8765:8765"
+    environment:
+      - EMBEDDING_MODE=text
     volumes:
       - ..:/geniesim
       - ./server_chromadb:/tmp/chromadb_cache:rw

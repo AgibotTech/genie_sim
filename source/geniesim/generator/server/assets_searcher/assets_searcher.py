@@ -12,16 +12,21 @@ import time
 from typing import List, Dict, Union, Optional
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from geniesim.generator.server.text_embedding import DashscopeTextEmbeddings, TextEmbeddings
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+SOURCE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(CURRENT_DIR))))
+sys.path.append(SOURCE_DIR)
+
+from geniesim.generator.server.assets_searcher.embeddings.text_embedding import DashscopeTextEmbeddings, TextEmbeddings
 from geniesim.assets import (
     ASSETS_INDEX,
     ASSETS_INDEX_HASH,
-    CHROMA_DB_PATH,
 )  # If this fails please check assets folder at source/geniesim/assets
 
 CHROMA_DB_CACHE_PATH = os.path.join("/tmp", "chromadb_cache")
 
 import shutil
+import re
 
 # Configure logging to use stderr to avoid interfering with JSON-RPC on stdout
 logging.basicConfig(
@@ -63,17 +68,11 @@ class AssetVectorDB:
             db_path = CHROMA_DB_CACHE_PATH
         if not os.path.exists(db_path):
             os.makedirs(db_path, exist_ok=True)
-        if not os.path.exists(CHROMA_DB_PATH):
-            os.makedirs(CHROMA_DB_PATH, exist_ok=True)
-            force_rebuild = True
-            logger.info(f"CHROMA_DB_PATH does not exist, will rebuild")
         if not os.path.exists(db_path) or not os.path.exists(f"{db_path}/assets_sync_state.json") and not force_rebuild:
             if os.path.exists(db_path):
                 shutil.rmtree(db_path, ignore_errors=True)
             logger.info(f"Creating ChromaDB cache directory: {db_path}")
             os.makedirs(db_path, exist_ok=True, mode=0o777)
-            logger.info(f"Copying ChromaDB cache directory: {CHROMA_DB_PATH} to {db_path}")
-            shutil.copytree(CHROMA_DB_PATH, db_path, dirs_exist_ok=True)
         else:
             logger.info(f"ChromaDB cache directory already exists: {db_path}")
 
@@ -254,7 +253,7 @@ class AssetVectorDB:
         if assets:
             to_be_added = []
             for asset in assets:
-                in_db_asset = self._search_by_asset_id(asset["asset_id"], top_k=1)
+                in_db_asset = self._search_by_asset_id(asset["asset_id"], top_k=1, from_assets_dict=False)
                 if in_db_asset:
                     asset_semantic_description = asset.get("semantic_description", "")
                     if in_db_asset[0].get("semantic_description") != asset_semantic_description:
@@ -286,17 +285,20 @@ class AssetVectorDB:
         self._save_sync_state(new_sync_state)
 
         logger.info(f"Sync completed, current asset count: {self.count()}")
-        logger.info(f"Syncing back to chromadb directory: {CHROMA_DB_PATH}")
-        if os.path.exists(CHROMA_DB_PATH):
-            shutil.rmtree(CHROMA_DB_PATH, ignore_errors=True)
-        # shutil.copytree(self.chroma_persist_directory, CHROMA_DB_PATH, dirs_exist_ok=True)
         return {
             "synced": True,
             "asset_count": self.count(),
             "last_sync_time": new_sync_state["last_sync_time"],
         }
 
-    def search(self, query: Union[str, List[str]], top_k: int = 10) -> Union[List[Dict], List[List[Dict]]]:
+    def search(
+        self,
+        query: Union[str, List[str]],
+        top_k: int = 10,
+        exclude_regex: str = None,
+        include_regex: str = None,
+        scene_description: str = None,
+    ) -> Union[List[Dict], List[List[Dict]]]:
         """
         Search for similar assets
 
@@ -320,12 +322,12 @@ class AssetVectorDB:
         queries = [query] if is_single_query else query
 
         all_results = []
-
+        search_top_k = top_k if (exclude_regex is None or exclude_regex == "") else self.count()
         for query_text in queries:
             try:
                 query_results = []
                 # First search by ID
-                id_results = self._search_by_asset_id(query_text, top_k=top_k)
+                id_results = self._search_by_asset_id(query_text, top_k=search_top_k)
                 for id_result in id_results:
                     asset_id = id_result.get("asset_id")
                     asset_params = self.assets_index.get(asset_id, None)
@@ -340,13 +342,15 @@ class AssetVectorDB:
                     query_results = query_results[:top_k]
                 else:
                     # Use ChromaDB similarity search
-                    docs = self.vectorstore.similarity_search_with_relevance_scores(
-                        query=query_text, k=min(top_k, self.count())
-                    )
+                    docs = self.vectorstore.similarity_search_with_relevance_scores(query=query_text, k=self.count())
                     for doc, score in docs:
                         metadata = doc.metadata.copy()
                         asset_id = metadata.get("asset_id")
                         if not asset_id:
+                            continue
+                        if exclude_regex and re.search(exclude_regex, asset_id):
+                            continue
+                        if include_regex and not re.search(include_regex, asset_id):
                             continue
                         already_in_query = False
                         for query_result in id_results:
@@ -360,7 +364,7 @@ class AssetVectorDB:
                             continue
                         result = {
                             "asset_id": asset_id,
-                            "description": asset_params.get("description"),
+                            "info": asset_params,
                         }
                         query_results.append(result)
                         if len(query_results) >= top_k:
@@ -576,7 +580,7 @@ def use_example():
 
     # Create database instance (auto sync YAML)
     logger.info("=== Creating database instance ===")
-    config = json.load(open(f"{current_dir}/text_embedding_config.json"))
+    config = json.load(open(f"{current_dir}/../mcp_text_embedding/text_embedding_config.json"))
     db = AssetVectorDB(config=config, auto_sync=True, force_rebuild=False)
     queries = ["table_001", "table"]
     batch_results = db.search(queries, top_k=10)

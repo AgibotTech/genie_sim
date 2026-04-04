@@ -9,7 +9,7 @@ import logging
 from langchain.embeddings.base import Embeddings
 from pydantic import BaseModel, ConfigDict, model_validator
 from openai import OpenAI
-from typing_extensions import Self
+from typing_extensions import Self, List
 
 logger = logging.getLogger(__name__)
 from dashscope import TextEmbedding
@@ -47,6 +47,7 @@ class TextEmbeddings(BaseModel, Embeddings):
         all_doc_embeddings = []
         batch_size = self.batch_size
         for i in range(0, len(texts), batch_size):
+            logger.info(f"Embedding batch {i} of {len(texts)}")
             documents_batch = texts[i : i + batch_size]
             doc_resp = self.client.embeddings.create(
                 model=self.model,
@@ -98,6 +99,7 @@ class DashscopeTextEmbeddings(BaseModel, Embeddings):
         all_doc_embeddings = []
         all_token = 0
         for i in range(0, len(texts), self.batch_size):
+            logger.info(f"Embedding batch {i} of {len(texts)}")
             documents_batch = texts[i : i + self.batch_size]
             # Call batch embedding API
             doc_resp = TextEmbedding.call(model=self.model, input=documents_batch, dimension=self.dimension)

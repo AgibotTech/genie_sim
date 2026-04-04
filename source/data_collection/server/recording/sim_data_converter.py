@@ -77,6 +77,7 @@ def omnipicker_sim_to_real(g_pos):
     else:
         return min(1.0, max(0.0, (g_pos - 0.6) / 0.15))
 
+
 def process_camera_parameter_file_name(camera_name):
     if "head_stereo_right" in camera_name.lower():
         camera_name = "head_right_stereo"
@@ -99,7 +100,7 @@ class SimDataConverter:
         job_id,
         task_id,
         episode_id,
-        gripper_names=["ctek_gripper_120s", "ctek_gripper_120s"],
+        gripper_names=["zhiyuan_gripper_omnipicker", "zhiyuan_gripper_omnipicker"],
         robot_type="G2",
     ):
         self._record_path = record_path
@@ -110,16 +111,12 @@ class SimDataConverter:
         # metadata
         with open(metadata_file, "r") as f:
             self._metadata = yaml.load(f, Loader=yaml.FullLoader)
-        self._start_ts = self._metadata["rosbag2_bagfile_information"]["starting_time"][
-            "nanoseconds_since_epoch"
-        ]
+        self._start_ts = self._metadata["rosbag2_bagfile_information"]["starting_time"]["nanoseconds_since_epoch"]
         # state.json
         state_file = os.path.join(self._record_path, "state.json")
         with open(state_file, "r", encoding="utf-8") as f:
             self._state = json.load(f)
-        self._duration = (
-            self._state["frames"][-1]["time_stamp"] - self._state["frames"][0]["time_stamp"]
-        )
+        self._duration = self._state["frames"][-1]["time_stamp"] - self._state["frames"][0]["time_stamp"]
         self._job_id = job_id
         self._task_id = task_id
         self._episode_id = episode_id
@@ -129,9 +126,7 @@ class SimDataConverter:
         # Find project root directory
         project_root = current_dir
         while project_root != os.path.dirname(project_root):
-            config_path = os.path.join(
-                project_root, "config", "robot_cfg", "robot_joint_names.json"
-            )
+            config_path = os.path.join(project_root, "config", "robot_cfg", "robot_joint_names.json")
             if os.path.exists(config_path):
                 break
             project_root = os.path.dirname(project_root)
@@ -191,10 +186,7 @@ class SimDataConverter:
             act = frame_state["frame_state"]["action"]
             active_id = frame_state["frame_state"]["active_id"]
             passive_id = frame_state["frame_state"]["passive_id"]
-            if (
-                " ".join([arm, active_id, act, passive_id]) != last_action
-                or i == len(frame_states) - 1
-            ):
+            if " ".join([arm, active_id, act, passive_id]) != last_action or i == len(frame_states) - 1:
                 for idx, fm in enumerate(self._state["frames"]):
                     if fm["time_stamp"] >= state_ts:
                         end_frame = idx
@@ -211,9 +203,7 @@ class SimDataConverter:
                     actions.append(
                         {
                             "start_frame": start_frame,
-                            "end_frame": (
-                                i if i == len(self._state["frames"]) - 1 else end_frame - 1
-                            ),
+                            "end_frame": (i if i == len(self._state["frames"]) - 1 else end_frame - 1),
                             "action_text": last_action_description["action_text"],
                             "english_action_text": last_action_description["english_action_text"],
                             "skill": last_action.split(" ")[2],
@@ -244,10 +234,7 @@ class SimDataConverter:
             elif error_type == "RandomPerturbations":
                 error_cause = "Position perturbation"
                 error_cause_english = "Position perturbation"
-            if (
-                error_cause != last_error.get("error_cause", None)
-                and last_error.get("error_cause", "") != ""
-            ):
+            if error_cause != last_error.get("error_cause", None) and last_error.get("error_cause", "") != "":
                 for idx, fm in enumerate(self._state["frames"]):
                     if fm["time_stamp"] >= state_ts:
                         error_end_frame = idx
@@ -266,9 +253,7 @@ class SimDataConverter:
                         drop_timing = params.get("drop_timing", 0.2)
                         motion_run_ratio = params.get("motion_run_ratio", 1.0)
                         real_start = math.ceil(
-                            (error_info["end"] - last_action_start)
-                            * (drop_timing / motion_run_ratio)
-                            * 0.25
+                            (error_info["end"] - last_action_start) * (drop_timing / motion_run_ratio) * 0.25
                             + last_action_start
                         )
                         real_start = max(min(real_start, error_info["end"] - 1), last_action_start)
@@ -278,9 +263,7 @@ class SimDataConverter:
                         last_action_start = actions[-1]["start_frame"]
                         error_info["start"] = max(last_action_start, error_info["start"])
                 elif last_error_description.get("type", "") == "RandomPerturbations":
-                    real_start = math.ceil(
-                        (error_info["end"] - error_info["start"]) * 0.5 + error_info["start"]
-                    )
+                    real_start = math.ceil((error_info["end"] - error_info["start"]) * 0.5 + error_info["start"])
                     error_info["start"] = max(real_start, error_info["start"])
                 error_descriptions.append(error_info)
                 error_start_frame = error_end_frame
@@ -327,14 +310,10 @@ class SimDataConverter:
             },
         }
         try:
-            with open(
-                os.path.join(self._output_path, "data_info.json"), "w", encoding="utf-8"
-            ) as f:
+            with open(os.path.join(self._output_path, "data_info.json"), "w", encoding="utf-8") as f:
                 json.dump(data_info, f, indent=4, ensure_ascii=False)
         except Exception:
-            with open(
-                os.path.join(self._output_path, "data_info.json"), "w", encoding="utf-8"
-            ) as f:
+            with open(os.path.join(self._output_path, "data_info.json"), "w", encoding="utf-8") as f:
                 json.dump(data_info, f, indent=4, ensure_ascii=True)
 
     def move_camera_images(self):
@@ -413,9 +392,7 @@ class SimDataConverter:
             cam = process_camera_parameter_file_name(cam)
             if "rgbd" in cam:
                 with open(
-                    os.path.join(
-                        camera_parameters_path, "intrinsic_" + cam.replace("rgbd", "rgb") + ".json"
-                    ),
+                    os.path.join(camera_parameters_path, "intrinsic_" + cam.replace("rgbd", "rgb") + ".json"),
                     "w",
                 ) as f:
                     json.dump(cam_int_params, f, indent=4)
@@ -476,19 +453,11 @@ class SimDataConverter:
             "ee_list": [
                 {
                     "name": "left_hand",
-                    "type": (
-                        self.gripper_names[0]
-                        if len(self.gripper_names) > 0
-                        else "ctek_gripper_120s"
-                    ),
+                    "type": (self.gripper_names[0] if len(self.gripper_names) > 0 else "zhiyuan_gripper_omnipicker"),
                 },
                 {
                     "name": "right_hand",
-                    "type": (
-                        self.gripper_names[1]
-                        if len(self.gripper_names) > 1
-                        else "ctek_gripper_120s"
-                    ),
+                    "type": (self.gripper_names[1] if len(self.gripper_names) > 1 else "zhiyuan_gripper_omnipicker"),
                 },
             ],
             "episode_id": self._episode_id,
@@ -545,31 +514,23 @@ class SimDataConverter:
         end_group.create_dataset("orientation", data=f_in[f"{prefix}/end/orientation"][index])
         end_group.create_dataset("position", data=f_in[f"{prefix}/end/position"][index])
         # head data
-        head_index = [
-            self.config["joint_state_order"].index(name) for name in self.config["head_joint_names"]
-        ]
+        head_index = [self.config["joint_state_order"].index(name) for name in self.config["head_joint_names"]]
         head_group = action_group.create_group("head")
         head_group.attrs["name"] = self.config["head_joint_names"]
         head_group.create_dataset("position", data=joint_position[head_index])
         # joint data
-        joint_index = [
-            self.config["joint_state_order"].index(name) for name in self.config["arm_joint_names"]
-        ]
+        joint_index = [self.config["joint_state_order"].index(name) for name in self.config["arm_joint_names"]]
         joint_group = action_group.create_group("joint")
         joint_group.attrs["name"] = self.config["arm_joint_names"]
         joint_group.create_dataset("position", data=joint_position[joint_index])
         self.joint_action.append(joint_position[joint_index])
         # left_effector
-        left_effector_index = self.config["joint_state_order"].index(
-            self.config["left_effector_joint_name"]
-        )
+        left_effector_index = self.config["joint_state_order"].index(self.config["left_effector_joint_name"])
         left_effector_position = omnipicker_sim_to_real(joint_position_state[left_effector_index])
         left_effector_group = action_group.create_group("left_effector")
         left_effector_group.create_dataset("position", data=[left_effector_position])
         # right_effector
-        right_effector_index = self.config["joint_state_order"].index(
-            self.config["right_effector_joint_name"]
-        )
+        right_effector_index = self.config["joint_state_order"].index(self.config["right_effector_joint_name"])
         right_effector_position = omnipicker_sim_to_real(joint_position_state[right_effector_index])
         right_effector_group = action_group.create_group("right_effector")
         right_effector_group.create_dataset("position", data=[right_effector_position])
@@ -577,10 +538,7 @@ class SimDataConverter:
         robot_group = action_group.create_group("robot")
         robot_group.create_dataset("velocity", data=[0.0, 0.0])
         # waist
-        waist_index = [
-            self.config["joint_state_order"].index(name)
-            for name in self.config["waist_joint_names"]
-        ]
+        waist_index = [self.config["joint_state_order"].index(name) for name in self.config["waist_joint_names"]]
         waist_group = action_group.create_group("waist")
         waist_group.attrs["name"] = self.config["waist_joint_names"]
         waist_group.create_dataset("position", data=joint_position[waist_index])
@@ -594,17 +552,13 @@ class SimDataConverter:
         end_group = state_group.create_group("end")
         end_group.create_dataset("orientation", data=f_in[f"{prefix}/end/orientation"][index])
         end_group.create_dataset("position", data=f_in[f"{prefix}/end/position"][index])
-        end_group.create_dataset(
-            "arm_orientation", data=f_in[f"{prefix}/end/arm_orientation"][index]
-        )
+        end_group.create_dataset("arm_orientation", data=f_in[f"{prefix}/end/arm_orientation"][index])
         end_group.create_dataset("arm_position", data=f_in[f"{prefix}/end/arm_position"][index])
         left_position = np.array(f_in[f"{prefix}/end/arm_position"][index][0])
         right_position = np.array(f_in[f"{prefix}/end/arm_position"][index][1])
         left_orientation = np.array(f_in[f"{prefix}/end/arm_orientation"][index][0])
         right_orientation = np.array(f_in[f"{prefix}/end/arm_orientation"][index][1])
-        end_pose = np.concatenate(
-            [left_position, left_orientation, right_position, right_orientation], axis=-1
-        )
+        end_pose = np.concatenate([left_position, left_orientation, right_position, right_orientation], axis=-1)
         end_group.create_dataset("pose", data=end_pose)
         end_group.create_dataset("errmsg", data=np.empty(0))
         end_group.create_dataset("errcode", data=np.zeros(1, dtype=np.int32))
@@ -612,9 +566,7 @@ class SimDataConverter:
         end_group.create_dataset("velocity", data=np.zeros((12, 1), dtype=np.float32))
         end_group.create_dataset("wrench", data=np.zeros((12, 1), dtype=np.float32))
         # head data
-        head_index = [
-            self.config["joint_state_order"].index(name) for name in self.config["head_joint_names"]
-        ]
+        head_index = [self.config["joint_state_order"].index(name) for name in self.config["head_joint_names"]]
         head_mode = [0.0] * len(head_index)
         head_group = state_group.create_group("head")
         head_group.attrs["name"] = self.config["head_joint_names"]
@@ -623,9 +575,7 @@ class SimDataConverter:
         head_group.create_dataset("position", data=joint_position[head_index])
         head_group.create_dataset("velocity", data=joint_velocity[head_index])
         # joint data
-        joint_index = [
-            self.config["joint_state_order"].index(name) for name in self.config["arm_joint_names"]
-        ]
+        joint_index = [self.config["joint_state_order"].index(name) for name in self.config["arm_joint_names"]]
         joint_mode = [0.0] * len(joint_index)
         joint_group = state_group.create_group("joint")
         joint_group.attrs["name"] = self.config["arm_joint_names"]
@@ -635,21 +585,13 @@ class SimDataConverter:
         joint_group.create_dataset("velocity", data=joint_velocity[joint_index])
         self.joint_state.append(joint_position[joint_index])
         # left_effector
-        left_effector_index = self.config["joint_state_order"].index(
-            self.config["left_effector_joint_name"]
-        )
-        left_effector_position = omnipicker_reverse_relabel_gripper(
-            joint_position[left_effector_index]
-        )
+        left_effector_index = self.config["joint_state_order"].index(self.config["left_effector_joint_name"])
+        left_effector_position = omnipicker_reverse_relabel_gripper(joint_position[left_effector_index])
         left_effector_group = state_group.create_group("left_effector")
         left_effector_group.create_dataset("position", data=[left_effector_position])
         # right_effector
-        right_effector_index = self.config["joint_state_order"].index(
-            self.config["right_effector_joint_name"]
-        )
-        right_effector_position = omnipicker_reverse_relabel_gripper(
-            joint_position[right_effector_index]
-        )
+        right_effector_index = self.config["joint_state_order"].index(self.config["right_effector_joint_name"])
+        right_effector_position = omnipicker_reverse_relabel_gripper(joint_position[right_effector_index])
         right_effector_group = state_group.create_group("right_effector")
         right_effector_group.create_dataset("position", data=[right_effector_position])
         # robot
@@ -657,10 +599,7 @@ class SimDataConverter:
         robot_group.create_dataset("orientation", data=f_in[f"{prefix}/robot/orientation"][index])
         robot_group.create_dataset("position", data=f_in[f"{prefix}/robot/position"][index])
         # waist
-        waist_index = [
-            self.config["joint_state_order"].index(name)
-            for name in self.config["waist_joint_names"]
-        ]
+        waist_index = [self.config["joint_state_order"].index(name) for name in self.config["waist_joint_names"]]
         waist_mode = [0.0] * len(waist_index)
         waist_group = state_group.create_group("waist")
         waist_group.attrs["name"] = self.config["waist_joint_names"]

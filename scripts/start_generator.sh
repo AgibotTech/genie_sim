@@ -31,5 +31,43 @@ echo $UID
 # export UID=$(id -u)
 export GID=$(id -g)
 
+# Parse arguments
+USE_TEXT_EMBEDDING=true
+DOCKER_COMPOSE_ARGS=()
+
+for arg in "$@"; do
+    case $arg in
+        --vl_embedding)
+            USE_TEXT_EMBEDDING=false
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--text_embedding] [docker compose arguments...]"
+            echo ""
+            echo "Options:"
+            echo "  --text_embedding    Use text embedding profile (default: vl profile)"
+            echo "  -h, --help          Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0                          # Start with vl profile"
+            echo "  $0 --text_embedding         # Start with text profile"
+            echo "  $0 --text_embedding -d      # Start with text profile in background"
+            exit 0
+            ;;
+        *)
+            # Pass other arguments to docker compose
+            DOCKER_COMPOSE_ARGS+=("$arg")
+            ;;
+    esac
+done
+
+# Select profile based on arguments
+if [ "$USE_TEXT_EMBEDDING" = true ]; then
+    PROFILE="text"
+    echo "Using text embedding profile"
+else
+    PROFILE="vl"
+    echo "Using vl profile"
+fi
+
 # If we get here we are in the repo root – continue safely
-docker compose -f source/geniesim/generator/compose.yaml up --build
+docker compose -f source/geniesim/generator/compose.yaml --profile "$PROFILE" up --build "${DOCKER_COMPOSE_ARGS[@]}"

@@ -11,6 +11,8 @@ ROOT_DIRECTORY = os.path.dirname(CURRENT_DIRECTORY)
 sys.path.append(ROOT_DIRECTORY)
 
 from fastmcp import FastMCP
+from pydantic import BaseModel, Field
+from typing import Annotated
 
 # Configure logging to use stderr to avoid interfering with JSON-RPC on stdout
 logging.basicConfig(
@@ -24,8 +26,11 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("File Agent Server")
 
 
-@mcp.tool()
-def save_file(file_path: str, content: str) -> bool:
+@mcp.tool(name="save_file", description="Save JSON file by path")
+def save_file(
+    file_path: Annotated[str, Field(..., description="File path to save the file")],
+    content: Annotated[str, Field(..., description="Content to write, in JSON format")],
+) -> bool:
     """
     Save JSON file by path
 

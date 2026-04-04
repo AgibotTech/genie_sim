@@ -8,8 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --upgrade -r requirements.txt
+COPY ./mcp_text_embedding/requirements.txt .
+RUN pip install --upgrade -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
