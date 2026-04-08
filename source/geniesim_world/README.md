@@ -1,9 +1,9 @@
-# Genie Sim PanoRecon 🌍
+# Genie Sim World 🌍
 
-`Genie Sim PanoRecon` creates immersive explorable 3D world for robot manipulation task within seconds.
+`Genie Sim World` creates immersive explorable 3D world for robot manipulation task within seconds.
 This project implements the methods from ***Genie Sim PanoRecon** - Fast Immersive Scene Generation from a Single Equirectangular Panorama*
 
-![image.png](./assets/teaser.png)
+![image.png](./assets/project.png)
 <div align="center">
   <a href="https://arxiv.org/abs/TDOD" style="text-decoration:none;">
     <img src="https://img.shields.io/badge/arXiv-2601.02078-red.svg?logo=arxiv&logoColor=white" alt="arXiv Paper: 2601.02078">
