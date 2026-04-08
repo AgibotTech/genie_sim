@@ -49,6 +49,20 @@ class PIROSNode(SimNode):
             "/record/sub_task_name",
             QOS_PROFILE_LATEST,
         )
+        self.publisher_episode_done = self.create_publisher(
+            String,
+            "/record/episode_done",
+            QOS_PROFILE_LATEST,
+        )
+        self.sub_episode_ack = self.create_subscription(
+            String,
+            "/record/episode_ack",
+            self._episode_ack_callback,
+            10,
+        )
+        self._episode_ack_event = threading.Event()
+        self._episode_ack_idx = -1
+        self._episode_ack_lock = threading.Lock()
         # fmt: on
 
         self.sub_task_name = ""
@@ -158,9 +172,9 @@ class PIROSNode(SimNode):
     def get_observation_image(self):
         ret = {}
         if all(self.img_buffer[v] is not None for v in self.infer_img_keys):
-            print("image ready")
+            self.get_logger().debug("image ready")
         else:
-            print("image empty")
+            self.get_logger().debug("image empty")
             return ret
 
         for k in self.infer_img_keys:
@@ -224,3 +238,27 @@ class PIROSNode(SimNode):
         """Get the current sub_task_name"""
         with self.sub_task_name_lock:
             return self.sub_task_name
+
+    def pub_episode_done(self, episode_idx: int):
+        self._episode_ack_event.clear()
+        msg = String()
+        msg.data = str(episode_idx)
+        self.publisher_episode_done.publish(msg)
+        self.get_logger().info(f"Published episode_done signal for episode {episode_idx}")
+
+    def _episode_ack_callback(self, msg):
+        try:
+            ack_idx = int(msg.data)
+            with self._episode_ack_lock:
+                self._episode_ack_idx = ack_idx
+            self._episode_ack_event.set()
+            self.get_logger().info(f"Received episode_ack for episode {ack_idx}")
+        except (ValueError, AttributeError) as e:
+            self.get_logger().warning(f"Invalid episode_ack message: {e}")
+
+    def wait_episode_ack(self, timeout=30.0) -> bool:
+        success = self._episode_ack_event.wait(timeout=timeout)
+        if not success:
+            self.get_logger().warning(f"Timed out waiting for episode_ack after {timeout}s")
+        self._episode_ack_event.clear()
+        return success

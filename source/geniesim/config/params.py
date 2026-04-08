@@ -5,7 +5,7 @@
 import argparse
 from re import L
 import yaml
-from dataclasses import dataclass, field, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass, MISSING
 from typing import Any, Dict, Type, TypeVar
 import geniesim.utils.system_utils as system_utils
 
@@ -122,15 +122,11 @@ class BenchmarkConfig:
     output_dir: str = "output"
     fps: int = 30
     record: bool = False
-    infer_host: str = "127.0.0.1:8999"
+    infer_host: str = "localhost:8999"
     model_arc: str = "pi"
-    enable_ros: bool = False
     interactive: bool = False
-    num_material: int = 1
-    num_lights: int = 1
-    num_init_base: int = 1
-    num_init_joint: int = 1
     seed: int = 1
+    preview: bool = False
 
 
 @dataclass
@@ -147,13 +143,23 @@ class Config:
     layout: LayoutConfig = field(default_factory=LayoutConfig)
 
 
+# -------------------- Recursive declaration helper --------------------
+def declare_dataclass_params(cls: Type, ps: ParameterServer, prefix: str = ""):
+    for f in fields(cls):
+        key = f"{prefix}.{f.name}" if prefix else f.name
+        if is_dataclass(f.type):
+            declare_dataclass_params(f.type, ps, key)
+        else:
+            default = f.default if f.default is not MISSING else None
+            ps.declare_parameter(key, default)
+
+
 # -------------------- main --------------------
 if __name__ == "__main__":
     ps = ParameterServer()
 
-    # 1. Declare default parameters (only need dataclass default values, no need to declare all)
-    for f in fields(Config):
-        ps.declare_parameter(f.name, None)
+    # 1. Declare default parameters (recursively register all nested dataclass fields)
+    declare_dataclass_params(Config, ps)
 
     # 2. Load from YAML file
     ps.set_parameters_from_yaml("config.yaml")

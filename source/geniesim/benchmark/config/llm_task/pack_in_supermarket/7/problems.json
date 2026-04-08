@@ -1,0 +1,43 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "benchmark_orange_406cb3a5|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_orange_406cb3a5|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Inside": "benchmark_orange_406cb3a5|benchmark_handbag_9d585f51|1.0"
+              },
+              {
+                "StepOut": 400
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pack_in_supermarket"
+  }
+}

@@ -6,6 +6,7 @@ CURRENT_DIR=$(pwd)
 echo $CURRENT_DIR
 xhost +local:
 docker run -it --name pi05_infer\
+    --init \
     --rm \
     --gpus all \
     --ipc=host \

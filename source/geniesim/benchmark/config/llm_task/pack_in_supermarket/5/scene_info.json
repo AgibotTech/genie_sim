@@ -1,0 +1,230 @@
+{
+  "scene_id": "desk_with_product_and_bag",
+  "seed": 1078937671,
+  "layout": {
+    "table_0fe47ceb": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_b84b1410",
+        "desk_with_product_and_bag_72ba6a9a",
+        "table_0fe47ceb"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_handbag_2846218d": {
+      "usd": "benchmark_handbag_004",
+      "xyz": [
+        0.1,
+        0.113,
+        0.925
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.917698,
+        0.397279
+      ],
+      "tags": [
+        "root_scene_b84b1410",
+        "desk_with_product_and_bag_72ba6a9a",
+        "place_bag_on_desk_ec4671b7",
+        "benchmark_handbag_2846218d"
+      ],
+      "keywords": [
+        "handbag",
+        "bag",
+        "left_area",
+        "on_desk"
+      ],
+      "description": {}
+    },
+    "benchmark_green_apple_8740ccac": {
+      "usd": "benchmark_green_apple_000",
+      "xyz": [
+        -0.084,
+        -0.204,
+        0.86
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.232341,
+        0.972634
+      ],
+      "tags": [
+        "root_scene_b84b1410",
+        "desk_with_product_and_bag_72ba6a9a",
+        "place_product_on_desk_c66f1fa8",
+        "select_product_7afb7bdd",
+        "benchmark_green_apple_8740ccac"
+      ],
+      "keywords": [
+        "product",
+        "green",
+        "green_apple",
+        "on_desk"
+      ],
+      "description": {
+        "semantic_name": [
+          "green_apple"
+        ],
+        "object_category": [
+          "fruit",
+          "pome"
+        ],
+        "color": "green",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.0828,
+          0.0902,
+          0.081
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "green",
+          "fresh",
+          "ripe",
+          "smooth"
+        ],
+        "full_description": [
+          "A round, bright green apple with a speckled skin and a short brown stem."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_b84b1410"
+        },
+        {
+          "id": "desk_with_product_and_bag_72ba6a9a"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_0fe47ceb"
+        },
+        {
+          "id": "place_bag_on_desk_ec4671b7"
+        },
+        {
+          "tags": [
+            "handbag",
+            "bag",
+            "left_area",
+            "on_desk"
+          ],
+          "id": "benchmark_handbag_2846218d"
+        },
+        {
+          "id": "place_product_on_desk_c66f1fa8"
+        },
+        {
+          "id": "select_product_7afb7bdd"
+        },
+        {
+          "tags": [
+            "product",
+            "green",
+            "green_apple",
+            "on_desk"
+          ],
+          "id": "benchmark_green_apple_8740ccac"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_b84b1410",
+          "target": "desk_with_product_and_bag_72ba6a9a"
+        },
+        {
+          "source": "desk_with_product_and_bag_72ba6a9a",
+          "target": "table_0fe47ceb"
+        },
+        {
+          "source": "desk_with_product_and_bag_72ba6a9a",
+          "target": "place_bag_on_desk_ec4671b7"
+        },
+        {
+          "source": "desk_with_product_and_bag_72ba6a9a",
+          "target": "place_product_on_desk_c66f1fa8"
+        },
+        {
+          "source": "place_bag_on_desk_ec4671b7",
+          "target": "benchmark_handbag_2846218d"
+        },
+        {
+          "source": "place_product_on_desk_c66f1fa8",
+          "target": "select_product_7afb7bdd"
+        },
+        {
+          "source": "select_product_7afb7bdd",
+          "target": "benchmark_green_apple_8740ccac"
+        }
+      ]
+    }
+  }
+}

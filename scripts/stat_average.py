@@ -72,7 +72,7 @@ def main():
 
     # (path, score) for each json that has statistics.average
     items = []
-    for path in paths:
+    for path in sorted(paths):
         v = extract_average(path)
         if v is not None:
             items.append((path, v))
@@ -89,8 +89,9 @@ def main():
     print()
     print("Per-file scores:")
     for path, score in items:
+        grandparent = os.path.basename(os.path.dirname(os.path.dirname(path)))
         parent_name = os.path.basename(os.path.dirname(path))
-        print(f"  {parent_name}: {score:.4f}")
+        print(f"  {grandparent}/{parent_name}: {score:.4f}")
     print()
     print(f"Overall average: {avg:.4f}")
     print(f"min: {min(average_values):.4f}, max: {max(average_values):.4f}")

@@ -14,8 +14,7 @@ from geniesim.config.params import *
 system_utils.check_and_fix_env()
 
 ps = ParameterServer()
-for f in fields(Config):
-    ps.declare_parameter(f.name, None)
+declare_dataclass_params(Config, ps)
 ps.set_parameters_from_yaml(system_utils.config_path() + "/config.yaml")
 ps.override_from_cli()
 cfg = load_dataclass(Config, ps)
@@ -102,22 +101,30 @@ def main():
     task_manager.start()
 
     step = 0
-    while simulation_app.is_running():
-        ui_builder.my_world.step(render=True)
-        task_manager.api_core.render_step()
+    try:
+        while simulation_app.is_running():
+            ui_builder.my_world.step(render=True)
+            task_manager.api_core.render_step()
 
-        if task_manager.api_core.exit:
-            task_manager.api_core.post_process()
-            break
+            if task_manager.api_core.exit:
+                task_manager.api_core.post_process()
+                break
 
-        if not ui_builder.my_world.is_playing():
-            if step % 100 == 0:
-                print("**** simulation paused ****")
-            step += 1
+            if not ui_builder.my_world.is_playing():
+                if step % 100 == 0:
+                    print("**** simulation paused ****")
+                step += 1
 
-            continue
-
-    simulation_app.close()
+                continue
+    except KeyboardInterrupt:
+        print("main loop: KeyboardInterrupt received")
+    finally:
+        print("Shutting down...")
+        task_manager.join(timeout=10)
+        task_manager.api_core.stop_all_recording()
+        task_manager.api_core.shutdown_ros()
+        simulation_app.close()
+        print("Shutdown complete")
 
 
 if __name__ == "__main__":

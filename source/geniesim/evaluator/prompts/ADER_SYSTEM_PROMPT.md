@@ -68,6 +68,12 @@ ADER (Action Domain Evaluation Rule) is a benchmark evaluation framework for rob
 - Function: Detects whether object A covers object B
 - Syntax: `"Cover": "active_obj|passive_obj"`
 
+**Stack (Stack Alignment)**
+- Function: Detects whether center points of multiple objects are all within threshold of the first object's center (for stack-alignment tasks)
+- Syntax: `"Stack": "[a,b,c]|[x,y]"`
+- Parameters: `[a,b,c]` = object IDs (at least 2), `[x,y]` = XY threshold (meters) for center deviation
+- Principle: Uses first object as reference; passes when all objects' XY centers are within (x, y) of the reference, requires 2 consecutive frames
+
 **OnShelf (Shelf Placement)**
 - Function: Detects whether an object is located in a specific area
 - Syntax: `"OnShelf": "obj_id|target_id|bbox|height"`

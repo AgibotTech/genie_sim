@@ -43,7 +43,7 @@ class Follow(EvaluateAction):
         self._update_count = 0  # Debug counter to track update calls
 
         # Initialize a global set on env to track already-followed objects across rounds
-        if not hasattr(self.env, '_followed_objects'):
+        if not hasattr(self.env, "_followed_objects"):
             self.env._followed_objects = set()
 
         logger.info(
@@ -70,7 +70,7 @@ class Follow(EvaluateAction):
             return [resolved] if resolved else []
         # Filter out objects that have already been followed in previous rounds,
         # but always keep at least one candidate to avoid an empty list
-        followed = getattr(self.env, '_followed_objects', set())
+        followed = getattr(self.env, "_followed_objects", set())
         filtered = [name for name in self._obj_candidates if name not in followed]
         if not filtered and self._obj_candidates:
             filtered = [self._obj_candidates[0]]
@@ -144,7 +144,9 @@ class Follow(EvaluateAction):
                 self._matched_obj = matched
                 self.env._followed_objects.add(matched)
                 self.env.update_place_holder("placeholder_str1", matched)
-                logger.info(f"[Follow] Gripper is following object '{matched}' (followed so far: {self.env._followed_objects})")
+                logger.info(
+                    f"[Follow] Gripper is following object '{matched}' (followed so far: {self.env._followed_objects})"
+                )
 
         except Exception as e:
             logger.warning(f"[Follow] Error during update #{self._update_count}: {e}")

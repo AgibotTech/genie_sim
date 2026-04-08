@@ -6,10 +6,51 @@
           {
             "ActionSetWaitAny": [
               {
-                "VLM": "pick_follow_logic_or|Picks up the red apple or the green can item on the table"
+                "Follow": "benchmark_apple_b4627840|[0.1,0.2,0.1]|right_gripper"
               },
               {
-                "StepOut": 900
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_apple_b4627840|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_follow_logic_or"
+  },
+  "problem2": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "sprite_2fefab03|[0.1,0.2,0.1]|left_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "sprite_2fefab03|left_gripper"
+              },
+              {
+                "StepOut": 200
               }
             ]
           }

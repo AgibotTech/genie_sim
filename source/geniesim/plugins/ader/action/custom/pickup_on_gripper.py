@@ -55,12 +55,23 @@ class PickUpOnGripper(EvaluateAction):
 
         # Threshold Parameters for pickup detection
         self.z_threshold = 0.02
-        self.distance_threshold = 0.1
+        self.distance_threshold = 0.2
 
         # Status record - per-object tracking for multi-object mode
         self._initial_z_map = {}  # {obj_name: initial_z}
         self._picked_z_map = {}  # {obj_name: current_z at pickup success}
         self.success_detected = False
+        self._debug_counter = 0
+
+        # Initialize a global set on env to track already-picked objects across rounds
+        if not hasattr(self.env, "_picked_objects"):
+            self.env._picked_objects = set()
+
+        logger.info(
+            f"[PickUpOnGripper] Initialized with obj_name='{self.obj_name}', "
+            f"obj_name_list={self.obj_name_list}, gripper_id={self.gripper_id}, "
+            f"already_picked={self.env._picked_objects}"
+        )
 
         # Initialize a global set on env to track already-picked objects across rounds
         if not hasattr(self.env, "_picked_objects"):

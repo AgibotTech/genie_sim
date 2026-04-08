@@ -6,17 +6,17 @@ from helper import *
 
 """
 scene_name: random_drink_placement
-description: 在指定区域内随机摆放一个cola或者fanta
+description: Randomly place a cola or fanta in the designated area
 """
 
 
 @register()
 def place_random_drink() -> Shape:
     """
-    在指定区域内随机摆放一个cola或者fanta
-    x范围: -2.91 到 -2.96
-    y范围: -0.65 到 -0.95
-    z高度: 0.88
+    Randomly place a cola or fanta in the designated area
+    x range: -2.91 to -2.96
+    y range: -0.65 to -0.95
+    z height: 0.88
     """
     x_min, x_max = -2.96, -2.93
     y_min, y_max = -0.95, -0.65

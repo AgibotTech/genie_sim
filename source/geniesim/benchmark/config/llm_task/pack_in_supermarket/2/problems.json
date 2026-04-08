@@ -1,0 +1,43 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "benchmark_apple_3e8be7d8|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_apple_3e8be7d8|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Inside": "benchmark_apple_3e8be7d8|benchmark_handbag_f6455d45|1.0"
+              },
+              {
+                "StepOut": 400
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pack_in_supermarket"
+  }
+}

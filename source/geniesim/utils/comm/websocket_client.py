@@ -34,6 +34,17 @@ class WebsocketClientPolicy:
     def get_server_metadata(self) -> Dict:
         return self._server_metadata
 
+    def close(self):
+        if self._ws is not None:
+            try:
+                self._ws.close()
+            except Exception:
+                pass
+            self._ws = None
+
+    def __del__(self):
+        self.close()
+
     def _wait_for_server(self) -> Tuple[websockets.sync.client.ClientConnection, Dict]:
         logging.info(f"Waiting for server at {self._uri}...")
         while True:

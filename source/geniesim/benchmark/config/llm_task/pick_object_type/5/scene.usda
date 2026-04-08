@@ -36,12 +36,16 @@ def "World"
     def "Objects"
     {
         def Xform "table_47f3845a" (
-            prepend payload = @../../../../../assets/objects/edited/table_000/Aligned.usda@
+            prepend payload = @../../../../../assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0, 0, 0.365)
+            double3 xformOp:translate = (0, 0, 0.265)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -87,8 +91,8 @@ def "World"
             }
         }
 
-        def Xform "benchmark_garage_kit_0c45f82a" (
-            prepend payload = @../../../../../assets/objects/benchmark/garage_kit/benchmark_garage_kit_064/Aligned.usda@
+        def Xform "benchmark_toy_car_0c45f82a" (
+            prepend payload = @../../../../../assets/objects/benchmark/toy_car/benchmark_toy_car_018/Aligned.usda@
         )
         {
             quatf xformOp:orient = (0.668632, 0, 0, 0.743593)

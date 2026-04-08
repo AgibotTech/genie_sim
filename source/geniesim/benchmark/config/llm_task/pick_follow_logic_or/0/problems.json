@@ -6,10 +6,51 @@
           {
             "ActionSetWaitAny": [
               {
-                "VLM": "pick_follow_logic_or|Picks up the red building block or the red apple item on the table"
+                "Follow": "benchmark_building_blocks_89594620|[0.1,0.2,0.1]|left_gripper"
               },
               {
-                "StepOut": 900
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_building_blocks_89594620|left_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_follow_logic_or"
+  },
+  "problem2": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "benchmark_apple_280edce5|[0.1,0.2,0.1]|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_apple_280edce5|right_gripper"
+              },
+              {
+                "StepOut": 200
               }
             ]
           }

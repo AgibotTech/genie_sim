@@ -4,6 +4,7 @@
 
 import json
 import time
+from typing import Dict
 from PIL.Image import logger
 import numpy as np
 from numpy.random import rand
@@ -14,8 +15,14 @@ from geniesim.app.controllers.api_core import APICore
 from geniesim.utils.data_courier import DataCourier
 from geniesim.utils.infer_pre_process import TaskInfo
 from geniesim.benchmark.config.robot_init_states import TASK_INFO_DICT
-from geniesim.utils.name_utils import robot_type_mapping
+from geniesim.utils.name_utils import robot_type_mapping, ROBOT_CONFIGS
 from geniesim.utils.ikfk_utils import IKFKSolver
+from geniesim.utils.generalization_utils import (
+    apply_joint_pd_generalization,
+    apply_material_generalization,
+    apply_hdr_texture_generalization,
+    _apply_camera_generalization_from_env,
+)
 
 
 class BaseEnv(AderEnv):
@@ -38,6 +45,9 @@ class BaseEnv(AderEnv):
         self.specific_task_name = self.init_task_config["specific_task_name"]
         self.sub_task_name = self.init_task_config["sub_task_name"]
         self.robot_cfg = robot_type_mapping(self.init_task_config["robot_cfg"])
+        self.cfg = ROBOT_CONFIGS.get(self.robot_cfg)
+        if self.cfg is None:
+            raise ValueError(f"Unsupported robot_cfg: {self.robot_cfg}")
 
         task_info_cfg = TASK_INFO_DICT.get(self.sub_task_name, {}).get(self.robot_cfg)
         self.load(task_file)
@@ -51,9 +61,6 @@ class BaseEnv(AderEnv):
                 self.init_hand,
                 self.init_gripper,
             ) = self.robot_task_info.init_pose()
-            gen_config = self.task_info.get("generalization_config", {})
-            rand_init_arm = gen_config.get("rand_init_arm", [0] * 14)
-            self.init_arm = list(np.array(self.init_arm) + np.array(rand_init_arm))
 
         self.ikfk_solver = IKFKSolver(
             self.init_arm,
@@ -63,11 +70,145 @@ class BaseEnv(AderEnv):
         )
         self.task = None
 
+        # Generalization config storage (populated via set_generalization_* interfaces)
+        self.rand_init_arm = None
+        self.robot_init_pose = None
+        self.light_config = None
+        self.joint_pd = None
+        self.camera_gen_config = {}
+
         if need_setup:
             self.load_task_setup()
 
         self.data_courier: DataCourier = None
         self.need_infer = False
+
+    def set_rand_init_arm(self, rand_init_arm):
+        """Set the random initialization arm offsets for joint generalization.
+
+        Args:
+            rand_init_arm: List of 14 joint offset values to add to init_arm.
+        """
+        self.rand_init_arm = rand_init_arm
+
+    def set_robot_init_pose(self, robot_init_pose):
+        """Set the robot initial base pose / offsets for init_base generalization.
+
+        Accepts two forms:
+        - Pre-generated full pose: {"position": [x, y, z], "quaternion": [w, x, y, z]}
+        - Dynamic offsets: {"x_thresh": float, "y_thresh": float}
+
+        Args:
+            robot_init_pose: Dict describing the pose or offset thresholds.
+        """
+        self.robot_init_pose = robot_init_pose
+
+    def set_light_config(self, light_config):
+        """Set the light configuration for light generalization.
+
+        Args:
+            light_config: Dict with temperature and/or intensity settings.
+        """
+        self.light_config = light_config
+
+    def set_camera_gen_config(self, camera_gen_config):
+        """Set the camera generalization config for camera generalization.
+
+        Args:
+            camera_gen_config: Dict containing camera_noise, camera_drop_frame,
+                camera_occlusion, and/or camera_position settings.
+        """
+        self.camera_gen_config = camera_gen_config
+
+    def get_rand_init_arm(self):
+        """Get the random initialization arm offsets."""
+        return self.rand_init_arm
+
+    def get_robot_init_pose(self):
+        """Get the robot initial base pose."""
+        return self.robot_init_pose
+
+    def get_light_config(self):
+        """Get the light configuration."""
+        return self.light_config
+
+    def get_camera_gen_config(self):
+        """Get the camera generalization config."""
+        return self.camera_gen_config
+
+    def set_joint_pd(self, joint_pd):
+        """Set the joint PD parameters for joint_pd generalization.
+
+        Args:
+            joint_pd: Dict with enable, kp, kd settings.
+        """
+        self.joint_pd = joint_pd
+
+    def get_joint_pd(self):
+        """Get the joint PD parameters."""
+        return self.joint_pd
+
+    def apply_generalization(self, api_core, task_config):
+        """Apply all stored generalization configs via api_core.
+
+        This method consumes the configs stored in env members and calls
+        api_core to actually apply each generalization effect.
+
+        Args:
+            api_core: The API core instance for applying robot/sim updates.
+            task_config: Task configuration dictionary containing robot_cfg.
+        """
+        from scipy.spatial.transform import Rotation as R
+
+        # --- init_base: perturb robot base position ---
+        robot_init_pose = self.get_robot_init_pose()
+        if robot_init_pose is not None:
+            if "position" in robot_init_pose and "quaternion" in robot_init_pose:
+                # Pre-generated pose from episode_content
+                position = robot_init_pose["position"]
+                quaternion = robot_init_pose["quaternion"]
+            else:
+                # Dynamic: use thresholds stored during update_init_env
+                x_thresh = robot_init_pose.get("x_thresh", 0.1)
+                y_thresh = robot_init_pose.get("y_thresh", 0.1)
+                robot_prim_path = getattr(api_core, "robot_prim_path", "/genie")
+                current_pos, current_quat = api_core.get_obj_world_pose(robot_prim_path)
+                new_pos = np.array(current_pos)
+                new_pos[0] += np.random.uniform(-x_thresh, x_thresh)
+                new_pos[1] += np.random.uniform(-y_thresh, y_thresh)
+                position = new_pos.tolist()
+                quaternion = list(current_quat)
+            api_core.update_robot_base(position, quaternion)
+            logger.info(f"Applied robot base position: {position}")
+
+        # --- init_joint: perturb init_arm via stored rand_init_arm ---
+        rand_init_arm = self.get_rand_init_arm()
+        if rand_init_arm is not None:
+            if hasattr(self, "init_arm") and self.init_arm is not None:
+                self.init_arm = list(np.array(self.init_arm) + np.array(rand_init_arm))
+                logger.info(f"Applied init_joint noise: {rand_init_arm}")
+
+        # --- lights: apply light configuration ---
+        light_config = self.get_light_config()
+        if light_config:
+            api_core.apply_light_config(light_config)
+            logger.info(f"Applied light config: {light_config}")
+
+        # --- joint_pd: apply joint PD drive gains ---
+        joint_pd = self.get_joint_pd()
+        if joint_pd:
+            apply_joint_pd_generalization(api_core, task_config, {"joint_pd": joint_pd})
+
+        # --- camera: apply camera generalization configs ---
+        camera_gen_config = self.get_camera_gen_config()
+        if camera_gen_config:
+            _apply_camera_generalization_from_env(api_core, task_config, camera_gen_config)
+
+        # --- material: apply material generalization ---
+        apply_material_generalization(api_core, task_config)
+
+        # --- hdr_texture: apply HDR texture randomization ---
+        apply_hdr_texture_generalization(api_core, task_config)
 
     def set_infer_status(self, need_infer):
         self.need_infer = need_infer

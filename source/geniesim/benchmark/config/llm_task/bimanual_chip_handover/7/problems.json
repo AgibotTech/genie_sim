@@ -1,0 +1,53 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "chip_h9w0x1y2|[0.1,0.3,0.1]|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "chip_h9w0x1y2|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "StableGrasp": "chip_h9w0x1y2|left_gripper|0.1|0.1|0.5"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Upright": "chip_h9w0x1y2|5.0"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "bimanual_chip_handover"
+  }
+}

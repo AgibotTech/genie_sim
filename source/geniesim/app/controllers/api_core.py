@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 import os
-from typing import Tuple
+from typing import Mapping, Optional, Sequence, Tuple
 import numpy as np
 import threading
 import queue
@@ -52,6 +52,7 @@ from geniesim.app.ros_publisher.robot_interface import RobotInterface
 from geniesim.app.workflow.ui_builder import UIBuilder
 from geniesim.robot.utils import quaternion_rotate
 from geniesim.utils.name_utils import *
+from geniesim.utils.system_utils import *
 
 import time
 
@@ -149,11 +150,7 @@ class APICore:
         self.recording_wait_num = 0
         self.robot_joint_indices = {}
 
-        # robot ros
-        if not rclpy.get_default_context().ok():
-            rclpy.init()
-
-    def run_on_render_loop(self, func, *args, **kwargs):
+    def run_on_render_loop(self, func, *args, timeout=120, **kwargs):
         done = threading.Event()
         result = {}
 
@@ -165,14 +162,16 @@ class APICore:
             finally:
                 done.set()
 
-        self.task_queue_on_render_loop.put(wrapper)  # Put into queue, wait for main thread to process
-        done.wait()
+        self.task_queue_on_render_loop.put(wrapper)
+        if not done.wait(timeout=timeout):
+            logger.error(f"run_on_render_loop timed out after {timeout}s for {func.__name__}")
+            raise TimeoutError(f"run_on_render_loop: {func.__name__} did not complete within {timeout}s")
 
         if "error" in result:
             raise result["error"]
         return result.get("value")
 
-    def run_on_physics_loop(self, func, *args, **kwargs):
+    def run_on_physics_loop(self, func, *args, timeout=120, **kwargs):
         done = threading.Event()
         result = {}
 
@@ -184,8 +183,10 @@ class APICore:
             finally:
                 done.set()
 
-        self.task_queue_on_physics_loop.put(wrapper)  # Put into queue, wait for main thread to process
-        done.wait()
+        self.task_queue_on_physics_loop.put(wrapper)
+        if not done.wait(timeout=timeout):
+            logger.error(f"run_on_physics_loop timed out after {timeout}s for {func.__name__}")
+            raise TimeoutError(f"run_on_physics_loop: {func.__name__} did not complete within {timeout}s")
 
         if "error" in result:
             raise result["error"]
@@ -369,6 +370,49 @@ class APICore:
     def post_process(self):
         pass
 
+    def stop_all_recording(self):
+        """Stop all active recording processes. Thread-safe, can be called from any thread."""
+        if not self.record_process:
+            return
+        logger.info("stop_all_recording called")
+        self._graceful_stop_recording()
+
+    def shutdown_ros(self):
+        """Shutdown all ROS2 nodes and context gracefully."""
+        import rclpy as _rclpy
+
+        logger.info("Shutting down ROS2...")
+        if self.benchmark_ros_node is not None:
+            try:
+                self.benchmark_ros_node.destroy_node()
+                logger.info("benchmark_ros_node destroyed")
+            except Exception as e:
+                logger.warning(f"Failed to destroy benchmark_ros_node: {e}")
+            self.benchmark_ros_node = None
+
+        if hasattr(self, "server_ros_node") and self.server_ros_node is not None:
+            try:
+                self.server_ros_node.destroy_node()
+                logger.info("server_ros_node destroyed")
+            except Exception as e:
+                logger.warning(f"Failed to destroy server_ros_node: {e}")
+            self.server_ros_node = None
+
+        if hasattr(self, "robot_interface") and self.robot_interface is not None:
+            try:
+                self.robot_interface.destroy_node()
+                logger.info("robot_interface destroyed")
+            except Exception as e:
+                logger.warning(f"Failed to destroy robot_interface: {e}")
+            self.robot_interface = None
+
+        if _rclpy.ok():
+            try:
+                _rclpy.shutdown()
+                logger.info("rclpy.shutdown() called")
+            except Exception as e:
+                logger.warning(f"rclpy.shutdown() failed: {e}")
+
     def start_recording(self, camera_prim_list, fps, extra_prim_paths, record_topic_list):
         self.run_on_render_loop(
             self._start_recording,
@@ -450,6 +494,96 @@ class APICore:
     def update_robot_base(self, pos, quat):
         self.run_on_render_loop(self._update_robot_base, pos, quat)
 
+    def set_articulation_joint_drive_gains(
+        self,
+        articulation_prim_path: str,
+        joint_gains: Mapping[str, Tuple[float, float]],
+    ):
+        """Set PhysX joint drive stiffness and damping for named articulation DOFs.
+
+        Args:
+            articulation_prim_path: Root prim path of the articulation (e.g. robot Xform).
+            joint_gains: Map each DOF/joint name to ``(stiffness, damping)`` as used by
+                ``UsdPhysics.DriveAPI`` on the joint prim (typically revolute: ``angular`` drive).
+
+        Notes:
+            Joint prims are discovered under ``articulation_prim_path`` by matching
+            ``prim.GetName()`` to the given DOF name. If your asset uses different naming,
+            extend the lookup logic.
+        """
+        return self.run_on_render_loop(self._set_articulation_joint_drive_gains, articulation_prim_path, joint_gains)
+
+    def set_robot_joint_drive_gains(self, joint_gains: Mapping[str, Tuple[float, float]]):
+        """Same as :meth:`set_articulation_joint_drive_gains` for the current robot articulation."""
+        art = self._get_articulation()
+        path = getattr(self, "robot_prim_path", None)
+        if art is not None:
+            path = getattr(art, "prim_path", None) or path
+        if not path:
+            raise RuntimeError("robot_prim_path is not set; call after init_robot_cfg")
+        return self.set_articulation_joint_drive_gains(str(path), joint_gains)
+
+    def set_robot_camera_local_pose(
+        self,
+        camera_prim_path: str,
+        position: Sequence[float],
+        orientation: Optional[Sequence[float]] = None,
+    ):
+        """Set a robot camera prim's transform **in its parent's local space** (relative pose).
+
+        Args:
+            camera_prim_path: Full USD path to the camera Xform, e.g.
+                ``/genie/gripper_l_base_link/Left_Camera``.
+            position: Local translation ``[x, y, z]`` relative to the parent prim.
+            orientation: Optional local orientation as quaternion ``[w, x, y, z]``.
+                If omitted, only translation is updated.
+
+        Notes:
+            Only **updates existing** ``UsdGeom`` translate / orient xform ops on the prim.
+            Does not create or rebuild the xform stack; if the expected ops are missing, logs
+            a warning and skips.
+        """
+        return self.run_on_render_loop(self._set_robot_camera_local_pose, camera_prim_path, position, orientation)
+
+    def get_prim_local_pose(
+        self, prim_path: str
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
+        """Get the local pose of a prim (position and orientation relative to its parent).
+
+        Args:
+            prim_path: Full USD path to the prim, e.g. ``/World/Objects/cup``.
+
+        Returns:
+            A tuple of ``(position, quaternion)`` where:
+            - position: ``(x, y, z)`` local translation
+            - quaternion: ``(w, x, y, z)`` local orientation
+
+        Notes:
+            Returns ``((0, 0, 0), (0, 0, 0, 0))`` if the prim is invalid or has no xform.
+        """
+        return self.run_on_render_loop(self._get_prim_local_pose, prim_path)
+
+    def set_prim_local_pose(
+        self,
+        prim_path: str,
+        position: Sequence[float],
+        orientation: Optional[Sequence[float]] = None,
+    ):
+        """Set the local pose of a prim (position and orientation relative to its parent).
+
+        Args:
+            prim_path: Full USD path to the prim, e.g. ``/World/Objects/cup``.
+            position: Local translation ``[x, y, z]`` relative to the parent prim.
+            orientation: Optional local orientation as quaternion ``[w, x, y, z]``.
+                If omitted, only translation is updated.
+
+        Notes:
+            Only **updates existing** ``UsdGeom`` translate / orient xform ops on the prim.
+            Does not create or rebuild the xform stack; if the expected ops are missing, logs
+            a warning and skips.
+        """
+        return self.run_on_render_loop(self._set_prim_local_pose, prim_path, position, orientation)
+
     ######################===================== New API END ======================================
 
     ######################===================== Private Methods BEGIN ===================================
@@ -477,7 +611,7 @@ class APICore:
 
                         if mesh_path in processed_meshes:
                             continue
-                        if "Objects" not in mesh_path:
+                        if not any(keyword in mesh_path for keyword in ["objects", "Objects"]):
                             continue
                         processed_meshes.add(mesh_path)
                         material_paths = []
@@ -510,7 +644,7 @@ class APICore:
                                                     material_paths.append(sub_material_path)
 
                         if len(material_paths) > 1:
-                            all_results[mesh_path] = list(set(material_paths))
+                            all_results[mesh_path] = sorted(set(material_paths))
 
         return all_results
 
@@ -851,7 +985,7 @@ class APICore:
                         geometry_prim.apply_visual_material(material)
                     else:
                         Material = self.materials[object_material]
-                        prim = self._.GetPrimAtPath(_prim)
+                        prim = self._stage.GetPrimAtPath(_prim)
                         UsdShade.MaterialBindingAPI(prim).Bind(Material)
 
             prim = self._stage.GetPrimAtPath(prim_path)
@@ -1099,6 +1233,70 @@ class APICore:
         )
         light.initialize()
 
+    def randomize_hdr_textures(self):
+        """Public API to randomize HDR textures for all DomeLights in the scene.
+
+        Automatically scans the current HDR file directory and randomly selects
+        a different HDR file for each DomeLight.
+        """
+        self.run_on_render_loop(self._randomize_hdr_textures)
+
+    def _randomize_hdr_textures(self):
+        """Randomly replace HDR texture files for all DomeLight prims in the stage.
+
+        For each DomeLight, scans its current HDR directory for all .hdr files
+        and randomly selects a different one to replace the current texture.
+        """
+        stage = self._stage
+        if not stage:
+            logger.warning("Stage not available, cannot randomize HDR textures")
+            return
+
+        # Find all DomeLight prims in the stage
+        domelight_count = 0
+        for prim in stage.Traverse():
+            if prim.GetTypeName() == "DomeLight":
+                domelight_count += 1
+                dome_light = UsdLux.DomeLight(prim)
+
+                texture_attr = dome_light.GetTextureFileAttr()
+                current_path = texture_attr.Get()
+
+                if not current_path:
+                    logger.info(f"DomeLight {prim.GetPath()}: no HDR texture set")
+                    continue
+
+                absolute_assets_path = assets_path()
+                relative_hdr_dir = os.path.dirname(current_path.path)
+                background_path = os.path.dirname(self.scene_usd)
+                hdr_directory = os.path.normpath(os.path.join(absolute_assets_path, background_path, relative_hdr_dir))
+
+                try:
+                    all_hdr_files = sorted([f for f in os.listdir(hdr_directory) if f.endswith(".hdr")])
+                except FileNotFoundError:
+                    logger.warning(f"DomeLight {prim.GetPath()}: directory not found: {hdr_directory}")
+                    continue
+                except PermissionError:
+                    logger.warning(f"DomeLight {prim.GetPath()}: permission denied: {hdr_directory}")
+                    continue
+
+                if len(all_hdr_files) <= 1:
+                    logger.info(
+                        f"DomeLight {prim.GetPath()}: only {len(all_hdr_files)} HDR file in {hdr_directory}, skipping"
+                    )
+                    continue
+
+                new_hdr = np.random.choice(all_hdr_files)
+                new_path = os.path.join(hdr_directory, new_hdr)
+
+                texture_attr.Set(new_path)
+                logger.info(f"DomeLight {prim.GetPath()}: {current_path.path} -> {new_path}")
+
+        if domelight_count == 0:
+            logger.info("No DomeLight prims found in the stage")
+        else:
+            logger.info(f"Randomized HDR textures for {domelight_count} DomeLight(s)")
+
     def _on_reset(self):
         logger.info("api_core reset.")
         self.ui_builder._on_reset()
@@ -1114,7 +1312,7 @@ class APICore:
         self.camera_prim_list = camera_prim_list
         self.process_camera_info_list()
         self.record_topic_list = record_topic_list
-        self.record_rosbag()
+        # self.record_rosbag()
 
         if not self.enable_physics:
             self.ui_builder.my_world.stop()
@@ -1123,14 +1321,58 @@ class APICore:
         self.recording_started = True
 
     def _stop_recording(self):
-        logger.info("Stop recording")
+        logger.info("Stop recording (direct call)")
         self.recording_started = False
         for process in self.record_process:
-            os.killpg(os.getpgid(process.pid), signal.SIGINT)
-            process.wait(timeout=10)
-            time.sleep(1.0)
-
+            try:
+                os.killpg(os.getpgid(process.pid), signal.SIGINT)
+                process.wait(timeout=10)
+                logger.info(f"Recording process {process.pid} stopped gracefully")
+            except subprocess.TimeoutExpired:
+                logger.warning(f"Process {process.pid} did not stop in time, killing...")
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    process.wait()
+                except (ProcessLookupError, OSError) as e:
+                    logger.warning(f"Failed to kill process {process.pid}: {e}")
+            except (ProcessLookupError, OSError) as e:
+                logger.warning(f"Failed to stop process {process.pid}: {e}")
+            time.sleep(0.5)
         self.record_process = []
+
+    def _graceful_stop_recording(self):
+        """Called from main thread when shutting down. Unlike run_on_render_loop version,
+        this waits for completion synchronously."""
+        logger.info("Graceful recording stop (sync)")
+        self.recording_started = False
+        for process in self.record_process:
+            try:
+                os.killpg(os.getpgid(process.pid), signal.SIGINT)
+            except (ProcessLookupError, OSError):
+                pass
+        time.sleep(0.5)
+        for process in self.record_process:
+            try:
+                poll = process.poll()
+                if poll is None:
+                    logger.warning(f"Process {process.pid} still running after SIGINT, sending SIGKILL")
+                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    process.wait()
+                else:
+                    logger.info(f"Process {process.pid} exited with code {poll}")
+            except (ProcessLookupError, OSError) as e:
+                logger.warning(f"Failed to cleanup process: {e}")
+        self.record_process = []
+
+    def stop_all_recording(self):
+        """Thread-safe method to stop all recording processes. Can be called from any thread.
+        For API design consistency, delegates to the render thread for the actual stop."""
+        if not self.record_process:
+            return
+        logger.info("stop_all_recording called")
+        # Directly perform the stop since this is a cleanup method
+        # and we want to guarantee it runs even if the render loop is stuck
+        self._graceful_stop_recording()
 
     def _dump_recording_info(self):
         logger.info("Dump recording info")
@@ -1262,6 +1504,233 @@ class APICore:
     def _update_robot_base(self, pos, quat):
         self.usd_objects["robot"].set_world_pose(pos, quat)
 
+    def _set_robot_camera_local_pose(
+        self,
+        camera_prim_path: str,
+        position: Sequence[float],
+        orientation: Optional[Sequence[float]],
+    ):
+        """Render-thread: only mutate existing translate/orient ops (no create / no rebuild)."""
+        stage = get_current_stage()
+        if not stage:
+            logger.warning("set_robot_camera_local_pose: no stage")
+            return
+        prim = stage.GetPrimAtPath(camera_prim_path)
+        if not prim.IsValid():
+            logger.warning(f"set_robot_camera_local_pose: invalid prim {camera_prim_path}")
+            return
+        xformable = UsdGeom.Xformable(prim)
+        pos = Gf.Vec3d(float(position[0]), float(position[1]), float(position[2]))
+        quat = None
+        if orientation is not None and len(orientation) >= 4:
+            quat = Gf.Quatd(
+                float(orientation[0]),
+                float(orientation[1]),
+                float(orientation[2]),
+                float(orientation[3]),
+            )
+
+        translate_op = None
+        orient_op = None
+        for op in xformable.GetOrderedXformOps():
+            ot = op.GetOpType()
+            if ot == UsdGeom.XformOp.TypeTranslate:
+                translate_op = op
+            elif ot == UsdGeom.XformOp.TypeOrient:
+                orient_op = op
+
+        if translate_op is None:
+            logger.warning(f"set_robot_camera_local_pose: no existing translate xform op on {camera_prim_path}; skip")
+            return
+
+        translate_op.Set(pos)
+        if quat is not None:
+            if orient_op is not None:
+                orient_op.Set(quat)
+            else:
+                logger.warning(
+                    f"set_robot_camera_local_pose: orientation given but no orient xform op on {camera_prim_path}; "
+                    "translation updated only"
+                )
+        logger.info(f"set_robot_camera_local_pose: updated {camera_prim_path} local t={pos}")
+
+    def _get_prim_local_pose(
+        self, prim_path: str
+    ) -> Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]:
+        """Render-thread: get local pose of a prim."""
+        stage = get_current_stage()
+        if not stage:
+            logger.warning("get_prim_local_pose: no stage")
+            return ((0, 0, 0), (0, 0, 0, 0))
+
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim.IsValid():
+            logger.warning(f"get_prim_local_pose: invalid prim {prim_path}")
+            return ((0, 0, 0), (0, 0, 0, 0))
+
+        xformable = UsdGeom.Xformable(prim)
+        if not xformable:
+            logger.warning(f"get_prim_local_pose: prim {prim_path} is not xformable")
+            return ((0, 0, 0), (0, 0, 0, 0))
+
+        translate_op = None
+        orient_op = None
+
+        for op in xformable.GetOrderedXformOps():
+            ot = op.GetOpType()
+            if ot == UsdGeom.XformOp.TypeTranslate:
+                translate_op = op
+            elif ot == UsdGeom.XformOp.TypeOrient:
+                orient_op = op
+
+        position = (0.0, 0.0, 0.0)
+        if translate_op is not None:
+            translate_value = translate_op.Get()
+            if translate_value is not None:
+                position = (translate_value[0], translate_value[1], translate_value[2])
+
+        quaternion = (0.0, 0.0, 0.0, 0.0)
+        if orient_op is not None:
+            orient_value = orient_op.Get()
+            if orient_value is not None:
+                quaternion = (
+                    orient_value.GetReal(),
+                    orient_value.GetImaginary()[0],
+                    orient_value.GetImaginary()[1],
+                    orient_value.GetImaginary()[2],
+                )
+
+        return (position, quaternion)
+
+    def _set_prim_local_pose(
+        self,
+        prim_path: str,
+        position: Sequence[float],
+        orientation: Optional[Sequence[float]],
+    ):
+        """Render-thread: set local pose of a prim."""
+        stage = get_current_stage()
+        if not stage:
+            logger.warning("set_prim_local_pose: no stage")
+            return
+
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim.IsValid():
+            logger.warning(f"set_prim_local_pose: invalid prim {prim_path}")
+            return
+
+        xformable = UsdGeom.Xformable(prim)
+        if not xformable:
+            logger.warning(f"set_prim_local_pose: prim {prim_path} is not xformable")
+            return
+
+        pos = Gf.Vec3d(float(position[0]), float(position[1]), float(position[2]))
+        quat = None
+        if orientation is not None and len(orientation) >= 4:
+            quat = Gf.Quatd(
+                float(orientation[0]),
+                float(orientation[1]),
+                float(orientation[2]),
+                float(orientation[3]),
+            )
+
+        translate_op = None
+        orient_op = None
+
+        for op in xformable.GetOrderedXformOps():
+            ot = op.GetOpType()
+            if ot == UsdGeom.XformOp.TypeTranslate:
+                translate_op = op
+            elif ot == UsdGeom.XformOp.TypeOrient:
+                orient_op = op
+
+        if translate_op is None:
+            logger.warning(f"set_prim_local_pose: no existing translate xform op on {prim_path}; skip")
+            return
+
+        translate_op.Set(pos)
+        if quat is not None:
+            if orient_op is not None:
+                orient_op.Set(quat)
+            else:
+                logger.warning(
+                    f"set_prim_local_pose: orientation given but no orient xform op on {prim_path}; "
+                    "translation updated only"
+                )
+
+        logger.info(f"set_prim_local_pose: updated {prim_path} local t={pos}")
+
+    @staticmethod
+    def _find_joint_prim_for_dof_name(articulation_root: Usd.Prim, dof_name: str) -> Usd.Prim:
+        """Return the joint prim whose leaf name matches ``dof_name`` (first match)."""
+        for prim in Usd.PrimRange(articulation_root):
+            if not prim.IsA(UsdPhysics.Joint):
+                continue
+            if prim.GetName() == dof_name:
+                return prim
+        return Usd.Prim()
+
+    @staticmethod
+    def _apply_drive_stiffness_damping_to_joint_prim(joint_prim: Usd.Prim, stiffness: float, damping: float) -> bool:
+        """Apply stiffness/damping on the first available ``UsdPhysics.DriveAPI`` (angular, then linear)."""
+        if not joint_prim or not joint_prim.IsValid():
+            return False
+        for token in ("angular", "linear"):
+            drive = UsdPhysics.DriveAPI.Get(joint_prim, token)
+            if not drive:
+                continue
+            s_attr = drive.GetStiffnessAttr()
+            d_attr = drive.GetDampingAttr()
+            if s_attr:
+                s_attr.Set(float(stiffness))
+            else:
+                drive.CreateStiffnessAttr().Set(float(stiffness))
+            if d_attr:
+                d_attr.Set(float(damping))
+            else:
+                drive.CreateDampingAttr().Set(float(damping))
+            return True
+        # Some assets define drive only after Apply()
+        for token in ("angular", "linear"):
+            try:
+                if hasattr(UsdPhysics.DriveAPI, "CanApply") and UsdPhysics.DriveAPI.CanApply(joint_prim, token):
+                    drive = UsdPhysics.DriveAPI.Apply(joint_prim, token)
+                    drive.CreateStiffnessAttr().Set(float(stiffness))
+                    drive.CreateDampingAttr().Set(float(damping))
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def _set_articulation_joint_drive_gains(
+        self, articulation_prim_path: str, joint_gains: Mapping[str, Tuple[float, float]]
+    ):
+        stage = get_current_stage()
+        if not stage:
+            logger.warning("set_articulation_joint_drive_gains: no stage")
+            return
+        root = stage.GetPrimAtPath(articulation_prim_path)
+        if not root.IsValid():
+            logger.warning(f"set_articulation_joint_drive_gains: invalid articulation path {articulation_prim_path}")
+            return
+        for dof_name, gains in joint_gains.items():
+            if gains is None or len(gains) != 2:
+                logger.warning(f"set_articulation_joint_drive_gains: bad gains for {dof_name}: {gains}")
+                continue
+            stiffness, damping = float(gains[0]), float(gains[1])
+            joint_prim = self._find_joint_prim_for_dof_name(root, dof_name)
+            if not joint_prim.IsValid():
+                logger.warning(
+                    f"set_articulation_joint_drive_gains: no joint prim named '{dof_name}' under {articulation_prim_path}"
+                )
+                continue
+            if self._apply_drive_stiffness_damping_to_joint_prim(joint_prim, stiffness, damping):
+                logger.info(f"Joint drive gains set: {dof_name} stiffness={stiffness} damping={damping}")
+            else:
+                logger.warning(
+                    f"set_articulation_joint_drive_gains: no DriveAPI on joint {joint_prim.GetPath()} ({dof_name})"
+                )
+
     ######################===================== Private Methods END ===================================
     def get_robot_joint_indices(self):
         return self.robot_joint_indices
@@ -1307,14 +1776,14 @@ class APICore:
         for prim in self.camera_prim_list:
             prim_name = prim.split("/")[-1]
             if "G1" in self.robot_name:
-                if "Fisheye_Camera" in prim_name:
+                if "Fisheye_Camera_R" in prim_name:
                     prim_name = "head_right_fisheye"
                 elif "Fisheye_Camera" in prim_name:
                     prim_name = "head_left_fisheye"
+                elif "Fisheye_Back_R" in prim_name:
+                    prim_name = "back_right_fisheye"
                 elif "Fisheye_Back" in prim_name:
                     prim_name = "back_left_fisheye"
-                elif "Fisheye_Back" in prim_name:
-                    prim_name = "back_right_fisheye"
                 elif "head" in prim_name:
                     prim_name = "head"
                 elif "right" in prim_name:
@@ -1362,8 +1831,16 @@ class APICore:
             source /opt/ros/{ros_distro}/setup.bash
             ros2 bag record -o {self.path_to_save_record} {' '.join(self.record_topic_list)}
             """
-            process = subprocess.Popen(command_str, shell=True, executable="/bin/bash", preexec_fn=os.setsid)
-            logger.info("started record")
+            process = subprocess.Popen(
+                command_str,
+                shell=True,
+                executable="/bin/bash",
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                preexec_fn=os.setsid,
+            )
+            logger.info(f"started record (pid={process.pid})")
             self.record_process.append(process)
 
     def _init_gripper_contact_end(self):
@@ -1378,7 +1855,7 @@ class APICore:
                 "/G1/gripper_r_outer_link5",
             ]
         else:
-            raise ("Undefined robot")
+            raise ValueError("Undefined robot")
 
     def on_ros_tick(self, step_size):
         if not self.enable_ros:
@@ -1387,7 +1864,8 @@ class APICore:
         if self.ros_node_initialized:
             rclpy.spin_once(self.server_ros_node, timeout_sec=0)
             rclpy.spin_once(self.robot_interface, timeout_sec=0)
-            rclpy.spin_once(self.benchmark_ros_node, timeout_sec=0)
+            if self.benchmark_ros_node is not None:
+                rclpy.spin_once(self.benchmark_ros_node, timeout_sec=0)
 
             # main sim clock source here
             self.robot_interface.tick(
@@ -1430,6 +1908,14 @@ class APICore:
                 "/genie_sim/Right_Camera_depth",
                 "/genie_sim/head_left_camera_rgb",
                 "/genie_sim/head_right_camera_rgb",
+            ]
+        elif "G1" in self.task_config["robot"]["robot_cfg"]:
+            self.record_topic_list = [
+                "/tf",
+                "/joint_states",
+                "/G1/head_camera_rgb",
+                "/G1/left_camera_rgb",
+                "/G1/right_camera_rgb",
             ]
         else:
             raise ValueError("Invalid robot cfg")

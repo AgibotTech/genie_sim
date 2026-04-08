@@ -243,9 +243,13 @@ class AppLauncher:
 
     def _interrupt_signal_handle_callback(self, signal, frame):
         """Handle the interrupt signal from the keyboard."""
+        import carb
+        carb.log_warn("[AppLauncher] SIGINT received, closing app gracefully...")
         self._app.close()
         raise KeyboardInterrupt
 
     def _abort_signal_handle_callback(self, signal, frame):
         """Handle the abort/segmentation/kill signals."""
+        import carb
+        carb.log_warn(f"[AppLauncher] Signal {signal} received, aborting...")
         self._app.close()

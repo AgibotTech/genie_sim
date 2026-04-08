@@ -1,0 +1,67 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/Workspace/Objects/genie_beverage_bottle_008/entity|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/Workspace/Objects/genie_beverage_bottle_008/entity|right_gripper"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "InBBox": "/Workspace/Objects/genie_beverage_bottle_008/entity|-0.3156, -0.6454, 1.1241|0.2,0.3,0.2"
+                  }
+                ]
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Follow": "/Workspace/Objects/genie_beverage_bottle_009_06/entity|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Upright": "/Workspace/Objects/genie_beverage_bottle_009_06/entity|15"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "place_tilted_beverage_bottle"
+  }
+}

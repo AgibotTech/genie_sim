@@ -1,0 +1,349 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (-1.1820937846526074, 2.181259419181002, 2.279879522552722)
+                double3 target = (-3.3575636412384, 2.1300911043092055, -2.0797382446555854)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./scene.usda"
+        }
+        dictionary renderSettings = {
+        }
+    }
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "sft_plastic_box_6863e995" (
+            prepend payload = @../../../../../assets/objects/sft/plastic_box/sft_plastic_box_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.700139, 0.000000, 0.000000, 0.714006)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8536348576494448, 2.0749497788272278, 0.9570000000000021)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.3
+                quatf xformOp:orient = (0.706721, 0.706715, 0.023441, 0.023442)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.023130181464799164, -0.009779609068382527, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "sft_plastic_box_2800ecf1" (
+            prepend payload = @../../../../../assets/objects/sft/plastic_box/sft_plastic_box_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.709264, 0.000000, 0.000000, 0.704944)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8498131900430574, 2.4550547256157986, 0.957)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.3
+                quatf xformOp:orient = (0.707107, 0.707100, 0.002079, 0.002079)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.02201119328422684, -0.007499982887439999, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "sft_accessories_dd465031" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.687704, 0.725687, 0.015268, 0.014469)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.839795163570712, 2.512750838533793, 0.9788980000000008)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+
+                over "Aligned"
+                {
+                    over "visual"
+                    {
+                        double3 xformOp:rotateXYZ = (0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.015905265224315058, -0.013933839668454621, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def Xform "sft_accessories_7a9792f1" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.637198, 0.672640, -0.272900, -0.258959)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8205956714721154, 2.359871873192885, 0.9834220000000083)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+
+                over "Aligned"
+                {
+                    over "visual"
+                    {
+                        double3 xformOp:rotateXYZ = (0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.02244477479297551, -0.004426696543167419, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def Xform "sft_accessories_23a1d9db" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.687791, 0.725778, 0.009990, 0.009467)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8427384145394838, 2.5527932094846775, 0.9578980000000051)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+
+                over "Aligned"
+                {
+                    over "visual"
+                    {
+                        double3 xformOp:rotateXYZ = (0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.015524626127618724, -0.007961566951566319, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def Xform "sft_accessories_73887fd9" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.417972, -0.732990, -0.104150, -0.526477)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.872523251924148, 2.4521772232441985, 1.0297849999999897)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+
+                over "Aligned"
+                {
+                    over "visual"
+                    {
+                        double3 xformOp:rotateXYZ = (0, 0, 0)
+                        double3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (-0.014268412151299616, -0.010213483493151695, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def Xform "sft_accessories_6505c594" (
+            active = false
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.705946, 0.707946, 0.015070, -0.015028)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8827055231485634, 2.0881863702584074, 1.036)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+            }
+        }
+
+        def Xform "sft_accessories_5a82cc94" (
+            active = false
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.654733, 0.656764, -0.265028, 0.264093)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8112260483385256, 2.0880468910969143, 1.036)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+            }
+        }
+
+        def Xform "sft_accessories_43728147" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.686825, 0.726814, 0.002627, 0.002482)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8787205870345705, 1.992076663589022, 1.036)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+                quatf xformOp:orient = (0.707102, 0.707095, 0.003394, 0.003394)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.021671660927483023, -0.01298881297113794, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "sft_accessories_81812782" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.352134, -0.387252, 0.617488, -0.587150)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8756427253484418, 2.0848311057427016, 1.0360000000000007)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+                quatf xformOp:orient = (0.707031, 0.707025, 0.010561, 0.010561)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.021904499483378446, -0.011329049044744098, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "sft_accessories_3b491984" (
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.421645, -0.732055, -0.108513, -0.523961)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8155192159386153, 2.0072740940096683, 1.0349999999999981)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.01
+                quatf xformOp:orient = (0.707087, 0.707081, 0.005648, 0.005648)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (-0.016708301811589832, -0.012364802327615946, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "sft_accessories_dee1854b" (
+            active = false
+            prepend payload = @../../../../../assets/objects/sft/accessories/sft_accessories_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.706024, 0.708024, 0.010805, -0.010775)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.8981043362847274, 2.088401170333306, 1.036)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+    }
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:dlss:frameGeneration = 0
+                bool omni:rtx:material:db:nonVisualMaterialCSV:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:lightcache:cached:dontResolveConflicts = 1
+                int omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                int omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                uint omni:rtx:viewTile:limit = 4294967295
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+        }
+    }
+}

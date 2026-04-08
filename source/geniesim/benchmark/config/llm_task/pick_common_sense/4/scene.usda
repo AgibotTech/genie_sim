@@ -8,7 +8,7 @@
             }
             dictionary Perspective = {
                 double3 position = (5, 5, 5)
-                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.956076863990802e-8)
+                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.95607677517296e-8)
             }
             dictionary Right = {
                 double3 position = (0, -5, 0)
@@ -36,12 +36,16 @@ def "World"
     def "Objects"
     {
         def Xform "table_a3596775" (
-            prepend payload = @../../../../../assets/objects/edited/table_000/Aligned.usda@
+            prepend payload = @../../../../../assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0, 0, 0.365)
+            double3 xformOp:translate = (0, 0, 0.265)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -49,9 +53,9 @@ def "World"
             prepend payload = @../../../../../assets/objects/genie/beverage_bottle/genie_beverage_bottle_001/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.997373, 0, 0, 0.072439)
+            quatf xformOp:orient = (0.997373, 0, 0, 0.07243707)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.071, 0.239, 0.862)
+            double3 xformOp:translate = (0.015383682535739976, 0.239, 0.862)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -91,8 +95,8 @@ def "World"
             }
         }
 
-        def Xform "benchmark_garage_kit_502b6271" (
-            prepend payload = @../../../../../assets/objects/benchmark/garage_kit/benchmark_garage_kit_064/Aligned.usda@
+        def Xform "benchmark_toy_car_502b6271" (
+            prepend payload = @../../../../../assets/objects/benchmark/toy_car/benchmark_toy_car_018/Aligned.usda@
         )
         {
             quatf xformOp:orient = (0.45799556, 0, 0, 0.88895446)
@@ -171,3 +175,4 @@ def "Render" (
         }
     }
 }
+

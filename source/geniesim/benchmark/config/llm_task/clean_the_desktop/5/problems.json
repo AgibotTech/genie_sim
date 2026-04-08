@@ -1,0 +1,47 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "MixedRules": {
+                  "check_interval": 1,
+                  "rules": [
+                    {
+                      "name": "Inside",
+                      "params": "sft_pen_5e3769e7|iros_pen_cup_9c134ab7|1.2"
+                    },
+                    {
+                      "name": "PushPull",
+                      "params": "benchmark_laptop_a1772faf|1.5708|2.0944"
+                    },
+                    {
+                      "name": "Inside",
+                      "params": "iros_crumpled_paper_252d877c|benchmark_trash_can_64e794f1|1.2"
+                    },
+                    {
+                      "name": "RelativePosition",
+                      "params": "benchmark_mouse_c041b98a|benchmark_laptop_a1772faf|rightof"
+                    },
+                    {
+                      "name": "Upright",
+                      "params": "sft_pen_5cbbccaf|5.0|true"
+                    }
+                  ]
+                }
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "clean_the_desktop"
+  }
+}

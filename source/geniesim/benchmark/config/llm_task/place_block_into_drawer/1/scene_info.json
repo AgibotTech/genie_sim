@@ -1,0 +1,188 @@
+{
+  "scene_id": "drawer_with_single_building_block",
+  "seed": 101139429,
+  "layout": {
+    "iros_drawer_cabinet_570189f0": {
+      "usd": "iros_drawer_cabinet_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.455
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "tags": [
+        "root_scene_d596839e",
+        "drawer_with_single_building_block_2e5e086f",
+        "place_block_on_cabinet_15631410",
+        "iros_drawer_cabinet_570189f0"
+      ],
+      "keywords": [
+        "drawer_cabinet",
+        "storage",
+        "wood",
+        "furniture",
+        "ground_level"
+      ],
+      "description": {
+        "semantic_name": [
+          "drawer_cabinet"
+        ],
+        "object_category": [
+          "furniture",
+          "storage"
+        ],
+        "color": "brown",
+        "shape": "rectangular",
+        "materials": [
+          "wood",
+          "fabric",
+          "metal"
+        ],
+        "dimensions": [
+          0.32535165548324585,
+          0.9099999964237213,
+          0.5097404718399048
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "rustic",
+          "organized",
+          "stacked",
+          "decorative",
+          "traditional"
+        ],
+        "full_description": [
+          "A tall wooden cabinet with multiple drawers of varying sizes, featuring woven and solid fronts with white rope handles."
+        ]
+      }
+    },
+    "benchmark_building_blocks_ae8da199": {
+      "usd": "benchmark_building_blocks_086",
+      "xyz": [
+        -0.058,
+        0.176,
+        0.96
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.128379,
+        0.991725
+      ],
+      "tags": [
+        "root_scene_d596839e",
+        "drawer_with_single_building_block_2e5e086f",
+        "place_block_on_cabinet_15631410",
+        "single_building_block_2eeac50b",
+        "benchmark_building_blocks_ae8da199"
+      ],
+      "keywords": [
+        "building_block",
+        "colorful",
+        "cube",
+        "small",
+        "single"
+      ],
+      "description": {
+        "semantic_name": [
+          "building_blocks"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "color": "yellow",
+        "shape": "cube",
+        "materials": [
+          "plastic"
+        ],
+        "dimensions": [
+          0.05,
+          0.05,
+          0.05
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "small",
+          "yellow",
+          "cubic",
+          "simple",
+          "geometric"
+        ],
+        "full_description": [
+          "A small, solid yellow cube with a matte finish."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_d596839e"
+        },
+        {
+          "id": "drawer_with_single_building_block_2e5e086f"
+        },
+        {
+          "id": "place_block_on_cabinet_15631410"
+        },
+        {
+          "tags": [
+            "drawer_cabinet",
+            "storage",
+            "wood",
+            "furniture",
+            "ground_level"
+          ],
+          "id": "iros_drawer_cabinet_570189f0"
+        },
+        {
+          "id": "single_building_block_2eeac50b"
+        },
+        {
+          "tags": [
+            "building_block",
+            "colorful",
+            "cube",
+            "small",
+            "single"
+          ],
+          "id": "benchmark_building_blocks_ae8da199"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_d596839e",
+          "target": "drawer_with_single_building_block_2e5e086f"
+        },
+        {
+          "source": "drawer_with_single_building_block_2e5e086f",
+          "target": "place_block_on_cabinet_15631410"
+        },
+        {
+          "source": "place_block_on_cabinet_15631410",
+          "target": "iros_drawer_cabinet_570189f0"
+        },
+        {
+          "source": "place_block_on_cabinet_15631410",
+          "target": "single_building_block_2eeac50b"
+        },
+        {
+          "source": "single_building_block_2eeac50b",
+          "target": "benchmark_building_blocks_ae8da199"
+        }
+      ]
+    }
+  }
+}

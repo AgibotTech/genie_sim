@@ -81,7 +81,7 @@ class DataCourier:
             return self.api_core.get_observation_image(
                 {"head": "head_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
             )
-        elif self.robot_cfg == "G2_omnipicker":
+        elif self.robot_cfg == "G2_omnipicker" or self.robot_cfg == "G2_90d":
             return self.api_core.get_observation_image(
                 {
                     "head": "head_front_camera",
@@ -97,7 +97,7 @@ class DataCourier:
             return self.api_core.get_observation_depth(
                 {"head": "head_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
             )
-        elif self.robot_cfg == "G2_omnipicker":
+        elif self.robot_cfg == "G2_omnipicker" or self.robot_cfg == "G2_90d":
             return self.api_core.get_observation_depth(
                 {
                     "head": "head_front_camera",

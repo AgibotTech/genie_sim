@@ -88,7 +88,8 @@ class ActionBase:
     def update(self, delta_time: float) -> float:
         self._update_state()
         self.update_progress()
-        self.env.task.update_progress(hex(id(self)), self.progress_info)
+        if not getattr(self, "_skip_progress_report", False):
+            self.env.task.update_progress(hex(id(self)), self.progress_info)
         return delta_time
 
     def pause(self) -> bool:

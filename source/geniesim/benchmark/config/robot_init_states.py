@@ -89,6 +89,7 @@ G2_DEFAULT_2 = {
     "init_hand": [0.0, 0.0],
 }
 
+
 G2_STATES_3 = {
     "body_state": [0.0, 0.0, -0.18151424220741028, 1.2172, -0.83423],
     "head_state": [0.0, 0.0, 0.0],
@@ -177,14 +178,41 @@ G2_STATES_6 = {
     "init_hand": [0.0, 0.0],
 }
 
+G1_STATES_1 = {
+    "body_state": [0.0, 0.436, 0.349, 0.2],
+    "init_arm": [
+        -1.0751,
+        0.6109,
+        0.2793,
+        -1.2846,
+        0.7295,
+        1.4957,
+        -0.1868,
+        1.0734,
+        -0.6109,
+        -0.2793,
+        1.2846,
+        -0.7313,
+        -1.4957,
+        0.1868,
+    ],
+    "init_hand": [0.0, 0.0],
+}
+
 TASK_INFO_DICT = {
-    "pick_billards_color": {
+    "pick_billiards_color": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
     },
     "pick_block_color": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
+        "G2_90d": G2_DEFAULT_STATES,
+    },
+    "pick_block_color_instructgen": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+        "G2_90d": G2_DEFAULT_STATES,
     },
     "pick_block_shape": {
         "G1_omnipicker": G1_DEFAULT_STATES,
@@ -307,5 +335,49 @@ TASK_INFO_DICT = {
     },
     "stock_and_straighten_shelf": {
         "G2_omnipicker": G2_STATES_1,
+    },
+    "bimanual_chip_handover": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+    },
+    "pack_in_supermarket": {"G1_omnipicker": G1_DEFAULT_STATES},
+    "stack_blocks": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "place_block_into_drawer": {
+        "G1_omnipicker": G1_STATES_1,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "sort_number": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "sort_beverage": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "stack_cubes": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "stack_bowls": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "sort_cubes_by_size": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "pick_object_absolute_position": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "pick_object_relative_position": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
+    },
+    "place_object_relative_position": {
+        "G1_omnipicker": G1_DEFAULT_STATES,
+        "G2_omnipicker": G2_DEFAULT_STATES,
     },
 }

@@ -151,7 +151,12 @@ class RobotInterface(Node):
 
         self._metadata = articulation._articulation_view._metadata
         self.joint_names_ee = ["idx51_ee_l_joint", "idx91_ee_r_joint"]
-        self.joint_indices_ee = 1 + np.array([self._metadata.joint_indices[jn] for jn in self.joint_names_ee])
+        # Filter out joints that don't exist in the articulation
+        self.joint_names_ee = [jn for jn in self.joint_names_ee if jn in self._metadata.joint_indices]
+        if self.joint_names_ee:
+            self.joint_indices_ee = 1 + np.array([self._metadata.joint_indices[jn] for jn in self.joint_names_ee])
+        else:
+            self.joint_indices_ee = np.array([])
 
     def register_articulated_obj(self, articulated_objs):
         for prim_path, articulation in articulated_objs.items():
@@ -458,6 +463,8 @@ class RobotInterface(Node):
 
     def pub_joint_state_ee(self, articulation):
         if articulation is None:
+            return
+        if len(self.joint_indices_ee) == 0:
             return
 
         eef_6d_forces = articulation.get_measured_joint_forces(self.joint_indices_ee)

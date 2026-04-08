@@ -15,12 +15,13 @@ logger = Logger()
 
 
 class Upright(EvaluateAction):
-    def __init__(self, env, obj_name, tilt_threshold=15.0):
+    def __init__(self, env, obj_name, tilt_threshold=15.0, allow_flipped=False):
         super().__init__(env)
         self._holder_name, self._obj_name = self.placeholder_sparser(obj_name)
         self._done_flag = False
 
         self.tilt_threshold = tilt_threshold
+        self.allow_flipped = allow_flipped
 
     @property
     def obj_name(self) -> str:
@@ -37,17 +38,21 @@ class Upright(EvaluateAction):
         threshold_rad = np.radians(self.tilt_threshold)
         min_dot_product = np.cos(threshold_rad)
 
-        is_upright = world_y_axis_obj[2] >= min_dot_product
+        dot_z = world_y_axis_obj[2]
+        is_upright = dot_z >= min_dot_product
+        is_flipped = self.allow_flipped and (dot_z <= -min_dot_product)
+        passed = is_upright or is_flipped
 
-        if is_upright:
-            angle_deg = np.degrees(np.arccos(world_y_axis_obj[2]))
+        if passed:
+            angle_deg = np.degrees(np.arccos(np.clip(abs(dot_z), -1.0, 1.0)))
+            state = "flipped" if is_flipped else "upright"
             logger.info(
-                f"[Upright] Object is upright: {self.obj_name}, "
-                f"dot product: {world_y_axis_obj[2]:.3f} (min: {min_dot_product:.3f}), "
+                f"[Upright] Object is {state}: {self.obj_name}, "
+                f"dot product: {dot_z:.3f} (min: {min_dot_product:.3f}), "
                 f"angle with world z-axis: {angle_deg:.2f}° (threshold: {self.tilt_threshold:.2f}°)"
             )
 
-        return is_upright
+        return passed
 
     def update(self, delta_time: float) -> float:
         if self._done_flag:

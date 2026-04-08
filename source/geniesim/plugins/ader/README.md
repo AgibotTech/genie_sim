@@ -83,6 +83,7 @@ Use ADER (Action Domain Evaluation Rule) for evaluation configuration
 | ActionSetWaitAll | Exit when all conditions are met. | ActionBase | `"ActionSetWaitAll":[]` |
 | **CUSTOM** | | | |
 | Ontop | An object is above another object | EvaluateAction | `"Ontop": "active_obj|passive_obj"` |
+| Stack | All object centers within XY threshold of first object | EvaluateAction | `"Stack": "[a,b,c]|[x,y]"` |
 | Inside | An object is inside another object | EvaluateAction | `"Inside": "active_obj|passive_obj|scale_factor"` |
 | PushPull | Check if the sliding joint of an articulated object is within threshold [min, max] — used to determine if a drawer-like object is open or closed. | EvaluateAction | `"PushPull": "obj_id|thresh_min|thresh_max"` |
 | Follow | Check if the left/right gripper is following a specific object, within a bounding box-defined range [x, y, z]. | EvaluateAction | `"Follow": "obj_id|bbox|gripper_id"` |

@@ -1,0 +1,231 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (0.37330915445924007, 1.876740399108346, 1.3126865667308178)
+                double3 target = (0.7710909149323575, -1.2051986641864738, 0.268072986731845)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./scene.usda"
+        }
+        dictionary renderSettings = {
+        }
+    }
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_trash_can_64e794f1" (
+            prepend payload = @../../../../../assets/objects/benchmark/trash_can/benchmark_trash_can_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999328, 0.000000, 0.000000, 0.036678)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5970038419006621, -0.19609783736331385, 0.835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "iros_crumpled_paper_252d877c" (
+            prepend payload = @../../../../../assets/objects/iros/trash/iros_crumpled_paper_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.991740, 0.000000, 0.000000, 0.128266)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.382462641442075, 0.3873964979403802, 0.791)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "benchmark_mouse_c041b98a" (
+            prepend payload = @../../../../../assets/objects/benchmark/mouse/benchmark_mouse_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999934, 0.000000, 0.000000, -0.011469)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5818359829689044, 0.39475417102249843, 0.774)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "sft_pen_5cbbccaf" (
+            prepend payload = @../../../../../assets/objects/sft/pen/sft_pen_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.753742, 0.649712, 0.049949, 0.085158)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5017867482466517, -0.39931048796518054, 0.849)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                quatf xformOp:orient = (0.70711, 0.70710355, 0, 0)
+                float3 xformOp:scale = (1, 1, 1)
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+        }
+
+        def Xform "benchmark_laptop_a1772faf" (
+            prepend payload = @../../../../../assets/objects/benchmark/laptop/benchmark_laptop_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.000286, 0.000000, 0.000000, 1.000000)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.4494347829433595, 0.11922721179232791, 0.768)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                }
+
+                over "part_01"
+                {
+                }
+
+                over "part_00"
+                {
+                }
+            }
+        }
+
+        def Xform "sft_pen_5e3769e7" (
+            delete payload = @../../../../../assets/objects/sft/pen/sft_pen_000/Aligned.usda@
+            prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_007/Aligned.usd@
+        )
+        {
+            quatf xformOp:orient = (0.995510, -0.004175, 0.004432, 0.094455)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.3940628092296799, 0.4996895120347259, 0.8309999999999761)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "sft_pen_9aadc870" (
+            prepend payload = @../../../../../assets/objects/sft/pen/sft_pen_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.997499, 0.000000, 0.000000, -0.070690)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5543704618419228, 0.5287338785543082, 0.862)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "iros_pen_cup_9c134ab7" (
+            prepend payload = @../../../../../assets/objects/iros/pen_cup/iros_pen_cup_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.997499, 0.000000, 0.000000, -0.070690)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.5623704618419229, 0.5327338785543082, 0.805)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+    }
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:dlss:frameGeneration = 0
+                bool omni:rtx:material:db:nonVisualMaterialCSV:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:lightcache:cached:dontResolveConflicts = 1
+                int omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                int omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                uint omni:rtx:viewTile:limit = 4294967295
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (1280, 720)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+        }
+    }
+}

@@ -2,46 +2,26 @@
   "problem1": {
     "Acts": [
       {
-        "ActionSetWaitAny": [
+        "ActionList": [
           {
-            "VLM": "straighten_object|Straighten the Coca-Cola can on the table"
+            "ActionSetWaitAny": [
+              {
+                "Follow": "benchmark_beverage_bottle_49777f75|[0.2,0.2,0.2]|right_gripper"
+              },
+              {
+                "StepOut": 200
+              }
+            ]
           },
           {
-            "StepOut": 900
-          }
-        ]
-      }
-    ],
-    "Init": [],
-    "Objects": [],
-    "Problem": "straighten_object"
-  },
-  "problem2": {
-    "Acts": [
-      {
-        "ActionSetWaitAny": [
-          {
-            "VLM": "straighten_object|Straighten the Sprite can on the table"
-          },
-          {
-            "StepOut": 900
-          }
-        ]
-      }
-    ],
-    "Init": [],
-    "Objects": [],
-    "Problem": "straighten_object"
-  },
-  "problem3": {
-    "Acts": [
-      {
-        "ActionSetWaitAny": [
-          {
-            "VLM": "straighten_object|Straighten the green_apple on the table"
-          },
-          {
-            "StepOut": 900
+            "ActionSetWaitAny": [
+              {
+                "Upright": "benchmark_beverage_bottle_49777f75|5"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
           }
         ]
       }

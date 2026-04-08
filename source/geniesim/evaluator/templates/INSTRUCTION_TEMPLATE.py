@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 INSTRUCTION_TEMPLATE = {
-    "pick_billards_color": "{[SIDE]: left/right} arm picks up the {[COLOR]: red/green/blue/..., color of the object in the scene_info} billiard on the table",
+    "pick_billiards_color": "{[SIDE]: left/right} arm picks up the {[COLOR]: red/green/blue/..., color of the object in the scene_info} billiard on the table",
     "pick_block_color": "{[SIDE]: left/right} arm picks up the {[COLOR]: red/green/blue/..., color of the object in the scene_info} block on the table",
     "pick_block_shape": "{[SIDE]: left/right} arm picks up the {[SHAPE]: cube/sphere/cylinder/..., shape of the object in the scene_info} block on the table",
     "pick_block_size": "{[SIDE]: left/right} arm picks up the {[SIZE]: smallest/biggest/..., relative size of the object in the scene_info} block on the table",
@@ -48,4 +48,5 @@ INSTRUCTION_TEMPLATE = {
     "put_utensil_turn_faucet": "VLM|Put the bowl into the sink, turn the faucet on",
     "straighten_object": "VLM|Straighten the {[SEMANTIC]: the semantic_name of beverage in the scene_info} on the table",
     "store_objects_in_drawer": "VLM|Store the object on the table into the drawer",
+    "bimanual_chip_handover":"Pick up the chip bag with the nearest hand, pass it to the other hand, and keep it upright"
 }

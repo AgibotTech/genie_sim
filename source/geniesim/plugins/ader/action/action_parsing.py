@@ -26,6 +26,9 @@ from .custom import (
     Upright,
     StableGrasp,
     ChassisAtTarget,
+    Stack,
+    RelativePositionChecker,
+    MixedRules,
 )
 import geniesim.utils.system_utils as system_utils
 
@@ -282,18 +285,45 @@ def parse_action(obj: dict, task_progress, env) -> ActionBase:
             return act
         elif key == "Upright":
             params = value.split("|")
-            act = Upright(env, params[0], float(params[1]))
+            allow_flipped = params[2].lower() == "true" if len(params) > 2 else False
+            act = Upright(env, params[0], float(params[1]), allow_flipped)
             record_act_obj(act, task_progress)
             return act
         elif key == "StableGrasp":
             params = value.split("|")
-            act = StableGrasp(env, params[0], params[1])
+            kwargs = {}
+            if len(params) >= 3:
+                kwargs["distance_threshold"] = float(params[2])
+            if len(params) >= 4:
+                kwargs["pose_diff_pos_threshold"] = float(params[3])
+            if len(params) >= 5:
+                kwargs["pose_diff_rot_threshold_rad"] = float(params[4])
+            act = StableGrasp(env, params[0], params[1], **kwargs)
             record_act_obj(act, task_progress)
             return act
         elif key == "ChassisAtTarget":
             # Format: "[x,y,yaw]|[x_thresh,y_thresh,yaw_thresh]"
             params = value.split("|")
             act = ChassisAtTarget(env, params[0], params[1])
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "Stack":
+            # Format: "[a,b,c]|[x,y]" - object IDs and XY threshold
+            params = value.split("|")
+            act = Stack(env, params[0], params[1])
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "RelativePosition":
+            # Format: "obj_A|obj_B|relation" - check if A is in relation to B
+            # relation: leftof, rightof, topof, bottomof
+            params = value.split("|")
+            act = RelativePositionChecker(env, params[0], params[1], params[2])
+            record_act_obj(act, task_progress)
+            return act
+        elif key == "MixedRules":
+            rules = value["rules"]
+            check_interval = value.get("check_interval", 1)
+            act = MixedRules(env, rules, check_interval)
             record_act_obj(act, task_progress)
             return act
         else:

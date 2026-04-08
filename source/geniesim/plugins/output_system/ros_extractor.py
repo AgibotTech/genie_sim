@@ -219,12 +219,26 @@ class Ros_Extrater:
 
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type=None, exc_val=None, exc_tb=None):
         if self.record:
             for process in self.record_process:
-                os.killpg(os.getpgid(process.pid), signal.SIGINT)
-                process.wait(timeout=10)
-                time.sleep(1.0)
+                try:
+                    os.killpg(os.getpgid(process.pid), signal.SIGINT)
+                except (ProcessLookupError, OSError):
+                    pass
+            for process in self.record_process:
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        process.wait()
+                    except (ProcessLookupError, OSError):
+                        pass
+                except (ProcessLookupError, OSError):
+                    pass
+                time.sleep(0.5)
+            self.record_process = []
             self.extract()
             logger.info("record stopped")
 

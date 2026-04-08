@@ -19,5 +19,5 @@ VLM_TEMPLATE = {
     "straighten_object": "Place at least one beverage upright on the table",
     "put_pen_into_penholder": "Insert the pen into the pen holder",
     "store_objects_in_drawer": "Store the object on the table into the drawer",
-    "scoop_popcorn": "At least 5 popcorns in the bucket",
+    "scoop_popcorn": "In the scenes there are only popcorns and bucket on table. Judge: 1.There is at least one popcorn inside the popcorn bucket. 2. 1 is satisfied and there are no scattered popcorns on the table around the bucket.",
 }

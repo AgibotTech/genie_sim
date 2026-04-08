@@ -16,7 +16,7 @@ class TaskInfo:
         if "G1_omnipicker" == robot_cfg:
             self._head_init_position = self._task_config["body_state"][:2]
             self._waist_init_position = self._task_config["body_state"][2:4]
-        elif "G2_omnipicker" == robot_cfg:
+        elif "G2_omnipicker" == robot_cfg or "G2_90d" == robot_cfg:
             self._head_init_position = self._task_config["head_state"]
             self._waist_init_position = self._task_config["body_state"]
         else:

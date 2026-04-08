@@ -193,7 +193,7 @@ def scattered_cartons_on_table(num_cartons: int, table_shape: Shape, excluded_zo
                 if conflict:
                     continue
 
-            # Random color + optional shrink wrap (保留你的风格)
+            # Random color + optional shrink wrap
             colors = ["brown", "white", "blue"]
             color = np.random.choice(colors, p=[0.5, 0.3, 0.2])
             is_shrink_wrapped = np.random.random() < 0.2

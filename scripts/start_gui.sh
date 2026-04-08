@@ -17,6 +17,7 @@ sudo chown -R 1234:1234 ~/docker/isaac-sim
 
 xhost +local:
 docker run -itd --name genie_sim_benchmark \
+    --init \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
     --gpus all \

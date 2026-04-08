@@ -7,6 +7,9 @@ PROCESS_NAMES=(
     "python.sh"
     "isaac-sim"
     "app.py"
+    "ros2 bag record"
+    "carb.tasking"
+    "omni.telemetry"
 )
 
 # Color output

@@ -8,7 +8,7 @@
             }
             dictionary Perspective = {
                 double3 position = (5, 5, 5)
-                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.956076863990802e-8)
+                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.95607677517296e-8)
             }
             dictionary Right = {
                 double3 position = (0, -5, 0)
@@ -36,12 +36,16 @@ def "World"
     def "Objects"
     {
         def Xform "table_231d7222" (
-            prepend payload = @../../../../../assets/objects/edited/table_000/Aligned.usda@
+            prepend payload = @../../../../../assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0, 0, 0.365)
+            double3 xformOp:translate = (0, 0, 0.265)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -51,7 +55,7 @@ def "World"
         {
             quatf xformOp:orient = (0.994404, 0, 0, -0.10564397)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.039, -0.1921225372324064, 0.885)
+            double3 xformOp:translate = (0.024081173497310822, -0.22379071259293604, 0.885)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -77,9 +81,9 @@ def "World"
             prepend payload = @../../../../../assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.972607, 0, 0, -0.232454)
+            quatf xformOp:orient = (0.972607, 0, 0, -0.23245557)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.088, -0.146, 0.81)
+            double3 xformOp:translate = (-0.061079558872580514, -0.12111812734005674, 0.81)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -87,8 +91,8 @@ def "World"
             }
         }
 
-        def Xform "benchmark_garage_kit_53515aaa" (
-            prepend payload = @../../../../../assets/objects/benchmark/garage_kit/benchmark_garage_kit_064/Aligned.usda@
+        def Xform "benchmark_toy_car_53515aaa" (
+            prepend payload = @../../../../../assets/objects/benchmark/toy_car/benchmark_toy_car_018/Aligned.usda@
         )
         {
             quatf xformOp:orient = (0.763917, 0, 0, 0.64531446)
@@ -167,3 +171,4 @@ def "Render" (
         }
     }
 }
+

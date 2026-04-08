@@ -15,6 +15,7 @@ mkdir -p ~/docker/isaac-sim/pkg
 sudo chown -R 1234:1234 ~/docker/isaac-sim
 
 docker run -it --name genie_sim_benchmark \
+    --init \
     --user 1234:1234 \
     --entrypoint ./scripts/entrypoint.sh \
     --rm \

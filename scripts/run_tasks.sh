@@ -127,6 +127,10 @@ for SUB_TASK_NAME in "${SUB_TASKS[@]}"; do
     # Clean up temporary file
     rm -f "${TEMP_YAML}"
 
+    echo -e "${YELLOW}Cleaning up after task: ${SUB_TASK_NAME}${NC}"
+    bash "${SCRIPT_DIR}/clean.sh"
+    sleep 2
+
     echo ""
 done
 

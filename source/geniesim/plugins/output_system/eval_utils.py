@@ -36,25 +36,26 @@ EVAL_TEMPLATE = {
     "fps": "",
     "operator": "",
 }
-
+"Follow"
 TASK_STEPS = {
     "bimanual_hold_ball": ["VLM"],
-    "clean_the_desktop": ["VLM"],
+    "bimanual_chip_handover": ["Upright"],
+    "clean_the_desktop": ["MixedRules"],
     "dump_trash_kitchen": ["VLM"],
     "empty_desktop_bin": ["VLM"],
     "hang_tableware": ["VLM"],
     "heat_food": ["VLM"],
     "hold_pot": ["LiftUp", "InBBox", "Upright"],
     "open_door": ["PushPull"],
-    "pick_billards_color": ["Follow", "PickUpOnGripper"],
+    "pick_billiards_color": ["Follow", "PickUpOnGripper"],
     "pick_block_color": ["Follow", "PickUpOnGripper"],
+    "pick_block_color_instructgen": ["Follow", "PickUpOnGripper"],
     "pick_block_number": ["Follow", "PickUpOnGripper"],
     "pick_block_shape": ["Follow", "PickUpOnGripper"],
     "pick_block_size": ["Follow", "PickUpOnGripper"],
     "pick_common_sense": ["Follow", "PickUpOnGripper"],
     "pick_follow_logic_and": ["Follow", "PickUpOnGripper"],
     "pick_follow_logic_not": ["VLM"],
-    "pick_follow_logic_or": ["VLM"],
     "pick_object_type": ["Follow", "PickUpOnGripper"],
     "pick_pen_color": ["Follow", "PickUpOnGripper"],
     "pick_specific_object": ["Follow", "PickUpOnGripper"],
@@ -63,7 +64,7 @@ TASK_STEPS = {
     "place_object_into_box_color": ["Follow", "PickUpOnGripper", "Inside"],
     "put_pen_into_penholder": ["VLM"],
     "put_utensil_turn_faucet": ["VLM"],
-    "sort_fruit": ["VLM"],
+    "sort_fruit": ["Inside"],
     "store_objects_in_drawer": ["VLM"],
     "straighten_object": ["VLM"],
     "take_book": ["VLM"],
@@ -75,6 +76,11 @@ TASK_STEPS = {
     "scoop_popcorn": ["VLM"],
     "place_block_into_box": ["Follow", "PickUpOnGripper", "Inside"],
     "take_wrong_item_shelf": ["Follow", "Inside"],
+    "straighten_object": ["Follow", "Upright"],
+    "pick_follow_logic_or": ["Follow", "PickUpOnGripper"],
+    "stack_blocks": ["Stack"],
+    "pack_in_supermarket": ["Inside"],
+    "place_block_into_drawer": ["Inside"],
 }
 
 TASK_IDS = {}
@@ -281,7 +287,10 @@ def get_statistics(evaluate_results, steps):
 
     statistics["scores"] = sub_task_scores
     all_scores = [s for scores in sub_task_scores.values() for s in scores]
-    statistics["average"] = sum(all_scores) / len(all_scores) if all_scores else 0.0
+    total_counts = sum(task_counts.values())
+    num_steps = len(steps) if steps else 1
+    weighted_sum = sum(s * task_counts[task_key] for task_key, scores in sub_task_scores.items() for s in scores)
+    statistics["average"] = weighted_sum / (total_counts * num_steps) if total_counts else 0.0
     statistics["timecost"] = time_cost
     statistics["task_counts"] = task_counts
 

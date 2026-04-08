@@ -8,7 +8,7 @@
             }
             dictionary Perspective = {
                 double3 position = (5, 5, 5)
-                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.95607677517296e-8)
+                double3 target = (-3.978038431995401e-8, -3.978038254359717e-8, 7.956076863990802e-8)
             }
             dictionary Right = {
                 double3 position = (0, -5, 0)
@@ -36,12 +36,16 @@ def "World"
     def "Objects"
     {
         def Xform "table_2c6ea49f" (
-            prepend payload = @../../../../../assets/objects/edited/table_000/Aligned.usda@
+            prepend payload = @../../../../../assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0, 0, 0.365)
+            double3 xformOp:translate = (0, 0, 0.265)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -49,7 +53,7 @@ def "World"
             prepend payload = @../../../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_001/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.656932, -0.65693146, -0.2616118, 0.2616118)
+            quatf xformOp:orient = (0.5482988, -0.54829854, 0.44650686, -0.44650733)
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0.013999999999998455, 0.213586363724465, 0.8650000000000011)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
@@ -162,3 +166,4 @@ def "Render" (
         }
     }
 }
+

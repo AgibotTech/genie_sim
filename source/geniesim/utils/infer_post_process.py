@@ -10,8 +10,8 @@ import time
 
 def relabel_gripper_state(obs, limit):
     state_dict = obs["states"]
-    state_dict[14] = min(max(1 - state_dict[14] / limit, 0), 1) * 100 + 20
-    state_dict[15] = min(max(1 - state_dict[15] / limit, 0), 1) * 100 + 20
+    state_dict[14] = min(max(limit - state_dict[14] / limit, 0), 1) * 120
+    state_dict[15] = min(max(limit - state_dict[15] / limit, 0), 1) * 120
 
 
 def relabel_gripper_action(action, limit):

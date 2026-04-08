@@ -11,6 +11,7 @@ import shutil
 from pathlib import Path
 
 import numpy as np
+import time
 
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
@@ -19,16 +20,15 @@ from geniesim.plugins.logger import Logger
 logger = Logger()  # Create singleton instance
 
 from geniesim.plugins.output_system import TaskEvaluation, EvaluationSummary
-from geniesim.plugins.tgs import ObjectSampler
+from geniesim.plugins.tgs import ObjectSampler, TaskGenerator
 from geniesim.utils.data_courier import DataCourier
 import geniesim.utils.system_utils as system_utils
 from geniesim.utils.name_utils import robot_type_mapping
 from geniesim.benchmark.envs.demo_env import DemoEnv
 from geniesim.benchmark.policy.demopolicy import DemoPolicy
-from geniesim.plugins.tgs import TaskGenerator
 from geniesim.benchmark.hooks.task import TaskHook
 from geniesim.app.controllers.api_core import APICore
-import time
+from geniesim.utils.generalization_utils import update_init_env
 
 system_utils.check_and_fix_env()
 
@@ -59,7 +59,7 @@ class TaskBenchmark(object):
         np.random.seed(seed)
         logger.info(f"Random seed set to: {seed}")
 
-        self.data_courier = DataCourier(self.api_core, self.args.enable_ros, self.args.model_arc)
+        self.data_courier = DataCourier(self.api_core, self.api_core.enable_ros, self.args.model_arc)
 
     def check_task(self):
         if self.args.task_name != "":
@@ -132,7 +132,7 @@ class TaskBenchmark(object):
             self.task_config["robot_cfg"] = robot_type_mapping(robot_cfg.split(".")[0])
             self.data_courier.set_robot_cfg(self.task_config["robot_cfg"])
 
-            episode = 0
+            episode_idx = 0
             scene_instance_ids = [0]
             sub_task_name = self.args.sub_task_name
             if sub_task_name != "":
@@ -152,10 +152,12 @@ class TaskBenchmark(object):
                 time.sleep(0.5)
                 self.api_core.collect_init_physics()
 
-                for episode_file in specific_task_files:
-                    print("EPISODE FILE", episode_file)
+                for _, episode_file in enumerate(specific_task_files):
+                    logger.info(f"EPISODE FILE: {episode_file}")
                     self.episode_content = system_utils.load_json(episode_file)
-                    self.update_init_env()
+
+                    update_init_env(self.env, self.task_config, self.episode_content)
+                    self.env.apply_generalization(self.api_core, self.task_config)
 
                     if self.args.record:
                         self.set_record_topics()
@@ -166,9 +168,11 @@ class TaskBenchmark(object):
                             record_topic_list=self.record_topic_list,
                         )
 
-                    self.apply_material_generalization()
-
-                    for episode_id in range(self.args.num_episode * len(self.env.task.instructions)):
+                    episode_count = 1 if self.args.preview else len(self.env.task.instructions)
+                    seed = getattr(self.args, "seed", 0)
+                    for episode_id in range(self.args.num_episode * episode_count):
+                        np.random.seed(seed)
+                        logger.info(f"Episode {episode_id}: reset random seed to {seed}")
                         self.env.set_current_task(episode_id)
                         if self.instruction != "":
                             self.env.task.set_instruction(self.instruction)
@@ -187,13 +191,18 @@ class TaskBenchmark(object):
                         self.evaluate_summary.update_current(single_te)
                         self.data_courier.pub_static_info_msg(
                             self.evaluate_summary.to_static_msg_pub(
-                                episode, self.args.num_episode, self.data_courier.sim_time()
+                                episode_idx, self.args.num_episode, self.data_courier.sim_time()
                             )
                         )
                         self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.to_dynamic_msg_pub())
                         # one episode
                         self.evaluate_episode(robot_cfg, single_te)
-                        episode += 1
+                        self.policy.set_episode_idx(episode_idx)
+                        if self.args.record:
+                            self.api_core.benchmark_ros_node.pub_episode_done(episode_idx)
+                            self.api_core.benchmark_ros_node.wait_episode_ack(timeout=30.0)
+
+                        episode_idx += 1
                         self.evaluate_summary.make_cache()
 
                     if self.args.record:
@@ -228,6 +237,7 @@ class TaskBenchmark(object):
                 host_ip=host,
                 port=port,
                 sub_task_name=self.args.sub_task_name,
+                preview=self.args.preview,
             )
         elif self.args.model_arc == "":
             from geniesim.benchmark.policy.base import BasePolicy
@@ -324,23 +334,6 @@ class TaskBenchmark(object):
         self.env.set_data_courier(self.data_courier)
         self.env.set_scene_info(scene_info)
 
-    def update_init_env(self):
-        self.api_core.update_robot_base(
-            self.episode_content["generalization_config"]["robot_init_pose"]["position"],
-            self.episode_content["generalization_config"]["robot_init_pose"]["quaternion"],
-        )
-        self.api_core.apply_light_config(self.episode_content["generalization_config"]["light_config"])
-
-    def apply_material_generalization(self):
-        gen_config = self.task_config.get("generalization", {})
-        num_material = gen_config.get("num_material", 1)
-
-        if num_material > 1:
-            material_info = self.api_core.collect_material_info()
-            for mesh_path, material_list in material_info.items():
-                material_path = np.random.choice(material_list)
-                self.api_core.change_material(mesh_path, material_path)
-
     def set_record_topics(self):
         if "G1" in self.task_config["robot"]["robot_cfg"]:
             self.record_topic_list = [
@@ -402,6 +395,7 @@ class TaskBenchmark(object):
                         observaion,
                         step_num=self.env.current_step,
                         task_instruction=single_instruction[0],
+                        gen_config=self.env.get_camera_gen_config(),
                     )
                 else:
                     action = self.policy.act(observaion, step_num=self.env.current_step)
@@ -425,7 +419,16 @@ class TaskBenchmark(object):
                 self.data_courier.sleep()
 
         except KeyboardInterrupt:
+            logger.info("Received KeyboardInterrupt during episode")
             single_te.assemble_expect_result()
+            # Ensure recording is stopped on interrupt
+            if self.args.record and hasattr(self, "env") and self.env is not None:
+                try:
+                    if hasattr(self.env, "api_core") and self.env.api_core is not None:
+                        self.env.api_core.stop_all_recording()
+                        logger.info("Recording stopped due to KeyboardInterrupt")
+                except Exception as e:
+                    logger.warning(f"Failed to stop recording on interrupt: {e}")
 
         for callback in end_callbacks:  # during task
             callback(self.env, action)

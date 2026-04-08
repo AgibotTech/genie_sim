@@ -47,12 +47,7 @@ class TaskHook(HookBase):
         self.policy = policy
 
     def start_callback(self, env, _):
-        init_joint_state = self.policy.reset()
-        print("SET INIT POS", init_joint_state)
-        if init_joint_state != None:
-            env.robot.client.set_joint_positions(init_joint_state, False)
-
-        task_name = env.init_task_config["task"]
+        pass
 
     def step_callback(self, env, action):
         pass

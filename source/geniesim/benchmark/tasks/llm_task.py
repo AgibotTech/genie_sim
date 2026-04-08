@@ -5,8 +5,11 @@
 import numpy as np
 import os, json
 import geniesim.utils.system_utils as system_utils
+from geniesim.plugins.logger import Logger
 
 from .base_task import BaseTask
+
+logger = Logger()
 
 
 class LLMTask(BaseTask):
@@ -35,7 +38,7 @@ class LLMTask(BaseTask):
                 instr_info = json.load(f)
                 self.instructions = instr_info["instructions"]
         except:
-            print(f"No instructions found for {path}")
+            logger.warning(f"No instructions found for {path}")
             self.instructions = [""]
 
     def set_task(self, episode_id):
