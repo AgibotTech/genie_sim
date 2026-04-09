@@ -8,13 +8,14 @@
       ],
       "noise": {
         "enable": true,
-        "num": 0,
-        "types": [
-          "gaussian",
-          "uniform",
-          "salt_pepper",
-          "exponential"
-        ],
+        "exponential": {
+          "scale_range": [
+            0.5,
+            1.0,
+            1.5,
+            2.0
+          ]
+        },
         "gaussian": {
           "mean": 0,
           "std_range": [
@@ -25,10 +26,7 @@
             0.1
           ]
         },
-        "uniform": {
-          "low": -0.1,
-          "high": 0.1
-        },
+        "num": 0,
         "salt_pepper": {
           "amount_range": [
             0.01,
@@ -38,13 +36,15 @@
           ],
           "salt_vs_pepper": 0.5
         },
-        "exponential": {
-          "scale_range": [
-            0.5,
-            1.0,
-            1.5,
-            2.0
-          ]
+        "types": [
+          "gaussian",
+          "uniform",
+          "salt_pepper",
+          "exponential"
+        ],
+        "uniform": {
+          "high": 0.1,
+          "low": -0.1
         }
       }
     }

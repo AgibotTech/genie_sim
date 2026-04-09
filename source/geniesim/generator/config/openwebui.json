@@ -1,10 +1,16 @@
 {
+  "direct": {
+    "enable": false
+  },
   "file": {
     "image_compression_height": null,
     "image_compression_width": null
   },
   "google_drive": {
     "enable": false
+  },
+  "models": {
+    "base_models_cache": false
   },
   "onedrive": {
     "enable": false
@@ -31,75 +37,69 @@
   "tool_server": {
     "connections": [
       {
-        "url": "http://localhost:8765/assets-agent",
-        "path": "openapi.json",
-        "type": "openapi",
         "auth_type": "bearer",
-        "headers": null,
-        "key": "",
         "config": {
           "access_control": null,
           "enable": true,
           "function_name_filter_list": ""
         },
+        "headers": null,
         "info": {
           "description": "search assets from keywords, return topk assets",
           "id": "search assets api",
           "name": "search assets api"
         },
+        "key": "",
+        "path": "openapi.json",
         "spec": "",
-        "spec_type": "url"
+        "spec_type": "url",
+        "type": "openapi",
+        "url": "http://localhost:8765/assets-agent"
       },
       {
-        "url": "http://localhost:8765/file-agent",
-        "path": "openapi.json",
-        "type": "openapi",
         "auth_type": "bearer",
-        "headers": null,
-        "key": "",
         "config": {
           "access_control": null,
           "enable": true,
           "function_name_filter_list": ""
         },
+        "headers": null,
         "info": {
           "description": "save file to local",
           "id": "file save api",
           "name": "file save api"
         },
+        "key": "",
+        "path": "openapi.json",
         "spec": "",
-        "spec_type": "url"
+        "spec_type": "url",
+        "type": "openapi",
+        "url": "http://localhost:8765/file-agent"
       },
       {
-        "url": "http://localhost:8765/assets-info-agent",
-        "path": "openapi.json",
-        "type": "openapi",
         "auth_type": "bearer",
-        "headers": null,
-        "key": "",
         "config": {
+          "access_control": null,
           "enable": true,
-          "function_name_filter_list": "",
-          "access_control": null
+          "function_name_filter_list": ""
         },
-        "spec_type": "url",
-        "spec": "",
+        "headers": null,
         "info": {
+          "description": "get interactions json file of provided assets ids",
           "id": "get_interactions",
-          "name": "get_interactions",
-          "description": "get interactions json file of provided assets ids"
-        }
+          "name": "get_interactions"
+        },
+        "key": "",
+        "path": "openapi.json",
+        "spec": "",
+        "spec_type": "url",
+        "type": "openapi",
+        "url": "http://localhost:8765/assets-info-agent"
       }
     ]
   },
   "ui": {
     "enable_signup": false
   },
-  "version": 0,
-  "direct": {
-    "enable": false
-  },
-  "models": {
-    "base_models_cache": false
-  }
+  "version": 0
 }

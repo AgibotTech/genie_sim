@@ -250,12 +250,12 @@ Please consider citing our work either way below if it helps your research.
 
 ```
 @misc{li2026geniesimpanoreconfast,
-      title={Genie Sim PanoRecon: Fast Immersive Scene Generation from Single-View Panorama}, 
+      title={Genie Sim PanoRecon: Fast Immersive Scene Generation from Single-View Panorama},
       author={Zhijun Li and Yongxin Su and Di Yang and Jichao Wang and Zheyuan Xing and Qian Wang and Maoqing Yao},
       year={2026},
       eprint={2604.07105},
       archivePrefix={arXiv},
       primaryClass={cs.RO},
-      url={https://arxiv.org/abs/2604.07105}, 
+      url={https://arxiv.org/abs/2604.07105},
 }
 ```

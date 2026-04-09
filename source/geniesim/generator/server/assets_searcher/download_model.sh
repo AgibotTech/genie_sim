@@ -76,9 +76,9 @@ mkdir -p "${MODELS_DIR}"
 download_model() {
     local model_name=$1
     local model_path=$2
-    
+
     echo "Downloading model: $model_name -> $model_path"
-    
+
     if [ "$USE_HUGGINGFACE" = true ]; then
         # huggingface-cli
         if command -v huggingface-cli &> /dev/null; then
@@ -93,9 +93,9 @@ download_model() {
             # Parent of target must exist
             local parent_dir=$(dirname "$model_path")
             mkdir -p "$parent_dir"
-            
+
             modelscope download --model "$model_name" --local_dir "$model_path"
-            
+
             if [ $? -eq 0 ]; then
                 echo "✓ Model downloaded: $model_path"
             else
@@ -151,9 +151,9 @@ download_python_file() {
     local url=$1
     local output_path=$2
     local filename=$(basename "$output_path")
-    
+
     echo "Downloading: $filename"
-    
+
     if command -v curl &> /dev/null; then
         curl -L -o "$output_path" "$url"
     elif command -v wget &> /dev/null; then
@@ -162,7 +162,7 @@ download_python_file() {
         echo "Error: neither curl nor wget found"
         exit 1
     fi
-    
+
     if [ $? -eq 0 ]; then
         echo "✓ Saved: $output_path"
     else

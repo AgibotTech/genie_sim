@@ -904,7 +904,7 @@ class MuJoCoRosNode(Node):
             pos_local, eul_local = self._world_to_base_link(pos_w, R_w)
             self._ctrl_states_buf[slot:slot + 3] = pos_local.astype(np.float32)
             self._ctrl_states_buf[slot + 3:slot + 6] = eul_local.astype(np.float32)
-            
+
             # Write EE velocity (cvel format: [angular(3), linear(3)])
             # Convert from world frame to base_link frame
             cvel_w = self.data.cvel[body_id].copy()  # [wx, wy, wz, vx, vy, vz]

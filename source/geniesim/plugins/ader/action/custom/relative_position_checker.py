@@ -15,20 +15,20 @@ logger = Logger()
 
 class RelativePositionChecker(EvaluateAction):
     """Evaluate whether object A is in a specific relative position to object B.
-    
+
     Supports four spatial relationships:
     - leftof: A is to the left of B (from robot's perspective)
     - rightof: A is to the right of B (from robot's perspective)
     - topof: A is above B (higher Z coordinate)
     - bottomof: A is below B (lower Z coordinate)
-    
+
     The left/right judgment is based on the robot's coordinate system:
     - Robot's +Y axis (in world coordinates) defines "left"
     - Robot's -Y axis (in world coordinates) defines "right"
-    
+
     Syntax: "RelativePosition": "obj_A|obj_B|relation"
     where relation is one of: leftof, rightof, topof, bottomof
-    
+
     Args:
         env: The simulation environment.
         obj_a: Name of object A (the object to check).
@@ -43,13 +43,13 @@ class RelativePositionChecker(EvaluateAction):
         self._done_flag = False
         self.relation = relation.lower()
         self.env = env
-        
+
         # Validate relation
         valid_relations = ['leftof', 'rightof', 'topof', 'bottomof']
         if self.relation not in valid_relations:
             logger.warning(f"[RelativePositionChecker] Invalid relation '{relation}', must be one of {valid_relations}")
             self.relation = 'leftof'  # Default fallback
-        
+
         # Consecutive frame count for stability (require 2 consecutive frames)
         self._consecutive_count = 0
         self._required_consecutive = 2
@@ -69,7 +69,7 @@ class RelativePositionChecker(EvaluateAction):
 
     def _get_robot_left_right_axis(self):
         """Get the robot's left-right axis in world coordinates.
-        
+
         Returns:
             Tuple of (left_axis, right_axis) as numpy arrays.
             - left_axis: Robot's +Y direction in world coordinates
@@ -79,20 +79,20 @@ class RelativePositionChecker(EvaluateAction):
         robot_cfg = getattr(self.env, "robot_cfg", None)
         if robot_cfg is None:
             robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
-        
+
         if "G1" in robot_cfg:
             robot_base = "/G1"
             link_path = f"{robot_base}/base_link"
         else:
             robot_base = "/genie"
             link_path = f"{robot_base}/base_link"
-        
+
         try:
             # Get robot base pose
             pos, quat = self.get_world_pose(link_path)
             pos = np.array(pos)
             quat = np.array(quat)
-            
+
             # Convert quaternion to rotation matrix
             qw, qx, qy, qz = quat
             rotation = np.array([
@@ -100,12 +100,12 @@ class RelativePositionChecker(EvaluateAction):
                 [2*qx*qy + 2*qz*qw, 1 - 2*qx**2 - 2*qz**2, 2*qy*qz - 2*qx*qw],
                 [2*qx*qz - 2*qy*qw, 2*qy*qz + 2*qx*qw, 1 - 2*qx**2 - 2*qy**2]
             ])
-            
+
             # Robot's +Y axis in world coordinates (left direction)
             left_axis = rotation @ np.array([0, 1, 0])
             # Robot's -Y axis in world coordinates (right direction)
             right_axis = rotation @ np.array([0, -1, 0])
-            
+
             return left_axis, right_axis
         except Exception as e:
             logger.warning(f"[RelativePositionChecker] Failed to get robot axis: {e}")
@@ -114,19 +114,19 @@ class RelativePositionChecker(EvaluateAction):
 
     def _check_leftof(self, pos_a, pos_b):
         """Check if A is to the left of B from robot's perspective.
-        
+
         A is left of B if A's projection onto robot's left axis is greater than B's.
         """
         left_axis, _ = self._get_robot_left_right_axis()
-        
+
         # Vector from robot to each object
         vec_to_a = pos_a - pos_b
         # Project onto left axis
         proj = np.dot(vec_to_a, left_axis)
-        
+
         # A is left of B if projection is positive
         is_left = proj > 0.05  # Small threshold to avoid ambiguity
-        
+
         logger.info(
             f"[RelativePositionChecker] leftof check: "
             f"A={self.obj_a} pos=[{pos_a[0]:.4f},{pos_a[1]:.4f},{pos_a[2]:.4f}], "
@@ -138,19 +138,19 @@ class RelativePositionChecker(EvaluateAction):
 
     def _check_rightof(self, pos_a, pos_b):
         """Check if A is to the right of B from robot's perspective.
-        
+
         A is right of B if A's projection onto robot's right axis is greater than B's.
         """
         _, right_axis = self._get_robot_left_right_axis()
-        
+
         # Vector from robot to each object
         vec_to_a = pos_a - pos_b
         # Project onto right axis
         proj = np.dot(vec_to_a, right_axis)
-        
+
         # A is right of B if projection is positive
         is_right = proj > 0.05
-        
+
         logger.info(
             f"[RelativePositionChecker] rightof check: "
             f"A={self.obj_a} pos=[{pos_a[0]:.4f},{pos_a[1]:.4f},{pos_a[2]:.4f}], "
@@ -164,7 +164,7 @@ class RelativePositionChecker(EvaluateAction):
         """Check if A is above B (higher Z coordinate)."""
         # A is above B if A's Z is greater than B's Z
         is_above = pos_a[2] > pos_b[2] + 0.02  # Small threshold
-        
+
         logger.info(
             f"[RelativePositionChecker] topof check: "
             f"A={self.obj_a} z={pos_a[2]:.4f}, B={self.obj_b} z={pos_b[2]:.4f}, "
@@ -176,7 +176,7 @@ class RelativePositionChecker(EvaluateAction):
         """Check if A is below B (lower Z coordinate)."""
         # A is below B if A's Z is less than B's Z
         is_below = pos_a[2] < pos_b[2] - 0.02
-        
+
         logger.info(
             f"[RelativePositionChecker] bottomof check: "
             f"A={self.obj_a} z={pos_a[2]:.4f}, B={self.obj_b} z={pos_b[2]:.4f}, "
@@ -208,25 +208,25 @@ class RelativePositionChecker(EvaluateAction):
             # Get object positions (center points)
             aa_a, bb_a = self.get_obj_aabb_new(self.obj_a)
             aa_b, bb_b = self.get_obj_aabb_new(self.obj_b)
-            
+
             # Calculate center positions
             pos_a = (aa_a + bb_a) / 2
             pos_b = (aa_b + bb_b) / 2
-            
+
             logger.info(
                 f"[RelativePositionChecker] Update #{self._update_count}: "
                 f"A={self.obj_a} center=[{pos_a[0]:.4f},{pos_a[1]:.4f},{pos_a[2]:.4f}], "
                 f"B={self.obj_b} center=[{pos_b[0]:.4f},{pos_b[1]:.4f},{pos_b[2]:.4f}], "
                 f"relation={self.relation}"
             )
-            
+
             # Check the relation
             if self._check_relation(pos_a, pos_b):
                 self._consecutive_count += 1
                 logger.info(
                     f"[RelativePositionChecker] Relation satisfied (count={self._consecutive_count}/{self._required_consecutive})"
                 )
-                
+
                 if self._consecutive_count >= self._required_consecutive:
                     self._done_flag = True
             else:
@@ -249,7 +249,7 @@ class RelativePositionChecker(EvaluateAction):
 
     def handle_action_event(self, action: ActionBase, event: ActionEvent) -> None:
         logger.info(f"Action [RelativePositionChecker] {self.obj_a}->{self.obj_b} ({self.relation}) evt: {event.value}")
-        
+
         if event == ActionEvent.STARTED:
             pass
         elif event == ActionEvent.PAUSED:
