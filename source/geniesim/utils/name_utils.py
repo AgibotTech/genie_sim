@@ -110,11 +110,27 @@ OMNIPICKER_AJ_NAMES = [
     "idx41_gripper_l_outer_joint1",
     "idx81_gripper_r_outer_joint1",
 ]
+
 G1_CHASSIS = [
     "base_linear_joint_x",
     "base_linear_joint_y",
     "base_angular_joint",
 ]
+
+ROBOT_CONFIGS = {
+    "G1_omnipicker": {
+        "arm_joints": G1_DUAL_ARM_JOINT_NAMES,
+        "gripper_joints": OMNIPICKER_AJ_NAMES,
+        "waist_joints": G1_WAIST_JOINT_NAMES,
+        "head_joints": G1_HEAD_JOINT_NAMES,
+    },
+    "G2_omnipicker": {
+        "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
+        "gripper_joints": OMNIPICKER_AJ_NAMES,
+        "waist_joints": G2_WAIST_JOINT_NAMES,
+        "head_joints": G2_HEAD_JOINT_NAMES,
+    },
+}
 
 
 def robot_type_mapping(robot_type):

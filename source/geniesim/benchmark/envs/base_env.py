@@ -14,7 +14,7 @@ from geniesim.app.controllers.api_core import APICore
 from geniesim.utils.data_courier import DataCourier
 from geniesim.utils.infer_pre_process import TaskInfo
 from geniesim.benchmark.config.robot_init_states import TASK_INFO_DICT
-from geniesim.utils.name_utils import robot_type_mapping
+from geniesim.utils.name_utils import robot_type_mapping, ROBOT_CONFIGS
 from geniesim.utils.ikfk_utils import IKFKSolver
 
 
@@ -38,6 +38,9 @@ class BaseEnv(AderEnv):
         self.specific_task_name = self.init_task_config["specific_task_name"]
         self.sub_task_name = self.init_task_config["sub_task_name"]
         self.robot_cfg = robot_type_mapping(self.init_task_config["robot_cfg"])
+        self.cfg = ROBOT_CONFIGS.get(self.robot_cfg)
+        if self.cfg is None:
+            raise ValueError(f"Unsupported robot_cfg: {self.robot_cfg}")
 
         task_info_cfg = TASK_INFO_DICT.get(self.sub_task_name, {}).get(self.robot_cfg)
         self.load(task_file)
@@ -51,9 +54,6 @@ class BaseEnv(AderEnv):
                 self.init_hand,
                 self.init_gripper,
             ) = self.robot_task_info.init_pose()
-            gen_config = self.task_info.get("generalization_config", {})
-            rand_init_arm = gen_config.get("rand_init_arm", [0] * 14)
-            self.init_arm = list(np.array(self.init_arm) + np.array(rand_init_arm))
 
         self.ikfk_solver = IKFKSolver(
             self.init_arm,

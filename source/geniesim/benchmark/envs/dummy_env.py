@@ -74,48 +74,13 @@ class DummyEnv(BaseEnv):
         self.api_core.stop_recording()
 
     def reset(self):
-        self._followed_objects = set()  # Clear on new scene/episode (scene generalization)
+        self._followed_objects = set()
         init_gripper = [1 - v for v in self.init_gripper]
         self.robot_joint_indices = self.api_core.get_robot_joint_indices()
-        if self.robot_cfg == "G1_omnipicker":
-            self.api_core.set_joint_positions(
-                self.init_arm,
-                joint_indices=[self.robot_joint_indices[v] for v in G1_DUAL_ARM_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                self.init_waist,
-                joint_indices=[self.robot_joint_indices[v] for v in G1_WAIST_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                self.init_head,
-                joint_indices=[self.robot_joint_indices[v] for v in G1_HEAD_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                init_gripper,
-                joint_indices=[self.robot_joint_indices[v] for v in OMNIPICKER_AJ_NAMES],
-                is_trajectory=False,
-            )
-        elif self.robot_cfg == "G2_omnipicker":
-            self.api_core.set_joint_positions(
-                self.init_arm,
-                joint_indices=[self.robot_joint_indices[v] for v in G2_DUAL_ARM_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                self.init_waist,
-                joint_indices=[self.robot_joint_indices[v] for v in G2_WAIST_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                self.init_head,
-                joint_indices=[self.robot_joint_indices[v] for v in G2_HEAD_JOINT_NAMES],
-                is_trajectory=False,
-            )
-            self.api_core.set_joint_positions(
-                init_gripper,
-                joint_indices=[self.robot_joint_indices[v] for v in OMNIPICKER_AJ_NAMES],
-                is_trajectory=False,
-            )
+
+        # fmt: off
+        self.api_core.set_joint_positions(self.init_arm, joint_indices=[self.robot_joint_indices[v] for v in self.cfg["arm_joints"]], is_trajectory=False)
+        self.api_core.set_joint_positions(self.init_waist, joint_indices=[self.robot_joint_indices[v] for v in self.cfg["waist_joints"]], is_trajectory=False)
+        self.api_core.set_joint_positions(self.init_head, joint_indices=[self.robot_joint_indices[v] for v in self.cfg["head_joints"]], is_trajectory=False)
+        self.api_core.set_joint_positions(init_gripper, joint_indices=[self.robot_joint_indices[v] for v in self.cfg["gripper_joints"]], is_trajectory=False)
+        # fmt: on
