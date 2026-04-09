@@ -5,8 +5,8 @@ This project implements the methods from ***Genie Sim PanoRecon** - Fast Immersi
 
 ![image.png](./assets/project.png)
 <div align="center">
-  <a href="https://arxiv.org/abs/TDOD" style="text-decoration:none;">
-    <img src="https://img.shields.io/badge/arXiv-2601.02078-red.svg?logo=arxiv&logoColor=white" alt="arXiv Paper: 2601.02078">
+  <a href="https://arxiv.org/abs/2604.07105" style="text-decoration:none;">
+    <img src="https://img.shields.io/badge/arXiv-2604.07105-red.svg?logo=arxiv&logoColor=white" alt="arXiv Paper: 2604.07105">
   </a>
   <a href="https://github.com/AgibotTech/genie_sim/source/geniesim_world">
     <img src="https://img.shields.io/badge/GitHub-grey?logo=GitHub" alt="GitHub">
@@ -245,3 +245,17 @@ For input `foo.png` with `-o .`, outputs go to `./foo/`:
   - Real-ESRGAN (optional) - Command-line tool wrapper for super-sampling functionality
 - All third-party components remain under their own licenses and terms.
 - Check `THIRD_PARTY_LICENSES` for detailed license information.
+
+Please consider citing our work either way below if it helps your research.
+
+```
+@misc{li2026geniesimpanoreconfast,
+      title={Genie Sim PanoRecon: Fast Immersive Scene Generation from Single-View Panorama}, 
+      author={Zhijun Li and Yongxin Su and Di Yang and Jichao Wang and Zheyuan Xing and Qian Wang and Maoqing Yao},
+      year={2026},
+      eprint={2604.07105},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2604.07105}, 
+}
+```
