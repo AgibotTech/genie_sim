@@ -317,6 +317,7 @@ def apply_material_generalization(api_core, task_config):
         if not any(keyword in mesh_path for keyword in material_change_list):
             continue
         material_path = np.random.choice(sorted(material_list))
+        logger.info(f"Material replaced: mesh='{mesh_path}' -> material='{material_path}'")
         api_core.change_material(mesh_path, material_path)
 
 

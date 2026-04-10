@@ -85,7 +85,8 @@ def resolve_task_config(task_name: str, robot_type: str = "G2", instance_id: int
         )
 
     # 1. background config name → eval_tasks JSON
-    bg_name = mapping["background"][robot_type]   # e.g. "table_task_g2"
+    bg_value = mapping["background"][robot_type]   # e.g. "table_task_g2"
+    bg_name = bg_value[0] if isinstance(bg_value, list) else bg_value
     bg_json_path = os.path.join(
         system_utils.benchmark_conf_path(), f"eval_tasks/{bg_name}.json"
     )

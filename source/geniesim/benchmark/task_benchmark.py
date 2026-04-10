@@ -152,10 +152,12 @@ class TaskBenchmark(object):
                 time.sleep(0.5)
                 self.api_core.collect_init_physics()
 
-                for _, episode_file in enumerate(specific_task_files):
+                seed = getattr(self.args, "seed", 0)
+                for file_idx, episode_file in enumerate(specific_task_files):
                     logger.info(f"EPISODE FILE: {episode_file}")
                     self.episode_content = system_utils.load_json(episode_file)
-
+                    gen_seed = seed + instance_id * 1000 + file_idx
+                    np.random.seed(gen_seed)
                     update_init_env(self.env, self.task_config, self.episode_content)
                     self.env.apply_generalization(self.api_core, self.task_config)
 
@@ -169,10 +171,9 @@ class TaskBenchmark(object):
                         )
 
                     episode_count = 1 if self.args.preview else len(self.env.task.instructions)
-                    seed = getattr(self.args, "seed", 0)
+                    episode_seed = seed + instance_id
                     for episode_id in range(self.args.num_episode * episode_count):
-                        np.random.seed(seed)
-                        logger.info(f"Episode {episode_id}: reset random seed to {seed}")
+                        np.random.seed(episode_seed)
                         self.env.set_current_task(episode_id)
                         if self.instruction != "":
                             self.env.task.set_instruction(self.instruction)

@@ -7,7 +7,23 @@ TASK_MAPPING = {
         "eval_dims": {"manip": "pick", "cognition": "color"},
     },
     "pick_block_color": {
-        "background": {"G1": "table_task_g1", "G2": "table_task_1_g2"},
+        "background": {
+            "G1": "table_task_g1",
+            "G2": [
+                "table_task_1_g2",
+                "table_task_g2_ref",
+                "table_task_g2_basegen",
+                "table_task_g2_camposgen",
+                "table_task_g2_camdropgen",
+                "table_task_g2_camnoise",
+                "table_task_g2_camocgen",
+                "table_task_g2_ctrlgen",
+                "table_task_g2_eefgen",
+                "table_task_g2_jointgen",
+                "table_task_g2_lightgen",
+                "table_task_g2_matgen",
+            ],
+        },
         "eval_dims": {"manip": "pick", "cognition": "color"},
     },
     "pick_block_color_instructgen": {
