@@ -36,7 +36,6 @@ EVAL_TEMPLATE = {
     "fps": "",
     "operator": "",
 }
-"Follow"
 TASK_STEPS = {
     "bimanual_hold_ball": ["VLM"],
     "bimanual_chip_handover": ["Upright"],
