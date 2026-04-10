@@ -44,7 +44,8 @@ class AderEnv(object):
     def reset(self):
         self.last_update_time = time.time()
         self.has_done = False
-        self._followed_objects = set()  # Clear followed objects tracking on reset
+        self._followed_objects = set()
+        self._picked_objects = set()
         self.api_core.reset()
 
     def exist_eval_action(self):

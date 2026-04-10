@@ -59,6 +59,7 @@ class PiEnv(DummyEnv):
 
     def reset(self):
         self._followed_objects = set()
+        self._picked_objects = set()
         self.last_update_time = time.time()
         self.has_done = False
         self.task.reset(self)

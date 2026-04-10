@@ -75,6 +75,7 @@ class DummyEnv(BaseEnv):
 
     def reset(self):
         self._followed_objects = set()
+        self._picked_objects = set()
         init_gripper = [1 - v for v in self.init_gripper]
         self.robot_joint_indices = self.api_core.get_robot_joint_indices()
 
