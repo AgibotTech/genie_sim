@@ -20,7 +20,7 @@ from geniesim.utils.infer_post_process import *
 class PiEnv(DummyEnv):
     def __init__(self, api_core, task_file: str, init_task_config, need_setup=True):
         super().__init__(api_core, task_file, init_task_config, need_setup)
-        self.LIMIT_VAL = 0.78
+        self.LIMIT_VAL = 1.0
         self.load_task_setup()
 
     def load_task_setup(self):
