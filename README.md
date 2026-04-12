@@ -9,9 +9,9 @@
   <a href="http://agibot-world.com/genie-sim">
     <img src="https://img.shields.io/badge/Webpage-GenieSim-green?" alt="Webpage">
   </a>
-  <!-- <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
+  <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
     <img src="https://img.shields.io/badge/HuggingFace-yellow?logo=HuggingFace" alt="HuggingFace">
-  </a> -->
+  </a>
   <a href="https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset">
     <img src="https://img.shields.io/badge/Dataset-ModelScope-FF6B35?logo=model&logoColor=white" alt="ModelScope Dataset">
   </a>
