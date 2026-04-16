@@ -735,9 +735,9 @@ class CommandController:
             elif "head_left" in prim_name.lower():
                 prim_name = "head_stereo_left"
             elif "left_camera" in prim_name.lower() and "head" not in prim_name.lower():
-                prim_name = "hand_right"
-            elif "right_camera" in prim_name.lower() and "head" not in prim_name.lower():
                 prim_name = "hand_left"
+            elif "right_camera" in prim_name.lower() and "head" not in prim_name.lower():
+                prim_name = "hand_right"
         return prim_name
 
     def handle_get_observation(self):
