@@ -43,7 +43,7 @@ Clone required external repos:
 ```bash
 cd external
 external$ git clone https://github.com/apple/ml-sharp.git
-external$ git clone https://github.com/DepthAnything/DA360.git
+external$ git clone https://github.com/Insta360-Research-Team/DA360.git
 ```
 
 Prepare DA360 checkpoint:
