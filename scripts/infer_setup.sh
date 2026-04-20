@@ -1,26 +1,20 @@
 #!/bin/bash
 
-# Script to clone openpi repository with specific branch
-# Clones https://github.com/Physical-Intelligence/openpi.git
-# Branch: kevin/pi05-support
-# Target directory: openpi (in project root)
+set -e
 
-set -e  # Exit on error
+REPO_URL="https://github.com/AgibotTech/ACoT-VLA.git"
+BRANCH="genie_sim"
 
-REPO_URL="https://github.com/Physical-Intelligence/openpi.git"
-BRANCH="kevin/pi05-support"
-
-# Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TARGET_DIR="$PROJECT_ROOT/openpi"
 
-echo "Cloning openpi repository..."
+echo "========================================="
+echo "Cloning ACoT-VLA repository..."
 echo "Repository: $REPO_URL"
-echo "Branch: $BRANCH"
 echo "Target directory: $TARGET_DIR"
+echo "========================================="
 
-# Check if directory already exists
 if [ -d "$TARGET_DIR" ]; then
     echo "Warning: Directory $TARGET_DIR already exists."
     read -p "Do you want to remove it and clone again? (y/N): " -n 1 -r
@@ -34,21 +28,28 @@ if [ -d "$TARGET_DIR" ]; then
     fi
 fi
 
-# Clone the repository with the specific branch
-echo "Cloning repository..."
-git clone -b "$BRANCH" "$REPO_URL" "$TARGET_DIR"
+MAX_RETRIES=3
+RETRY_DELAY=5
 
-echo "Successfully cloned $REPO_URL (branch: $BRANCH) to $TARGET_DIR"
-
-# Deploy local infer files
-cd $TARGET_DIR
-git apply $SCRIPT_DIR/infer_changes.patch
-
-echo "Successfully deployed local infer files"
-
-mkdir -p $TARGET_DIR/checkpoints/select_color
-mkdir -p $TARGET_DIR/checkpoints/size_recogize
-mkdir -p $TARGET_DIR/checkpoints/grasp_targets
-mkdir -p $TARGET_DIR/checkpoints/organize_items
-
-echo "Successfully created checkpoints directories"
+for i in $(seq 1 $MAX_RETRIES); do
+    echo "Cloning repository (attempt $i/$MAX_RETRIES)..."
+    if git clone -b "$BRANCH" -c http.postBuffer=524288000 "$REPO_URL" "$TARGET_DIR" 2>&1; then
+        echo "✓ Successfully cloned $REPO_URL (branch: $BRANCH) to $TARGET_DIR"
+        break
+    else
+        if [ $i -lt $MAX_RETRIES ]; then
+            echo "Clone failed, retrying in ${RETRY_DELAY}s..."
+            rm -rf "$TARGET_DIR"
+            sleep $RETRY_DELAY
+        else
+            echo "✗ Failed to clone after $MAX_RETRIES attempts."
+            echo ""
+            echo "Possible fixes:"
+            echo "  1. Check your network connection / proxy settings"
+            echo "  2. Try: git config --global http.sslVerify false"
+            echo "  3. Set a proxy: git config --global http.proxy <your_proxy>"
+            echo "  4. Use SSH: git clone -b $BRANCH git@github.com:AgibotTech/ACoT-VLA.git $TARGET_DIR"
+            exit 1
+        fi
+    fi
+done

@@ -489,21 +489,6 @@ class ImageForwardRecorderNode(Node):
 
             self._cleanup_nondata_files(bag_path)
 
-            if self.final_output_dir:
-                try:
-                    os.makedirs(self.final_output_dir, exist_ok=True)
-
-                    # Move the entire recording directory to final output
-                    recording_name = os.path.basename(bag_dir)
-                    dst_recording = os.path.join(self.final_output_dir, recording_name)
-                    if os.path.exists(dst_recording):
-                        shutil.rmtree(dst_recording)
-                    shutil.move(str(bag_dir), dst_recording)
-                    logger.info(f"Moved recording directory to {dst_recording}")
-
-                except Exception as e:
-                    logger.error(f"Error moving recording to final output dir: {e}")
-
             logger.info("Extraction and conversion completed successfully")
 
         except Exception as e:
@@ -928,6 +913,21 @@ class ImageForwardRecorderNode(Node):
 
                 # Concatenate all processed bag videos now that extraction is done
                 self.concat_all_recordings()
+
+                # Move to final_output_dir after concat is complete
+                if self.final_output_dir:
+                    try:
+                        with self.sub_task_name_lock:
+                            sub_task_name = self.sub_task_name if self.sub_task_name else "unknown"
+                        src_dir = os.path.join(self.output_dir, "recording_data", sub_task_name)
+                        os.makedirs(self.final_output_dir, exist_ok=True)
+                        dst_dir = os.path.join(self.final_output_dir, sub_task_name)
+                        if os.path.exists(dst_dir):
+                            shutil.rmtree(dst_dir)
+                        shutil.move(src_dir, dst_dir)
+                        logger.info(f"Moved recording directory to {dst_dir}")
+                    except Exception as e:
+                        logger.error(f"Error moving recording to final output dir: {e}")
         except Exception as e:
             logger.warning(f"Error stopping extraction worker: {e}")
         try:

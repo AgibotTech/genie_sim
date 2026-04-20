@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 G1_DEFAULT_STATES = {
-    "body_state": [0.0, 0.4363, 0.8727, 0.4],
+    "body_state": [0.0, 0.4363, 0.8727, 0.42],
     "init_arm": [
         -1.0751,
         0.6109,

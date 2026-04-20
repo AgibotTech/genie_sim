@@ -60,7 +60,7 @@ TASK_STEPS = {
     "pick_specific_object": ["Follow", "PickUpOnGripper"],
     "place_book": ["VLM"],
     "place_book_hard": ["VLM"],
-    "place_object_into_box_color": ["Follow", "PickUpOnGripper", "Inside"],
+    "place_object_into_box_color": ["Inside"],
     "put_pen_into_penholder": ["VLM"],
     "put_utensil_turn_faucet": ["VLM"],
     "sort_fruit": ["Inside"],

@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --infer-host)
-            INFER_HOST="$2"
+            INFER_HOST="--benchmark.infer_host=$2"
             shift 2
             ;;
         --num-episode)
@@ -57,27 +57,22 @@ case "${TASK_TYPE}" in
     if)
         PATTERN="if_*.yaml"
         TITLE="IF Task"
-        TEMP_DIR="/tmp/if_configs_$$"
         ;;
     robust)
         PATTERN="robust_*.yaml"
         TITLE="Robust Task"
-        TEMP_DIR="/tmp/robust_configs_$$"
         ;;
     manip)
         PATTERN="manip_*.yaml"
         TITLE="Manip Task"
-        TEMP_DIR="/tmp/manip_configs_$$"
         ;;
     s2r)
         PATTERN="s2r_*.yaml"
         TITLE="S2R Task"
-        TEMP_DIR="/tmp/s2r_configs_$$"
         ;;
     spatial)
         PATTERN="spatial_*.yaml"
         TITLE="Spatial Task"
-        TEMP_DIR="/tmp/spatial_configs_$$"
         ;;
     *)
         echo "Invalid task type: ${TASK_TYPE}"
@@ -105,7 +100,7 @@ echo -e "${GREEN}${TITLE} Batch Runner${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo -e "Config directory: ${YELLOW}${CONFIG_DIR}${NC}"
 if [ -n "${INFER_HOST}" ]; then
-    echo -e "Override infer_host: ${YELLOW}${INFER_HOST}${NC}"
+    echo -e "Override infer_host: ${YELLOW}${INFER_HOST#*=}${NC}"
 fi
 if [ -n "${PREVIEW}" ]; then
     echo -e "Preview mode: ${YELLOW}enabled${NC}"
@@ -119,22 +114,6 @@ fi
 
 # Sorted list of configs (deterministic order)
 CONFIG_YAMLS=($(find "${CONFIG_DIR}" -maxdepth 1 -name "${PATTERN}" -type f | sort))
-
-# If --infer-host is provided, create copies in /tmp with overridden infer_host
-TEMP_CONFIG_DIR=""
-if [ -n "${INFER_HOST}" ]; then
-    TEMP_CONFIG_DIR="${TEMP_DIR}"
-    mkdir -p "${TEMP_CONFIG_DIR}"
-    NEW_YAMLS=()
-    for yaml in "${CONFIG_YAMLS[@]}"; do
-        TMP_YAML="${TEMP_CONFIG_DIR}/$(basename ${yaml})"
-        sed "s|infer_host:.*|infer_host: \"${INFER_HOST}\"|" "${yaml}" > "${TMP_YAML}"
-        echo -e "  ${YELLOW}$(basename ${yaml})${NC}: $(grep infer_host "${TMP_YAML}")"
-        NEW_YAMLS+=("${TMP_YAML}")
-    done
-    CONFIG_YAMLS=("${NEW_YAMLS[@]}")
-    echo -e "${GREEN}Created ${#CONFIG_YAMLS[@]} temp configs with infer_host=${INFER_HOST}${NC}\n"
-fi
 
 if [ ${#CONFIG_YAMLS[@]} -eq 0 ]; then
     echo -e "${RED}Error: No ${PATTERN} files found in ${CONFIG_DIR}${NC}"
@@ -164,7 +143,7 @@ for YAML_PATH in "${CONFIG_YAMLS[@]}"; do
     echo -e "  Config: ${YAML_PATH}\n"
 
     cd "${PROJECT_ROOT}"
-    /isaac-sim/python.sh source/geniesim/app/app.py --config "${YAML_PATH}" ${NUM_EPISODE} ${PREVIEW}
+    /isaac-sim/python.sh source/geniesim/app/app.py --config "${YAML_PATH}" ${NUM_EPISODE} ${PREVIEW} ${INFER_HOST}
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Successfully completed: ${CONFIG_NAME}${NC}\n"
@@ -198,11 +177,6 @@ if [ ${FAILED_COUNT} -gt 0 ]; then
 fi
 
 echo -e "${GREEN}========================================${NC}"
-
-# Clean up temp configs
-if [ -n "${TEMP_CONFIG_DIR}" ] && [ -d "${TEMP_CONFIG_DIR}" ]; then
-    rm -rf "${TEMP_CONFIG_DIR}"
-fi
 
 # Move debug_preview to specified output directory
 if [ -n "${PREVIEW_OUT}" ] && [ -d "${PROJECT_ROOT}/debug_preview" ]; then

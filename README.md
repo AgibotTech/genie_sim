@@ -81,17 +81,17 @@ Please refer to these links to install Genie Sim and download assets and dataset
 
 | Tasks | &pi;<sub>0.5</sub> | GR00T-N1.6 | &pi;<sub>0</sub> |
 |:------|:---:|:---:|:---:|
-| pick_block_number | **0.711** | 0.272 | 0.193 |
-| pick_block_shape | **0.475** | 0.200 | 0.117 |
-| pick_common_sense | **0.300** | 0.188 | 0.038 |
-| pick_follow_logic_or | **0.650** | 0.500 | 0.150 |
-| pick_object_type | **0.825** | 0.513 | 0.213 |
-| pick_specific_object | **0.713** | 0.388 | 0.263 |
-| straighten_object | **0.650** | 0.350 | 0.500 |
-| pick_billiards_color | **0.863** | 0.588 | 0.400 |
-| pick_block_color | **0.900** | 0.570 | 0.410 |
-| pick_block_size | **0.925** | 0.525 | 0.400 |
-| **Avg.** | **0.646** | 0.409 | 0.268 |
+| pick_block_number | **0.73** | 0.28 | 0.17 |
+| pick_block_shape | **0.41** | 0.15 | 0.17 |
+| pick_common_sense | **0.35** | 0.12 | 0.05 |
+| pick_follow_logic_or | **0.58** | 0.56 | 0.26 |
+| pick_object_type | **0.81** | 0.56 | 0.27 |
+| pick_specific_object | **0.58** | 0.35 | 0.16 |
+| straighten_object | **0.66** | 0.33 | 0.46 |
+| pick_billiards_color | **0.81** | 0.37 | 0.47 |
+| pick_block_color | **0.88** | 0.71 | 0.40 |
+| pick_block_size | **0.89** | 0.52 | 0.36 |
+| **Avg.** | **0.67** | 0.40 | 0.28 |
 
 </td>
 <td valign="top">
@@ -100,19 +100,19 @@ Please refer to these links to install Genie Sim and download assets and dataset
 
 | Generalization | &pi;<sub>0.5</sub> | GR00T-N1.6 | &pi;<sub>0</sub> |
 |:------|:---:|:---:|:---:|
-| Reference | **0.900** | 0.610 | 0.455 |
-| Instruction | **0.920** | 0.540 | 0.390 |
-| Robot Init Base | **0.890** | 0.640 | 0.350 |
-| Robot Init Joint | **0.830** | 0.440 | 0.410 |
-| Robot End Effector | **0.450** | 0.270 | 0.230 |
-| Control Delay | **0.680** | 0.560 | 0.370 |
-| Camera Frame Drop | **0.740** | 0.000 | 0.040 |
-| Camera Noise | **0.910** | 0.520 | 0.390 |
-| Camera Occlusion | **0.940** | 0.540 | 0.450 |
-| Camera Extrinsic | **0.400** | 0.190 | 0.160 |
-| Ambient Lighting | **0.910** | 0.560 | 0.420 |
-| Background | **0.850** | 0.650 | 0.440 |
-| **Avg.** | **0.785** | 0.460 | 0.342 |
+| Reference | **0.92** | 0.58 | 0.46 |
+| Instruction | **0.89** | 0.47 | 0.32 |
+| Robot Init Base | **0.83** | 0.59 | 0.32 |
+| Robot Init Joint | **0.70** | 0.39 | 0.34 |
+| Robot End Effector | **0.42** | 0.30 | 0.26 |
+| Control Delay | **0.76** | 0.57 | 0.40 |
+| Camera Frame Drop | **0.83** | 0.28 | 0.19 |
+| Camera Noise | **0.89** | 0.59 | 0.34 |
+| Camera Occlusion | **0.93** | 0.59 | 0.41 |
+| Camera Extrinsic | **0.39** | 0.27 | 0.22 |
+| Ambient Lighting | **0.85** | 0.54 | 0.44 |
+| Background | **0.90** | 0.57 | 0.40 |
+| **Avg.** | **0.77** | 0.48 | 0.34 |
 
 </td>
 </tr>
@@ -122,33 +122,33 @@ Please refer to these links to install Genie Sim and download assets and dataset
 
 | Tasks | &pi;<sub>0.5</sub> | GR00T-N1.6 | &pi;<sub>0</sub> |
 |:------|:---:|:---:|:---:|
-| Open Door | **1.000** | 0.400 | 0.500 |
-| Hold Pot | **0.533** | 0.000 | 0.100 |
-| Pour Workpiece | 0.800 | **0.883** | 0.475 |
-| Stock and Straighten Shelf | **0.240** | 0.200 | 0.200 |
-| Take Wrong Item Shelf | **1.000** | 0.867 | 0.900 |
-| Scoop Popcorn | **0.850** | **0.850** | 0.650 |
-| Clean the Desktop | **0.160** | 0.000 | 0.140 |
-| Place Block into Box | **0.522** | 0.367 | 0.478 |
-| Sorting Packages | **0.417** | 0.128 | 0.150 |
-| Sorting Packages Continuous | **0.188** | 0.042 | 0.000 |
-| **Avg.** | **0.571** | 0.374 | 0.359 |
+| Open Door | **0.60** | 0.35 | 0.46 |
+| Hold Pot | **0.35** | 0.00 | 0.14 |
+| Pour Workpiece | **0.95** | **0.95** | 0.72 |
+| Stock and Straighten Shelf | **0.37** | 0.15 | 0.21 |
+| Take Wrong Item Shelf | **0.95** | 0.65 | 0.80 |
+| Scoop Popcorn | 0.78 | **0.80** | 0.68 |
+| Clean the Desktop | **0.16** | 0.01 | 0.08 |
+| Place Block into Box | **0.50** | 0.30 | 0.38 |
+| Sorting Packages | **0.45** | 0.14 | 0.13 |
+| Sorting Packages Continuous | **0.16** | 0.03 | 0.00 |
+| **Avg.** | **0.53** | 0.34 | 0.36 |
 
 ### GenieSim-Sim2Real
 
 | Tasks | Sim Env<br>*Sim Data*<br>(sim-to-sim) | Sim Env<br>*Real Data*<br>(real-to-sim) | Real Env<br>*Sim Data*<br>(sim-to-real) | Real Env<br>*Real Data*<br>(real-to-real) |
 |:------|:---:|:---:|:---:|:---:|
-| Select Color | **0.856** | 0.750 | **0.850** | 0.725 |
-| Recognize Size | **0.930** | 0.750 | **0.938** | 0.750 |
-| Grasp Targets | **0.717** | 0.540 | **0.708** | 0.583 |
-| Organize Items | **0.480** | 0.450 | **0.600** | 0.400 |
-| Pack in Supermarket | **1.000** | **1.000** | **0.950** | **0.950** |
-| Sort Fruit | **0.900** | **0.900** | **1.000** | **1.000** |
-| Place Block into Drawer | **0.900** | **0.900** | **0.850** | **0.900** |
-| Bimanual Chip Handover | **0.800** | 0.700 | **0.730** | 0.710 |
-| **Avg.** | **0.823** | 0.749 | **0.828** | 0.752 |
+| Select Color | **0.86** | 0.75 | **0.85** | 0.73 |
+| Recognize Size | **0.93** | 0.75 | **0.94** | 0.75 |
+| Grasp Targets | **0.72** | 0.54 | **0.71** | 0.58 |
+| Organize Items | **0.48** | 0.45 | **0.60** | 0.40 |
+| Pack in Supermarket | **0.94** | **1.00** | **0.95** | **0.95** |
+| Sort Fruit | **0.90** | **0.90** | **1.00** | **1.00** |
+| Place Block into Drawer | **0.80** | **0.90** | **0.85** | **0.90** |
+| Bimanual Chip Handover | **0.80** | 0.70 | **0.73** | 0.71 |
+| **Avg.** | **0.80** | 0.75 | **0.83** | 0.75 |
 
-> <sup>&dagger;</sup> *Sim Data: 500~1500 episodes of simulation data. Real Data: 500 episodes of real-world data.*
+> <sup>&dagger;</sup> *Sim Data: 500~1500 episodes of simulation data. Real Data: 500 episodes of real-world data. All models are post-trained from the &pi;<sub>0.5</sub> baseline.*
 
 
 
