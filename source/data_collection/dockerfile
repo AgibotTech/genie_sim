@@ -16,8 +16,12 @@ COPY ./requirements.txt /tmp
 RUN /isaac-sim/python.sh -m pip install pip -U -i https://pypi.tuna.tsinghua.edu.cn/simple
 RUN /isaac-sim/python.sh -m pip install -r /tmp/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# install curobo
-RUN git clone https://github.com/NVlabs/curobo.git --depth 1 /tmp/curobo
+# install curobo (pinned to a known-good commit for legacy API compatibility)
+ARG CUROBO_COMMIT=d64c4b005459db10c5dd867d8b30a87d5bda9bdb
+RUN git clone https://github.com/NVlabs/curobo.git /tmp/curobo \
+ && cd /tmp/curobo \
+ && git checkout ${CUROBO_COMMIT}
+
 RUN cd /tmp && wget https://developer.download.nvidia.cn/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
 RUN dpkg -i /tmp/cuda-keyring_1.1-1_all.deb
 RUN apt-get update
