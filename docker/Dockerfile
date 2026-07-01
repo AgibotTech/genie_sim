@@ -8,7 +8,7 @@
 #   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4.0:latest .
 #   docker build -f docker/Dockerfile \
 #       --build-arg ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia \
-#       --build-arg ISAACSIM_TAG=6.0.0 \
+#       --build-arg ISAACSIM_TAG=6.0.1 \
 #       --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu \
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
 #       -t registry.agibot.com/genie-sim/geniesim4.0:latest .
@@ -29,7 +29,7 @@
 # entrypoint.sh — see the comments there. Build-time UID stays at 1234.
 
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
-ARG ISAACSIM_TAG=6.0.0
+ARG ISAACSIM_TAG=6.0.1
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 

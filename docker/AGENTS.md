@@ -8,7 +8,7 @@ injected by the CLI (`docker.py` → `start.sh` → `entrypoint.sh`).
 
 | File | Isaac Sim | Ubuntu | ROS 2 | Python | Image | Status |
 |------|-----------|--------|-------|--------|-------|--------|
-| `Dockerfile` | 6.0 (`6.0.0`) | 24.04 Noble | Jazzy | system `python3` 3.12 (pip-installed isaacsim) | geniesim4 | 🚧 incoming, **not implemented** |
+| `Dockerfile` | 6.0 (`6.0.1`) | 24.04 Noble | Jazzy | system `python3` 3.12 (pip-installed isaacsim) | geniesim4 | 🚧 incoming, **not implemented** |
 | `Dockerfile.5.1` | **5.1 + 6.0** (combo) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.0 pip-installed) | geniesim3 | ✅ default |
 | `Dockerfile.4.5` | 4.5 (`4.5.0`) | 22.04 Jammy | Humble | system `python3` 3.10 (pip-installed isaacsim) | geniesim2 | ⚠️ E.O.L. |
 
@@ -23,7 +23,7 @@ renaming images, containers, or CLI dispatch.
   published, and `geniesim docker6.0 …` exits with a "not implemented" error
   rather than dispatching.
 - Planned shape (kept here so the eventual implementation can match):
-  - Isaac Sim installed via `pip install "isaacsim[all,extscache]==6.0.0"` into system python3.12.
+  - Isaac Sim installed via `pip install "isaacsim[all,extscache]==6.0.1"` into system python3.12.
   - `PIP_BREAK_SYSTEM_PACKAGES=1` lifts Ubuntu 24.04's PEP 668 restriction.
   - `OMNI_KIT_ACCEPT_EULA` is the EULA env var.
   - A `typing_extensions.py` patch is applied post-install to fix a `Sentinel` import error in pydantic.
