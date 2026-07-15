@@ -3,6 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 import json
+import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
@@ -809,7 +810,11 @@ class GrpcServer:
             ObservationService(self.server_function), self._server
         )
         self.stop()
-        self._server.add_insecure_port("0.0.0.0:50051")
+        # Default to localhost so the unauthenticated service is not exposed to
+        # the network. The client connects to localhost:50051 by default; set
+        # GENIE_SIM_GRPC_HOST=0.0.0.0 only for a deliberate cross-host setup.
+        bind_host = os.environ.get("GENIE_SIM_GRPC_HOST", "127.0.0.1")
+        self._server.add_insecure_port(f"{bind_host}:50051")
         self._server.start()
 
     def stop(self):

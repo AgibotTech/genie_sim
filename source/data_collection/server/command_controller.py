@@ -1,6 +1,7 @@
 import json
 import os
 import queue
+import re
 import shutil
 import signal
 import subprocess
@@ -42,6 +43,18 @@ from server.ui_builder import UIBuilder
 from server.utils import batch_matrices_to_quaternions_scipy_w_first
 
 MAX_EXTRACT_PROCESS_NUM = 2
+
+# task_name arrives over an unauthenticated gRPC channel, becomes a filesystem
+# path component, and is interpolated into shell commands. Restrict it to a
+# conservative character set so it cannot traverse directories or inject shell
+# metacharacters. Legitimate task names look like "[pick_block_g1_0]".
+_SAFE_TASK_NAME_RE = re.compile(r"^[A-Za-z0-9_.\[\]-]+$")
+
+
+def sanitize_task_name(task_name):
+    if not isinstance(task_name, str) or task_name in (".", "..") or not _SAFE_TASK_NAME_RE.match(task_name):
+        raise ValueError(f"Invalid task_name: {task_name!r}")
+    return task_name
 
 
 def find_joints(prim):
@@ -744,7 +757,7 @@ class CommandController:
         """Handle Command 11: GetObservation / StartRecording / StopRecording"""
         if self.data["startRecording"]:
             with self._timing_context("start_recording"):
-                self.task_name = self.data["task_name"]
+                self.task_name = sanitize_task_name(self.data["task_name"])
                 self.fps = self.data["fps"]
                 current_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 root_path = current_directory + "/recording_data/"
@@ -793,17 +806,31 @@ class CommandController:
                 if self.publish_ros:
                     ros_cmd_distro = os.getenv("ROS_CMD_DISTRO", "humble")
                     exclude_args = "--exclude-regex" if ros_cmd_distro != "humble" else "--exclude"
-                    command_str = f"""
-                        unset PYTHONPATH
-                        unset LD_LIBRARY_PATH
-                        source /opt/ros/{ros_cmd_distro}/setup.bash
-                        ros2 bag record -o {recording_path} {exclude_args} '.*_rgb(?!_)' -a
-                        """
-                    logger.info("publish_ros command: " + command_str)
+                    # Fixed script, zero interpolation: $1 sources the ROS env,
+                    # then "$@" carries the ros2 args as data. recording_path is
+                    # a separate argv element, so it can never be parsed as shell.
+                    record_script = (
+                        "unset PYTHONPATH\n"
+                        "unset LD_LIBRARY_PATH\n"
+                        'source /opt/ros/"$1"/setup.bash\n'
+                        "shift\n"
+                        'exec ros2 bag record "$@"\n'
+                    )
+                    record_argv = [
+                        "/bin/bash",
+                        "-c",
+                        record_script,
+                        "bash",
+                        ros_cmd_distro,
+                        "-o",
+                        recording_path,
+                        exclude_args,
+                        ".*_rgb(?!_)",
+                        "-a",
+                    ]
+                    logger.info("publish_ros argv: %s", record_argv)
                     process = subprocess.Popen(
-                        command_str,
-                        shell=True,
-                        executable="/bin/bash",
+                        record_argv,
                         preexec_fn=os.setsid,
                     )
                     self.process.append(process)
@@ -914,18 +941,34 @@ class CommandController:
                         topic_name = "/" + camera.split("/")[-1] + "_rgb"
                         compressed_name = topic_name + "_compressed"
                         ros_cmd_distro = os.getenv("ROS_CMD_DISTRO", "humble")
-                        extra_args = "--remap _out_transport:=compressed" if ros_cmd_distro != "humble" else ""
-                        command_str = f"""
-                        unset PYTHONPATH
-                        unset LD_LIBRARY_PATH
-                        source /opt/ros/{ros_cmd_distro}/setup.bash
-                        ros2 run image_transport republish raw compressed {extra_args} --ros-args --remap /in:={topic_name} --remap /out:={compressed_name}
-                        """
-                        logger.info(command_str)
+                        extra_args = (
+                            ["--remap", "_out_transport:=compressed"] if ros_cmd_distro != "humble" else []
+                        )
+                        # Fixed script + argv: topic_name / compressed_name ride
+                        # in as data via "$@", so they cannot inject commands.
+                        run_script = (
+                            "unset PYTHONPATH\n"
+                            "unset LD_LIBRARY_PATH\n"
+                            'source /opt/ros/"$1"/setup.bash\n'
+                            "shift\n"
+                            'exec ros2 run image_transport republish raw compressed "$@"\n'
+                        )
+                        run_argv = [
+                            "/bin/bash",
+                            "-c",
+                            run_script,
+                            "bash",
+                            ros_cmd_distro,
+                            *extra_args,
+                            "--ros-args",
+                            "--remap",
+                            f"/in:={topic_name}",
+                            "--remap",
+                            f"/out:={compressed_name}",
+                        ]
+                        logger.info("republish argv: %s", run_argv)
                         subpro = subprocess.Popen(
-                            command_str,
-                            shell=True,
-                            executable="/bin/bash",
+                            run_argv,
                             preexec_fn=os.setsid,
                         )
                         self.process.append(subpro)
@@ -1262,7 +1305,7 @@ class CommandController:
         with self._timing_context("on_command_step"):
             if not self.data or not self.Command:
                 return
-            else:
+            try:
                 with self._timing_context(f"rpc_server.step_command_{command_value_to_string[self.Command]}"):
                     if self.Command == Command.LINEAR_MOVE:
                         self.handle_linear_move()
@@ -1318,6 +1361,13 @@ class CommandController:
                         self.handle_get_checker_status()
                     else:
                         raise ValueError(f"Invalid command: {self.Command}")
+            except Exception as e:
+                # A handler exception must never leave the waiting gRPC worker
+                # hung: record it as this command's result so the notify_all
+                # below still wakes the caller and the server keeps serving.
+                logger.error(f"Command step failed for command {self.Command}: {e}")
+                if self.data_to_send is None:
+                    self.data_to_send = f"ERROR: {e}"
 
         if self.Command:
             with self.condition:
