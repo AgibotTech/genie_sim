@@ -27,7 +27,6 @@ from isaacsim.core.utils.prims import (
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils.types import ArticulationAction
 from geniesim_benchmark.app.controllers.kinematics_solver import Kinematics_Solver
-from geniesim_benchmark.app.controllers.ruckig_move import Ruckig_Controller
 from geniesim_benchmark.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
@@ -192,7 +191,6 @@ class UIBuilder:
             scene.add(self.articulation)
         self.articulation.initialize()
 
-        self.ruckig_controller = Ruckig_Controller(self.dof_nums, self.joint_delta_time)
         robot_list = []
         for idx in range(batch_num):
             articulation = SingleArticulation(
