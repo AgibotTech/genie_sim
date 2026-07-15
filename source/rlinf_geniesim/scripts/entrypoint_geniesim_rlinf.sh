@@ -165,7 +165,7 @@ if [ -f "${_BENCH_DIR}/pyproject.toml" ]; then
   # the base image lacks (isaacsim, cv-bridge and the private packages are
   # excluded — provided by the image / installed above). Install one-by-one so a
   # single package's failure doesn't abort the rest.
-  _BENCH_PYDEPS="colorama future msgpack openai ruckig shapely trimesh"
+  _BENCH_PYDEPS="colorama future msgpack openai shapely trimesh"
   for _pkg in ${_BENCH_PYDEPS}; do
     python3 -m pip install -q --break-system-packages "${_pkg}" 2>/dev/null || true
     "${ISAACSIM_HOME}/python.sh" -m pip install -q "${_pkg}" 2>/dev/null || true
