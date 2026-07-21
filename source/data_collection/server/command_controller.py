@@ -1083,15 +1083,17 @@ class CommandController:
 
                 total_time = 0
                 clean_once = True
-                while len(self.extract_process) > MAX_EXTRACT_PROCESS_NUM or clean_once:
-                    new_process = []
+                while len(self.extract_process) >= MAX_EXTRACT_PROCESS_NUM or clean_once:
+                    running_process = []
                     clean_once = False
                     for p, log_file in self.extract_process:
-                        if p.poll():
-                            new_process.append((p, log_file))
+                        if p.poll() is None:
+                            # poll() returns None while the process is still running
+                            running_process.append((p, log_file))
                         else:
+                            # process finished (success or failure); clean it up
                             log_file.close()
-                    self.extract_process = new_process
+                    self.extract_process = running_process
                     time.sleep(0.1)
                     total_time += 0.1
                     if total_time > 120:
