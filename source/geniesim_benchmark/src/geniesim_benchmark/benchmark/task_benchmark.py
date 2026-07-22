@@ -522,6 +522,12 @@ class TaskBenchmark(object):
 
                 need_pixels = self.policy.need_infer()
                 self.env.set_infer_status(need_pixels)
+                # settle_due marks the chunk's last step (the obs feeding the
+                # next inference); history-capture render steps set need_pixels
+                # without being settle_due, so they skip arm-settling.
+                self.env.settle_due = (
+                    self.policy.inference_due() if hasattr(self.policy, "inference_due") else need_pixels
+                )
                 if need_pixels:
                     _hold_render()
                 else:

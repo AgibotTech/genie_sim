@@ -325,9 +325,8 @@ flowchart LR
 
 ## 5.1 📖 Documentations
 
-Please refer to these links to install Genie Sim and download assets and dataset:
+Please refer to these links to download assets and dataset:
 
-- [User Guide](https://agibot-world.com/sim-evaluation/docs/#/v3) _(applies to Genie Sim **< 3.2**; from 3.2 the canonical workflow is the `geniesim` CLI + per-package SKILLs — see [§ 2 ✨ Features](#2--features) and [§ 3 🚀 Quick start](#3--quick-start))_
 - [Assets](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)
 - [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset)
 
@@ -351,17 +350,17 @@ Baseline model repositories:
 
 | Tasks                | &pi;<sub>0.5</sub> | ACoT-VLA | GR00T-N1.7 | &pi;<sub>0</sub> |
 | :------------------- | :----------------: | :------: | :--------: | :--------------: |
-| pick_billiards_color |        0.84        | **0.91** |    0.74    |       0.49       |
-| pick_block_color     |        0.89        | **0.97** |    0.78    |       0.50       |
-| pick_block_number    |      **0.79**      |   0.75   |    0.57    |       0.40       |
-| pick_block_shape     |        0.52        | **0.55** |    0.42    |       0.20       |
-| pick_block_size      |        0.80        | **0.82** |    0.71    |       0.32       |
-| pick_common_sense    |      **0.38**      |   0.36   |    0.35    |       0.06       |
-| pick_follow_logic_or |      **0.81**      |   0.80   |    0.70    |       0.38       |
-| pick_object_type     |      **0.81**      | **0.81** |    0.73    |       0.41       |
-| pick_specific_object |        0.78        | **0.81** |    0.68    |       0.37       |
-| straighten_object    |      **0.57**      |   0.54   |    0.45    |       0.40       |
-| **Avg.**             |        0.72        | **0.73** |    0.61    |       0.35       |
+| pick_billiards_color |        0.83        | **0.91** |    0.73    |       0.50       |
+| pick_block_color     |        0.87        | **0.96** |    0.80    |       0.49       |
+| pick_block_number    |      **0.82**      |   0.76   |    0.61    |       0.40       |
+| pick_block_shape     |      **0.55**      |   0.52   |    0.44    |       0.20       |
+| pick_block_size      |        0.79        | **0.83** |    0.62    |       0.34       |
+| pick_common_sense    |        0.59        |   0.66   |  **0.68**  |       0.19       |
+| pick_follow_logic_or |      **0.81**      |   0.79   |    0.72    |       0.39       |
+| pick_object_type     |      **0.80**      | **0.80** |    0.72    |       0.42       |
+| pick_specific_object |        0.81        | **0.83** |    0.69    |       0.37       |
+| straighten_object    |      **0.59**      |   0.51   |    0.45    |       0.38       |
+| **Avg.**             |        0.75        | **0.76** |    0.65    |       0.37       |
 
 </td>
 <td valign="top">
@@ -370,12 +369,12 @@ Baseline model repositories:
 
 | Perturbation    | &pi;<sub>0.5</sub> | ACoT-VLA  | GR00T-N1.7 | &pi;<sub>0</sub> |
 | :-------------- | :----------------: | :-------: | :--------: | :--------------: |
-| Instruction     |       0.669        | **0.705** |   0.632    |      0.302       |
-| Robot Pose      |       0.261        | **0.273** |   0.214    |      0.106       |
-| Background      |       0.677        | **0.681** |   0.589    |      0.332       |
-| Image Quality   |     **0.568**      |   0.547   |   0.466    |      0.278       |
-| Camera Position |       0.310        |   0.258   | **0.312**  |      0.136       |
-| **Avg.**        |     **0.497**      |   0.493   |   0.443    |      0.231       |
+| Instruction     |       0.689        | **0.739** |   0.678    |      0.332       |
+| Robot Pose      |       0.492        | **0.543** |   0.429    |      0.240       |
+| Background      |       0.709        | **0.737** |   0.646    |      0.381       |
+| Image Quality   |     **0.599**      |   0.589   |   0.489    |      0.307       |
+| Camera Position |     **0.575**      |   0.504   |   0.449    |      0.303       |
+| **Avg.**        |       0.613        | **0.622** |   0.538    |      0.313       |
 
 </td>
 </tr>
@@ -401,15 +400,15 @@ Baseline model repositories:
 
 | Tasks                                | &pi;<sub>0.5</sub> | ACoT-VLA | GR00T-N1.7 | &pi;<sub>0</sub> |
 | :----------------------------------- | :----------------: | :------: | :--------: | :--------------: |
-| Pick Object Absolute Position        |      **0.56**      |   0.48   |    0.51    |       0.01       |
-| Pick Object Relative Position        |        0.31        |   0.26   |  **0.50**  |       0.03       |
-| Place Beverage to Another's Position |        0.41        | **0.53** |    0.35    |       0.06       |
-| Place Object Relative Position       |      **0.41**      |   0.38   |    0.36    |       0.15       |
-| Sort Cubes by Size                   |        0.16        | **0.33** |    0.06    |       0.00       |
-| Sort Number                          |        0.10        | **0.16** |    0.13    |       0.10       |
-| Stack Bowls                          |      **0.16**      |   0.10   |    0.06    |       0.00       |
-| Stack Three Building Blocks          |        0.30        | **0.60** |    0.00    |       0.00       |
-| **Avg.**                             |        0.30        | **0.36** |    0.25    |       0.04       |
+| Pick Object Absolute Position        |        0.80        | **0.81** |    0.55    |       0.46       |
+| Pick Object Relative Position        |      **0.65**      |   0.60   |    0.43    |       0.20       |
+| Place Beverage to Another's Position |        0.40        | **0.53** |    0.35    |       0.11       |
+| Place Object Relative Position       |        0.50        | **0.51** |    0.43    |       0.21       |
+| Sort Cubes by Size                   |        0.00        | **0.30** |    0.10    |       0.00       |
+| Sort Number                          |        0.00        | **0.13** |  **0.13**  |       0.06       |
+| Stack Bowls                          |      **0.20**      |   0.00   |    0.00    |       0.00       |
+| Stack Three Building Blocks          |      **0.30**      | **0.30** |    0.00    |       0.00       |
+| **Avg.**                             |        0.36        | **0.40** |    0.25    |       0.13       |
 
 ### GenieSim-Sim2Real
 

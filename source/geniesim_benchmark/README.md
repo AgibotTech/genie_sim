@@ -38,6 +38,24 @@ geniesim benchmark check-inference \
   --infer-host=<IP>:8999 --arch=corobot
 ```
 
+### Feed history image observations (server-driven, corobot)
+
+The `corobot` policy can attach a rolling buffer of past head-camera frames
+to each inference request under `params.history`, letting temporal models see
+what happened while the previous action chunk was replaying. This is **opt-in
+per response and controlled by the server** — nothing to configure on the
+benchmark side:
+
+- The server returns an integer `hist_frame_interval` in its `result`.
+  `> 0` enables capture and sets the sampling stride (a head frame is grabbed
+  every N chunk-replay steps); `0` / omitted disables it.
+- The captured frames ride along on the *next* request as
+  `params.history = {"interval": N, "images": [...]}`. The first request of an
+  episode (before the server has opted in) carries no history.
+
+A server that never returns the field behaves exactly as before, so this is
+backward compatible with existing inference servers.
+
 ### Discover tasks
 
 ```bash

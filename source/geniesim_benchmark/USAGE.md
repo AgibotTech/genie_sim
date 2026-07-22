@@ -42,6 +42,14 @@ geniesim benchmark run g2op_if_pick_block_color --infer-host=<IP>:8999 \
 geniesim benchmark batch --category=instruction_following --robot=g2op
 ```
 
+> 🖼️ **History image observations (corobot):** the runtime will feed a rolling
+> buffer of past head-camera frames back to your inference server whenever the
+> server opts in — return an integer `hist_frame_interval` in the response
+> `result` (`> 0` enables it and sets the sampling stride, `0`/omitted disables
+> it). The frames arrive on the next request as `params.history`. Servers that
+> don't return the field are unaffected. See [`README.md`](README.md) for the
+> full contract.
+
 > 🚧 `geniesim_benchmark` is the **legacy** benchmark runtime — it drives Isaac Sim directly and is **independent and parallel to the RT Engine**. The roadmap is to refactor it into a benchmark layer on top of `geniesim_ros`; until then, treat the two as separate paths.
 
 ## More

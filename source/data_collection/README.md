@@ -6,6 +6,7 @@ A data collection system for robotic simulation tasks using Isaac Sim and cuRobo
 
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
+  - [cuRobo Dependency and License](#curobo-dependency-and-license)
   - [Option 1: Docker Container (Recommended)](#option-1-docker-container-recommended)
     - [Building the Docker Image](#building-the-docker-image)
     - [One-Click Data Collection (Recommended)](#one-click-data-collection-recommended)
@@ -31,6 +32,21 @@ A data collection system for robotic simulation tasks using Isaac Sim and cuRobo
 pip install -e /path/to/geniesim_assets
 ```
 
+### cuRobo Dependency and License
+
+cuRobo is not vendored in this repository, and AgiBot does not publish a
+prebuilt data-collection image containing it. When a user builds the Docker
+image, the Dockerfile fetches cuRobo `v0.7.6` directly from the official
+[NVIDIA cuRobo repository](https://github.com/NVlabs/curobo). Local deployments
+must use the same version because the data-collection runtime depends on the
+cuRobo 0.7.x API.
+
+cuRobo `v0.7.6` and the resulting local installation are not covered by this
+repository's MPL-2.0 license. They remain governed by the
+[NVIDIA cuRobo license](../../THIRD_PARTY_LICENSES/LICENSE.CUROBO), which limits
+use to non-commercial research or evaluation. Building the image locally does
+not change those terms.
+
 ### Option 1: Docker Container (Recommended)
 
 #### Building the Docker Image
@@ -46,6 +62,9 @@ Or directly — assuming the benchmark base image `registry.agibot.com/genie-sim
 ```bash
 docker build -f ./dockerfile -t registry.agibot.com/genie-sim/geniesim3-data-collection:latest .
 ```
+
+Both commands build the image locally. The image name above is a local tag; the
+project does not publish a prebuilt data-collection image.
 
 **Note:**  For cuRobo installation, the Dockerfile is configured for RTX 4090D by default. If you're using a different GPU model, you need to modify the `TORCH_CUDA_ARCH_LIST` environment variable in the Dockerfile, 50 series GPU (SM_120) may not be able to install cuRobo, this needs a compatibility update by the cuRobo team.
 
@@ -184,11 +203,13 @@ pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvid
 
 #### 3. Install cuRobo
 
-Clone [cuRobo](https://github.com/NVlabs/curobo) and install:
+Clone cuRobo `v0.7.6` from the official repository and install:
 
 ```bash
-# Set CUROBO_DIR to your cuRobo installation directory
-export CUROBO_DIR=/path/to/cuRobo
+# Set CUROBO_DIR to the desired cuRobo installation directory
+export CUROBO_DIR=/path/to/curobo
+git clone --branch v0.7.6 --depth 1 \
+  https://github.com/NVlabs/curobo.git "${CUROBO_DIR}"
 
 # Copy robot assets and configs
 cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot ${CUROBO_DIR}/src/curobo/content/assets

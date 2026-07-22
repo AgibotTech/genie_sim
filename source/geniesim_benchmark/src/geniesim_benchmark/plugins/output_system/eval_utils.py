@@ -208,20 +208,34 @@ class TaskEvaluation:
     def summarize_scores(self):
         if len(self.sub_steps) != 0:
             self.result["scores"] = {"STEPS": [], "E2E": 0}
+            rows = self.result["progress"]
             substeps = deque(self.sub_steps)
             step_idx = 0
-            for p in self.result["progress"]:
-                progress = p.get("progress")
-                if substeps:
-                    if substeps[0] == p.get("class_name"):
-                        step_name = substeps.popleft()
-                        score_template = deepcopy(SCORE_TEMPLATE)
-                        score_template["step"] = step_idx
-                        score_template["name"] = step_name
-                        if "SCORE" in progress:
-                            score_template["score"] = float(progress["SCORE"])
-                        self.result["scores"]["STEPS"].append(score_template)
-                        step_idx += 1
+            i = 0
+            while substeps and i < len(rows):
+                target = substeps[0]
+                if rows[i].get("class_name") == target:
+                    # Collect best score from consecutive rows with the same
+                    # class_name (e.g. left/right gripper variants inside
+                    # ActionSetWaitAny). Either hand succeeding counts.
+                    best_score = None
+                    while i < len(rows) and rows[i].get("class_name") == target:
+                        prog = rows[i].get("progress", {})
+                        if "SCORE" in prog:
+                            s = float(prog["SCORE"])
+                            if best_score is None or s > best_score:
+                                best_score = s
+                        i += 1
+                    step_name = substeps.popleft()
+                    score_template = deepcopy(SCORE_TEMPLATE)
+                    score_template["step"] = step_idx
+                    score_template["name"] = step_name
+                    if best_score is not None:
+                        score_template["score"] = best_score
+                    self.result["scores"]["STEPS"].append(score_template)
+                    step_idx += 1
+                else:
+                    i += 1
             # Set E2E only if there is at least one recorded step
             if len(self.result["scores"]["STEPS"]) > 0 and self.result["scores"]["STEPS"][-1]["score"] == 1.0:
                 self.result["scores"]["E2E"] = 1
@@ -252,16 +266,22 @@ class TaskEvaluation:
 
 
 def extract_scores(result, steps):
-    progress = deque(result["progress"])
+    rows = list(result["progress"])
     sub_scores = []
+    i = 0
 
     for idx, step in enumerate(steps):
-        while len(progress) > 0:
-            p = progress.popleft()
-            if step == p["class_name"]:
-                s = p["progress"].get("SCORE", 0)
-                sub_scores.append({"step": idx, "name": step, "score": s})
+        while i < len(rows):
+            if rows[i]["class_name"] == step:
+                best_score = 0
+                while i < len(rows) and rows[i]["class_name"] == step:
+                    s = rows[i]["progress"].get("SCORE", 0)
+                    if s > best_score:
+                        best_score = s
+                    i += 1
+                sub_scores.append({"step": idx, "name": step, "score": best_score})
                 break
+            i += 1
     return sub_scores
 
 

@@ -49,6 +49,13 @@ class CoRobotPolicy(BasePolicy):
         self.initialized = False
         self.preview = preview
         self.debug = debug
+        # History image observations. Disabled (0) until the inference server
+        # opts in by returning a positive `hist_frame_interval` in its response.
+        # When enabled, a head-camera frame is captured every N chunk-replay
+        # steps and attached to the next payload as params.history.
+        self._hist_frame_interval = 0
+        self._history_buffer = []
+        self._since_infer = 0
         self._ws_uri = f"ws://{host_ip}:{port}" if port is not None else f"ws://{host_ip}"
         self._ws = None
         self.infer_cnt = 0
@@ -170,6 +177,54 @@ class CoRobotPolicy(BasePolicy):
             head = []
         return arm, gripper, waist, head
 
+    def need_infer(self):
+        # Force a render either when a new inference is due, or one step ahead
+        # of a history-capture step so the env produces fresh images for it.
+        if len(self.action_buffer) == 0:
+            return True
+        if self._hist_frame_interval > 0 and (self._since_infer + 1) % self._hist_frame_interval == 0:
+            return True
+        return False
+
+    def inference_due(self):
+        # True only on the chunk's last step (buffer just emptied), i.e. the
+        # observation that feeds the next fresh inference. Unlike need_infer(),
+        # this excludes the history-capture render steps.
+        return len(self.action_buffer) == 0
+
+    # Payload camera key -> obs["images"] key.
+    _FRAME_CAMERAS = {"head": "head", "hand_left": "left_hand", "hand_right": "right_hand"}
+
+    def _encode_frame(self, images, cameras=None):
+        """Encode the given obs images into payload frames.
+
+        `cameras` selects which payload cameras to include (keys of
+        `_FRAME_CAMERAS`); defaults to all three.
+        """
+        cameras = cameras if cameras is not None else self._FRAME_CAMERAS
+        return {cam: self._encode_image_jpeg(images[self._FRAME_CAMERAS[cam]]) for cam in cameras}
+
+    def _capture_history(self, obs, gen_config):
+        images = obs.get("images") or {}
+        if images.get("head") is None:
+            return
+        if gen_config is not None:
+            images = apply_camera_image_augmentation(self._camera_dirt_cache, deepcopy(images), gen_config)
+        if self.debug:
+            self._dump_history_frame(images, len(self._history_buffer))
+        # History frames carry only the head camera to keep the buffer small.
+        self._history_buffer.append(self._encode_frame(images, ["head"]))
+
+    def _dump_history_frame(self, images, frame_idx):
+        debug_dir = os.path.join(ROOT_DIR, "debug_history", f"chunk_{self.infer_cnt:04d}")
+        os.makedirs(debug_dir, exist_ok=True)
+        for cam in ("head", "left_hand", "right_hand"):
+            cv2.imwrite(
+                os.path.join(debug_dir, f"frame_{frame_idx:03d}_step_{self._since_infer:03d}_{cam}.png"),
+                cv2.cvtColor(images[cam], cv2.COLOR_RGB2BGR),
+            )
+        logger.info(f"[History] chunk={self.infer_cnt} frame={frame_idx} step={self._since_infer} -> {debug_dir}")
+
     def _pre_process_obs(self, obs, gen_config):
         obs = deepcopy(obs)
         self._label_state(obs, self._robot_config)
@@ -213,6 +268,16 @@ class CoRobotPolicy(BasePolicy):
                 "task_progress": self._extract_scores(self._task_progress),
             },
         }
+        if self._hist_frame_interval > 0:
+            # Attach the history captured while replaying the previous chunk.
+            # On the first inference (before the server has enabled history)
+            # this branch is skipped; on a chunk that captured nothing the
+            # buffer is empty and an empty images list is sent.
+            payload["params"]["history"] = {
+                "interval": self._hist_frame_interval,
+                "images": self._history_buffer,
+            }
+        self._history_buffer = []
         if self.debug:
             logger.debug(f"task_name: {payload['params']['task_name']}")
             logger.debug(f"states: {payload['params']['states']}")
@@ -255,6 +320,11 @@ class CoRobotPolicy(BasePolicy):
         self.action_buffer.clear()
         self._episode_done = False
         self._task_progress = []
+        # Drop any half-collected history and let the server re-enable it on
+        # the new episode's first inference response.
+        self._hist_frame_interval = 0
+        self._history_buffer = []
+        self._since_infer = 0
 
     @staticmethod
     def _parse_result(result_dict):
@@ -371,6 +441,14 @@ class CoRobotPolicy(BasePolicy):
                 raise RuntimeError(f"Server returned error: {result['error']}")
             inner = result["result"]
             actions = self._parse_result(inner)
+            # The server toggles history collection per response: a positive
+            # `hist_frame_interval` enables capture (and sets the sampling
+            # interval) during the chunk we're about to replay; 0 / missing
+            # disables it.
+            try:
+                self._hist_frame_interval = max(int(inner.get("hist_frame_interval", 0) or 0), 0)
+            except (TypeError, ValueError):
+                self._hist_frame_interval = 0
             n = max(len(actions), 1)
             self.action_buffer = deque(actions, maxlen=n)
             return True
@@ -385,6 +463,7 @@ class CoRobotPolicy(BasePolicy):
             task_instruction = kwargs.get("task_instruction", "")
             gen_config = kwargs.get("gen_config")
             logger.info(f"\nInstruction: {task_instruction}\n")
+            # get_payload attaches the previous chunk's history and clears it.
             payload = self.get_payload(observation, task_instruction, gen_config)
 
             if payload is None:
@@ -396,6 +475,11 @@ class CoRobotPolicy(BasePolicy):
                 label="CoRobotPolicy.infer",
             )
             self.infer_cnt += 1
+            self._since_infer = 0
+        elif self._hist_frame_interval > 0:
+            self._since_infer += 1
+            if self._since_infer % self._hist_frame_interval == 0:
+                self._capture_history(observation, kwargs.get("gen_config"))
 
         raw_entry = self.action_buffer.popleft()
         cur_arm = get_arm_states(observation["states"], self._arm_dim)

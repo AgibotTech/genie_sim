@@ -143,7 +143,9 @@ class PiEnv(DummyEnv):
             self.api_core.set_joint_positions_batched(batch)
         # fmt: on
 
-        if self.need_infer and arm is not None:
+        # Only wait for arm convergence on the chunk's last step (the obs fed to
+        # the next inference), not on history-capture render steps.
+        if getattr(self, "settle_due", self.need_infer) and arm is not None:
             self._wait_arm_settled([float(v) for v in arm])
 
         next_obs = self.get_observation(fetch_images=self.need_infer or self.has_done)

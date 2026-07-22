@@ -72,10 +72,19 @@ substring** against task stems. Ambiguous substring → error with candidates.
 run` execs a single `app.py` *inside* an already-running container.
 `autocollect run` is a **host-side orchestrator**: it shells out to
 [`scripts/run_data_collection.sh`](scripts/run_data_collection.sh), which does
-`docker run -d` against this module's **own** image
+`docker run -d` against this module's **locally built** image
 (`registry.agibot.com/genie-sim/geniesim3-data-collection:latest`), and the
 in-container entrypoint launches **two** processes (Isaac Sim server + task
 client) over gRPC.
+
+> **cuRobo distribution and license boundary.** The repository does not vendor
+> cuRobo, and AgiBot does not publish a prebuilt data-collection image containing
+> it. A user-initiated Docker build fetches `v0.7.6` directly from the official
+> NVIDIA cuRobo repository; local deployments must use the same version because
+> this runtime depends on the cuRobo 0.7.x API. cuRobo is not MPL-2.0-covered
+> GenieSim source: `v0.7.6` remains under the
+> [NVIDIA cuRobo license](../../THIRD_PARTY_LICENSES/LICENSE.CUROBO), including
+> its non-commercial research/evaluation limitation.
 
 - The **agent runs on the host**; the checkout is bind-mounted into the
   container at `/geniesim/main/data_collection`, so host edits are live inside.
