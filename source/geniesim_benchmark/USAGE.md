@@ -27,7 +27,7 @@ The whole benchmark is driven by the `geniesim benchmark` CLI verb:
 # 1. Discover what's available
 geniesim benchmark categories                       # category counts (instruction / manipulation / spatial / …)
 geniesim benchmark robots                           # robot/embodiment counts
-geniesim benchmark list --robot=g2op --category=instruction_following
+geniesim benchmark list --robot=g2op --category=if
 
 # 2. Probe your inference server BEFORE launching a sim (catches protocol / NaN issues early)
 geniesim benchmark check-inference --infer-host=<IP>:8999
@@ -39,7 +39,7 @@ geniesim benchmark run g2op_if_pick_block_color --infer-host=<IP>:8999 \
   --app.headless=true --benchmark.record=true --benchmark.num_episode=20 --benchmark.seed=0
 
 # 4. Batch-evaluate a whole sweep (one category × robot)
-geniesim benchmark batch --category=instruction_following --robot=g2op
+geniesim benchmark batch --category=if --robot=g2op
 ```
 
 > 🖼️ **History image observations (corobot):** the runtime will feed a rolling
