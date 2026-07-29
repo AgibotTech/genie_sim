@@ -61,13 +61,13 @@ backward compatible with existing inference servers.
 ```bash
 geniesim benchmark categories         # show category counts
 geniesim benchmark robots             # show robot counts
-geniesim benchmark list --robot=g2op --category=instruction_following
+geniesim benchmark list --robot=g2op --category=if
 ```
 
 ### Batch-evaluate a sweep
 
 ```bash
-geniesim benchmark batch --category=instruction_following --robot=g2op
+geniesim benchmark batch --category=if --robot=g2op
 ```
 
 ### Convert collected datasets between formats
