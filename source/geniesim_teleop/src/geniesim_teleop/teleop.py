@@ -404,6 +404,18 @@ class TeleOp(object):
 
             self.input = self.device.update()
             # logger.info(f"Input {self.input}")
+
+            # Multi-episode recording: autoteleop.sh broadcasts an end-of-episode
+            # signal on /sim/stop_episode after the operator confirms with y/n.
+            # Reset the one-shot is_recording latch so the controller's record
+            # button can start the next episode. Kept outside the `if self.input`
+            # guard so the signal is handled even while the controller is asleep
+            # and not sending data.
+            if self.ros_utils.sim_ros_node.get_and_clear_stop_episode():
+                self.is_recording = False
+                self.ros_utils.sim_ros_node.pub_recording(False)
+                logger.info("Episode finished; press the record button to start the next one")
+
             if self.input:
                 self.is_start_recording()
                 self.ee_pub = [None, None]

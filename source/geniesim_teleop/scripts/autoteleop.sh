@@ -15,7 +15,9 @@
 #   3. the motion-control binary (genie_motion_control)
 #   4. the teleop loop (opens the VR server, waits for the Pico headset)
 #
-# Finally it waits for y/N to decide whether the recorded episode is kept.
+# Finally it enters a multi-episode loop: press the controller's record button
+# to start an episode, then y/n here to keep/discard it and re-arm for the next
+# episode, and q to stop everything.
 
 # Container name + repo mount point. The new geniesim CLI container is
 # named "geniesim3" and mounts the repo at /workspace (the legacy
@@ -137,31 +139,82 @@ for i in "${!COMMANDS[@]}"; do
     fi
 done
 
-# --- Wait for keep/discard decision ----------------------------------------
-echo -e "\nAll terminals started. Press 'y' or 'Y' = teleoperation succeeded, keep data; 'n' or 'N' = failed, do not keep data ..."
+# --- Multi-episode keep/discard loop ---------------------------------------
+# Legacy behaviour: a single y/N press killed every teleop process (simulator
+# included) and the script exited, so collecting N episodes meant restarting
+# all four terminals N times. Now y/n only ends the *current* episode: the
+# simulator finalizes the ros2 bag gracefully (metadata.yaml intact) and
+# re-arms, so the next record-button press starts the next episode. Press q
+# to stop everything and close the terminals.
+
+RECORDING_BASE="${REPO_IN_CONTAINER}/output/recording_data"
+
+# End the current episode: broadcast on /sim/stop_episode (both the simulator
+# and the teleop loop subscribe to it).
+stop_current_episode() {
+    echo "  -> asking the simulator to finalize the current episode..."
+    docker exec "$CONTAINER_NAME" bash -c \
+        "source /opt/ros/jazzy/setup.bash && timeout 15 ros2 topic pub --times 3 /sim/stop_episode std_msgs/msg/Bool '{data: true}' >/dev/null 2>&1" \
+        || echo "  warning: failed to send stop signal (container or ROS not ready?)"
+    sleep 2 # give ros2 bag a moment to write metadata.yaml
+}
+
+# Show whether the latest episode looks complete (.mcap = data recorded,
+# metadata.yaml = bag finalized, recording_info.json = post-processing input).
+show_latest_episode_status() {
+    docker exec "$CONTAINER_NAME" bash -c "
+        latest=\$(find $RECORDING_BASE -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+        if [ -z \"\$latest\" ]; then
+            echo '  status: no recording data yet (did you forget the record button?)'
+            exit 0
+        fi
+        echo \"  latest episode dir: \$latest\"
+        if ls \"\$latest\"/*.mcap >/dev/null 2>&1; then mcap=ok; else mcap=MISSING; fi
+        if [ -f \"\$latest/metadata.yaml\" ]; then meta=ok; else meta=MISSING; fi
+        if [ -f \"\$latest/recording_info.json\" ]; then info=ok; else info=MISSING; fi
+        echo \"  .mcap: \$mcap | metadata.yaml: \$meta | recording_info.json: \$info\"
+    " 2>/dev/null || echo "  status check failed (container not running?)"
+}
+
+echo ""
+echo "=================================================================="
+echo "All terminals started. Controls:"
+echo "  1. press the controller's record button to start an episode"
+echo "  2. when the episode is done, come back here and press:"
+echo "     y = success: keep the data, then record the next episode"
+echo "     n = failure: mark the data discarded, then record the next episode"
+echo "     q = quit: stop everything and close the terminals"
+echo "=================================================================="
 while read -n 1 -s input; do
     if [[ "$input" == "Y" || "$input" == "y" ]]; then
-        echo "Save the remote operation data.....Congratulations!"
-        echo -e "Sending SIGTERM to teleop processes..."
-        docker exec "$CONTAINER_NAME" bash -c "pkill -SIGTERM -f '$PROCESS_CLIENT' 2>/dev/null || true"
-        sleep 1
-        echo "Patching recording_info.json: add teleop_result"
+        echo ""
+        echo "[y] keeping this episode..."
+        stop_current_episode
         docker exec "$CONTAINER_NAME" python3 ${TELEOP_PKG}/data_recording/patch_recording_info.py \
             --config ${TELEOP_YAML} \
-            --base ${REPO_IN_CONTAINER}/output/recording_data \
+            --base ${RECORDING_BASE} \
             || true
-
-        break
+        show_latest_episode_status
+        echo "  done. Press the record button for the next episode, or y/n/q here."
     elif [[ "$input" == "N" || "$input" == "n" ]]; then
-        echo -e "Sending SIGTERM to teleop processes..."
-        docker exec "$CONTAINER_NAME" bash -c "pkill -SIGTERM -f '$PROCESS_CLIENT' 2>/dev/null || true"
-        sleep 1
-        echo "Patching recording_info.json: add teleop_result=false"
+        echo ""
+        echo "[n] discarding this episode (teleop_result=false; post-processing drops it)..."
+        stop_current_episode
         docker exec "$CONTAINER_NAME" python3 ${TELEOP_PKG}/data_recording/patch_recording_info.py \
             --config ${TELEOP_YAML} \
-            --base ${REPO_IN_CONTAINER}/output/recording_data \
+            --base ${RECORDING_BASE} \
             --teleop-result false \
             || true
+        show_latest_episode_status
+        echo "  done. Press the record button for the next episode, or y/n/q here."
+    elif [[ "$input" == "Q" || "$input" == "q" ]]; then
+        echo ""
+        echo "[q] stopping all teleop processes..."
+        # Finalize any episode still recording first (avoids a corrupt bag),
+        # then kill the processes.
+        stop_current_episode
+        docker exec "$CONTAINER_NAME" bash -c "pkill -SIGTERM -f '$PROCESS_CLIENT' 2>/dev/null || true"
+        sleep 1
         break
     fi
 done
