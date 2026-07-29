@@ -2752,6 +2752,31 @@ class APICore:
             self.teleop_recording = self.server_ros_node.get_teleop_recording()
 
     def _on_recording(self):
+        # Multi-episode recording: autoteleop.sh publishes on /sim/stop_episode
+        # after the operator confirms an episode with y/n. On that signal:
+        # finalize the current ros2 bag gracefully (SIGINT, so metadata.yaml is
+        # written) and re-arm the one-shot latches so the next record-button
+        # press starts a fresh episode. Without this, wait_recording locks after
+        # the first episode and the whole simulator must be restarted per episode.
+        server_node = getattr(self, "server_ros_node", None)
+        if server_node is not None and server_node.get_stop_episode():
+            server_node.clear_stop_episode()
+            if self.recording_started:
+                if self.recording_wait_num < 100:
+                    # Episode stopped before recording_info.json was written at
+                    # frame 100; write it now, otherwise post-processing skips
+                    # the episode silently for lack of an info file.
+                    self._dump_recording_info()
+                self._stop_recording()
+                logger.info("Episode finished, ready for next recording")
+            self.wait_recording = True
+            self.recording_wait_num = 0
+            # Drop the cached record-button state and this frame's already-read
+            # copy of it, so the next episode waits for a fresh button press
+            # instead of auto-starting from stale signals.
+            server_node.reset_recording_state()
+            self.teleop_recording = False
+
         if self.teleop_recording and self.wait_recording:
             self.set_record_topics()
             camera_prim_list = self.task_config["recording_setting"]["camera_list"]

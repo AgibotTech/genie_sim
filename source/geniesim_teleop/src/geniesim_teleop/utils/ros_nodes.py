@@ -86,6 +86,13 @@ class SimNode(Node):
         )
         self.publisher_playback = self.create_publisher(Bool, "/sim/playback_flag", 1)
         self.publisher_recording = self.create_publisher(Bool, "/sim/is_recording", 1)
+        # Multi-episode recording: listen for the end-of-episode signal (the same
+        # topic the simulator listens on) so the one-shot is_recording latch can be
+        # re-armed and the controller's record button can start the next episode.
+        self.subscriber_stop_episode = self.create_subscription(
+            Bool, "/sim/stop_episode", self.callback_stop_episode, 1
+        )
+        self.stop_episode_flag = False
         self.publisher_mc = self.create_publisher(GeniesimReactiveControl, "/wbc/retarget", 10)
         self.publisher_mc_debug = self.create_publisher(Pose, "/debug/retarget", 10)
         self.lock_js = threading.Lock()
@@ -186,6 +193,17 @@ class SimNode(Node):
         msg = Bool()
         msg.data = val
         self.publisher_recording.publish(msg)
+
+    def callback_stop_episode(self, msg):
+        if msg.data:
+            self.stop_episode_flag = True
+
+    def get_and_clear_stop_episode(self):
+        # One-shot event: reading clears the flag so the main loop handles each
+        # end-of-episode signal exactly once.
+        flag = self.stop_episode_flag
+        self.stop_episode_flag = False
+        return flag
 
     def pub_debug_pos(self, xyz, xyzw):
         pose = Pose()
