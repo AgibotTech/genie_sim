@@ -11,7 +11,6 @@ from geniesim_teleop.utils.logger import Logger
 from geniesim_teleop.utils.ros_utils import RosUtils
 from geniesim_teleop.utils.name_utils import *
 from geniesim_teleop.devices.pico_device import PicoDevice
-from pynput import keyboard
 from geometry_msgs.msg import Pose
 
 import os, sys, argparse, math
@@ -344,6 +343,13 @@ class TeleOp(object):
             self.is_recording = True
 
     def sub_keyboard_event(self):
+        # Imported lazily: pynput opens an X connection at import time and raises
+        # ImportError when no display is available, which is the normal case for a
+        # headless container. Keyboard control is optional (the call site below is
+        # commented out), so importing it at module level would break teleop for
+        # everyone who does not need it.
+        from pynput import keyboard
+
         self.pressed_keys = set()
 
         def on_press(key):
