@@ -332,6 +332,9 @@ class RosExtrater:
         self.fps = task_info["fps"]
         self.with_img = True
         self.with_video = True
+        self.rgb_write_mode = task_info.get("rgb_write_mode", "passthrough")
+        if self.rgb_write_mode not in {"opencv", "passthrough"}:
+            raise ValueError(f"Unsupported RGB write mode: {self.rgb_write_mode}")
         self.with_senmatic = is_senmatic
         self.light_config = task_info["light_config"]
         self.gripper_names = task_info["gripper_names"]
@@ -1055,11 +1058,23 @@ class RosExtrater:
                             stamp[file_name] = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
                             ) * np.power(10.0, -9)
-                            img = message_to_cvimage(msg, "bgr8")  # change encoding type if needed
-                            if img is None or img.size == 0:
-                                logger.info(f"⚠️ empty image, skip key={key} ts={ts}")
-                                continue
-                            cv2.imwrite(rgb_dir + "/{}.jpg".format(file_name), img)
+                            image_path = rgb_dir + "/{}.jpg".format(file_name)
+                            if self.rgb_write_mode == "opencv":
+                                # Decode the JPEG and re-encode it (legacy path).
+                                img = message_to_cvimage(msg, "bgr8")
+                                if img is None or img.size == 0:
+                                    logger.info(f"⚠️ empty image, skip key={key} ts={ts}")
+                                    continue
+                                cv2.imwrite(image_path, img)
+                            else:
+                                # The CompressedImage payload is already JPEG; write the
+                                # raw bytes straight to disk to avoid a redundant
+                                # decode + re-encode (and a second lossy pass).
+                                if msg.data.size == 0:
+                                    logger.info(f"⚠️ empty image, skip key={key} ts={ts}")
+                                    continue
+                                with open(image_path, "wb") as image_file:
+                                    image_file.write(msg.data.tobytes())
                         min_value = min(stamp.values())
                         for key in stamp:
                             stamp[key] = min_value
