@@ -14,6 +14,7 @@ import subprocess
 import signal, shutil
 from pxr import Usd, UsdGeom, UsdShade, Sdf, Gf, UsdPhysics, PhysxSchema, UsdLux
 import rclpy
+from rclpy.executors import SingleThreadedExecutor
 
 import omni
 import omni.usd
@@ -70,6 +71,9 @@ class APICore:
         self.task_queue_on_render_loop = queue.Queue()
         self.task_queue_on_physics_loop = queue.Queue()
         self.benchmark_ros_node = None
+        # Background executor that spins server_ros_node (see _start_server_ros_spin)
+        self._server_ros_executor = None
+        self._server_ros_spin_thread = None
         self.exit = False
         self.ui_builder: UIBuilder = ui_builder
         self.data = None
@@ -982,6 +986,16 @@ class APICore:
                 logger.warning(f"Failed to destroy benchmark_ros_node: {e}")
             self.benchmark_ros_node = None
 
+        # Stop the spin thread before destroying the node it is spinning
+        if getattr(self, "_server_ros_executor", None) is not None:
+            try:
+                self._server_ros_executor.shutdown()
+                logger.info("server_ros_executor shutdown")
+            except Exception as e:
+                logger.warning(f"Failed to shutdown server_ros_executor: {e}")
+            self._server_ros_executor = None
+            self._server_ros_spin_thread = None
+
         if hasattr(self, "server_ros_node") and self.server_ros_node is not None:
             try:
                 self.server_ros_node.destroy_node()
@@ -1471,6 +1485,7 @@ class APICore:
             self.pub_depth_camera()
         if self.enable_ros and not self.ros_node_initialized:
             self.server_ros_node = ServerNode(robot_name=self.robot_name)
+            self._start_server_ros_spin()
             # joint_states
             logger.info(f"sensor_ros.publish_joint {self.robot_prim_path} {self.robot_name}")
             self.sensor_base.publish_joint(robot_prim=self.robot_prim_path)
@@ -2729,6 +2744,47 @@ class APICore:
         else:
             raise ValueError("Undefined robot")
 
+    def _start_server_ros_spin(self):
+        """Spin server_ros_node from a persistent background executor.
+
+        It used to be spun by `rclpy.spin_once(timeout_sec=0)` inside on_ros_tick,
+        i.e. a non-blocking poll driven by the physics callback. That poll can miss
+        messages entirely: DDS often delivers just after it returns, so the data sits
+        unread in the reader queue. When that happens the simulation stops reacting to
+        every /sim/* topic -- pressing the teleop record button does nothing, because
+        /sim/is_recording never reaches _on_recording.
+
+        This repo already documents the same failure mode and the same fix in
+        rlinf_geniesim/renderer/rl_renderer.py: "spin_once(timeout_sec=0.0) in the
+        render callback is unreliable with many publishers ... Instead, run a
+        persistent ... executor in a background thread so all subscriber callbacks
+        fire as soon as messages arrive, independent of render timing."
+
+        Only server_ros_node is moved: its callbacks just assign a bool that is read
+        back through a locked getter (see ServerNode.callback_playback /
+        callback_recording / callback_reset and the matching get_* methods) and touch
+        no Isaac Sim API, so they are safe off the physics thread. Note these
+        callbacks already ran on the physics thread while the getters were called
+        from the render loop, so cross-thread access is not new here.
+        benchmark_ros_node is left as-is.
+        """
+        self._server_ros_executor = SingleThreadedExecutor()
+        self._server_ros_executor.add_node(self.server_ros_node)
+        self._server_ros_spin_thread = threading.Thread(
+            target=self._spin_server_ros_executor,
+            daemon=True,
+            name="geniesim_server_ros_spin",
+        )
+        self._server_ros_spin_thread.start()
+        logger.info("server_ros_node spin thread started")
+
+    def _spin_server_ros_executor(self):
+        try:
+            self._server_ros_executor.spin()
+        except Exception as e:
+            # shutdown() makes spin() return through here as well, so info level
+            logger.info(f"server_ros_node spin thread exited: {e}")
+
     def on_ros_tick(self, step_size):
         # Sim-tick: refresh robot_interface caches every step, regardless of
         # whether ROS is enabled. The recorder reads _img_data_cache from here.
@@ -2743,7 +2799,8 @@ class APICore:
             return
 
         if self.ros_node_initialized:
-            rclpy.spin_once(self.server_ros_node, timeout_sec=0)
+            # server_ros_node is spun by the background executor started in
+            # _start_server_ros_spin(); polling it here misses messages.
             if self.benchmark_ros_node is not None:
                 rclpy.spin_once(self.benchmark_ros_node, timeout_sec=0)
 
