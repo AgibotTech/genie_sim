@@ -110,6 +110,8 @@ class AppConfig:
     enable_rate_limit: bool = False
     enable_playback: bool = False
     enable_pub_depth_camera: bool = False
+    # Restore scene objects to their initial poses when an episode ends
+    reset_scene_after_episode: bool = True
     on_demand_render: bool = False
 
 

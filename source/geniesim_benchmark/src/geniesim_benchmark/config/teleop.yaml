@@ -16,6 +16,9 @@ app:
   enable_rate_limit: false
   enable_playback: true
   enable_pub_depth_camera: true
+  # Put scene objects back to their initial poses when an episode ends (y/n),
+  # so the next episode starts clean. Set to false to leave them where they are.
+  reset_scene_after_episode: true
 benchmark:
   num_episode: 1
   policy_class: "DemoPolicy"
