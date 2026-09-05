@@ -79,10 +79,15 @@ class CoRobotPolicy(BasePolicy):
         self.preview = preview
         self.debug = debug
         # History image observations. Disabled (0) until the inference server
-        # opts in by returning a positive `hist_frame_interval` in its response.
-        # When enabled, a head-camera frame is captured every N chunk-replay
-        # steps and attached to the next payload as params.history.
+        # opts in by returning a positive `interval` in `result.history` (or
+        # the legacy top-level `hist_frame_interval`). When enabled, a frame
+        # is captured every N chunk-replay steps and attached to the next
+        # payload as params.history. `history.last_n` / `history.resolution`
+        # optionally trim the sent buffer to the most recent N frames and
+        # resize per-camera; see _parse_history_config / _capture_history.
         self._hist_frame_interval = 0
+        self._hist_last_n = 0
+        self._hist_resolution = {}
         self._history_buffer = []
         self._since_infer = 0
         self._ws_uri = f"ws://{host_ip}:{port}" if port is not None else f"ws://{host_ip}"
@@ -177,6 +182,16 @@ class CoRobotPolicy(BasePolicy):
     def _resize_half(image_rgb: np.ndarray) -> np.ndarray:
         h, w = image_rgb.shape[:2]
         return cv2.resize(image_rgb, (max(1, w // 2), max(1, h // 2)), interpolation=cv2.INTER_AREA)
+
+    @staticmethod
+    def _resize_to(image_rgb: np.ndarray, width: int, height: int) -> np.ndarray:
+        # Never upscale or exceed the source resolution: a server-specified
+        # `resolution` is a *downscale* target, and clamping here also bounds
+        # the memory/spend an absurd request could otherwise trigger.
+        h, w = image_rgb.shape[:2]
+        width = min(max(1, width), w)
+        height = min(max(1, height), h)
+        return cv2.resize(image_rgb, (width, height), interpolation=cv2.INTER_AREA)
 
     @staticmethod
     def _encode_depth(depth_map: np.ndarray, scale: int) -> dict:
@@ -289,12 +304,18 @@ class CoRobotPolicy(BasePolicy):
             images = apply_camera_image_augmentation(self._camera_dirt_cache, deepcopy(images), gen_config)
         if self.debug:
             self._dump_history_frame(images, len(self._history_buffer))
-        # Hand cameras are higher-resolution than head; downscale only those
-        # to keep the history payload small over the network.
-        resized = {
-            cam: self._resize_half(img) if cam in ("left_hand", "right_hand") else img
-            for cam, img in images.items()
-        }
+        resized = {}
+        for payload_cam, obs_cam in self._FRAME_CAMERAS.items():
+            img = images[obs_cam]
+            target = self._hist_resolution.get(payload_cam)
+            if target is not None:
+                img = self._resize_to(img, target[0], target[1])
+            elif payload_cam in ("hand_left", "hand_right"):
+                # Default (no server-specified resolution): hand cameras are
+                # higher-resolution than head; downscale only those to keep
+                # the history payload small over the network.
+                img = self._resize_half(img)
+            resized[obs_cam] = img
         self._history_buffer.append(self._encode_frame(resized))
 
     def _dump_history_frame(self, images, frame_idx):
@@ -356,9 +377,13 @@ class CoRobotPolicy(BasePolicy):
             # On the first inference (before the server has enabled history)
             # this branch is skipped; on a chunk that captured nothing the
             # buffer is empty and an empty images list is sent.
+            history_images = self._history_buffer
+            if self._hist_last_n > 0:
+                # Server asked for only the most recently captured frames.
+                history_images = history_images[-self._hist_last_n :]
             payload["params"]["history"] = {
                 "interval": self._hist_frame_interval,
-                "images": self._history_buffer,
+                "images": history_images,
             }
         self._history_buffer = []
         if self.debug:
@@ -406,6 +431,8 @@ class CoRobotPolicy(BasePolicy):
         # Drop any half-collected history and let the server re-enable it on
         # the new episode's first inference response.
         self._hist_frame_interval = 0
+        self._hist_last_n = 0
+        self._hist_resolution = {}
         self._history_buffer = []
         self._since_infer = 0
 
@@ -487,6 +514,57 @@ class CoRobotPolicy(BasePolicy):
             actions.append(entry)
         return actions
 
+    def _parse_history_config(self, result_dict):
+        """Parse the server's history-capture config from its response.
+
+        Prefers the nested `history: {interval, last_n, resolution}` block;
+        falls back to the legacy top-level `hist_frame_interval` for servers
+        that only set that field. Any malformed sub-field is treated as
+        absent (falls back to default behavior) rather than failing the
+        whole response.
+
+        Returns (interval, last_n, resolution) where `resolution` maps a
+        payload camera name (subset of `_FRAME_CAMERAS` keys) to a validated
+        (width, height) tuple.
+        """
+
+        def _to_nonneg_int(value):
+            try:
+                return max(int(value or 0), 0)
+            except (TypeError, ValueError):
+                return 0
+
+        history_cfg = result_dict.get("history")
+        if not isinstance(history_cfg, dict):
+            history_cfg = {}
+
+        interval = _to_nonneg_int(history_cfg.get("interval"))
+        if interval == 0:
+            interval = _to_nonneg_int(result_dict.get("hist_frame_interval"))
+
+        last_n = _to_nonneg_int(history_cfg.get("last_n"))
+
+        resolution = {}
+        raw_resolution = history_cfg.get("resolution")
+        if isinstance(raw_resolution, dict):
+            for cam, size in raw_resolution.items():
+                if cam not in self._FRAME_CAMERAS:
+                    continue
+                # Only a 2-sequence of scalars is a valid size; anything else
+                # (dict, short list, string, non-iterable) is treated as absent
+                # rather than raising — a malformed field must not take the
+                # response (and the whole inference) down.
+                if not isinstance(size, (list, tuple)) or len(size) < 2:
+                    continue
+                try:
+                    width, height = int(size[0]), int(size[1])
+                except (TypeError, ValueError):
+                    continue
+                if width > 0 and height > 0:
+                    resolution[cam] = (width, height)
+
+        return interval, last_n, resolution
+
     def _post_process_action(self, raw_entry, cur_arm, arm_base_tf=None):
         """Post-process action based on kind (JOINT_ABS or EEF_ABS).
 
@@ -565,14 +643,11 @@ class CoRobotPolicy(BasePolicy):
                 raise RuntimeError(f"Server returned error: {result['error']}")
             inner = result["result"]
             actions = self._parse_result(inner)
-            # The server toggles history collection per response: a positive
-            # `hist_frame_interval` enables capture (and sets the sampling
-            # interval) during the chunk we're about to replay; 0 / missing
-            # disables it.
-            try:
-                self._hist_frame_interval = max(int(inner.get("hist_frame_interval", 0) or 0), 0)
-            except (TypeError, ValueError):
-                self._hist_frame_interval = 0
+            # The server controls history capture per response: `history` (or
+            # the legacy top-level `hist_frame_interval`) with a positive
+            # `interval` enables capture and sets the sampling stride during
+            # the chunk we're about to replay; 0 / missing disables it.
+            self._hist_frame_interval, self._hist_last_n, self._hist_resolution = self._parse_history_config(inner)
             n = max(len(actions), 1)
             self.action_buffer = deque(actions, maxlen=n)
             return True

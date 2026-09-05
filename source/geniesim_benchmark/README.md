@@ -140,18 +140,48 @@ treat it as optional.
 
 #### `params.history` — rolling past frames (server-driven, opt-in)
 
-The policy can attach a buffer of past head-camera frames, letting temporal
-models see what happened while the previous action chunk was replaying. Nothing
-to configure on the benchmark side — **the server toggles it per response**:
+The policy can attach a buffer of past camera frames (all three: `head`,
+`hand_left`, `hand_right`), letting temporal models see what happened while
+the previous action chunk was replaying. Nothing to configure on the
+benchmark side — **the server controls it per response** via a `history`
+block in `result`:
 
-- Return an integer `hist_frame_interval` in your `result`. `> 0` enables
-  capture and sets the sampling stride (a head frame every N chunk-replay
-  steps); `0` / omitted disables it.
-- The captured frames ride along on the *next* request as
-  `params.history = {"interval": N, "images": [...]}`. The first request of an
-  episode (before the server has opted in) carries no history.
+```jsonc
+"history": {
+  "interval":   5,                  // required to enable capture; > 0 = capture stride
+  "last_n":     10,                 // optional; keep only the N most-recently captured frames
+  "resolution": {                   // optional; per-camera resize for history frames only
+    "head":       [320, 240],
+    "hand_left":  [160, 120],
+    "hand_right": [160, 120]
+  }
+}
+```
 
-A server that never returns the field behaves exactly as before.
+- **`interval`** (int) `> 0` enables capture and sets the sampling stride (a
+  frame every N chunk-replay steps); `0` / omitted disables it. For backward
+  compatibility, a top-level `hist_frame_interval` in `result` is still read
+  when `history.interval` is absent or `0`.
+- **`last_n`** (int, optional) — when attaching the buffer to the next
+  request, send only the most recently captured `last_n` frames instead of
+  everything captured since the last inference. Omitted / `0` sends every
+  captured frame (previous behavior).
+- **`resolution`** (dict, optional) — per-camera `[width, height]` to resize
+  **history** frames to before sending, keyed by payload camera name (`head`,
+  `hand_left`, `hand_right`); a camera not listed (or the whole field omitted)
+  keeps the default: `head` at native resolution, `hand_left` / `hand_right`
+  downscaled to half size (the previous behavior). This only affects frames in
+  `params.history.images` — the live per-inference `params.images` are always
+  sent at native resolution, unaffected by this field. Resizing is
+  downscale-only: any size larger than a camera's native resolution is clamped
+  to the source, so a bad value can't inflate the payload or the sim-side
+  work.
+
+The captured frames ride along on the *next* request as
+`params.history = {"interval": N, "images": [...]}`. The first request of an
+episode (before the server has opted in) carries no history.
+
+A server that never returns any of these fields behaves exactly as before.
 
 ### Control — what your server returns
 
@@ -164,7 +194,8 @@ A server that never returns the field behaves exactly as before.
     "right_effector": [[ ...1 ], ...H],
     "waist":  { "kind": "JOINT_ABS", "values": [[ ...5 ], ...H] },  // optional
     "head":   [[ ... ], ...H],                                      // optional
-    "hist_frame_interval": 0                                        // optional
+    "history": { "interval": 0, "last_n": 0, "resolution": {} },    // optional, see below
+    "hist_frame_interval": 0                                        // optional, legacy alias for history.interval
   }
 }
 ```
