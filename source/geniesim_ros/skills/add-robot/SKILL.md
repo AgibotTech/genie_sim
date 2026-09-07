@@ -10,7 +10,7 @@ description: >
   consumes, and wire the result into a `scene_*.yaml`.
   Trigger: When the user asks to "add a new robot", "import a robot",
   "support <vendor> in geniesim", names a URDF / xacro not currently
-  in `genie_sim_robot_model/urdf/`, or wants to convert a third-party
+  in `genie_sim_robot_model/robots/`, or wants to convert a third-party
   mesh pack into AS3-ready USD.
 license: MPL-2.0
 metadata:
@@ -78,20 +78,22 @@ Do **not** use for:
 ### Step 1 — Stage the URDF / xacro
 
 Drop the file under
-`source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/` next
-to the reference robots. Name follows the convention
-`<vendor>_<model>[_<gripper>].urdf`.
+`source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/<vendor>/<model>/`
+next to the reference robots. Name follows the convention
+`<model>[_<gripper>].urdf.xacro`, with meshes in a sibling `meshes/`.
 
 ```bash
-ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/
-# e.g. franka_fr3.urdf, ur5_robotiq_140.urdf, your_robot.urdf
+ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/
+# agilex/ arx/ franka/ genie/ universal_robots/
+ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/franka/fr3/
+# fr3.urdf.xacro, meshes/
 ```
 
 ### Step 2 — Diagnose
 
 ```bash
 cd source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
-python scripts/diagnose_urdf.py urdf/<your_robot>.urdf
+python scripts/diagnose_urdf.py robots/<vendor>/<model>/<your_robot>.urdf
 ```
 
 Look for: missing `<inertial>`, zero mass, visual/collision link
@@ -150,7 +152,16 @@ Required keys:
 
 ```yaml
 robot:
-  urdf: <your_robot>.urdf            # filename, resolved against genie_sim_robot_model/urdf/
+  robot_name: <your_robot>_manifold
+  robot_prefix: <your_robot>
+  robot_source:                      # composed by xacro/robot.xacro providers
+    arm: <model>                     # e.g. fr3 — selects the provider macro
+    body: T2                         # case-sensitive; "" drops the body
+    gripper: ""
+    robot_model: <vendor>            # e.g. franka — picks xacro/providers/<vendor>.xacro
+    package: genie_sim_robot_model
+    pin_base_to_world: true
+    urdf: {}                         # per-robot xacro args, {} for none
   init_base_pose:                    # non-physics teleport at spawn
     x: 0.0
     y: 0.0
@@ -188,7 +199,7 @@ or applies to all backends.
 cd source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
 
 # 1. Diagnose
-python scripts/diagnose_urdf.py urdf/<your_robot>.urdf
+python scripts/diagnose_urdf.py robots/<vendor>/<model>/<your_robot>.urdf
 
 # 2. Mesh prep (only the ones the diagnose tool flagged)
 python scripts/normalize_obj_names.py path/to/meshes/
@@ -229,7 +240,7 @@ ros2 launch genie_sim_bringup app.launch.py \
 
 - **Robot package**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/](../../src/ros_ws/src/genie_sim_robot_model/)
 - **Mesh-prep scripts**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/scripts/](../../src/ros_ws/src/genie_sim_robot_model/scripts/)
-- **Reference URDFs**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/](../../src/ros_ws/src/genie_sim_robot_model/urdf/)
+- **Reference URDFs**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/](../../src/ros_ws/src/genie_sim_robot_model/robots/)
 - **Scene yamls**: [source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/config/](../../src/ros_ws/src/genie_sim_bringup/config/)
 - **Engine overview**: [source/geniesim_ros/README.md](../../README.md)
 - **Package routing**: [source/geniesim_ros/AGENTS.md](../../AGENTS.md)
