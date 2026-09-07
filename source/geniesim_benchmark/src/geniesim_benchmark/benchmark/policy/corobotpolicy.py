@@ -90,6 +90,10 @@ class CoRobotPolicy(BasePolicy):
         self._hist_resolution = {}
         self._history_buffer = []
         self._since_infer = 0
+        # Depth images. The first request (before any server response exists)
+        # always includes depth; from then on `result.need_depth` from the
+        # most recent response controls whether the next request includes it.
+        self._send_depth = True
         self._ws_uri = f"ws://{host_ip}:{port}" if port is not None else f"ws://{host_ip}"
         self._ws = None
         self.infer_cnt = 0
@@ -284,8 +288,19 @@ class CoRobotPolicy(BasePolicy):
         # this excludes the history-capture render steps.
         return len(self.action_buffer) == 0
 
+    def need_depth(self):
+        # Lets the env layer skip the depth readback entirely once the
+        # server has said it doesn't want depth, instead of fetching it
+        # every inference and only filtering it out here.
+        return self._send_depth
+
     # Payload camera key -> obs["images"] key.
     _FRAME_CAMERAS = {"head": "head", "hand_left": "left_hand", "hand_right": "right_hand"}
+
+    # Depth payload key -> obs["depth"] key. All three encode as RAW_UINT16
+    # millimeters (see _encode_depth / _DEPTH_SCALE_MM).
+    _DEPTH_CAMERAS = {"head_depth": "head", "hand_left_depth": "left_hand", "hand_right_depth": "right_hand"}
+    _DEPTH_SCALE_MM = 1000
 
     def _encode_frame(self, images, cameras=None):
         """Encode the given obs images into payload frames.
@@ -329,11 +344,19 @@ class CoRobotPolicy(BasePolicy):
         logger.info(f"[History] chunk={self.infer_cnt} frame={frame_idx} step={self._since_infer} -> {debug_dir}")
 
     def _pre_process_obs(self, obs, gen_config):
-        obs = deepcopy(obs)
-        self._label_state(obs, self._robot_config)
+        # Only deep-copy the sub-trees this method (or its callers) mutate —
+        # states via _label_state, images via augmentation — so read-only
+        # data untouched downstream (depth, eef, arm_base_transform, ...)
+        # isn't needlessly duplicated on every inference call.
+        processed = dict(obs)
+        processed["states"] = deepcopy(obs["states"])
+        processed["images"] = deepcopy(obs["images"])
+        self._label_state(processed, self._robot_config)
         if gen_config is not None:
-            obs["images"] = apply_camera_image_augmentation(self._camera_dirt_cache, obs["images"], gen_config)
-        return obs
+            processed["images"] = apply_camera_image_augmentation(
+                self._camera_dirt_cache, processed["images"], gen_config
+            )
+        return processed
 
     def get_payload(self, obs, task_instruction, gen_config):
         obs = self._pre_process_obs(obs, gen_config)
@@ -353,9 +376,6 @@ class CoRobotPolicy(BasePolicy):
                     "head": self._encode_image_jpeg(obs["images"]["head"]),
                     "hand_left": self._encode_image_jpeg(obs["images"]["left_hand"]),
                     "hand_right": self._encode_image_jpeg(obs["images"]["right_hand"]),
-                    # "head_depth": self._encode_depth(obs["depth"]["head"], 1000),
-                    # "hand_left_depth": self._encode_depth(obs["depth"]["left_hand"], 10000),
-                    # "hand_right_depth": self._encode_depth(obs["depth"]["right_hand"], 10000),
                 },
                 "states": {
                     "head_joint_states": head_states,
@@ -372,6 +392,18 @@ class CoRobotPolicy(BasePolicy):
                 "task_progress": self._extract_scores(self._task_progress),
             },
         }
+        if self._send_depth:
+            # First request (before any server response) always includes
+            # depth; afterward this mirrors the last response's `need_depth`.
+            depth = obs.get("depth") or {}
+            for payload_key, obs_key in self._DEPTH_CAMERAS.items():
+                depth_map = depth.get(obs_key)
+                # Defend against a degenerate/empty readout (e.g. an
+                # annotator not yet warmed up) regardless of what the env
+                # layer already filters — a bad map here would break
+                # _encode_depth's shape assumptions.
+                if depth_map is not None and getattr(depth_map, "size", 1) > 0:
+                    payload["params"]["images"][payload_key] = self._encode_depth(depth_map, self._DEPTH_SCALE_MM)
         if self._hist_frame_interval > 0:
             # Attach the history captured while replaying the previous chunk.
             # On the first inference (before the server has enabled history)
@@ -435,6 +467,8 @@ class CoRobotPolicy(BasePolicy):
         self._hist_resolution = {}
         self._history_buffer = []
         self._since_infer = 0
+        # New episode's first request always includes depth again.
+        self._send_depth = True
 
     @staticmethod
     def _parse_result(result_dict):
@@ -565,6 +599,19 @@ class CoRobotPolicy(BasePolicy):
 
         return interval, last_n, resolution
 
+    @staticmethod
+    def _to_bool(value):
+        """Coerce a response field to bool without the `bool("false") is True`
+        trap — a server sending a JSON-ish string instead of a real msgpack
+        boolean would otherwise silently mean the opposite of what it wrote.
+        """
+        if isinstance(value, str):
+            return value.strip().lower() not in ("", "0", "false", "no", "off", "none", "null")
+        return bool(value)
+
+    def _parse_need_depth(self, result_dict):
+        return self._to_bool(result_dict.get("need_depth", False))
+
     def _post_process_action(self, raw_entry, cur_arm, arm_base_tf=None):
         """Post-process action based on kind (JOINT_ABS or EEF_ABS).
 
@@ -648,6 +695,9 @@ class CoRobotPolicy(BasePolicy):
             # `interval` enables capture and sets the sampling stride during
             # the chunk we're about to replay; 0 / missing disables it.
             self._hist_frame_interval, self._hist_last_n, self._hist_resolution = self._parse_history_config(inner)
+            # The server controls depth per response: a truthy `need_depth`
+            # keeps depth in the next request; missing/false stops it.
+            self._send_depth = self._parse_need_depth(inner)
             n = max(len(actions), 1)
             self.action_buffer = deque(actions, maxlen=n)
             return True

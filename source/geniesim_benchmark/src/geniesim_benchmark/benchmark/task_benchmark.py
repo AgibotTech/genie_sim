@@ -522,6 +522,7 @@ class TaskBenchmark(object):
 
                 need_pixels = self.policy.need_infer()
                 self.env.set_infer_status(need_pixels)
+                self.env.set_depth_status(self.policy.need_depth())
                 # settle_due marks the chunk's last step (the obs feeding the
                 # next inference); history-capture render steps set need_pixels
                 # without being settle_due, so they skip arm-settling.
@@ -785,6 +786,7 @@ class TaskBenchmark(object):
 
             need_infer = vec_policy.need_infer_list()
             vec_env.set_infer_status(need_infer)
+            vec_env.set_depth_status(vec_policy.need_depth_list())
 
             obs_list, dones, need_updates, task_progresses = vec_env.step(actions)
             vec_policy.update_task_status_batch(dones, task_progresses)

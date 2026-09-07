@@ -39,10 +39,11 @@ class PiEnv(DummyEnv):
         # policy won't consume images, so we skip them.
         bundle = self.data_courier.get_obs_bundle(
             fetch_images=fetch_images,
+            fetch_depth=getattr(self, "need_depth", True),
             link_names=("base_link", "arm_base_link"),
         )
         images = bundle.get("images", {})
-        # depth = bundle.get("depth", {})
+        depth = bundle.get("depth", {})
         full_joint_states = bundle["joint_state"]
 
         def joint_values(names):
@@ -63,7 +64,7 @@ class PiEnv(DummyEnv):
         }
         self.cur_arm = states["left_arm"] + states["right_arm"]
 
-        obs = {"images": images, "states": states, "depth": None}
+        obs = {"images": images, "states": states, "depth": depth}
         obs["eef"] = self.ikfk_solver.compute_eef(self.cur_arm)
         # FK EEF above is in arm_base_link; this transform lets the policy also
         # express it in (and accept EEF actions in) base_link.

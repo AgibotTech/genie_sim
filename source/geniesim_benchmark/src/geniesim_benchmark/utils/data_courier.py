@@ -119,11 +119,13 @@ class DataCourier:
     def get_observation_depth(self):
         return self.api_core.get_observation_depth(self._camera_dirs())
 
-    def get_obs_bundle(self, fetch_images=True, link_names=None):
+    def get_obs_bundle(self, fetch_images=True, fetch_depth=True, link_names=None):
+        # Depth never rides without images (no image fetch this step => no
+        # fresh render to read depth back from either).
         if fetch_images:
             dirs = self._camera_dirs()
             image_dirs = dirs
-            depth_dirs = dirs
+            depth_dirs = dirs if fetch_depth else None
         else:
             image_dirs = None
             depth_dirs = None

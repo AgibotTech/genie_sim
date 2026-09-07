@@ -72,6 +72,14 @@ The short version:
 > request as `params.history`. Servers that don't return any of these fields
 > are unaffected. See [`README.md`](README.md) for the full contract.
 
+> 📏 **Depth images (corobot):** every request's `params.images` can carry
+> `head_depth` / `hand_left_depth` / `hand_right_depth` (`RAW_UINT16`
+> distance maps) alongside the RGB frames. The first request of each episode
+> always includes them; after that, return a truthy `need_depth` in the
+> response `result` to keep receiving them on the next request, or
+> omit/return `false` to stop. See [`README.md`](README.md) for the full
+> contract.
+
 > 🚧 `geniesim_benchmark` is the **legacy** benchmark runtime — it drives Isaac Sim directly and is **independent and parallel to the RT Engine**. The roadmap is to refactor it into a benchmark layer on top of `geniesim_ros`; until then, treat the two as separate paths.
 
 ## More

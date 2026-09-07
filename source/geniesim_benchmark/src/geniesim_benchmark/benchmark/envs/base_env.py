@@ -84,6 +84,11 @@ class BaseEnv(AderEnv):
 
         self.data_courier: DataCourier = None
         self.need_infer = False
+        # Whether depth should be fetched alongside images. Default True so
+        # any env/policy that never calls set_depth_status still gets depth
+        # (prior behavior); CoRobotPolicy drives this down once the server
+        # says it doesn't need depth anymore.
+        self.need_depth = True
 
     def set_rand_init_arm(self, rand_init_arm):
         """Set the random initialization arm offsets for joint generalization.
@@ -225,6 +230,9 @@ class BaseEnv(AderEnv):
     def set_infer_status(self, need_infer):
         self.need_infer = need_infer
 
+    def set_depth_status(self, need_depth):
+        self.need_depth = need_depth
+
     def load(self, task_file):
         self.generate_layout(task_file)
         with open(task_file, "rb") as f:
@@ -251,6 +259,10 @@ class BaseEnv(AderEnv):
         if self.task is not None:
             self.task.reset(self)
         self.reset_variables()
+        # A new episode always gets a real depth frame on its first
+        # observation — undo any prior episode's need_depth=False before
+        # fetching, mirroring CoRobotPolicy.reset()'s _send_depth reset.
+        self.need_depth = True
         observaion = self.get_observation()
         return observaion
 

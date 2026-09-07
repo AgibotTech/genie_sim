@@ -94,7 +94,10 @@ consume the response.
     "images": {                       // JPEG bytes; decode BGR then convert to RGB
       "head":       { "encoding": "JPEG", "image_data": <bytes>, "height": <int>, "width": <int> },
       "hand_left":  { ... },
-      "hand_right": { ... }
+      "hand_right": { ... },
+      "head_depth":       { "encoding": "RAW_UINT16", "image_data": <bytes>, "height": <int>, "width": <int> }, // optional, see below
+      "hand_left_depth":  { ... },                                                                              // optional
+      "hand_right_depth": { ... }                                                                               // optional
     },
     "states": {
       "head_joint_states":  [ ... ],  // 0 dims on G2_omnipicker (`obs_extra_joints`)
@@ -183,6 +186,28 @@ episode (before the server has opted in) carries no history.
 
 A server that never returns any of these fields behaves exactly as before.
 
+#### `images.*_depth` — depth maps (server-driven, opt-in)
+
+The three depth cameras (`head_depth`, `hand_left_depth`, `hand_right_depth`,
+paired with `head`/`hand_left`/`hand_right` respectively) are `RAW_UINT16`
+distance-to-camera maps in **millimeters**, uniformly across all three
+cameras, clipped to the `uint16` range.
+
+- **The first request of every episode always includes depth**, so the
+  server has a real frame to decide from.
+- From then on, **the server controls it per response** — return a truthy
+  `need_depth` in `result` to keep depth in the *next* request; omit it (or
+  return `false`) and the next request drops all three `*_depth` keys.
+- A server that never returns `need_depth` gets depth on the first request of
+  each episode only, and none after that.
+- `need_depth` should be a real boolean; a JSON-ish string (`"false"`, `"no"`,
+  `"0"`) is also tolerated and parsed as `false`, but don't rely on that —
+  send a native `true`/`false`.
+- Turning depth off isn't just a smaller payload: the runtime skips the
+  depth camera readback entirely on the sim side once it's off, so leaving
+  it off when you don't need it also saves render/IO cost on the benchmark
+  side.
+
 ### Control — what your server returns
 
 ```jsonc
@@ -195,7 +220,8 @@ A server that never returns any of these fields behaves exactly as before.
     "waist":  { "kind": "JOINT_ABS", "values": [[ ...5 ], ...H] },  // optional
     "head":   [[ ... ], ...H],                                      // optional
     "history": { "interval": 0, "last_n": 0, "resolution": {} },    // optional, see below
-    "hist_frame_interval": 0                                        // optional, legacy alias for history.interval
+    "hist_frame_interval": 0,                                       // optional, legacy alias for history.interval
+    "need_depth": false                                             // optional; see images.*_depth above
   }
 }
 ```

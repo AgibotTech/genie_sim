@@ -22,6 +22,16 @@ class BasePolicy:
     def need_infer(self):
         return len(self.action_buffer) == 0
 
+    def need_depth(self):
+        """Whether the env should fetch depth on the next observation.
+
+        Default True preserves prior behavior (depth fetched alongside
+        images whenever images are fetched) for policies that don't opt
+        into gating it. Overridden by policies with a server-driven toggle
+        (e.g. CoRobotPolicy).
+        """
+        return True
+
     def shutdown(self):
         pass
 

@@ -500,11 +500,16 @@ class RobotInterface:
         ret = {}
         if dir == {}:
             for k, annot in self.depth_annotators.items():
-                ret[k] = annot.get_data().squeeze()
+                d = annot.get_data()
+                if d is not None and d.size > 0:
+                    ret[k] = d.squeeze()
         else:
             for k, v in dir.items():
-                if v in self.depth_annotators:
-                    ret[k] = self.depth_annotators[v].get_data().squeeze()
+                if v not in self.depth_annotators:
+                    continue
+                d = self.depth_annotators[v].get_data()
+                if d is not None and d.size > 0:
+                    ret[k] = d.squeeze()
         return ret
 
     def get_joint_state_dict(self):

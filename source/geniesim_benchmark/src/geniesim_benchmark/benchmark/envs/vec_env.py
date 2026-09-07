@@ -69,6 +69,10 @@ class BenchmarkVecEnv:
         for env, need in zip(self._envs, need_infer_list):
             env.need_infer = need
 
+    def set_depth_status(self, need_depth_list: List[bool]):
+        for env, need in zip(self._envs, need_depth_list):
+            env.need_depth = need
+
     # ----------------------------- reset --------------------------------
     def reset_all(self) -> List:
         obs_list = self._batched_reset(list(range(self._n_envs)))
@@ -149,6 +153,14 @@ class BenchmarkVecEnv:
                 images = api_view._get_observation_image(env.data_courier._camera_dirs())
                 if images:
                     obs["images"] = images
+                # Mirrors the image fetch above so a fresh episode's first
+                # observation (built via reset -> _batched_reset -> here,
+                # bypassing _read_obs_direct's normal per-step path) still
+                # carries real depth when the policy wants it.
+                if getattr(env, "need_depth", True):
+                    depths = api_view._get_observation_depth(env.data_courier._camera_dirs())
+                    if depths:
+                        obs["depth"] = depths
 
         self._api_core.run_on_physics_loop(_read_images)
 
@@ -237,9 +249,12 @@ class BenchmarkVecEnv:
         api_view = env.api_core
 
         images = {}
+        depths = {}
         if getattr(env, "need_infer", True) and not skip_images:
             # _camera_dirs() is the same robot->camera mapping the serial path uses.
             images = api_view._get_observation_image(env.data_courier._camera_dirs())
+            if getattr(env, "need_depth", True):
+                depths = api_view._get_observation_depth(env.data_courier._camera_dirs())
 
         art = api_view._get_articulation()
         if art is not None:
@@ -250,7 +265,7 @@ class BenchmarkVecEnv:
             full_joint_states = api_view._get_joint_state_dict()
 
         if not full_joint_states:
-            return {"images": images, "states": [], "depth": None}
+            return {"images": images, "states": [], "depth": depths}
 
         def jv(names):
             return [full_joint_states[name] for name in names]
@@ -266,7 +281,7 @@ class BenchmarkVecEnv:
             "head": jv(cfg.get("obs_extra_joints", [])),
         }
         env.cur_arm = states["left_arm"] + states["right_arm"]
-        return {"images": images, "states": states, "depth": None}
+        return {"images": images, "states": states, "depth": depths}
 
     def _rate_sleep(self):
         now = time.time()
@@ -333,6 +348,7 @@ class VecEnvAdapter:
             self.last_update_time = time.time()
             self.has_done = False
             self.need_infer = True
+            self.need_depth = True
             self.current_step = 0
             if self.task is not None:
                 self.task.reset(self)
@@ -437,6 +453,9 @@ class VecPolicyWrapper:
 
     def need_infer_list(self) -> List[bool]:
         return [p.need_infer() for p in self._policies]
+
+    def need_depth_list(self) -> List[bool]:
+        return [p.need_depth() for p in self._policies]
 
     def update_task_status_batch(self, dones: List[bool], progresses: list):
         for i, policy in enumerate(self._policies):
