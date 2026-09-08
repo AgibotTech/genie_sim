@@ -265,6 +265,14 @@ def reset_one_frame(robot_articulation, one_frame):
                 arti_object.set_joint_positions(joint_state)
                 arti_object.set_world_pose(pos, quat)
         else:
+            # An object recorded at init time may have been deleted since (the API
+            # exposes delete_prim, and scenes can be rebuilt between episodes).
+            # Touching a stale path here would raise inside the render loop, so skip
+            # it, the same way command_controller.py guards its own restore path.
+            prim = get_prim_at_path(prim_path)
+            if not prim or not prim.IsValid():
+                logger.warning(f"reset skipped, prim invalid: {prim_path}")
+                continue
             SingleXFormPrim(prim_path=prim_path).set_world_pose(one_frame[prim_path][:3], one_frame[prim_path][3:])
 
 
