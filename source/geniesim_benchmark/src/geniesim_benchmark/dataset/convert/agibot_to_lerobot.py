@@ -283,7 +283,8 @@ def encode_videos(agibot_dir: Path, output_dir: Path, episode_index: int, fps: f
 
     RGB videos:   HEVC (libx265), yuv420p, keyframe every 8 frames, CRF 24
     Depth videos: lossless PNG codec, gray16le
-    Output path:  videos/{chunk}/{video_key}/episode_{index:06d}.mp4
+    RGB output:   videos/{chunk}/observation.images.{video_key}/episode_{index:06d}.mp4
+    Depth output: videos/{chunk}/{video_key}_depth/episode_{index:06d}.mp4
     """
     camera_dir = agibot_dir / "camera"
     chunk_name = f"chunk-{episode_index // 1000:03d}"
@@ -297,8 +298,11 @@ def encode_videos(agibot_dir: Path, output_dir: Path, episode_index: int, fps: f
 
     for video_key, image_list in camera_map.items():
         for image_stem, ext, is_depth in image_list:
-            # Depth uses video_key + "_depth" as subdirectory
-            vid_dir = video_key + "_depth" if is_depth else video_key
+            # LeRobot formats the video_path template with the full feature
+            # key from info.json, so RGB directories must use that same key.
+            # Depth streams are not declared as features and keep their
+            # existing auxiliary directory names.
+            vid_dir = video_key + "_depth" if is_depth else f"observation.images.{video_key}"
             video_path = output_dir / "videos" / chunk_name / vid_dir / f"episode_{episode_index:06d}.mp4"
             video_path.parent.mkdir(parents=True, exist_ok=True)
             input_pattern = str(camera_dir / f"%d/{image_stem}.{ext}")
