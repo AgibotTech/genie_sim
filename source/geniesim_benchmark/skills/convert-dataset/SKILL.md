@@ -149,7 +149,10 @@ print('rows:', t.num_rows)
 
 `observation.state` must be a `fixed_size_list<float32, 159>` and `action`
 a `fixed_size_list<float32, 40>` — those widths are part of the v2.1
-contract and the converter writes them literally.
+contract and the converter writes them literally. The `index` column is
+globally contiguous across the batch, while `frame_index` restarts at zero for
+each episode. Per-camera statistics are sampled from the RGB frames using the
+LeRobot v2.1 sampling heuristic and stored in `episodes_stats.jsonl`.
 
 ## Troubleshooting
 
@@ -163,9 +166,11 @@ contract and the converter writes them literally.
   sparse), unsupported codec (older ffmpeg without `libx265` — install
   `ffmpeg` with HEVC support, e.g. the `nasm`/`libx265` variant), or write
   permission errors on `--output-dir`.
-- **Stats look wrong** — `episodes_stats.jsonl` reads back the parquet
-  rows; if the parquet wasn't written the stats entry is `{}`. Inspect
-  the parquet first.
+- **Stats look wrong** — numeric statistics read back the parquet rows and
+  video statistics sample the raw RGB frames. If the parquet wasn't written,
+  the stats entry is `{}`; a missing RGB frame raises a conversion error.
+  Inspect the parquet and the corresponding `camera/<frame>/..._color.jpg`
+  files first.
 
 ## Resources
 

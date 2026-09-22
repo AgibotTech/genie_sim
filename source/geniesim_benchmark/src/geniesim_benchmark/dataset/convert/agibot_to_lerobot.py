@@ -382,7 +382,12 @@ def detect_episodes(agibot_root: Path) -> list:
 
 
 def convert_episode(
-    agibot_dir: Path, output_dir: Path, episode_index: int, lerobot_template, fps: float = 30.0
+    agibot_dir: Path,
+    output_dir: Path,
+    episode_index: int,
+    lerobot_template,
+    fps: float = 30.0,
+    global_index_start: int = 0,
 ) -> dict:
     """Convert a single agibot episode. Returns dict with stats."""
     import h5py
@@ -432,7 +437,10 @@ def convert_episode(
             "action": pa.array(actions, type=pa.list_(pa.float32(), 40)),
             "episode_index": pa.array([episode_index] * num_frames, type=pa.int64()),
             "frame_index": pa.array(list(range(num_frames)), type=pa.int64()),
-            "index": pa.array(list(range(num_frames)), type=pa.int64()),
+            "index": pa.array(
+                list(range(global_index_start, global_index_start + num_frames)),
+                type=pa.int64(),
+            ),
             "task_index": pa.array([0] * num_frames, type=pa.int64()),
             "timestamp": pa.array(ideal_timestamps, type=pa.float32()),
         }
@@ -475,6 +483,71 @@ def load_camera_parameters(agibot_dir: Path) -> dict:
         with fpath.open() as f:
             cam_params[fpath.name] = json.load(f)
     return cam_params
+
+
+def _sample_indices(data_len: int) -> list[int]:
+    """Match LeRobot v2.1's image-statistics sampling heuristic."""
+    import numpy as np
+
+    if data_len <= 0:
+        return []
+    min_num_samples = min(100, data_len)
+    num_samples = max(min_num_samples, min(int(data_len**0.75), 10_000))
+    return np.round(np.linspace(0, data_len - 1, num_samples)).astype(int).tolist()
+
+
+def _compute_image_stats(image_paths: list[Path]) -> dict:
+    """Compute LeRobot-compatible per-channel stats from sampled RGB images."""
+    import numpy as np
+    from PIL import Image
+
+    sampled_indices = _sample_indices(len(image_paths))
+    if not sampled_indices:
+        raise RuntimeError("Cannot compute video statistics without image frames")
+
+    images = []
+    for idx in sampled_indices:
+        with Image.open(image_paths[idx]) as image:
+            array = np.asarray(image.convert("RGB"), dtype=np.uint8).transpose(2, 0, 1)
+
+        _, height, width = array.shape
+        if max(width, height) >= 300:
+            factor = int(width / 150) if width > height else int(height / 150)
+            array = array[:, ::factor, ::factor]
+        images.append(array)
+
+    sampled = np.stack(images)
+    axes = (0, 2, 3)
+
+    def normalized(value):
+        return (value.astype(np.float64) / 255.0).reshape(3, 1, 1).tolist()
+
+    return {
+        "min": normalized(sampled.min(axis=axes)),
+        "max": normalized(sampled.max(axis=axes)),
+        "mean": normalized(sampled.mean(axis=axes)),
+        "std": normalized(sampled.std(axis=axes)),
+        "count": [len(sampled_indices)],
+    }
+
+
+def _compute_episode_video_stats(agibot_dir: Path) -> dict:
+    camera_dir = agibot_dir / "camera"
+    frame_dirs = sorted((path for path in camera_dir.iterdir() if path.is_dir()), key=lambda path: int(path.name))
+    feature_to_stem = {
+        "observation.images.top_head": "head_color",
+        "observation.images.hand_left": "hand_left_color",
+        "observation.images.hand_right": "hand_right_color",
+    }
+
+    stats = {}
+    for feature_key, image_stem in feature_to_stem.items():
+        image_paths = [frame_dir / f"{image_stem}.jpg" for frame_dir in frame_dirs]
+        missing = next((path for path in image_paths if not path.exists()), None)
+        if missing is not None:
+            raise RuntimeError(f"Missing RGB frame required for video statistics: {missing}")
+        stats[feature_key] = _compute_image_stats(image_paths)
+    return stats
 
 
 def generate_meta(output_dir: Path, episode_info: list, agibot_dirs: list):
@@ -520,20 +593,7 @@ def generate_meta(output_dir: Path, episode_info: list, agibot_dirs: list):
             index_col = np.array([r["index"] for r in rows], dtype=np.int64)
             timestamp_col = np.array([r["timestamp"] for r in rows], dtype=np.float32)
 
-            # Video fields: per-frame stats as nested arrays (matches reference format)
-            video_keys = ["top_head", "hand_left", "hand_right"]
-            video_stats = {}
-            for vk in video_keys:
-                key = f"observation.images.{vk}"
-                # For videos we don't have pixel data in parquet, use zeros as placeholder
-                # (matching the reference which also has zeros for video stats)
-                video_stats[key] = {
-                    "min": [[[0.0]], [[0.0]], [[0.0]]],
-                    "max": [[[0.0]], [[0.0]], [[0.0]]],
-                    "mean": [[[0.0]], [[0.0]], [[0.0]]],
-                    "std": [[[0.0]], [[0.0]], [[0.0]]],
-                    "count": [0],
-                }
+            video_stats = _compute_episode_video_stats(agibot_dirs[ep_idx])
 
             stats = {
                 "episode_index": ep_idx,
@@ -913,9 +973,18 @@ def convert_agibot_to_lerobot(
         print(f"  - {ep}")
 
     episode_info = []
+    global_index_start = 0
     for i, ep_dir in enumerate(episodes):
-        result = convert_episode(ep_dir, output_dir, i, lerobot_template, fps=fps)
+        result = convert_episode(
+            ep_dir,
+            output_dir,
+            i,
+            lerobot_template,
+            fps=fps,
+            global_index_start=global_index_start,
+        )
         episode_info.append(result)
+        global_index_start += result["length"]
 
     generate_meta(output_dir, episode_info, episodes)
 
