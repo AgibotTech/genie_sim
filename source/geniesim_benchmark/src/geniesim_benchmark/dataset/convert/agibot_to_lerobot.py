@@ -131,6 +131,16 @@ def _require_heavy_deps():
 # ============================================================
 
 
+def _read_extrinsic(entry: dict) -> tuple:
+    """Return rotation and translation from supported AgiBot layouts."""
+    values = entry.get("extrinsic", entry)
+    rotation = values.get("rotation", values.get("rotation_matrix"))
+    translation = values.get("translation", values.get("translation_vector"))
+    if rotation is None or translation is None:
+        raise KeyError("extrinsic rotation/translation")
+    return rotation, translation
+
+
 def build_state(state_dict: dict, joint_all_dict: dict, extrinsic_data: dict, frame_idx: int = 0):
     """Build 159-dim state vector from agibot state data."""
     import numpy as np
@@ -162,18 +172,21 @@ def build_state(state_dict: dict, joint_all_dict: dict, extrinsic_data: dict, fr
     # Extrinsics
     if "hand_left_rgbd" in extrinsic_data:
         entry = extrinsic_data["hand_left_rgbd"][frame_idx]
-        state[87:96] = np.array(entry["rotation"], dtype=np.float32).flatten()
-        state[141:144] = np.array(entry["translation"], dtype=np.float32)
+        rotation, translation = _read_extrinsic(entry)
+        state[87:96] = np.array(rotation, dtype=np.float32).flatten()
+        state[141:144] = np.array(translation, dtype=np.float32)
 
     if "hand_right_rgbd" in extrinsic_data:
         entry = extrinsic_data["hand_right_rgbd"][frame_idx]
-        state[96:105] = np.array(entry["rotation"], dtype=np.float32).flatten()
-        state[144:147] = np.array(entry["translation"], dtype=np.float32)
+        rotation, translation = _read_extrinsic(entry)
+        state[96:105] = np.array(rotation, dtype=np.float32).flatten()
+        state[144:147] = np.array(translation, dtype=np.float32)
 
     if "head_front_rgbd" in extrinsic_data:
         entry = extrinsic_data["head_front_rgbd"][frame_idx]
-        state[123:132] = np.array(entry["rotation"], dtype=np.float32).flatten()
-        state[153:156] = np.array(entry["translation"], dtype=np.float32)
+        rotation, translation = _read_extrinsic(entry)
+        state[123:132] = np.array(rotation, dtype=np.float32).flatten()
+        state[153:156] = np.array(translation, dtype=np.float32)
 
     return state
 
