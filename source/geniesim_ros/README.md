@@ -252,6 +252,7 @@ graph TD
   genie_sim_moveit_plugins ==>|exec| genie_sim_common
   genie_sim_planning ==>|exec| genie_sim_common
   genie_sim_robot_model ==>|exec| genie_sim_common
+  genie_sim_rviz_plugins ==>|exec| genie_sim_common
 ```
 <!-- AUTOGEN:ros-dag end -->
 
