@@ -123,6 +123,7 @@ class SimulationClient:
         self._log = None
         self._started = False
         self._failed = False
+        self._paused = False
         self._gate = threading.Lock()
         self._schema = None
         self._wire_joint_names = ()
@@ -202,6 +203,7 @@ class SimulationClient:
                 self._schema = None
                 self._snapshot(state)  # validate shapes/finite values before success
                 self._failed = False
+                self._paused = False
                 self._started = True
                 return self
             except BaseException:
@@ -252,6 +254,8 @@ class SimulationClient:
     def step(self, joint_positions: np.ndarray, *, render: bool = False, completion: str = "arrival_v1") -> StepResult:
         with self._exclusive():
             self._require_started()
+            if self._paused:
+                raise RuntimeError("client is paused; resume the session before stepping")
             if completion != self.completion:
                 raise NotImplementedError("engine has no command-id commit ACK; only arrival_v1 is supported")
             if render and self._renderer is None:
@@ -295,6 +299,8 @@ class SimulationClient:
     ) -> WorldSnapshot:
         with self._exclusive():
             self._require_started()
+            if self._paused:
+                raise RuntimeError("client is paused; resume the session before resetting")
             ids = list(range(self.config.num_envs)) if env_ids is None else list(env_ids)
             if (
                 not ids
@@ -344,9 +350,39 @@ class SimulationClient:
                 self._failed = True
                 raise
 
+    def _set_paused(self, paused: bool) -> None:
+        with self._exclusive():
+            if paused:
+                # A failed action can leave an external engine running. Pause
+                # is a safe stop, so permit it without reviving the session.
+                if not self._started or self._bridge is None:
+                    raise RuntimeError("client is closed; no engine connection to pause")
+                self._check_health()
+            else:
+                self._require_started()
+            try:
+                self._bridge.set_paused(paused, self._step_timeout)
+                self._paused = paused
+            except BaseException:
+                self._failed = True
+                raise
+
+    def pause(self) -> None:
+        """Freeze physics and /clock; wait for the engine's INACTIVE state.
+
+        Also allowed after a failed action; it does not clear the failed state.
+        Snapshot and image freshness remain separate from this lifecycle barrier.
+        """
+        self._set_paused(True)
+
+    def resume(self) -> None:
+        """Wait for ACTIVE before sending more step or reset requests."""
+        self._set_paused(False)
+
     def _dispose(self):
         self._started = False
         self._failed = True
+        self._paused = False
         try:
             if self._bridge is not None:
                 self._bridge.close()

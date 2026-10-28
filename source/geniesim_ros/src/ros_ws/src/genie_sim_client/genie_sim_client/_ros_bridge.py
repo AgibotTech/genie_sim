@@ -14,6 +14,7 @@ consume this bridge.
 from __future__ import annotations
 
 import threading
+import time
 from typing import Optional
 
 import numpy as np
@@ -146,6 +147,9 @@ class RosEngineBridge:
         self._reset_pub = None
         self._JointStateMsg = None
         self._Int32MultiArrayMsg = None
+        self._lifecycle_clients = {}
+        self._EmptyRequest = None
+        self._GetStateRequest = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -235,6 +239,65 @@ class RosEngineBridge:
         self._node = None
         self._executor = None
         self._spinner = None
+        self._lifecycle_clients.clear()
+
+    def _create_lifecycle_clients(self) -> None:
+        # Service imports stay lazy; importing the package needs no ROS runtime.
+        from lifecycle_msgs.srv import GetState
+        from std_srvs.srv import Empty
+
+        self._EmptyRequest = Empty.Request
+        self._GetStateRequest = GetState.Request
+        # The C++ bridge is created by Newton's session with this node name;
+        # its init_ros uses argc=0, so launch's Python-node remap does not apply.
+        for verb in ("pause", "resume"):
+            self._lifecycle_clients[verb] = self._node.create_client(Empty, f"/genie_sim_engine_newton/{verb}")
+        self._lifecycle_clients["get_state"] = self._node.create_client(GetState, "/genie_sim_engine_newton/get_state")
+
+    def set_paused(self, paused: bool, timeout_s: float) -> None:
+        """Wait for the engine loop to apply pause/resume at a tick boundary.
+
+        Empty service responses only acknowledge enqueueing. GetState is the
+        existing engine-side acknowledgement that the loop applied the verb.
+        This does not add a command-id or a fresh snapshot/render credential.
+        """
+        if self._node is None:
+            raise RuntimeError("ROS bridge is closed")
+        if not self._lifecycle_clients:
+            self._create_lifecycle_clients()
+        deadline = time.monotonic() + timeout_s
+        verb = "pause" if paused else "resume"
+        command = self._lifecycle_clients[verb]
+        get_state = self._lifecycle_clients["get_state"]
+
+        def wait(predicate, description):
+            while True:
+                self.check_health()
+                if predicate():
+                    return
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"engine {verb}: {description} timed out after {timeout_s:g}s")
+                time.sleep(0.001)
+
+        def call(client, request):
+            future = client.call_async(request)
+            try:
+                wait(future.done, "service response")
+                result = future.result()
+                if result is None:
+                    raise RuntimeError(f"engine {verb}: service returned no response")
+                return result
+            finally:
+                if not future.done():
+                    future.cancel()
+
+        wait(lambda: command.service_is_ready() and get_state.service_is_ready(), "service discovery")
+        call(command, self._EmptyRequest())
+        expected = 2 if paused else 3  # lifecycle_msgs/State: INACTIVE / ACTIVE
+        while call(get_state, self._GetStateRequest()).current_state.id != expected:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"engine {verb}: state confirmation timed out after {timeout_s:g}s")
+            time.sleep(0.001)
 
     # ------------------------------------------------------------------
     # Layout (set after we learn the upstream's joint order)

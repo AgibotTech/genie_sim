@@ -208,6 +208,7 @@ Thirteen ROS packages, each with its own `AGENTS.md` for routing details:
 
 - **Bringup & engine**: `genie_sim_bringup`, `genie_sim_engine_core`,
   `genie_sim_engine_isaacsim`, `genie_sim_engine_newton`, `genie_sim_render`
+- **Application client**: `genie_sim_client` — Newton process ownership, immutable state and step/reset requests
 - **Shared build glue**: `genie_sim_common`
 - **Robot + visualization**: `genie_sim_robot_model`, `genie_sim_rviz_plugins`
 - **Motion stack (Genie G2)**: `genie_sim_moveit`, `genie_sim_moveit_plugins`
@@ -231,6 +232,7 @@ graph TD
   %% Source: source/geniesim_ros/src/ros_ws/src/*/package.xml.
 
   genie_sim_bringup["<b>genie_sim_bringup</b>"]
+  genie_sim_client["<b>genie_sim_client</b>"]
   genie_sim_common["<b>genie_sim_common</b>"]
   genie_sim_control["<b>genie_sim_control</b>"]
   genie_sim_controllers["<b>genie_sim_controllers</b>"]
@@ -255,6 +257,7 @@ graph TD
   genie_sim_moveit ==>|exec| genie_sim_planning
   genie_sim_render ==>|exec| genie_sim_engine_isaacsim
   genie_sim_bringup ==>|exec| genie_sim_common
+  genie_sim_client ==>|exec| genie_sim_common
   genie_sim_control ==>|exec| genie_sim_common
   genie_sim_controllers ==>|exec| genie_sim_common
   genie_sim_engine_core ==>|exec| genie_sim_common

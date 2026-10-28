@@ -64,6 +64,9 @@ class Transport:
     def check_health(self):
         pass
 
+    def set_paused(self, paused, timeout_s):
+        self.paused = paused
+
     def read_state(self):
         if self.ready:
             self.state["joint_sequence"] += 1
@@ -194,6 +197,52 @@ def test_concurrent_call_is_rejected(session):
         with pytest.raises(RuntimeError, match="in progress"):
             client.reset()
     assert not hasattr(bridge, "reset_args")
+
+
+def test_pause_freezes_before_inference_and_resume_allows_actions(session):
+    client, bridge = session
+    client.pause()
+    assert bridge.paused
+    assert client.snapshot().joint_positions.shape == (1, 2)
+    with pytest.raises(RuntimeError, match="resume"):
+        client.step(np.zeros((1, 2)))
+    with pytest.raises(RuntimeError, match="resume"):
+        client.reset()
+    assert not bridge.sent
+    assert not hasattr(bridge, "reset_args")
+    client.resume()
+    assert not bridge.paused
+    client.step(np.zeros((1, 2)))
+    assert len(bridge.sent) == 1
+
+
+@pytest.mark.parametrize("operation", ["pause", "resume"])
+def test_lifecycle_failure_poisons_session_without_sending_actions(session, operation):
+    client, bridge = session
+    bridge.set_paused = lambda *_: (_ for _ in ()).throw(TimeoutError("state confirmation"))
+    with pytest.raises(TimeoutError):
+        getattr(client, operation)()
+    assert not client.is_started
+    with pytest.raises(RuntimeError, match="failed"):
+        client.step(np.zeros((1, 2)))
+    assert not bridge.sent
+
+
+def test_failed_action_can_be_safely_paused_without_reviving_session(session):
+    client, bridge = session
+    bridge.ack_step = False
+    with pytest.raises(TimeoutError):
+        client.step(np.zeros((1, 2)))
+    client.pause()
+    assert bridge.paused
+    assert not client.is_started
+    with pytest.raises(RuntimeError, match="failed"):
+        client.resume()
+    with pytest.raises(RuntimeError, match="failed"):
+        client.step(np.zeros((1, 2)))
+    with pytest.raises(RuntimeError, match="failed"):
+        client.reset()
+    assert len(bridge.sent) == 1
 
 
 def test_render_runs_once_after_physics(session):

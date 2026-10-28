@@ -144,6 +144,7 @@ the package is added to this table; the doc-coverage audit
 | Package | Purpose | README | AGENTS |
 |---|---|---|---|
 | `genie_sim_common` | Shared CMake helpers (`genie_sim_package()` macro, test wrappers) consumed by every other package | [README](src/ros_ws/src/genie_sim_common/README.md) | [AGENTS](src/ros_ws/src/genie_sim_common/AGENTS.md) |
+| `genie_sim_client` | Application-neutral Newton process, state, step/reset and lifecycle client | [README](src/ros_ws/src/genie_sim_client/README.md) | [AGENTS](src/ros_ws/src/genie_sim_client/AGENTS.md) |
 | `genie_sim_bringup` | Launch orchestration, scene / launcher YAML, config | [README](src/ros_ws/src/genie_sim_bringup/README.md) | [AGENTS](src/ros_ws/src/genie_sim_bringup/AGENTS.md) |
 | `genie_sim_engine_core` | `PhysicsEngine` ABC, C++ ROS 2 bridge, assemble-pipeline framework — deep-dives in [docs/](src/ros_ws/src/genie_sim_engine_core/docs/) | [README](src/ros_ws/src/genie_sim_engine_core/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_core/AGENTS.md) |
 | `genie_sim_engine_isaacsim` | Kit-hosted backends (Isaac PhysX / Isaac Newton), URDF→USD and `isaac_scene` stages | [README](src/ros_ws/src/genie_sim_engine_isaacsim/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_isaacsim/AGENTS.md) |

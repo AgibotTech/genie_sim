@@ -99,3 +99,7 @@ python3 source/geniesim_ros/src/ros_ws/src/genie_sim_client/tests/ros_transport_
 This checks rclpy APIs, message types, QoS, actions, seeded reset and shared-context
 lifetime. Same-process loopback does not replace cross-process DDS, Newton GPU
 or renderer acceptance.
+
+## Lifecycle pause barrier
+
+`client.pause()` waits for INACTIVE and `resume()` for ACTIVE through the existing lifecycle services. Acknowledging an enqueued service request is insufficient; GetState must confirm it. Step/reset reject paused sessions. Pause remains available after an uncertain failed action, without reviving that session. The application separately joins fresh state/images/progress; arrival_v1 remains unchanged.

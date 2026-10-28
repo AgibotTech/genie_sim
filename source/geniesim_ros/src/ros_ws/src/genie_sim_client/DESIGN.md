@@ -194,3 +194,7 @@ applications. The optional rclpy loopback checks real ROS APIs in one process.
 Neither test establishes cross-process DDS, native physics, renderer frame
 correlation or multi-world execution. Use the [README commands](README.md#verification)
 for these checks. Protocol extensions are tracked in the [roadmap](../../../../docs/ROADMAP.md).
+
+## Additive lifecycle barrier
+
+The client can pause/resume an attached engine using Empty services plus GetState readback. Pause is also permitted after action failure, but never clears the poisoned-session flag. Lifecycle confirmation is not an action commit or camera-freshness credential. The benchmark owns its separate frozen-state image and task-progress joins.
