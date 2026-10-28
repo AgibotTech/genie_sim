@@ -1,6 +1,6 @@
 # GenieSim launcher config — Newton standalone, VBD cloth + Featherstone robot.
 #
-# Runs genie_sim_engine_newton.py, which starts Newton physics WITHOUT
+# Runs genie_sim_engine_newton_node.py, which starts Newton physics WITHOUT
 # SimulationApp (no Kit, no OVRTX).  Startup is ~2 s vs ~10 s and uses
 # ~1.2 GB less VRAM.  ROS topics (clock, joint_states, body_tf, odom) are
 # always published regardless of visualizer.
@@ -14,11 +14,11 @@
 #   ovrtx   — In-process OVRTX RTX render (kit-free); publishes
 #             <cam.topic>/image_raw + camera_info via gsi::RosBridge
 #             from a dedicated render thread.  See docs/ovrtx_sync.md.
-#   rerun   — TODO: Rerun gRPC stream (falls back to none)
+#   rerun   — accepted name, not implemented; falls back to none
 #
-# Note: physics_engine_visualizer:=ovrtx still requires headless:=false
-# (treated as a non-headless visualizer for forward compatibility with a
-# future GUI).  The kit visualizer was removed when newton-standalone
+# Note: physics_engine_visualizer:=ovrtx still requires headless:=false —
+# it is treated as a non-headless visualizer.  The kit visualizer was
+# removed when newton-standalone
 # went Kit-free; use physics_engine:=isaac_newton for the Kit viewport.
 #
 # Usage — headless (default):
@@ -45,15 +45,27 @@ launcher:
     engine: genie_sim_engine_newton
     engines:
       genie_sim_engine_newton:
-        package: genie_sim_engine
-        executable: genie_sim_engine_newton.py
-        name: genie_sim_engine_newton
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
     industrial_bridge: ""
   renders: []
 
-genie_sim_engine_newton:
+genie_sim_engine:
   ros__parameters:
-    # Visualizer: none | newton | ovrtx | rerun (todo)
+    # ---- physics profile ----------------------------------------------
+    # Which tuning profile in ``genie_sim_engine_core/config/`` this session
+    # loads.  A bare filename resolves against that directory; an absolute
+    # path is also accepted for a profile kept outside the package.
+    #
+    # Say it explicitly even when it names the default.  Until 2026-08-21 no
+    # launcher set this key at all, so ``session.py`` fell back to the base
+    # profile for every one of them and ``physics_params_rlinf.yaml`` shipped
+    # with zero readers — twice a knob was added to it and was inert, and
+    # nothing in a bring-up log said so.
+    physics_params_file: physics_params.yaml
+
+    # Visualizer: none | newton | ovrtx | rerun (not implemented)
     # Override per-run: physics_engine_visualizer:=newton on the CLI.
     physics_engine_visualizer: newton
 
@@ -64,6 +76,7 @@ genie_sim_engine_newton:
     # with cloth scenes.  Pure-rigid scenes can run at 200 Hz comfortably.
     realtime_factor: 1.0
     physics_hz: 60.0
+    dds_hz: 60.0
 
     # Render rate.  Drives:
     #  * newton GL ViewerGL frame cadence
@@ -98,3 +111,17 @@ genie_sim_engine_newton:
     # per-frame O(N²) CRBA rebuild — saves ~2-5 ms/frame on G2's
     # 26-34 DOF tree with fix_base + fix_head + fix_body active.
     physics_solver_mass_matrix_interval: 100000   # ≈ "never rebuild"
+
+    # -----------------------------------------------------------------
+    # step_mode — WHEN a physics tick is allowed to run
+    # -----------------------------------------------------------------
+    # realtime (default) = wall clock, scaled by realtime_factor; the
+    # historical behaviour and what this launcher wants.  lockstep and
+    # freerun exist for RL training and benchmarking respectively — see
+    # docs/step_modes.md, and launcher_newton_mjwarp.yaml for the fully
+    # commented version of this block.  An unrecognised value RAISES at
+    # startup rather than silently falling back.
+    #
+    # step_mode: realtime
+    # step_idle_timeout: 0.0     # realtime only; 0 = never pause
+    # step_lockstep_ticks: 0     # lockstep only; 0 = pacer default

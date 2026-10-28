@@ -19,11 +19,11 @@
 #   ovrtx   — In-process OVRTX RTX render (kit-free); publishes
 #             <cam.topic>/image_raw + camera_info via gsi::RosBridge
 #             from a dedicated render thread.  See docs/ovrtx_sync.md.
-#   rerun   — TODO: Rerun gRPC stream (falls back to none)
+#   rerun   — accepted name, not implemented; falls back to none
 #
-# Note: physics_engine_visualizer:=ovrtx still requires headless:=false
-# (treated as a non-headless visualizer for forward compatibility with a
-# future GUI).  The kit visualizer was removed when newton-standalone
+# Note: physics_engine_visualizer:=ovrtx still requires headless:=false —
+# it is treated as a non-headless visualizer.  The kit visualizer was
+# removed when newton-standalone
 # went Kit-free; use physics_engine:=isaac_newton for the Kit viewport.
 #
 # Usage — headless (default):
@@ -50,15 +50,27 @@ launcher:
     engine: genie_sim_engine_newton
     engines:
       genie_sim_engine_newton:
-        package: genie_sim_engine
-        executable: genie_sim_engine_newton.py
-        name: genie_sim_engine_newton
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
     industrial_bridge: ""
   renders: []
 
-genie_sim_engine_newton:
+genie_sim_engine:
   ros__parameters:
-    # Visualizer: none | newton | ovrtx | rerun (todo)
+    # ---- physics profile ----------------------------------------------
+    # Which tuning profile in ``genie_sim_engine_core/config/`` this session
+    # loads.  A bare filename resolves against that directory; an absolute
+    # path is also accepted for a profile kept outside the package.
+    #
+    # Say it explicitly even when it names the default.  Until 2026-08-21 no
+    # launcher set this key at all, so ``session.py`` fell back to the base
+    # profile for every one of them and ``physics_params_rlinf.yaml`` shipped
+    # with zero readers — twice a knob was added to it and was inert, and
+    # nothing in a bring-up log said so.
+    physics_params_file: physics_params.yaml
+
+    # Visualizer: none | newton | ovrtx | rerun (not implemented)
     # Override per-run: physics_engine_visualizer:=newton on the CLI.
     physics_engine_visualizer: newton
 
@@ -70,6 +82,7 @@ genie_sim_engine_newton:
     # particle side is the cadence-binding constraint here.
     realtime_factor: 0.5
     physics_hz: 60.0
+    dds_hz: 60.0
 
     # Render rate.  Drives:
     #  * newton GL ViewerGL frame cadence
@@ -94,13 +107,33 @@ genie_sim_engine_newton:
     #   FreeCam viewport pose source.  Default matches the RViz plugin
     #   (genie_sim_rviz_plugins/view_camera_pose_publisher_display) so the
     #   FreeCam follows the RViz 3D viewport with no extra remap.
+    ovrtx_camera_zoom_topic: "/genie_sim_engine/viewer/camera_zoom"
+    #   Newton inline OVRtx-only optical zoom. The RViz plugin publishes a
+    #   focal-length multiplier; external g2sim/render_ovrtx does not consume
+    #   this additive topic and keeps its existing pose-only behavior.
 
-    # Newton particle-solver tuning.  0 = engine picks its own default.
+    # Newton PARTICLE-solver tuning.  0 = engine picks its own default.
     # FEM tet scenes (chow_mein_flip_fem) use substeps=24, iterations=4
     # — FEM is stiff, so substeps dominate stability.  For pure cloth
     # use substeps=10, iterations=5 (franka demo working point).
+    #
+    # This is the PARTICLE count ONLY.  It used to be forwarded into
+    # ``SolverMuJoCo(iterations=...)`` as well, which ran MuJoCo's rigid
+    # constraint solver at 4 against its own default of 100 — a frictional
+    # contact block cannot converge in 4, so grasps crept and slipped in a
+    # way that reads as "not enough friction".  The rigid solver now has its
+    # own key, ``solver.mjc_iterations`` in physics_params.yaml (0 = MuJoCo's
+    # 100), read via ``adapters/base.py::resolve_mjc_iterations``.  Changing
+    # the value below no longer touches the rigid solve.
+    # See genie_sim_engine_core/docs/physics_knobs.md.
     physics_solver_substep: 24
     physics_solver_iterations: 4
+
+    # MuJoCo-Warp also uses nconmax for broad-phase candidate storage. Keep
+    # enough headroom for dense deformable scenes; undersizing can overflow
+    # internal collision buffers.
+    mujoco_nconmax: 16384
+
     # MJW has no mass-matrix-rebuild interval concept — this knob is
     # honoured only by the Featherstone path.  Kept in the yaml for
     # config-shape parity with launcher_newton_fsvbd.yaml; MJW ignores it.

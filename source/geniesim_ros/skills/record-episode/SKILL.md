@@ -3,10 +3,10 @@ name: record-episode
 description: >
   Capture a Genie Sim RT Engine episode while a scene runs — record
   the canonical ROS 2 topics (`/joint_states`, `/joint_command`,
-  `/tf`, `/clock`, cameras) with `ros2 bag`, or pair the recording
+  `/tf`, `/tf_static`, `/tf_scene`, `/clock`, cameras) with `ros2 bag`, or pair the recording
   with the teleop / benchmark loops that have their own per-episode
   output hooks.
-  Trigger: When the user asks to "record an episode", "录制一段数据",
+  Trigger: When the user asks to "record an episode",
   "save the run", "dump rosbags", "capture trajectories", or wants
   to persist the world state during a `launch-scene` / teleop /
   benchmark run for later replay or training.
@@ -66,12 +66,13 @@ Do **not** use for:
 | Topic | Why |
 |---|---|
 | `/clock` | Sim time — required for deterministic replay |
-| `/tf`, `/tf_static` | World pose tree (robot links, free objects) |
+| `/tf`, `/tf_static` | Robot world pose and complete link tree |
+| `/tf_scene` | Dynamic scene rigid-body world poses |
 | `/joint_states` | Robot state from the engine |
 | `/joint_command` | Whatever a teleop / planner pushed in |
 | `/odom` | Mobile base (if applicable) |
 | `/camera/*` | RGB / depth / fisheye streams (heavy, narrow if you can) |
-| `/tf_render` | OVRtx render-layer transforms (only if you'll replay rendering) |
+| `<deformable-prefix>/{info,mapping,state,rigid_state}` | Record all four channels together for deformable replay |
 
 ## Workflow
 

@@ -7,15 +7,13 @@ app.launch.py
 
 Unified bringup composer. The launcher YAML (``launcher_config``) is the
 single source of truth for which physics engine and render backends to start.
-
-  launcher.physics.engine: genie_sim_engine   → physics_isaacsim.launch.py
-  launcher.physics.engine: mujoco_geniesim    → physics_mujoco.launch.py
+Physics is delegated to ``physics_backend.launch.py``.
 
 ``launcher_config`` is **required** — the launch aborts with a red error if
 it is not provided.
 
 Owns the stage-independent nodes (RSP, rviz, teleop, navigation) and
-delegates the stage-dependent slice to the appropriate physics sub-launch.
+delegates the stage-dependent slice to the physics sub-launch.
 """
 
 import os
@@ -38,9 +36,6 @@ MSG_COLOR = lu.MSG_COLOR
 ERR_COLOR = lu.ERR_COLOR
 RESET = lu.RESET
 
-_ISAACSIM_ENGINES = {"genie_sim_engine"}
-_MUJOCO_ENGINES = {"mujoco_geniesim"}
-
 
 def generate_launch_description():
     # Build common args, then override launcher_config to be required (no default).
@@ -62,16 +57,6 @@ def generate_launch_description():
             description=(
                 "Scene config YAML (required). Supplies robot_model / body / arm / gripper "
                 "and scene layout. Resolved against cwd and share/genie_sim_bringup/config/."
-            ),
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            name="mujoco_scene",
-            default_value="",
-            description=(
-                "MuJoCo XML scene file (required when physics engine is mujoco_geniesim). "
-                "Resolved against cwd and share/genie_sim_bringup/config/."
             ),
         )
     )
@@ -180,7 +165,7 @@ def generate_launch_description():
             name="physics_engine_visualizer",
             default_value="",
             description=(
-                "Visualizer backend for physics_engine=newton (genie_sim_engine_newton.py). "
+                "Visualizer backend for physics_engine=newton (genie_sim_engine_newton_node.py). "
                 "'none' headless, 'newton' Newton GL ViewerGL, 'ovrtx' in-process OVRtx, "
                 "'rerun' placeholder (not implemented). Empty (default) means 'don't "
                 "override' — falls through to the "
@@ -258,8 +243,8 @@ def generate_launch_description():
 
         # ---- resolve physics engine from YAML ---------------------------
         try:
-            physics_engine, physics_package, physics_executable, physics_node_name = lu.resolve_physics_engine(
-                launcher_section, default_engine="genie_sim_engine"
+            physics_engine, physics_package, physics_executable, _physics_executable_gui, physics_node_name = (
+                lu.resolve_physics_engine(launcher_section, default_engine="genie_sim_engine_isaacsim")
             )
         except ValueError as exc:
             print(f"{ERR_COLOR}❌  {exc}{RESET}")
@@ -301,8 +286,11 @@ def generate_launch_description():
         body = _resolved["body"]
         arm = _resolved["arm"]
         gripper = _resolved["gripper"]
-        lgripper = gripper
-        rgripper = gripper
+        # Two-gripper scenes may split via robot.robot_source.urdf.{lgripper,rgripper}.
+        # SceneConfig.resolve_robot_params defaults each half to the resolved simple
+        # gripper so single-gripper configs still behave the same way as before.
+        lgripper = _resolved.get("lgripper", gripper)
+        rgripper = _resolved.get("rgripper", gripper)
 
         print(f"{MSG_COLOR}scene:        {scene_config_resolved}{RESET}")
         print(f"{MSG_COLOR}robot_model:  {robot_model}{RESET}")
@@ -349,14 +337,24 @@ def generate_launch_description():
         navigation_mode = lu.perform(context, "navigation_mode")
         print(f"{MSG_COLOR}navigation: {navigation} (mode={navigation_mode}){RESET}")
 
-        # Chassis servo + teleop + navigation are mobile-base nodes that
-        # assume a Genie-style four-wheel-steer chassis (cmd_twist ->
-        # cmd_4ws -> per-wheel drive/steer joints). Other robot families
-        # (agilex/arx/franka/universal_robots) ship without a chassis, so
-        # skip the whole block — even if teleop/navigation flags are set,
-        # they'd just spew "no joints found" errors against an arm-only
-        # URDF.
-        if robot_model == "genie":
+        # Chassis servo + teleop + navigation are mobile-base nodes
+        # that assume a Genie-family four-wheel-steer chassis
+        # (cmd_twist -> cmd_4ws -> per-wheel drive/steer joints).
+        # Other robot families
+        # (agilex/arx/franka/universal_robots) ship without a chassis,
+        # so skip the whole block — even if teleop/navigation flags are
+        # set, they'd just spew "no joints found" errors against an
+        # arm-only URDF.
+        #
+        # Accept ``robot_model == "genie"`` (legacy family alias used
+        # by older scene YAMLs) or any ``robot_model`` whose upper-case
+        # form begins with ``G2`` (case-insensitive family prefix).
+        # Chassis topology (2WD-diagonal vs 4WD) comes from the scene
+        # yaml's ``robot.robot_source.chassis`` key; defaults to 4WD.
+        # yaml's ``robot.robot_source.chassis`` key; defaults to 4WD.
+        _rm_upper = robot_model.upper()
+        _chassis = _src.get("chassis", "4wd") if isinstance(_src, dict) else "4wd"
+        if robot_model == "genie" or _rm_upper.startswith("G2"):
             # Chassis servo node — required by both teleop and navigation
             # (they publish cmd_twist / steering targets that the servo
             # node translates into per-wheel drive/steer joint commands).
@@ -364,8 +362,7 @@ def generate_launch_description():
             if teleop == "true" or navigation == "true":
                 actions.append(
                     lu.make_chassis_controller_node(
-                        robot_model=robot_model,
-                        body=body,
+                        chassis=_chassis,
                         common_param=common_param,
                         ros_log_args=ros_log_args,
                     )
@@ -396,28 +393,20 @@ def generate_launch_description():
 
         # ---- physics sub-launch (engine-specific, stage-gated) ----------
         here = os.path.dirname(os.path.realpath(__file__))
-        if physics_engine in _MUJOCO_ENGINES:
-            sub_launch = os.path.join(here, "physics_mujoco.launch.py")
-            sub_args = {
-                "mujoco_scene": LaunchConfiguration("mujoco_scene"),
-                "headless": LaunchConfiguration("headless"),
-                "always_regenerate_robot_usd": LaunchConfiguration("always_regenerate_robot_usd"),
-            }
-        else:
-            sub_launch = os.path.join(here, "physics_isaacsim.launch.py")
-            sub_args = {
-                "physics_hz": LaunchConfiguration("physics_hz"),
-                "render_hz": LaunchConfiguration("render_hz"),
-                "headless": LaunchConfiguration("headless"),
-                "always_regenerate_robot_usd": LaunchConfiguration("always_regenerate_robot_usd"),
-                "physics_engine": LaunchConfiguration("physics_engine"),
-                "physics_solver": LaunchConfiguration("physics_solver"),
-                "physics_solver_substep": LaunchConfiguration("physics_solver_substep"),
-                "physics_solver_iterations": LaunchConfiguration("physics_solver_iterations"),
-                "render_mode": LaunchConfiguration("render_mode"),
-                "physics_engine_visualizer": LaunchConfiguration("physics_engine_visualizer"),
-                "realtime_factor": LaunchConfiguration("realtime_factor"),
-            }
+        sub_launch = os.path.join(here, "physics_backend.launch.py")
+        sub_args = {
+            "physics_hz": LaunchConfiguration("physics_hz"),
+            "render_hz": LaunchConfiguration("render_hz"),
+            "headless": LaunchConfiguration("headless"),
+            "always_regenerate_robot_usd": LaunchConfiguration("always_regenerate_robot_usd"),
+            "physics_engine": LaunchConfiguration("physics_engine"),
+            "physics_solver": LaunchConfiguration("physics_solver"),
+            "physics_solver_substep": LaunchConfiguration("physics_solver_substep"),
+            "physics_solver_iterations": LaunchConfiguration("physics_solver_iterations"),
+            "render_mode": LaunchConfiguration("render_mode"),
+            "physics_engine_visualizer": LaunchConfiguration("physics_engine_visualizer"),
+            "realtime_factor": LaunchConfiguration("realtime_factor"),
+        }
 
         actions.append(
             IncludeLaunchDescription(

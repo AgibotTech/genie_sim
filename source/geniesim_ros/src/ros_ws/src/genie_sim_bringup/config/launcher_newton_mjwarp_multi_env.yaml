@@ -1,0 +1,341 @@
+# GenieSim launcher config — Newton standalone, MuJoCo-Warp multi-env adapter.
+#
+# Same engine and same solver family as launcher_newton_mjwarp.yaml; the
+# only difference is `physics_solver: mujoco-warp-multi-env`, which selects
+# a SEPARATE adapter (engine/newton/adapters/mujoco_warp_multi_env.py)
+# rather than a mode of the stock one.  That split is deliberate: users of
+# the stock `mujoco-warp` adapter must not inherit the multi-world /
+# lockstep / grasp-fidelity behaviour, so the two files keep independent
+# defaults and independent constructor signatures.
+#
+# Written primarily as a WORKED EXAMPLE of how launcher node params reach
+# the physics engine, since that path has a failure mode that is easy to
+# get wrong (see "How a param actually reaches the adapter" below).
+#
+# ---------------------------------------------------------------------
+# How a param actually reaches the adapter
+# ---------------------------------------------------------------------
+# Every `ros__parameters` key below travels this chain:
+#
+#   launcher yaml
+#     -> EngineNodeParams.from_dict        (engine_core/common/params.py)
+#     -> engine_kwargs                     (engine_core/common/session.py)
+#     -> PhysicsEngine.create              (engine_core/engine/base.py)
+#          `- _validate_create_kwargs      <-- REFLECTS on the backend's
+#                                              __init__ signature
+#     -> _NewtonStandaloneBase.__init__    (engine_newton/engine/newton/engine_base.py)
+#     -> make_adapter(...)                 (engine_newton/engine/newton/adapters/__init__.py)
+#     -> the adapter constructor
+#
+# The validation step is the one that bites.  The newton backend takes NO
+# `**kwargs`, so a kwarg whose name is absent from `engine_base.__init__`
+# is not silently ignored — it is a hard startup failure:
+#
+#   TypeError: physics_engine 'newton' constructor ABI mismatch for
+#              ...NewtonHeadlessEngine: unexpected parameter(s): <name>
+#
+# So adding a knob is a THREE-file change, not one: declare the field on
+# `EngineNodeParams`, forward it in `session.py`, and NAME it on
+# `engine_base.__init__` (plus whatever consumes it downstream).  Skipping
+# the third step is what made `mujoco_njmax` crash the engine despite being
+# parsed, forwarded, and documented.
+#
+# `session.py` only forwards most of these knobs when they are set to a
+# non-default value (`> 0`, non-empty, `> 1`).  That is not a safety net
+# for the above — it just means an UNSET knob doesn't reach the backend at
+# all.  Set one on a backend that doesn't name it and you still get the
+# TypeError.
+#
+# ---------------------------------------------------------------------
+# STATUS on this branch — read before using
+# ---------------------------------------------------------------------
+# `physics_solver: mujoco-warp-multi-env` works today: the adapter is
+# selectable, and `mujoco_njmax` / `mujoco_nconmax` are threaded end to end.
+#
+# `num_envs: >1` does not work on this branch.  `EngineNodeParams` parses it
+# and `session.py` forwards it when > 1, but `engine_base.__init__` does not
+# name it, so it fails exactly as described above.  Leaving it at 1 runs the
+# multi-env adapter as a single world, which is what makes this file useful
+# as an override example.
+#
+# Usage:
+#   ros2 launch genie_sim_bringup app.launch.py \
+#     scene:=<scene> \
+#     launcher_config:=launcher_newton_mjwarp_multi_env
+
+launcher:
+  physics:
+    engine: genie_sim_engine_newton
+    engines:
+      genie_sim_engine_newton:
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
+    industrial_bridge: ""
+  renders: []
+
+genie_sim_engine:
+  ros__parameters:
+    # ---- physics profile ----------------------------------------------
+    # The RLinf profile, not the base one.  It is a superset: the same keys
+    # plus ``gripper_contact:`` (pad convex-decomposition, master force cap)
+    # and ``gripper_naming:``, and a gripper drive retuned soft-and-strong
+    # for RL rollouts — master stiffness 2000 -> 100, damping 200 -> 20,
+    # max force 18 -> 50 — with ``solver.impratio: 30`` (elliptic cone) to
+    # stop a grasped object creeping out of the jaws under load.
+    #
+    # This is the profile that was written FOR this adapter — physics_knobs.md
+    # pairs ``impratio`` with ``mujoco_warp_multi_env.py`` explicitly — and it
+    # had never been reachable, because nothing set this key.  A bare filename
+    # resolves against ``genie_sim_engine_core/config/``.
+    #
+    # This profile retunes the gripper drive and has not been run on
+    # hardware.  Point this at ``physics_params.yaml`` for the stock drive.
+    physics_params_file: physics_params_rlinf.yaml
+
+    # Visualizer: none | newton | ovrtx | rerun (not implemented)
+    physics_engine_visualizer: newton
+
+    # THE selector for this launcher.  `mujoco-warp` (stock, the default) and
+    # `mujoco-warp-multi-env` are different adapter classes, not modes.
+    physics_solver: mujoco-warp-multi-env
+
+    # Native multi-world replicate count.  1 = single world.
+    # Not live on this branch — see STATUS above; >1 raises an ABI
+    # mismatch TypeError at startup.
+    # num_envs: 1
+
+    realtime_factor: 1.0
+    physics_hz: 100.0
+    dds_hz: 100.0
+    render_hz: 30.0
+    render_mode: raster
+
+    # sim_dt = (1/physics_hz) / substeps.  10 -> 1 ms at 100 Hz; see
+    # launcher_newton_mjwarp.yaml for the stability reasoning behind this
+    # value (kp/M_eff < 4/dt² gate on the explicit position term).
+    physics_solver_substep: 10
+    # physics_solver_iterations: 0
+
+    # SolverMuJoCo PD gains for DOFs with no URDF drive params.  Non-zero is
+    # a GLOBAL blanket override applied to every DOF regardless of class;
+    # zero (the default) means "use the per-class tables from
+    # physics_params.yaml", which is the production path.
+    # mujoco_pd_ke: 50000.0
+    # mujoco_pd_kd: 500.0
+
+    # -----------------------------------------------------------------
+    # OVERRIDE EXAMPLE: MuJoCo constraint-buffer capacity
+    # -----------------------------------------------------------------
+    # njmax   = max constraint Jacobian rows (contacts + limits + equality)
+    # nconmax = max active contact pairs
+    #
+    # Under-allocation produces `nefc overflow` / `nconmax overflow` spam and
+    # SILENTLY DROPS contacts — the sim keeps running and quietly gets the
+    # physics wrong, so treat overflow in the log as a hard error.
+    #
+    # 0 (the default) means "leave it to the adapter", and the two mjwarp
+    # adapters read that zero DIFFERENTLY on purpose:
+    #
+    #   mujoco-warp            fixed defaults, njmax=1024 / nconmax=512.
+    #                          No scaling: a big scene needs an explicit
+    #                          value here.
+    #   mujoco-warp-multi-env  auto-scales with the PER-ENV body count via
+    #                          `resolve_constraint_capacity`, floored at the
+    #                          same 1024 / 512 so small scenes never shrink:
+    #                            njmax   = max(1024, 20 * nbody_per_env)
+    #                            nconmax = max( 512,  7 * nbody_per_env)
+    #                          Calibrated on two measured scenes — 61-body
+    #                          supermarket (peak njmax ~750) and a 156-body
+    #                          20-instance superset probe (demanded njmax
+    #                          >=2096 / nconmax >=700; auto gives 3120/1092).
+    #
+    # A POSITIVE value here wins VERBATIM over the auto path — it is not a
+    # floor and not a multiplier, it is the value handed to SolverMuJoCo.
+    # The two knobs resolve independently: set only njmax and nconmax still
+    # auto-scales.  The adapter logs the pair it ended up with plus the
+    # basis (`explicit` vs `auto(nbody_per_env=N)`) — read that line to
+    # confirm your override actually took effect.
+    #
+    # Raise these if you see overflow, or if you are replicating a scene
+    # whose contact-rich props are not reflected in the body count.
+    # mujoco_njmax: 4096
+    # mujoco_nconmax: 2048
+
+    # -----------------------------------------------------------------
+    # SCENE YAML DEFAULTS: per-class contact tuning (ENABLED for RLINF)
+    # -----------------------------------------------------------------
+    # This block is a SCENE yaml fragment, not a params block. It is
+    # deep-merged UNDERNEATH the scene yaml the manifest names, per key,
+    # recursing into mappings and treating lists as leaves. The scene's own
+    # keys win, so a scene can retune one class -- or one key of one class --
+    # without restating the profile. Set it here once; override it there.
+    #
+    # This is the grasp-fidelity profile: it reproduces exactly what the
+    # feature branch's `solver.grasp_contact_fidelity: true` produced, which
+    # was one bool flipping both the friction table and condim. Same numbers,
+    # now nameable per class and per scene.
+    #
+    scene_yaml_defaults:
+      newton:
+        mjc_contact:
+          robot:
+            friction: [1.5, 0.5, 0.2]  # tangential, torsional, rolling
+            condim: 3                  # arm/body links: tangential only
+          gripper_pad:
+            condim: 6                  # fingertips ONLY: all three slots live
+          passive:
+            friction: [1.0, 1.0, 0.0001]
+            condim: 4                  # tangential + torsional (stops spurious spin)
+          floor:
+            friction: [1.0, 1.0, 0.0001]
+            condim: 4
+          static_prop:
+            friction: [1.0, 1.0, 0.0001]
+            condim: 4
+          other:
+            friction: [1.0, 1.0, 0.0001]
+            condim: 4
+    #
+    # Why these values:
+    # - robot tangential 1.5: Coulomb sliding friction for manipulation
+    # - robot torsional 0.5 / rolling 0.2: fingertip pad grip (needs condim 6,
+    #   which is why they are inert everywhere except gripper_pad)
+    # - non-robot torsional 1.0: stops resting objects from spinning at condim 4
+    #   (mjwarp lacks implicitfast midpoint integration, so free bodies pick up
+    #   spurious spin; stock 0.005 barely damps it, 1.0 cuts ~91%)
+    # - rolling 0.0001 on non-robot: placeholder, condim 4 doesn't read it anyway
+    #
+    # Background on the override mechanism:
+    #
+    # Contact tuning does NOT travel as a launcher node param. It arrives by a
+    # different route:
+    #
+    #   this scene_yaml_defaults block  ---.
+    #   scene yaml `newton.mjc_contact:`  -+-> deep-merged, scene wins
+    #     -> SceneConfig               (engine_core/common/session.py)
+    #     -> engine_kwargs["scene_cfg"]           (NOT a node param)
+    #     -> engine/newton/mjc_contact.py::_resolve_params
+    #          `- merged onto MJC_CONTACT_DEFAULTS
+    #     -> written per-shape into the builder, PRE-finalize
+    #
+    # The five classes come from the shape classifier (no per-asset USD
+    # edits; it buckets by prim path + topology):
+    #   robot        colliders under the active robot_prefix
+    #   floor        the add_ground_plane() plane
+    #   passive      free scene rigid bodies (hanger, dropped objects)
+    #   static_prop  world-static USD shapes (tables, walls)
+    #   other        unmatched
+    #
+    # ...plus ONE refinement, which is not a sixth class:
+    #   gripper_pad  the robot shapes whose BODY carries the assemble-time
+    #                `newton:isGripperPad` annotation. It INHERITS everything
+    #                `robot` resolved to and overrides only the keys it names,
+    #                so the block above gives the pads friction [1.5,0.5,0.2]
+    #                without restating it. Membership comes from the robot's
+    #                own USD, never from yaml: the yaml says what the pads
+    #                should be tuned to, the asset says which bodies they are.
+    #                Assets predating the annotation fall back to the
+    #                gripper-classified `link4` leaves. If NEITHER matches, the
+    #                engine warns by name and the pads stay on `robot` -- it
+    #                does not silently pretend the refinement applied.
+    #
+    # Per-class keys, validated for length at build time. An unknown class
+    # name or an unknown key inside a class warns at bring-up, so a migration
+    # typo (`gripper_pads:`, `static-prop:`) is loud rather than inert:
+    #   solref   [timeconst, dampratio]        2 floats
+    #   solimp   [d0, dwidth, width, mid, pow] 5 floats
+    #   friction [tangential, torsional, rolling]  3 floats
+    #   condim   scalar int (1/3/4/6)          optional
+    #
+    # -----------------------------------------------------------------
+    # condim: contact dimensionality (LIVE as of 2026-08-20)
+    # -----------------------------------------------------------------
+    # `condim` is MuJoCo's contact dimensionality, and it GATES which of the
+    # three friction coefficients are live:
+    #
+    #   1  normal force only (frictionless)
+    #   3  + tangential      <- MuJoCo default; torsional/rolling INERT
+    #   4  + torsional
+    #   6  + rolling
+    #
+    # Sharp edge: authoring `friction: [1.5, 0.1, 0.01]` under the default
+    # condim 3 silently ignores the 0.1 and 0.01. A gripper closing on a
+    # round object needs condim 6 on the fingertip pads or the object twists
+    # and rolls out of the jaw no matter what the friction tuple says.
+    #
+    # condim is OPTIONAL and per-class. When absent from scene yaml, MuJoCo
+    # uses its stock default (3 = tangential only).
+    #
+    # Raising condim is NOT free: each extra dimension is another constraint
+    # Jacobian row per contact. Moving every non-robot contact from 3 to 4
+    # is roughly +33% rows. On a scene already peaking near njmax, it will
+    # start dropping contacts silently. Budget njmax when you raise condim
+    # (see capacity section above).
+    #
+    # This is why `gripper_pad` exists. `robot.condim: 6` covers every robot
+    # shape -- forearms, torso, the whole chain -- and measured ~27% of
+    # real-time (87 Hz against 120) for a benefit that only ever lands on the
+    # fingertips. Put 6 under `gripper_pad:` and 3 under `robot:`.
+
+    # -----------------------------------------------------------------
+    # step_mode — WHEN a physics tick is allowed to run
+    # -----------------------------------------------------------------
+    # The tick body is identical in every mode.  Only the gate in front
+    # of it changes, so a mode is a pacing policy and nothing else:
+    # commands still apply, contacts still resolve, publishes still go
+    # out on the same channels.  See docs/step_modes.md for the full
+    # treatment; the modes live in engine_core/common/pacing.py.
+    #
+    #   realtime   (DEFAULT)  wall clock, scaled by realtime_factor.
+    #              What this engine has always done.  Leave it unset and
+    #              nothing about this launcher changes.
+    #
+    #   lockstep   one command == exactly step_lockstep_ticks physics
+    #              ticks, published on the last tick of the burst.  For
+    #              RL training, where the unit of work is a step, not a
+    #              second: the trainer's step rate sets the sim rate, and
+    #              a slow policy update no longer means the sim ran ahead
+    #              of the action that was supposed to cause it.
+    #
+    #   freerun    no pacing at all — step as fast as the hardware goes.
+    #              Benchmarking and offline replay.  Nothing throttles
+    #              publishing either, so expect to saturate DDS.
+    #
+    # A typo here RAISES at startup rather than falling back to the
+    # default.  That is deliberate and differs from the tri-state
+    # contact_publish_* strings: a wrong contact scope publishes
+    # slightly wrong topics, whereas a wrong step mode silently
+    # redefines what "one training step" means and every number the run
+    # produces is then wrong with nothing in the log to show it.
+    #
+    # step_mode: realtime
+
+    # Seconds of no command before the loop pauses.  realtime ONLY;
+    # ignored by the other modes.  0.0 (default) = never pause, which is
+    # the historical behaviour.
+    #
+    # Arms only AFTER the first command arrives, so bring-up is never
+    # gated by it — a scene that takes 40 s to load will not trip a 5 s
+    # timeout.  A pending reset counts as activity.  While paused the
+    # loop stops stepping and stops publishing /clock, so anything
+    # downstream running on sim time stops with it; that is the point,
+    # but it does mean a paused engine looks like a hung one to a
+    # consumer that is not expecting it.
+    #
+    # The pause is NOT charged to spin_ms — an unbounded wait would
+    # otherwise land as a single enormous sample and destroy the
+    # max/p95/p99 the perf triage in docs/perf.md relies on.
+    #
+    # step_idle_timeout: 0.0
+
+    # Physics ticks bought by one command in lockstep mode.  0 (default)
+    # = the pacer's own default.  Ignored by the other modes.
+    #
+    # This is the RL step size in physics ticks: at physics_hz 100 and
+    # step_lockstep_ticks 10, one command advances sim time by 100 ms.
+    # Set it to match the trainer's control period — a mismatch does not
+    # error, it just means the episode timeline is not what the trainer
+    # thinks it is.
+    #
+    # step_lockstep_ticks: 0

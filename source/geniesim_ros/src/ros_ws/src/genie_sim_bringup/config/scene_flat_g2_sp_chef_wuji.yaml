@@ -1,0 +1,365 @@
+# G2 (crsB + Wuji) standing in front of a wok holding chow-mein
+# noodles to flip.  Uses the scene_flat_g2_sp_chef.py plugin (sibling
+# file) — port of chow_mein_flip_fem.py — to bind the USDA wok, add its
+# particle-only thick collision proxy, and simulate the selected authored
+# noodles, julienne vegetables, and meat as FEM soft bodies.
+#
+# Run:
+#   ros2 launch genie_sim_bringup app.launch.py \
+#     scene:=scene_flat_g2_sp_chef_wuji \
+#     launcher_config:=launcher_newton_mjxpbd \
+#     headless:=false \
+#     physics_engine_visualizer:=ovrtx \
+#     rviz:=true
+#
+# Solver choice: XPBD (not VBD).  The FEM tet noodles need XPBD because
+# (a) ``add_soft_grid`` produces tet constraints, not cloth triangles,
+# and (b) VBD's per-substep displacement cap mutes the toss.  The
+# ``mjxpbd`` launcher pairs MuJoCo-Warp (rigid) with SolverXPBD
+# (particles).
+
+robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_crsB.sysid-2026-09-22.yaml
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_wuji.sysid-2026-09-24.yaml
+  robot_name: G2_crsB_wuji
+  robot_prefix: genie
+  robot_source:
+    arm: crsB
+    body: g2
+    gripper: "wuji"
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: true
+    convert_joints_to_fixed: [base, head, body]   # weld all sub-trees → 16 DOFs gone from Featherstone
+    urdf:
+      inertia_source: sysid
+  init_base_pose:
+    # NOTE: pin_base_to_world welds base_link to the WORLD ORIGIN, so these
+    # values are ignored — base_link's tf really is (0,0,0).  Anything solved
+    # offline against the URDF must therefore add NO base offset.  (Verified:
+    # putting x=-0.03 here changed nothing, and the measured hand pose matched
+    # the zero-offset prediction to 1.2 mm.)
+    x: 0.0
+    y: 0.0
+    z: 0.04
+    theta: 0.0
+  # Start pose: LEFT arm in a T-pose, RIGHT five-finger hand cupped under the
+  # wok handle, palm up — the way a person reaches under a wok to lift it.
+  #
+  # LEFT ARM = all zeros IS the T-pose on this robot: at zero, FK puts
+  # arm_l_end_link at (0.2585, 0.9435, 1.3139), i.e. the same x and z as
+  # arm_base_link and 0.94 m straight out to the left.  Nothing to solve.
+  #
+  # RIGHT ARM solved offline against the URDF for two conditions:
+  #   1. the hand's grasp centre (where the thumb and finger pads meet when
+  #      closed, = (0.050, -0.007, 0.095) in hand_r_base_link) lands on the wok
+  #      handle centre, world (0.749, 0, 1.0711);
+  #   2. the PALM faces up.  The palm normal is +x of hand_r_base_link — derived
+  #      empirically, not guessed: flexing the four fingers moves their pads
+  #      toward +x, and the thumb/index pads meet at x≈0.05.  Via the
+  #      hand_r_base_joint mount (rpy 0,0,-pi/2) that is -y of arm_r_end_link.
+  #      The handle axis is put along the hand's y (the index→pinky spread
+  #      direction) so all four fingers can wrap the same cylinder.
+  # The redundant IK degree of freedom is selected for a natural palm-up reach:
+  # shoulder axial rotation (joint3) stays near neutral, elbow joint4 bends in
+  # its ordinary negative direction, and the required palm-up rotation happens
+  # mainly at forearm joint5 instead of twisting the shoulder.  The unrounded
+  # solution has numerical-zero pose residual and >=9.6 deg of limit headroom.
+  # Re-solve if the wok home pose moves — and solve with NO base offset (see
+  # init_base_pose above).
+  #
+  # RIGHT HAND starts in the collision-safe 25%-limit pre-grasp.  After the
+  # scene has stepped and the wok has settled, newton.chef.startup_hand_motion
+  # smoothly commands it to the configured grasp instead of spawning the
+  # closed hand in contact and kicking the wok on the first solver step.
+  #
+  # pin_base_to_world + welded chassis/head/body keep the robot stable; the wok
+  # is its own free body (see scene_flat_g2_sp_chef.py header).
+  init_joint_pos:
+    # --- left arm: T-pose ---
+    idx21_arm_l_joint1: 0
+    idx22_arm_l_joint2: 0
+    idx23_arm_l_joint3: 0
+    idx24_arm_l_joint4: 0
+    idx25_arm_l_joint5: 0
+    idx26_arm_l_joint6: 0
+    idx27_arm_l_joint7: 0
+    # --- right arm: palm-up under the wok handle ---
+    idx61_arm_r_joint1: -7.24
+    idx62_arm_r_joint2: -73.74
+    idx63_arm_r_joint3: -10.00
+    idx64_arm_r_joint4: -41.72
+    idx65_arm_r_joint5: 131.97
+    idx66_arm_r_joint6: 48.36
+    idx67_arm_r_joint7: 50.78
+    # --- right hand: collision-safe pre-grasp (degrees) ---
+    hand_r_thumb_joint1: 22.97
+    hand_r_thumb_joint2: 13.36
+    hand_r_thumb_joint3: 22.38
+    hand_r_thumb_joint4: 22.30
+    hand_r_index_joint1: 22.35
+    hand_r_index_joint2: 5.30
+    hand_r_index_joint3: 22.18
+    hand_r_index_joint4: 22.56
+    hand_r_middle_joint1: 22.23
+    hand_r_middle_joint2: 5.30
+    hand_r_middle_joint3: 22.22
+    hand_r_middle_joint4: 22.55
+    hand_r_ring_joint1: 22.32
+    hand_r_ring_joint2: 5.30
+    hand_r_ring_joint3: 22.18
+    hand_r_ring_joint4: 22.39
+    hand_r_pinky_joint1: 22.32
+    hand_r_pinky_joint2: 5.30
+    hand_r_pinky_joint3: 22.19
+    hand_r_pinky_joint4: 22.54
+    idx03_body_joint3: 20
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  Frames the G2 chassis (~1.4 m tall) from
+# front-right, aimed at chest height.
+viewer_camera:
+  pos:    [1.6, -1.6, 1.2]
+  lookat: [0.0,  0.0, 0.8]
+
+cameras: []
+lidars: []
+
+# Art-authored fried-noodles world.  Scene paths resolve from the assets root
+# (``/geniesim_assets`` in the runtime container), keeping the YAML portable.
+# The USDA is authoritative for the pot body, visual geometry and pose.  The
+# chef plugin supplies its Newton-specific particle collision proxy, binds all
+# 16 authored noodles plus the selected meat/julienne families to FEM proxies.
+# Unselected side dishes are authored invisible in this USDA asset.
+scene: background/home/fried_noodles/background.usda
+
+# Newton particle extras — only active when launched with
+#   physics_engine:=newton  (or :=isaac_newton).
+# This scene is plugin-driven: the Python file referenced by ``scene_plugin``
+# filters imported food rigid schemas, binds the imported pot, and emits the
+# selected authored food proxies at engine build time. No ``entries:`` block
+# is needed.
+newton:
+  scene_plugin: scene_flat_g2_sp_chef.py
+
+  # XPBD relaxation for stable resting FEM particles.
+  xpbd:
+    soft_body_relaxation: 0.7
+    soft_contact_relaxation: 0.3
+
+  # Experimental two-way rigid/particle coupling.  The fallback path remains
+  # in the engine and is restored by setting enabled=false.  MuJoCo owns all
+  # robot/wok/stove rigid bodies; XPBD owns the food particles and sees the
+  # rigid bodies as proxies.  Momentum harvested from XPBD contacts is fed
+  # back to MuJoCo on the next proxy pass.
+  coupling:
+    enabled: true
+    type: proxy
+    mode: lagged
+    iterations: 1
+    mass_scale: 1.0
+    proxy_relaxation: 0.5
+
+  # This robot has a five-finger hand, not a parallel-jaw gripper, so the wok
+  # handle stays a ROUND capsule and becomes a real collider in the DEFAULT
+  # collision group — the hand's own finger meshes contact it directly.  The
+  # square grip box + pad/lip geometry exists to give a two-point parallel jaw
+  # some form closure; a finger envelope gets its contact manifold from many
+  # links at once and does not need it.  See GraspGeometry in the plugin.
+  #
+  # This also avoids a dead end: the pads are looked up by the swiftpicker link
+  # names (gripper_r_*_support_link), which do NOT exist on this robot, so with
+  # enable=true the box would be created in a private collision_group with no
+  # pads to pair against — colliding with nothing, and the hand would pass
+  # straight through the handle.
+  chef:
+    # Scene identity, pot geometry and pose come from the authored stage. An
+    # anonymous session layer disables the 42 imported food rigid bodies while
+    # the plugin replaces selected meshes with soft proxies.
+    usd_objects:
+      enabled: true
+      objects_root: /World/objects
+      pot_body_prim_path: /World/objects/benchmark_pot_013/entity
+      pot_mesh_prim_path: /World/objects/benchmark_pot_013/entity/body/visual
+      expected_food_count: 42
+      expected_pot_mass: 1.3
+      particle_proxy_thickness: 0.080
+      procedural_food_transition: true
+
+    # Enumerate all 16 USDA noodle objects under /World/objects and
+    # replace them with Newton FEM grids. The authored Meshes remain the
+    # identity/topology source; each object's 1100 points are reconstructed in
+    # original order through one shared deterministic tet-barycentric map.
+    usd_noodles:
+      enabled: true
+      object_name_prefix: benchmark_noodles_001_
+      expected_instance_count: 16
+      expected_vertex_count: 1100
+      expected_topology_sha256: cc12e7d653fb61af0178055723c0cb2644f4fb997a0776d1073950b292253049
+
+    # Audited classification of the retained generic ``benchmark_side_dish``
+    # families. The source USDA contains only julienned carrot/pepper families
+    # and meat chunks; the 19 unused side dishes were removed from the asset.
+    usd_side_dishes:
+      enabled: true
+      expected_instance_count: 26
+      migrated_families:
+        - benchmark_side_dish_000
+        - benchmark_side_dish_004
+        - benchmark_side_dish_005
+        - benchmark_side_dish_008
+        - benchmark_side_dish_009
+        - benchmark_side_dish_010
+      procedural_fallback: false
+      families:
+        benchmark_side_dish_000:
+          semantic_kind: meat
+          physics_profile: ham
+          proxy_geometry: solid_grid
+          # Resolution compatible with the shared XPBD ham parameters.
+          proxy_resolution: [2, 6, 3]
+          expected_instance_count: 1
+          expected_vertex_count: 402
+          expected_topology_sha256: 04738e93dd5a1ad237b1fd9dde08600fb47672f8830b0a7204fac4be2fa634bc
+          expected_albedo_texture: benchmark_side_dish_003_Alb.png
+        benchmark_side_dish_004:
+          semantic_kind: carrot
+          physics_profile: carrot
+          proxy_geometry: strip_grid
+          proxy_resolution: [1, 8, 1]
+          expected_instance_count: 11
+          expected_vertex_count: 86
+          expected_topology_sha256: c46ef68df9c8c8426e36101eee713b77623ce2540e1f6fec31acfc6cedf6bbda
+          expected_albedo_texture: benchmark_side_dish_000_Alb.jpg
+        benchmark_side_dish_005:
+          semantic_kind: pepper
+          physics_profile: pepper
+          proxy_geometry: strip_grid
+          proxy_resolution: [1, 8, 1]
+          expected_instance_count: 11
+          expected_vertex_count: 60
+          expected_topology_sha256: 9b37368acc85d88ffd9bb632783f999199e195c42e225bbf7c5422eafd888e1d
+          expected_albedo_texture: benchmark_side_dish_002_Alb.png
+        benchmark_side_dish_008:
+          semantic_kind: meat
+          physics_profile: ham
+          proxy_geometry: solid_grid
+          proxy_resolution: [2, 6, 3]
+          expected_instance_count: 1
+          expected_vertex_count: 318
+          expected_topology_sha256: 3df25802daaa21a49865912172ec60fd7ad65dc18596a105e4622b8407916ddd
+          expected_albedo_texture: benchmark_side_dish_003_Alb.png
+        benchmark_side_dish_009:
+          semantic_kind: meat
+          physics_profile: ham
+          proxy_geometry: solid_grid
+          # Resolution compatible with the shared XPBD ham parameters.
+          proxy_resolution: [1, 6, 3]
+          expected_instance_count: 1
+          expected_vertex_count: 268
+          expected_topology_sha256: bfdd819b07bb5125ead874d79e272dc7d7dd65a9cd17d05ecdb81c9c010aa55e
+          expected_albedo_texture: benchmark_side_dish_003_Alb.png
+        benchmark_side_dish_010:
+          semantic_kind: meat
+          physics_profile: ham
+          proxy_geometry: solid_grid
+          proxy_resolution: [2, 7, 3]
+          expected_instance_count: 1
+          expected_vertex_count: 296
+          expected_topology_sha256: dff929e024eaa87f4a6ed7e2154528734ead7941f0379a16b4284bc33cdb100f
+          expected_albedo_texture: benchmark_side_dish_003_Alb.png
+
+    # Existing tuned noodle material/contact values. Every USDA proxy derives
+    # its length, cross-section and pose from its authored Mesh. length/cross
+    # and the spawn fields remain legacy-scene fallbacks only.
+    noodle:
+      n_noodles: 16
+      n_len: 80
+      length: 0.26
+      cross: 0.0026
+      density: 1100.0
+      k_mu: 2000.0
+      k_lambda: 10000.0
+      k_damp: 0.75
+      self_radius: 0.0013
+      particle_mu: 0.5
+      wok_mu: 0.3
+      drop_z0_offset: 0.015
+      drop_dz: 0.006
+      spawn_disk_r: 0.020
+
+    # Replay-ready streams. ``info`` carries Prim paths and transforms,
+    # ``mapping`` carries the one-time authored-vertex barycentric map,
+    # ``state`` carries raw Newton particles, and ``rigid_state`` carries the
+    # same delayed rigid-body snapshot. Dynamic headers use simulation time.
+    food_state:
+      enabled: true
+      state_topic: chef_food/state
+      info_topic: chef_food/info
+      mapping_topic: chef_food/mapping
+      rigid_state_topic: chef_food/rigid_state
+      frame_id: map
+      # At the 60 Hz physics working point, publish every second tick. State
+      # and rigid_state still come from one snapshot and share an exact stamp.
+      hz: 30.0
+
+    # Let the dynamic wok settle before closing the hand. The smoothstep ramp
+    # has zero velocity at both ends and publishes through the normal ROS
+    # command path, so contacts are solved rather than teleported.
+    startup_hand_motion:
+      enabled: true
+      delay_s: 1.0
+      duration_s: 2.0
+      hold_s: 0.5
+      topic: /joint_command
+      target_joint_pos:
+        hand_r_thumb_joint1: 6.798686
+        hand_r_thumb_joint2: -7.958206
+        hand_r_thumb_joint3: 89.513024
+        hand_r_thumb_joint4: -1.145157
+        hand_r_index_joint1: 78.855531
+        hand_r_index_joint2: 21.067621
+        hand_r_index_joint3: 80.249067
+        hand_r_index_joint4: 57.329288
+        hand_r_middle_joint1: 81.285610
+        hand_r_middle_joint2: 15.156446
+        hand_r_middle_joint3: 71.563649
+        hand_r_middle_joint4: 52.701449
+        hand_r_ring_joint1: 81.210150
+        hand_r_ring_joint2: 14.337013
+        hand_r_ring_joint3: 75.324289
+        hand_r_ring_joint4: 47.515294
+        hand_r_pinky_joint1: 72.939030
+        hand_r_pinky_joint2: 12.653626
+        hand_r_pinky_joint3: 88.257614
+        hand_r_pinky_joint4: 34.750537
+
+    grasp:
+      enable: false
+      # Remove Newton's imported 0.1 m inactive-contact shell from the right
+      # Wuji hand only.  Real contact still activates at geometric distance 0;
+      # this prevents nearby non-contacting finger geoms from consuming MJW's
+      # finite contact-record budget during a dense wrap grasp.
+      hand_body_prefix: "hand_r_"
+      hand_geom_gap: 0.0
+      # Enable sliding, torsional and rolling friction rows for the round handle.
+      condim: 6
+  # Wok friction tuple: sliding, torsional, rolling.
+  mjc_contact:
+    passive:
+      friction: [1.9, 0.08, 0.06]
+
+  solver:
+    # FEM tet noodles need XPBD (no per-substep velocity cap, real flip).
+    # The launcher_newton_mjxpbd.yaml routes this preference through.
+    prefer: xpbd
+
+  contact:
+    # Particle-vs-rigid contact defaults; the plugin applies wok values.
+    soft_ke: 1.0e3
+    soft_kd: 1.0
+    soft_mu: 0.3
+
+  # No ``entries:`` — the plugin emits all particles via add_soft_grid
+  # in on_build, which the assemble_newton sidecar doesn't know about.

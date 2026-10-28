@@ -3,8 +3,10 @@
 # License: Mozilla Public License Version 2.0
 
 """
-Sub-launch owning the Isaac Sim physics backend (genie_sim_engine).
-Normally included by experimental.launch.py.
+Sub-launch owning the physics backend. Selector is
+``launcher.physics.engine`` in the launcher YAML; the active engine's
+package/executable/name are pulled from
+``launcher.physics.engines.<engine>``. Normally included by app.launch.py.
 
 Spawns:
   * ``assemble_robot`` (xacro -> URDF -> USD, cache-gated) when a robot is
@@ -100,7 +102,7 @@ def generate_launch_description():
                 "reads its cloth solver from the scene yaml's "
                 "``newton.solver.prefer``). XPBD / Featherstone / "
                 "SemiImplicit are NOT exposed at the launch level: "
-                "Isaac Sim 6.0's ``isaacsim.physics.newton`` v0.6.0 only "
+                "Isaac Sim 6.x's ``isaacsim.physics.newton`` v0.6.0 only "
                 "supports ``SolverMuJoCo`` and ``SolverXPBD`` and we pin "
                 "``isaac_newton`` to MuJoCo-Warp specifically. For cloth "
                 "or alternative rigid solvers, use ``physics_engine:=newton`` "
@@ -174,6 +176,17 @@ def generate_launch_description():
                 "yaml's ros__parameters block."
             ),
         ),
+        DeclareLaunchArgument(
+            name="num_envs",
+            default_value="1",
+            description=(
+                "Native multi-world replicate count (physics_engine=newton only; "
+                "isaac_physx/isaac_newton ignore it). 1 (default) = single env, "
+                "byte-identical to the pre-multi-world path. >1 replicates the "
+                "single-env ModelBuilder template into N GPU worlds via "
+                "``builder.replicate`` before finalize."
+            ),
+        ),
     ]
 
     def parse_args(context):
@@ -196,14 +209,23 @@ def generate_launch_description():
         if plugins_cfg_path:
             launcher_section, _plug_yaml, plugins_params_path = lu.load_launcher_yaml(plugins_cfg_path)
 
+        _engine_cfg = {}
+        _physics_section = launcher_section.get("physics") or {}
+        if isinstance(_physics_section, dict):
+            _engine_selector = str(_physics_section.get("engine") or "").strip()
+            _engines_section = _physics_section.get("engines") or {}
+            if isinstance(_engines_section, dict):
+                _engine_cfg = _engines_section.get(_engine_selector) or {}
+        if not isinstance(_engine_cfg, dict):
+            print(f"{ERR_COLOR}[physics_backend] engine config must be a mapping{RESET}")
+            sys.exit(1)
+
         # ---- pull own args -----------------------------------------------
         # ``physics_engine`` is a plain launch arg with the standard
         # launcher-yaml ``ros__parameters`` fallback (the ``cli_overrides``
         # logic below handles CLI > yaml > DeclareLaunchArgument default).
-        # No routing decision in this launch file branches on its value
-        # any more — ``make_assemble_pipeline`` always chains
-        # ``assemble_newton.py`` and the script self-gates on the scene
-        # yaml's ``newton.entries`` block (no entries → exits 0 silently).
+        # Assembly routing is selected independently by the engine's
+        # ``assemble_style`` metadata.
         physics_hz = float(lu.perform(context, "physics_hz"))
         render_hz = float(lu.perform(context, "render_hz"))
         headless = lu.perform(context, "headless")
@@ -214,13 +236,14 @@ def generate_launch_description():
         render_mode = lu.perform(context, "render_mode").strip().lower()
         physics_engine_visualizer = lu.perform(context, "physics_engine_visualizer").strip().lower()
         realtime_factor = float(lu.perform(context, "realtime_factor"))
+        num_envs = lu.perform(context, "num_envs").strip()
         always_regenerate_robot_usd = lu.perform(context, "always_regenerate_robot_usd").strip().lower() == "true"
         print(
-            f"{MSG_COLOR}[physics_isaacsim] physics_hz: {physics_hz}, "
+            f"{MSG_COLOR}[physics_backend] physics_hz: {physics_hz}, "
             f"render_hz: {render_hz}, headless: {headless}, "
             f"physics_engine: {physics_engine}, physics_solver: {physics_solver}, "
             f"render_mode: {render_mode}, "
-            f"realtime_factor: {realtime_factor}, "
+            f"realtime_factor: {realtime_factor}, num_envs: {num_envs}, "
             f"physics_engine_visualizer: {physics_engine_visualizer!r}{RESET}"
         )
 
@@ -252,12 +275,16 @@ def generate_launch_description():
         body = _resolved["body"]
         arm = _resolved["arm"]
         gripper = _resolved["gripper"]
+        # Two-gripper scenes may split via robot_source.urdf.{lgripper,rgripper}.
+        # Simple configs mirror the resolved gripper onto both halves.
+        lgripper = _resolved.get("lgripper", gripper)
+        rgripper = _resolved.get("rgripper", gripper)
 
-        print(f"{MSG_COLOR}[physics_isaacsim] scene: {scene_config_resolved}{RESET}")
-        print(f"{MSG_COLOR}[physics_isaacsim] robot_model: {robot_model}{RESET}")
-        print(f"{MSG_COLOR}[physics_isaacsim] body: {body}, arm: {arm}, gripper: {gripper}{RESET}")
-        print(f"{MSG_COLOR}[physics_isaacsim] remap_tf: {remap_tf}{RESET}")
-        print(f"{MSG_COLOR}[physics_isaacsim] fake_slam: {fake_slam}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] scene: {scene_config_resolved}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] robot_model: {robot_model}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] body: {body}, arm: {arm}, gripper: {gripper}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] remap_tf: {remap_tf}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] fake_slam: {fake_slam}{RESET}")
 
         # ---- launcher YAML metadata (engine binding + plugin params) -----
         # ``launcher_section`` and ``plugins_params_path`` were already loaded
@@ -273,7 +300,7 @@ def generate_launch_description():
             if isinstance(raw_renders, list):
                 renders_from_yaml = [str(r).strip() for r in raw_renders if str(r).strip()]
             print(
-                f"{MSG_COLOR}[physics_isaacsim] launcher_config: {plugins_cfg_path} "
+                f"{MSG_COLOR}[physics_backend] launcher_config: {plugins_cfg_path} "
                 f"(industrial_bridge={industrial_bridge!r}, renders={renders_from_yaml}){RESET}"
             )
         elif launcher_config_arg:
@@ -285,16 +312,22 @@ def generate_launch_description():
 
         # ---- resolve physics engine (package / executable / node name) ---
         try:
-            engine_id, physics_package, physics_executable, physics_node_name = lu.resolve_physics_engine(
-                launcher_section,
-                default_engine="genie_sim_engine",
+            engine_id, physics_package, physics_executable, physics_executable_gui, physics_node_name = (
+                lu.resolve_physics_engine(
+                    launcher_section,
+                    default_engine="genie_sim_engine_isaacsim",
+                )
             )
         except ValueError as exc:
             print(f"{ERR_COLOR}{exc}{RESET}")
             sys.exit(1)
+
+        physics_launch_executable = physics_executable
+        if headless != "true" and physics_executable_gui:
+            physics_launch_executable = physics_executable_gui
         print(
-            f"{MSG_COLOR}[physics_isaacsim] engine: {engine_id} "
-            f"(package={physics_package}, executable={physics_executable}, name={physics_node_name}){RESET}"
+            f"{MSG_COLOR}[physics_backend] engine: {engine_id} "
+            f"(package={physics_package}, executable={physics_launch_executable}, name={physics_node_name}){RESET}"
         )
 
         # ---- resolve physics scene (may differ from scene_config) --------
@@ -303,22 +336,19 @@ def generate_launch_description():
             physics_scene_resolved = lu.resolve_bringup_config_file(physics_scene_from_yaml)
             if not physics_scene_resolved:
                 print(
-                    f"{ERR_COLOR}[physics_isaacsim] physics scene from YAML not found: "
+                    f"{ERR_COLOR}[physics_backend] physics scene from YAML not found: "
                     f"{physics_scene_from_yaml}{RESET}"
                 )
                 sys.exit(1)
             print(
-                f"{MSG_COLOR}[physics_isaacsim] physics scene (from launcher YAML): " f"{physics_scene_resolved}{RESET}"
+                f"{MSG_COLOR}[physics_backend] physics scene (from launcher YAML): " f"{physics_scene_resolved}{RESET}"
             )
         else:
             physics_scene_resolved = scene_config_resolved
 
         # ---- assets folder + stage dir -----------------------------------
         assets_folder = lu.resolve_assets_folder()
-        print(
-            f"{MSG_COLOR}[physics_isaacsim] assets_folder: {assets_folder} "
-            f"(from geniesim_assets.ASSETS_PATH){RESET}"
-        )
+        print(f"{MSG_COLOR}[physics_backend] assets_folder: {assets_folder}{RESET}")
         scene_stem = Path(physics_scene_resolved).stem
         stage_dir = os.path.abspath(os.path.join(assets_folder, "scenes", scene_stem))
         stage_manifest = os.path.join(stage_dir, "manifest.json")
@@ -326,12 +356,12 @@ def generate_launch_description():
         manifest_present = os.path.isfile(stage_manifest)
         if manifest_present:
             print(
-                f"{MSG_COLOR}[physics_isaacsim] stage manifest present: {stage_manifest}\n"
+                f"{MSG_COLOR}[physics_backend] stage manifest present: {stage_manifest}\n"
                 f"  assemble_scene will overwrite it (manifest is never cached).{RESET}"
             )
         else:
             print(
-                f"{MSG_COLOR}[physics_isaacsim] stage manifest absent: {stage_manifest} "
+                f"{MSG_COLOR}[physics_backend] stage manifest absent: {stage_manifest} "
                 f"— assemble_scene will create it.{RESET}"
             )
 
@@ -339,7 +369,7 @@ def generate_launch_description():
         # launch so post-mortem debugging always has the exact yaml that
         # drove this run, even after the user edits it.
         lu.stage_yaml_snapshot(stage_dir, physics_scene_resolved)
-        print(f"{MSG_COLOR}[physics_isaacsim] stage_manifest: {stage_manifest}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] stage_manifest: {stage_manifest}{RESET}")
 
         # ---- remappings --------------------------------------------------
         remapping_physics = [
@@ -371,6 +401,7 @@ def generate_launch_description():
             "physics_hz",
             "render_hz",
             "realtime_factor",
+            "num_envs",
             "physics_engine",
             "physics_solver",
             "physics_solver_substep",
@@ -382,6 +413,7 @@ def generate_launch_description():
             "physics_hz": physics_hz,
             "render_hz": render_hz,
             "realtime_factor": realtime_factor,
+            "num_envs": num_envs,
             "physics_engine": physics_engine,
             "physics_solver": physics_solver,
             "physics_solver_substep": physics_solver_substep,
@@ -401,6 +433,12 @@ def generate_launch_description():
             {
                 "stage_manifest": stage_manifest,
                 "fake_slam": "true" == fake_slam,
+                # Gripper model from the scene yaml, forwarded so engine-side
+                # consumers can select the matching end-effector handling. The
+                # split lgripper/rgripper mirror when the scene doesn't
+                # author separate hands.
+                "lgripper": lgripper,
+                "rgripper": rgripper,
                 # JSON-encode so it survives launch's flat-string parameter
                 # pipeline. Empty dict serializes to ``"{}"`` which the
                 # consumer treats as "no override". See
@@ -413,19 +451,31 @@ def generate_launch_description():
                 # mangles list-typed values).  Empty dict ``"{}"`` =
                 # "no override, use Newton's default pose".
                 "viewer_camera_json": json.dumps(_viewer_camera or {}),
+                # Path to the launcher YAML that produced this session's
+                # ros__parameters (or ``""`` when no launcher was
+                # provided).  ``plugins_params_path`` is the temp file
+                # bringup materialised from the launcher YAML at
+                # ``load_launcher_yaml`` above; threading its path
+                # through as its own ROS parameter lets engine-side
+                # consumers reference the exact file that produced their
+                # parameters.
+                "launcher_yaml_path": plugins_params_path or "",
                 **common_param,
                 **cli_overrides,
             }
         )
         if cli_overrides:
             print(
-                f"{MSG_COLOR}[physics_isaacsim] CLI overrides applied "
+                f"{MSG_COLOR}[physics_backend] CLI overrides applied "
                 f"on top of launcher yaml: {sorted(cli_overrides.keys())}{RESET}"
             )
 
-        physics_args = ros_log_args[:]
+        # Application flags must precede --ros-args; rclpy's lifecycle
+        # listener also parses this argv and rejects --gui in the ROS section.
+        physics_args = []
         if headless != "true":
             physics_args.append("--gui")
+        physics_args.extend(ros_log_args)
 
         nodes.append(
             TimerAction(
@@ -433,7 +483,7 @@ def generate_launch_description():
                 actions=[
                     Node(
                         package=physics_package,
-                        executable=physics_executable,
+                        executable=physics_launch_executable,
                         name=physics_node_name,
                         output="both",
                         parameters=physics_params,
@@ -445,7 +495,7 @@ def generate_launch_description():
         )
 
         # ---- industrial_bridge ------------------------------------------
-        print(f"{MSG_COLOR}[physics_isaacsim] industrial_bridge: {industrial_bridge!r}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] industrial_bridge: {industrial_bridge!r}{RESET}")
         if industrial_bridge:
             nodes.append(
                 lu.make_industrial_bridge_node(
@@ -458,7 +508,7 @@ def generate_launch_description():
 
         # ---- interaction_tools ------------------------------------------
         interaction_tools = lu.perform(context, "interaction_tools")
-        print(f"{MSG_COLOR}[physics_isaacsim] interaction_tools: {interaction_tools}{RESET}")
+        print(f"{MSG_COLOR}[physics_backend] interaction_tools: {interaction_tools}{RESET}")
         if interaction_tools == "true":
             nodes.append(
                 Node(
@@ -478,7 +528,7 @@ def generate_launch_description():
 
         # ---- render_ovrtx -----------------------------------------------
         active_renders = lu.resolve_active_renders(renders_from_yaml)
-        print(f"{MSG_COLOR}[physics_isaacsim] render (active={sorted(active_renders)}){RESET}")
+        print(f"{MSG_COLOR}[physics_backend] render (active={sorted(active_renders)}){RESET}")
 
         if "render_ovrtx" in active_renders:
             nodes.append(
@@ -503,6 +553,63 @@ def generate_launch_description():
             )
 
         # ---------------------------------------------------------------
+        # Prebaked-pipeline hook. When the scene yaml declares a
+        # ``robot.robot_source.prebaked.pipeline`` block, plumb it into
+        # the standard pipeline as an extra stage that runs after
+        # assemble_newton and before the runtime nodes. The hook is
+        # responsible for engine-specific artefacts the standard stages
+        # don't produce (e.g. ``robot_runtime.xml`` for the mujoco
+        # backend). ``assemble_scene`` / ``assemble_newton`` still run —
+        # single source of truth for render_layer.usda + manifest.json —
+        # and ``assemble_robot`` is skipped when ``prebaked.usda`` is
+        # set (see ``lu.needs_assemble_robot``).
+        # ---------------------------------------------------------------
+        try:
+            prebaked_pipeline = lu.resolve_prebaked_pipeline(_src)
+        except ValueError as exc:
+            print(f"{ERR_COLOR}{exc}{RESET}")
+            sys.exit(1)
+
+        # Launcher-YAML override:
+        # ``launcher.physics.engines.<engine>.assemble_hook`` lets a
+        # backend declare the assemble script it wants for the current
+        # scene, WITHOUT the scene YAML having to name the backend.
+        # Same block shape as ``robot.robot_source.prebaked.pipeline``
+        # (package / executable / name).  When present, takes
+        # precedence over the scene's ``prebaked.pipeline`` — the
+        # scene stays backend-neutral; the launcher owns "how to
+        # assemble for me".
+        _launcher_hook = _engine_cfg.get("assemble_hook") or {}
+        if isinstance(_launcher_hook, dict) and _launcher_hook.get("executable"):
+            launcher_hook = {
+                "package": str(_launcher_hook.get("package") or "").strip(),
+                "executable": str(_launcher_hook.get("executable") or "").strip(),
+                "name": str(_launcher_hook.get("name") or "").strip() or Path(_launcher_hook.get("executable")).stem,
+            }
+            missing = [k for k in ("package", "executable") if not launcher_hook[k]]
+            if missing:
+                print(
+                    f"{ERR_COLOR}[physics_backend] launcher.assemble_hook missing " f"required fields {missing}{RESET}"
+                )
+                sys.exit(1)
+            if prebaked_pipeline:
+                print(
+                    f"{MSG_COLOR}[physics_backend] launcher.assemble_hook overrides "
+                    f"scene.prebaked.pipeline (was "
+                    f"{prebaked_pipeline['package']}/{prebaked_pipeline['executable']}, "
+                    f"now {launcher_hook['package']}/{launcher_hook['executable']}){RESET}"
+                )
+            prebaked_pipeline = launcher_hook
+
+        if prebaked_pipeline:
+            print(
+                f"{MSG_COLOR}[physics_backend] prebaked.pipeline: "
+                f"package={prebaked_pipeline['package']}, "
+                f"executable={prebaked_pipeline['executable']}, "
+                f"name={prebaked_pipeline['name']}{RESET}"
+            )
+
+        # ---------------------------------------------------------------
         # Final orchestration: gate ALL runtime ``nodes`` behind the
         # assemble pipeline so they only start once the stage is ready.
         # ``assemble_scene`` ALWAYS runs (manifest is never cached);
@@ -522,22 +629,62 @@ def generate_launch_description():
         # ``nodes.append(...)`` above — otherwise late-appended nodes
         # (physics engine, render_ovrtx, etc.) silently never spawn.
         # ---------------------------------------------------------------
+        # ``assemble_style`` and ``assemble_pipeline`` are data-driven
+        # dispatch fields from the active engine's launcher-YAML block.
+        # Empty style falls through to the legacy built-in mapping;
+        # downstream backends either provide a standalone hook or name
+        # their registered core pipeline and import modules here.
+        assemble_style = ""
+        assemble_pipeline = {}
+        if isinstance(_engine_cfg, dict):
+            assemble_style = str(_engine_cfg.get("assemble_style") or "").strip()
+            raw_assemble_pipeline = _engine_cfg.get("assemble_pipeline")
+            assemble_pipeline = {} if raw_assemble_pipeline is None else raw_assemble_pipeline
+        if not isinstance(assemble_pipeline, dict):
+            print(f"{ERR_COLOR}[physics_backend] assemble_pipeline must be a mapping{RESET}")
+            sys.exit(1)
+
+        if assemble_pipeline and assemble_style != "registered_pipeline":
+            print(
+                f"{ERR_COLOR}[physics_backend] assemble_pipeline is only valid with "
+                f"assemble_style='registered_pipeline'{RESET}"
+            )
+            sys.exit(1)
+
+        if assemble_style == "registered_pipeline":
+            raw_robot_stage = assemble_pipeline.get("robot_stage")
+            if raw_robot_stage is not None and not isinstance(raw_robot_stage, str):
+                print(f"{ERR_COLOR}[physics_backend] assemble_pipeline.robot_stage must be a string{RESET}")
+                sys.exit(1)
+            robot_stage = (raw_robot_stage or "").strip()
+            needs_robot_assemble = bool(robot_stage) and lu.uses_urdf_assemble_pipeline(_src)
+        else:
+            needs_robot_assemble = lu.needs_assemble_robot(_src)
+
         a_scene, a_robot, gate_scene, gate_runtime = lu.make_assemble_pipeline(
             scene_resolved=physics_scene_resolved,
             stage_dir=stage_dir,
             assets_folder=assets_folder,
             always_regenerate_robot_usd=always_regenerate_robot_usd,
             runtime_nodes=nodes,
-            physics_engine=physics_engine,
-            assemble_robot_artefacts=[
-                os.path.join(stage_dir, "robot.urdf"),
-                os.path.join(stage_dir, "robot.usda"),
-            ],
+            physics_engine=engine_id,
+            launcher_config=launcher_config_arg,
+            assemble_style=assemble_style,
+            assemble_pipeline=assemble_pipeline,
+            assemble_robot_artefacts=(
+                [
+                    os.path.join(stage_dir, "robot.urdf"),
+                    os.path.join(stage_dir, "robot.usda"),
+                ]
+                if needs_robot_assemble
+                else None
+            ),
             urdf_text=(
                 lu.build_robot_description(robot_source=_src, resolved=_resolved)
                 if lu.uses_urdf_assemble_pipeline(_src)
                 else None
             ),
+            pre_runtime_hook=prebaked_pipeline,
         )
 
         if a_robot is not None:

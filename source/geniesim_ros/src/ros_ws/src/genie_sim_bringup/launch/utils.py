@@ -16,11 +16,13 @@ Python interpreter); it does NOT run inside the spawned nodes.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 import yaml
 from ament_index_python.packages import get_package_share_directory, PackageNotFoundError
@@ -42,15 +44,16 @@ RESET = "\033[0m"
 #
 # A scene yaml can point at any ROS package that ships the same xacro entry
 # point as the default via ``robot.robot_source.package`` and (optionally)
-# ``robot.robot_source.urdf.xacro_relpath``.  These constants mirror the
-# canonical defaults used by ``assemble_robot.py`` (DEFAULT_ROBOT_MODEL_PACKAGE
-# / DEFAULT_ROBOT_XACRO_RELPATH in that file); keep them in sync so the
+# ``robot.robot_source.urdf.xacro_entry``.  These constants mirror the
+# canonical defaults used by ``assemble/_robot_impl.py``
+# (DEFAULT_ROBOT_MODEL_PACKAGE / DEFAULT_ROBOT_XACRO_ENTRY in that file);
+# keep them in sync so the
 # assemble pipeline and the runtime ``robot_description`` builder resolve
 # the same xacro tree.
 # ---------------------------------------------------------------------------
 
 DEFAULT_ROBOT_MODEL_PACKAGE = "genie_sim_robot_model"
-DEFAULT_ROBOT_XACRO_RELPATH = "xacro/robot.xacro"
+DEFAULT_ROBOT_XACRO_ENTRY = "xacro/robot.xacro"
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +158,66 @@ def resolve_bringup_config_file(raw: str) -> str:
     return ""
 
 
+class _IncludeLoader(yaml.SafeLoader):
+    """SafeLoader that resolves the ``!include <path>`` tag.
+
+    Path is either absolute or relative to the *including* file's
+    directory (matches how humans read ``!include ../shared.yaml``).
+    Included files parse under this same loader class, so nested
+    ``!include`` chains work; a per-load ``_seen`` set guards cycles.
+    Everything else stays SafeLoader — no arbitrary Python
+    construction, no eval.
+
+    ``compose_node`` is overridden so ``!include`` scalars are
+    substituted with the target file's *node tree* during
+    composition, not converted to a Python value at construction
+    time. This is what makes ``<<: !include base.yaml`` work: PyYAML
+    processes merge keys during construction, before scalar
+    constructors run, so if the merge value is still a
+    tagged-scalar node the merge fails with "expected a mapping".
+    Substituting at compose time hands the merge an actual
+    ``MappingNode`` and everything just works.
+    """
+
+    _seen: set = set()
+
+    def compose_node(self, parent, index):
+        node = super().compose_node(parent, index)
+        if isinstance(node, yaml.ScalarNode) and node.tag == "!include":
+            ref = str(node.value).strip()
+            if not ref:
+                raise yaml.constructor.ConstructorError(
+                    None, None, "!include requires a non-empty path", node.start_mark
+                )
+            base_dir = os.path.dirname(os.path.abspath(self.name)) if getattr(self, "name", None) else os.getcwd()
+            resolved = ref if os.path.isabs(ref) else os.path.join(base_dir, ref)
+            resolved_abs = os.path.abspath(resolved)
+            if not os.path.isfile(resolved_abs):
+                raise yaml.constructor.ConstructorError(
+                    None,
+                    None,
+                    f"!include target does not exist: {ref!r} (resolved to {resolved_abs!r})",
+                    node.start_mark,
+                )
+            if resolved_abs in _IncludeLoader._seen:
+                raise yaml.constructor.ConstructorError(
+                    None, None, f"!include cycle detected at {resolved_abs!r}", node.start_mark
+                )
+            _IncludeLoader._seen.add(resolved_abs)
+            try:
+                with open(resolved_abs, encoding="utf-8") as f:
+                    sub_loader = _IncludeLoader(f)
+                    sub_loader.name = resolved_abs
+                    try:
+                        sub_node = sub_loader.get_single_node()
+                    finally:
+                        sub_loader.dispose()
+                return sub_node if sub_node is not None else node
+            finally:
+                _IncludeLoader._seen.discard(resolved_abs)
+        return node
+
+
 def load_launcher_yaml(path: str) -> Tuple[dict, dict, str]:
     """Split a launcher YAML into ``(launcher_section, ros_params_dict, ros_params_path)``.
 
@@ -165,6 +228,24 @@ def load_launcher_yaml(path: str) -> Tuple[dict, dict, str]:
       * per-node ``<node_name>: { ros__parameters: {...} }`` sections —
         forwarded verbatim to rclcpp.
 
+    Cross-file composition uses the ``!include <path>`` tag (custom
+    :class:`_IncludeLoader`) — path is absolute or relative to the
+    including file's directory. Combine with YAML's built-in merge
+    key to fold a base document into an overlay:
+
+    .. code-block:: yaml
+
+        # launcher_ovrtx_mujoco.yaml
+        <<: !include launcher_mujoco.yaml
+        # per-render node blocks the base doesn't have
+        render_ovrtx:
+          ros__parameters:
+            plugin: [genie_sim_render/RosImagePublisherPlugin]
+
+    ``<<:`` merges *shallowly*: nested keys under ``launcher:`` /
+    ``genie_sim_engine.ros__parameters`` do NOT recurse. To change a
+    nested value the overlay must re-emit that whole sub-mapping.
+
     The ``launcher:`` key is stripped from the second return value and the
     remaining dict is written to a temp YAML, whose path is returned as the
     third value (empty string if there are no per-node sections to forward).
@@ -172,7 +253,7 @@ def load_launcher_yaml(path: str) -> Tuple[dict, dict, str]:
     if not path:
         return {}, {}, ""
     with open(path, encoding="utf-8") as f:
-        full = yaml.safe_load(f) or {}
+        full = yaml.load(f, Loader=_IncludeLoader) or {}
     launcher_section = full.pop("launcher", {}) if isinstance(full, dict) else {}
     if not isinstance(launcher_section, dict):
         launcher_section = {}
@@ -226,20 +307,26 @@ def resolve_robot_params_from_scene(
     arm: str,
     gripper: str,
 ) -> dict[str, str]:
-    """Merge launch CLI defaults with ``robot.robot_source`` (scene wins when non-empty)."""
-    if not isinstance(robot_source, dict):
-        robot_source = {}
-    launch_defaults = {
-        "robot_model": robot_model,
-        "body": body,
-        "arm": arm,
-        "gripper": gripper,
-    }
-    out: dict[str, str] = {}
-    for key in _SCENE_ROBOT_PARAM_KEYS:
-        scene_val = _pick_robot_source_str(robot_source, key)
-        out[key] = scene_val if scene_val else launch_defaults[key]
-    return out
+    """Merge launch CLI defaults with ``robot.robot_source`` (scene wins when non-empty).
+
+    Thin BC shim over
+    :meth:`genie_sim_engine_core.schema.scene.SceneConfig.resolve_robot_params`;
+    new call sites should read the typed schema directly.
+    """
+    from genie_sim_engine_core.schema.scene import (
+        RobotSection as _RS,
+        RobotSource as _SchemaRobotSource,
+        SceneConfig as _SchemaSceneConfig,
+    )
+
+    rs = _SchemaRobotSource.from_dict(robot_source if isinstance(robot_source, dict) else {})
+    scene = _SchemaSceneConfig(robot=_RS(robot_source=rs))
+    return scene.resolve_robot_params(
+        robot_model=robot_model,
+        body=body,
+        arm=arm,
+        gripper=gripper,
+    )
 
 
 def uses_urdf_assemble_pipeline(robot_source: dict) -> bool:
@@ -259,8 +346,31 @@ def uses_urdf_assemble_pipeline(robot_source: dict) -> bool:
 
 
 def needs_assemble_robot(robot_source: dict) -> bool:
-    """Whether ``assemble_robot.py`` should convert URDF->USD for this scene."""
-    return uses_urdf_assemble_pipeline(robot_source)
+    """Whether the urdf_to_usd stage should convert URDF->USD for this scene.
+
+    Returns True when the URDF assemble pipeline is used AND the staged
+    URDF→USD product is the canonical physics input for ``assemble_scene``.
+
+    A ``robot.robot_source.prebaked.usda`` normally makes that product
+    unnecessary: the prebaked USDA is the canonical robot input for both
+    physics and rendering, so the URDF→USD stage is skipped entirely (while
+    xacro processing — ``uses_urdf_assemble_pipeline`` /
+    ``build_robot_description`` — still runs to populate ``/robot_description``
+    for RSP / MoveIt).
+
+    The exception is ``prebaked.visual_only: true``: there the prebaked USDA
+    drives rendering only, and physics still needs the staged URDF→USD
+    product, so this stage must run. ``_scene_impl.py`` mirrors the same
+    ``visual_only`` split when it picks ``robot_usda`` vs ``robot_visual``.
+    """
+    if not uses_urdf_assemble_pipeline(robot_source):
+        return False
+    prebaked = robot_source.get("prebaked") if isinstance(robot_source, dict) else None
+    if isinstance(prebaked, dict) and str(prebaked.get("usda") or "").strip():
+        # visual_only prebaked drives rendering only; physics still needs the
+        # staged URDF→USD product, so the stage must run.
+        return bool(prebaked.get("visual_only", False))
+    return True
 
 
 def build_urdf_xacro_mappings(robot_source: dict, resolved: dict[str, str]) -> dict[str, str]:
@@ -275,7 +385,7 @@ def build_urdf_xacro_mappings(robot_source: dict, resolved: dict[str, str]) -> d
         mappings["gripper"] = gripper
     urdf = robot_source.get("urdf") if isinstance(robot_source.get("urdf"), dict) else {}
     for k, v in urdf.items():
-        if k in {*_SCENE_ROBOT_PARAM_KEYS, "gripper", "mimic", "package", "xacro_relpath"}:
+        if k in {*_SCENE_ROBOT_PARAM_KEYS, "gripper", "mimic", "package", "xacro_entry"}:
             continue
         if isinstance(v, str) and v.strip():
             mappings.setdefault(k, v.strip())
@@ -533,9 +643,7 @@ def make_rviz_node(*, rviz_config_file: Path, common_param: dict, ros_log_args: 
     )
 
 
-def make_chassis_controller_node(
-    *, robot_model: str, body: str, common_param: dict, ros_log_args: Iterable[str]
-) -> Node:
+def make_chassis_controller_node(*, chassis: str, common_param: dict, ros_log_args: Iterable[str]) -> Node:
     """Standalone four-wheel-steering servo node.
 
     Loads the rclcpp::Node form of the servo from
@@ -545,14 +653,15 @@ def make_chassis_controller_node(
     this when the bringup graph doesn't include a controller_manager
     (teleop / navigation / dev rigs). For the ros2_control path, the
     controller plugin is spawned from ``genie_sim_moveit/launch/wbc.launch.py``
-    instead — same parameter schema (the per-variant ``<robot_model>_<body>.yaml``
-    files use ``/**`` so a single file drives both forms).
+    instead — same parameter schema (the shipped yamls use ``/**`` so
+    a single file drives both forms).
 
-    Config filename is derived from the scene yaml's ``robot_source``:
-    e.g. ``robot_model=genie, body=g2`` -> ``genie_g2.yaml`` in
-    ``genie_sim_controllers/config/``.
+    ``chassis`` selects the tuning file: ``4wd.yaml`` (four driven +
+    steered corners, full 4WD/4WS) or ``2wd.yaml`` (diagonal 2WD, two
+    driven corners + two passive casters). Scene yamls declare the
+    topology via ``robot.robot_source.chassis``; default is ``4wd``.
     """
-    chassis_config_name = f"{robot_model}_{body}.yaml"
+    chassis_config_name = f"{chassis}.yaml"
     chassis_controller_config = os.path.join(
         get_package_share_directory("genie_sim_controllers"),
         "config",
@@ -622,36 +731,31 @@ def make_industrial_bridge_node(
 #
 #   launcher:
 #     physics:
-#       engine: genie_sim_engine          # selector key (default if absent)
+#       engine: genie_sim_engine_isaacsim   # selector key (default if absent)
 #       engines:
-#         genie_sim_engine:
-#           package:    genie_sim_engine
-#           executable: genie_sim_engine.py
+#         genie_sim_engine_isaacsim:
+#           package:    genie_sim_engine_isaacsim
+#           executable: genie_sim_engine_isaacsim_node.py
 #           name:       genie_sim_engine
 #       industrial_bridge: ""              # optional bridge executable name
 #
-# ``resolve_physics_engine`` returns a 3-tuple (package, executable, name) for
+# ``resolve_physics_engine`` returns package/executable/name metadata for
+# the selected physics engine. Engines may optionally define
+# ``executable_gui``; callers should use it only for non-headless launches.
 # the active engine. When the YAML omits ``engine`` (or the whole
 # ``engines.<engine>`` block) we fall back to a sensible default for the
 # launch file in question — the caller passes ``default_*`` kwargs.
 #
-# Why the indirection: experimental.launch.py historically hard-coded
-# ``Node(package="genie_sim_engine", executable="genie_sim_engine.py")``,
-# which made it impossible to swap physics backends without editing python.
-# Surfacing the choice through the launcher YAML keeps the existing default
-# (genie_sim_engine) byte-for-byte compatible while letting downstream
-# distributions add new backends with a YAML edit alone.
+# Why the indirection: the physics-backend ``Node(package=…,
+# executable=…)`` is chosen entirely from the launcher YAML, so swapping
+# backends — or adding one in a downstream distribution — is a YAML edit
+# rather than a launch-file edit.
 
 DEFAULT_PHYSICS_ENGINES: dict[str, dict[str, str]] = {
-    "genie_sim_engine": {
-        "package": "genie_sim_engine",
-        "executable": "genie_sim_engine_isaacsim.py",
+    "genie_sim_engine_isaacsim": {
+        "package": "genie_sim_engine_isaacsim",
+        "executable": "genie_sim_engine_isaacsim_node.py",
         "name": "genie_sim_engine",
-    },
-    "mujoco_geniesim": {
-        "package": "mujoco_geniesim",
-        "executable": "mujoco_geniesim",
-        "name": "mujoco_geniesim",
     },
 }
 
@@ -660,8 +764,8 @@ def resolve_physics_engine(
     launcher_section: dict,
     *,
     default_engine: str,
-) -> Tuple[str, str, str, str]:
-    """Resolve (engine, package, executable, name) from the launcher YAML.
+) -> Tuple[str, str, str, str, str]:
+    """Resolve (engine, package, executable, executable_gui, name) from the launcher YAML.
 
     ``launcher_section`` is the dict returned by :func:`load_launcher_yaml`
     (its first element). The physics block is read at
@@ -700,6 +804,7 @@ def resolve_physics_engine(
 
     package = _pick("package")
     executable = _pick("executable")
+    executable_gui = str(engine_cfg.get("executable_gui") or defaults.get("executable_gui", "") or "").strip()
     name = _pick("name")
     missing = [k for k, v in (("package", package), ("executable", executable), ("name", name)) if not v]
     if missing:
@@ -708,7 +813,7 @@ def resolve_physics_engine(
             f"either fill them in the YAML or pick one of the built-in engines: "
             f"{sorted(DEFAULT_PHYSICS_ENGINES.keys())}"
         )
-    return engine, package, executable, name
+    return engine, package, executable, executable_gui, name
 
 
 def resolve_physics_scene(launcher_section: dict, engine: str) -> str:
@@ -729,6 +834,38 @@ def resolve_physics_scene(launcher_section: dict, engine: str) -> str:
     if not isinstance(engine_cfg, dict):
         return ""
     return str(engine_cfg.get("scene") or "").strip()
+
+
+def resolve_prebaked_pipeline(robot_source: dict) -> dict | None:
+    """Return the prebaked-assemble pipeline binding from scene yaml, or None.
+
+    Reads ``robot.robot_source.prebaked.pipeline``. Same shape as
+    ``launcher.physics.engines.<key>``: ``package`` / ``executable`` /
+    ``name``. Returns a dict with those three fields (all non-empty) when
+    the block is set, or ``None`` when ``prebaked`` is absent / empty /
+    has no ``pipeline`` sub-block — caller falls through to the standard
+    URDF->USD assemble pipeline in that case.
+
+    Raises :class:`ValueError` when ``prebaked.pipeline`` is set but
+    missing required fields, so a half-configured scene yaml fails loud
+    instead of silently falling back to the wrong path.
+    """
+    if not isinstance(robot_source, dict):
+        return None
+    prebaked = robot_source.get("prebaked")
+    if not isinstance(prebaked, dict) or not prebaked:
+        return None
+    pipeline = prebaked.get("pipeline")
+    if not isinstance(pipeline, dict) or not pipeline:
+        return None
+    out = {k: str(pipeline.get(k) or "").strip() for k in ("package", "executable", "name")}
+    missing = [k for k, v in out.items() if not v]
+    if missing:
+        raise ValueError(
+            f"robot.robot_source.prebaked.pipeline is missing required field(s) {missing}; "
+            f"set package/executable/name in the scene yaml."
+        )
+    return out
 
 
 def sanitized_usd_env() -> dict:
@@ -768,83 +905,84 @@ def make_assemble_pipeline(
     assemble_robot_artefacts: list[str] | None = None,
     physics_engine: str = "isaac_physx",
     urdf_text: str | None = None,
+    pre_runtime_hook: dict | None = None,
+    launcher_config: str = "",
+    assemble_style: str = "",
+    assemble_pipeline: dict | None = None,
 ) -> Tuple[Any, Any | None, Any | None, Any]:
-    """Build the assemble_scene / assemble_robot / assemble_newton gates.
+    """Build the assemble pipeline as a single core-CLI invocation.
 
-    Pipeline stages (in sequential order):
+    Backend stages belong to a pipeline registered at
+    :mod:`genie_sim_engine_core.assemble`. This helper emits a single
+    ``ExecuteProcess`` that dispatches through
+    ``python -m genie_sim_engine_core.assemble``; the pipeline runner
+    inside runs each stage, honours per-stage ``skip_reason`` (e.g.
+    ``UrdfToUsdStage`` self-skips when ``robot.robot_source.urdf`` is
+    absent), and writes a single ``manifest.json``.
 
-    * ``assemble_robot``  — URDF → USD conversion (skipped on cache hit)
-    * ``assemble_scene``  — stage assembly + manifest.json
-    * ``assemble_newton`` — Newton extras (cloth, soft body …)
-                           **only when ``physics_engine == "isaac_newton"``
-                           AND the scene yaml has a non-empty ``newton:``
-                           block**; exits 0 silently otherwise
-    * runtime nodes
-
-    All three stages gate on their predecessor's exit code — any non-zero
-    exit triggers an immediate ``Shutdown``.
-
-    Parameters
-    ----------
-    scene_resolved:
-        Resolved path to the scene config file passed to ``--scene``.
-    stage_dir:
-        Output directory for the assembled stage (``--output-dir``).
-    assets_folder:
-        Base asset path (``--base-path``).
-    always_regenerate_robot_usd:
-        If True, force assemble_robot to run even when cached artefacts exist.
-    runtime_nodes:
-        List of runtime ``Node`` / ``TimerAction`` objects that must start only
-        after the assemble pipeline completes.
-    assemble_robot_artefacts:
-        List of artefact paths for cache hit/miss detection.  ``None`` →
-        skip the robot pipeline entirely.  Empty list → always run.
-    urdf_text:
-        Current URDF (e.g. from :func:`build_robot_description`).  When
-        provided alongside ``assemble_robot_artefacts``, the pipeline
-        compares ``sha256(urdf_text)`` against ``<stage_dir>/urdf.sha256``
-        (written by ``assemble_robot.py`` on success) and forces a rebuild
-        on mismatch.  ``None`` → no URDF-content gate; cache decision
-        falls back to artefact presence only.
-    physics_engine:
-        Engine selector forwarded from the launcher.  When
-        ``"isaac_newton"``, ``assemble_newton.py`` is inserted as a
-        third stage between ``assemble_scene`` and the runtime nodes.
-        For all other engines the stage is a no-op (``assemble_newton``
-        exits 0 immediately because its internal gate short-circuits).
+    Cache-hit for a configured robot stage is preserved via the CLI's
+    ``--skip-stage <assemble_pipeline.robot_stage>`` flag: this helper computes the same
+    ``need_assemble_robot`` decision as before (missing artefacts /
+    URDF-hash mismatch / ``always_regenerate`` override) and, on a
+    cache hit, passes the skip flag so the pipeline runner bypasses
+    that stage.
 
     Returns
     -------
-    ``(assemble_scene_proc, assemble_robot_proc_or_None,
-       scene_gate_or_None, runtime_gate)``
+    ``(assemble_proc, None, None, gate_runtime)``
 
-    ``runtime_gate`` is always the outermost gate that eventually spawns
-    the runtime nodes. Its target is ``assemble_scene_proc`` in all cases,
-    but when ``physics_engine == "isaac_newton"`` it spawns
-    ``assemble_newton_proc`` (plus ``gate_after_newton``) instead of the
-    runtime nodes directly — the runtime nodes are then fired by
-    ``gate_after_newton``.
+    The 2nd and 3rd return values are always ``None`` in the migrated
+    form; they remain in the signature so callers that unpack the
+    tuple (``a_scene, a_robot, gate_scene, gate_runtime = ...``) keep
+    working during the migration window.
 
-    Caller pattern (unchanged from previous versions)::
+    Caller pattern (unchanged shape)::
 
         a_scene, a_robot, gate_scene, gate_runtime = \\
             lu.make_assemble_pipeline(...)
 
-        if a_robot is not None:
+        if a_robot is not None:            # never true after commit 5
             return [a_robot, gate_scene, gate_runtime]
-        return [a_scene, gate_runtime]
+        return [a_scene, gate_runtime]     # this is the always-taken path
     """
     from launch.actions import ExecuteProcess, RegisterEventHandler  # noqa: F401
     from launch.event_handlers import OnProcessExit
-    from launch.substitutions import PathJoinSubstitution
-    from launch_ros.substitutions import FindPackagePrefix
 
-    _pkg_lib = PathJoinSubstitution([FindPackagePrefix("genie_sim_engine"), "lib", "genie_sim_engine"])
-    _assemble_scene_py = PathJoinSubstitution([_pkg_lib, "assemble_scene.py"])
-    _assemble_robot_py = PathJoinSubstitution([_pkg_lib, "assemble_robot.py"])
-    _assemble_newton_py = PathJoinSubstitution([_pkg_lib, "assemble_newton.py"])
+    # Launcher-swap detection: read the previous manifest (if any) and
+    # compare its ``launcher_config`` stamp against this launch's
+    # value. On mismatch, force UrdfToUsdStage to re-run so the stage
+    # dir doesn't carry launcher-conditional artefacts from a
+    # different launcher (v2 protocol: robot.body_paths, backend-
+    # specific USD conversions, etc.). Missing / empty stamp on the
+    # old manifest is treated as mismatch — legacy bakes trigger one
+    # regen and thereafter cache correctly.
+    launcher_config_mismatch = False
+    prior_launcher = ""
+    manifest_path = os.path.join(stage_dir, "manifest.json")
+    if launcher_config and os.path.isfile(manifest_path):
+        try:
+            with open(manifest_path) as fh:
+                prior = json.load(fh)
+            prior_launcher = str(prior.get("launcher_config") or "")
+        except (OSError, json.JSONDecodeError):
+            prior_launcher = ""
+        launcher_config_mismatch = prior_launcher != launcher_config
+        if launcher_config_mismatch:
+            if prior_launcher:
+                print(
+                    f"{MSG_COLOR}[assemble_pipeline] launcher_config changed "
+                    f"({prior_launcher!r} -> {launcher_config!r}); "
+                    f"rebuilding stage dir{RESET}"
+                )
+            else:
+                print(
+                    f"{MSG_COLOR}[assemble_pipeline] existing manifest has no "
+                    f"launcher_config stamp; rebuilding stage dir under "
+                    f"{launcher_config!r}{RESET}"
+                )
 
+    # Cache-hit decision (unchanged) — controls whether the
+    # UrdfToUsdStage runs or gets --skip-stage'd.
     need_assemble_robot = False
     if assemble_robot_artefacts is not None:
         missing = [p for p in assemble_robot_artefacts if not os.path.isfile(p)]
@@ -871,7 +1009,7 @@ def make_assemble_pipeline(
                         f"{MSG_COLOR}[assemble_pipeline] no urdf hash stamp at "
                         f"{stamp_path}; building robot USD{RESET}"
                     )
-            elif not missing:
+            elif not missing and not launcher_config_mismatch:
                 print(
                     f"{MSG_COLOR}[assemble_pipeline] urdf hash matches "
                     f"({current_hash[:12]}); skipping robot USD rebuild{RESET}"
@@ -883,6 +1021,8 @@ def make_assemble_pipeline(
             need_assemble_robot = True
         elif urdf_hash_mismatch:
             need_assemble_robot = True
+        elif launcher_config_mismatch:
+            need_assemble_robot = True
         elif len(assemble_robot_artefacts) == 0:
             need_assemble_robot = True
         else:
@@ -890,133 +1030,239 @@ def make_assemble_pipeline(
 
     extra_env = sanitized_usd_env()
 
-    assemble_scene_proc = ExecuteProcess(
-        cmd=[
-            "python3",
-            _assemble_scene_py,
-            "--scene",
-            scene_resolved,
-            "--output-dir",
-            stage_dir,
-            "--base-path",
-            assets_folder,
-        ],
-        output="screen",
-        name="assemble_scene",
-        additional_env=extra_env,
-    )
+    if assemble_pipeline is not None and not isinstance(assemble_pipeline, dict):
+        raise ValueError("assemble_pipeline must be a mapping")
+    if assemble_pipeline and assemble_style != "registered_pipeline":
+        raise ValueError("assemble_pipeline is only valid with assemble_style='registered_pipeline'")
 
-    assemble_robot_proc: ExecuteProcess | None = None
-    gate_scene: RegisterEventHandler | None = None
-    if need_assemble_robot:
-        assemble_robot_proc = ExecuteProcess(
+    # ``assemble_style`` is a data-driven dispatch flag threaded from the
+    # launcher YAML (``launcher.physics.engines.<engine>.assemble_style``).
+    # ``"standalone_hook"`` — the scene's ``prebaked.pipeline`` hook is
+    # the entire assemble (skip the Kit pipeline).  Any backend that
+    # ships a prebaked scene + its own assemble script declares this,
+    # so bringup stays engine-name-agnostic.  Launcher YAMLs declare this
+    # flag directly; no engine-name mapping lives here.
+    if assemble_style == "standalone_hook":
+        if not pre_runtime_hook:
+            raise ValueError(
+                f"physics_engine={physics_engine!r} declares "
+                f"``assemble_style: standalone_hook`` but the scene has no "
+                f"``robot.robot_source.prebaked.pipeline`` — the hook is "
+                f"required to produce the stage_dir artefacts (bringup will "
+                f"NOT invoke the Kit pipeline for standalone-hook engines)."
+            )
+        from launch.substitutions import PathJoinSubstitution
+        from launch_ros.substitutions import FindPackagePrefix
+
+        hook_pkg = pre_runtime_hook["package"]
+        hook_exe = pre_runtime_hook["executable"]
+        hook_name = pre_runtime_hook["name"]
+        hook_path = PathJoinSubstitution([FindPackagePrefix(hook_pkg), "lib", hook_pkg, hook_exe])
+        hook_proc = ExecuteProcess(
             cmd=[
                 "python3",
-                _assemble_robot_py,
+                hook_path,
                 "--scene",
                 scene_resolved,
                 "--output-dir",
                 stage_dir,
+                "--base-path",
+                assets_folder,
+                *(["--launcher-config", launcher_config] if launcher_config else []),
             ],
             output="screen",
-            name="assemble_robot",
+            name=hook_name,
             additional_env=extra_env,
         )
-        gate_scene = RegisterEventHandler(
+        gate_runtime = RegisterEventHandler(
             OnProcessExit(
-                target_action=assemble_robot_proc,
+                target_action=hook_proc,
                 on_exit=lambda event, context: (
-                    [assemble_scene_proc]
+                    list(runtime_nodes)
                     if event.returncode == 0
-                    else [Shutdown(reason="assemble_robot failed — aborting launch")]
+                    else [Shutdown(reason=f"{hook_name} failed — aborting launch")]
+                ),
+            )
+        )
+        return hook_proc, None, None, gate_runtime
+
+    # Pipeline name — one per physics-engine family. Downstream backends
+    # declare ``assemble_style: registered_pipeline`` plus the registered
+    # pipeline name and module imports in launcher YAML, keeping this shared
+    # bringup independent from their package names. Legacy built-in engines
+    # continue to use the mapping below.
+    #
+    # ``physics_engine`` here is the launcher-yaml selector — same set
+    # of tokens the runtime-node executable is chosen by (``newton``
+    # picks the Kit-free newton-standalone runtime, ``isaac_newton`` /
+    # ``isaac_physx`` pick the Kit path). Do NOT confuse with
+    # ``physics_solver`` (mjvbd / mjxpbd / mjwarp / fsvbd / avbd / … —
+    # a within-newton knob the runtime reads from ROS params;
+    # irrelevant to which assemble pipeline runs).
+    # Accept both the short-token form (`isaac_newton`, `isaac_physx`,
+    # `newton`) and the package-name form (`genie_sim_engine_isaacsim`,
+    # `genie_sim_engine_newton`) that ships in the launcher YAMLs' physics.engine.
+    _ISAAC_PIPELINE_ENGINES = frozenset(
+        {
+            "isaac_newton",  # Kit + Newton path
+            "isaac_physx",  # Kit + PhysX path
+            "newton",  # newton-standalone (Kit-free) — same asset needs
+            "genie_sim_engine_isaacsim",  # package-name form (Kit path)
+            "genie_sim_engine_newton",  # package-name form (newton-standalone)
+        }
+    )
+    if assemble_style == "registered_pipeline":
+        pipeline_cfg = assemble_pipeline or {}
+        pipeline_name = str(pipeline_cfg.get("name") or "").strip()
+        raw_modules = pipeline_cfg.get("modules") or []
+        raw_robot_stage = pipeline_cfg.get("robot_stage")
+        if raw_robot_stage is not None and not isinstance(raw_robot_stage, str):
+            raise ValueError("assemble_pipeline.robot_stage must be a string")
+        robot_stage = (raw_robot_stage or "").strip()
+        if not pipeline_name:
+            raise ValueError(
+                f"physics_engine={physics_engine!r} declares "
+                "``assemble_style: registered_pipeline`` but "
+                "``assemble_pipeline.name`` is empty"
+            )
+        if not isinstance(raw_modules, list):
+            raise ValueError("assemble_pipeline.modules must be a list of Python module names")
+        pipeline_modules = [str(module).strip() for module in raw_modules if str(module).strip()]
+        if not pipeline_modules:
+            raise ValueError(
+                f"physics_engine={physics_engine!r} declares "
+                "``assemble_style: registered_pipeline`` but "
+                "``assemble_pipeline.modules`` is empty"
+            )
+    elif assemble_style:
+        raise ValueError(
+            f"physics_engine={physics_engine!r} declares unknown "
+            f"assemble_style={assemble_style!r}; expected "
+            "'standalone_hook' or 'registered_pipeline'"
+        )
+    elif physics_engine in _ISAAC_PIPELINE_ENGINES:
+        pipeline_name = "isaac_newton"
+        pipeline_modules = ["genie_sim_engine_newton.assemble", "genie_sim_engine_isaacsim.assemble"]
+        robot_stage = "urdf_to_usd"
+    else:
+        # Unknown engine — refuse rather than silently pick a pipeline.
+        # Add it here (and register a matching @Pipeline.register
+        # factory in the backend) when a new Kit-family engine lands.
+        #
+        # ``standalone_hook`` engines (declared via
+        # ``assemble_style: standalone_hook`` in the launcher YAML)
+        # return above without reaching this branch.
+        raise ValueError(
+            f"[assemble_pipeline] physics_engine={physics_engine!r} has no "
+            f"registered pipeline mapping. Known: "
+            f"{sorted(_ISAAC_PIPELINE_ENGINES)}"
+            f". Downstream backends must set ``assemble_style`` to "
+            f"'standalone_hook' or 'registered_pipeline' in their launcher YAML."
+        )
+
+    cmd = [
+        "python3",
+        "-m",
+        "genie_sim_engine_core.assemble",
+        "--scene",
+        scene_resolved,
+        "--output-dir",
+        stage_dir,
+        "--base-path",
+        assets_folder,
+        "--physics-engine",
+        pipeline_name,
+    ]
+    for pipeline_module in pipeline_modules:
+        cmd += ["--pipeline-module", pipeline_module]
+    if launcher_config:
+        # Stamp launcher_config onto manifest so a subsequent launch
+        # under a different launcher YAML detects the swap and bypasses
+        # the URDF→USD cache. Empty ⇒ omit; the manifest stamp then
+        # stays empty and the next launch will treat that as mismatch.
+        cmd += ["--launcher-config", launcher_config]
+    if assemble_robot_artefacts is not None and not need_assemble_robot and robot_stage:
+        # Cache hit — skip the configured robot stage explicitly. When
+        # assemble_robot_artefacts is None the caller signals "no robot
+        # pipeline needed at all" and the stage's own skip_reason handles it.
+        cmd += ["--skip-stage", robot_stage]
+
+    assemble_proc = ExecuteProcess(
+        cmd=cmd,
+        output="screen",
+        name="assemble_pipeline",
+        additional_env=extra_env,
+    )
+
+    # Optional post-assemble hook — a per-scene stage declared via
+    # ``robot.robot_source.prebaked.pipeline``.  Runs after the Kit
+    # pipeline for engines that need extra per-scene artefacts on top
+    # of the standard ``robot.usda`` + ``render_layer.usda`` + manifest.
+    # Kept as a separate ExecuteProcess so existing hook contracts stay
+    # unchanged.
+    hook_proc: ExecuteProcess | None = None
+    gate_after_hook: RegisterEventHandler | None = None
+    if pre_runtime_hook:
+        from launch.substitutions import PathJoinSubstitution
+        from launch_ros.substitutions import FindPackagePrefix
+
+        hook_pkg = pre_runtime_hook["package"]
+        hook_exe = pre_runtime_hook["executable"]
+        hook_name = pre_runtime_hook["name"]
+        hook_path = PathJoinSubstitution([FindPackagePrefix(hook_pkg), "lib", hook_pkg, hook_exe])
+        hook_proc = ExecuteProcess(
+            cmd=[
+                "python3",
+                hook_path,
+                "--scene",
+                scene_resolved,
+                "--output-dir",
+                stage_dir,
+                "--base-path",
+                assets_folder,
+                *(["--launcher-config", launcher_config] if launcher_config else []),
+            ],
+            output="screen",
+            name=hook_name,
+            additional_env=extra_env,
+        )
+        gate_after_hook = RegisterEventHandler(
+            OnProcessExit(
+                target_action=hook_proc,
+                on_exit=lambda event, context: (
+                    list(runtime_nodes)
+                    if event.returncode == 0
+                    else [Shutdown(reason=f"{hook_name} failed — aborting launch")]
                 ),
             )
         )
 
-    # -----------------------------------------------------------------------
-    # Newton extras stage (cloth / soft body / …)
-    #
-    # assemble_newton.py is always launched when physics_engine ==
-    # "isaac_newton" — the script itself gates on whether the scene yaml
-    # carries a non-empty ``newton:`` block and exits 0 silently if not.
-    # That keeps the launch graph unconditional (no Python-side YAML parse
-    # at launch-description-build time) while still being a fast no-op for
-    # rigid-only Newton scenes.
-    #
-    # The gate topology when newton is active:
-    #
-    #   assemble_scene_proc  ──(exit 0)──►  assemble_newton_proc
-    #                                              │
-    #                                        (exit 0)
-    #                                              ▼
-    #                                        runtime_nodes
-    #
-    # ``gate_runtime`` is the handler on assemble_scene_proc in BOTH cases
-    # (newton active or not). Callers never need to know which topology is
-    # in effect — they always include [a_scene, gate_runtime] or
-    # [a_robot, gate_scene, gate_runtime].
-    # -----------------------------------------------------------------------
-    # -----------------------------------------------------------------------
-    # Newton extras stage (cloth / soft body / …)
-    #
-    # ``assemble_newton.py`` is ALWAYS chained — it self-gates on whether
-    # the scene yaml carries a non-empty ``newton.entries`` block and
-    # exits 0 silently if not. This keeps the launch graph independent
-    # of ``physics_engine`` (an earlier revision gated this stage on
-    # ``physics_engine ∈ {isaac_newton, newton}``, which broke when the
-    # value lived in the launcher yaml's ``ros__parameters`` block and
-    # the launch-description-build phase only saw the
-    # DeclareLaunchArgument default — a non-newton value would skip
-    # assemble_newton, and the engine would boot with ``particles=0``
-    # even though the runtime ros params correctly said ``newton``).
-    # The script is cheap (~50–100 ms) for non-cloth scenes, so
-    # always-on is the right trade.
-    #
-    # Gate topology:
-    #
-    #   assemble_scene_proc  ──(exit 0)──►  assemble_newton_proc
-    #                                              │
-    #                                        (exit 0)
-    #                                              ▼
-    #                                        runtime_nodes
-    # -----------------------------------------------------------------------
-    assemble_newton_proc = ExecuteProcess(
-        cmd=[
-            "python3",
-            _assemble_newton_py,
-            "--scene",
-            scene_resolved,
-            "--output-dir",
-            stage_dir,
-            "--base-path",
-            assets_folder,
-        ],
-        output="screen",
-        name="assemble_newton",
-        additional_env=extra_env,
-    )
-    gate_after_newton = RegisterEventHandler(
-        OnProcessExit(
-            target_action=assemble_newton_proc,
-            on_exit=lambda event, context: (
-                list(runtime_nodes)
-                if event.returncode == 0
-                else [Shutdown(reason="assemble_newton failed — aborting launch")]
-            ),
+    if hook_proc is not None:
+        gate_runtime = RegisterEventHandler(
+            OnProcessExit(
+                target_action=assemble_proc,
+                on_exit=lambda event, context: (
+                    [hook_proc, gate_after_hook]
+                    if event.returncode == 0
+                    else [Shutdown(reason="assemble pipeline failed — aborting launch")]
+                ),
+            )
         )
-    )
-    gate_runtime = RegisterEventHandler(
-        OnProcessExit(
-            target_action=assemble_scene_proc,
-            on_exit=lambda event, context: (
-                [assemble_newton_proc, gate_after_newton]
-                if event.returncode == 0
-                else [Shutdown(reason="assemble_scene failed — aborting launch")]
-            ),
+    else:
+        gate_runtime = RegisterEventHandler(
+            OnProcessExit(
+                target_action=assemble_proc,
+                on_exit=lambda event, context: (
+                    list(runtime_nodes)
+                    if event.returncode == 0
+                    else [Shutdown(reason="assemble pipeline failed — aborting launch")]
+                ),
+            )
         )
-    )
 
-    return assemble_scene_proc, assemble_robot_proc, gate_scene, gate_runtime
+    # Second and third slots stay None so unchanged callers keep their
+    # ``if a_robot is not None`` branch dead-but-safe during migration.
+    return assemble_proc, None, None, gate_runtime
 
 
 # ---------------------------------------------------------------------------
@@ -1069,7 +1315,12 @@ def resolve_scene_yaml_robot_params(
     scene_arg = perform(context, "scene").strip()
     scene_resolved = resolve_bringup_config_file(scene_arg) if scene_arg else ""
     if required and not scene_resolved:
-        print(f"{ERR_COLOR}scene is required (YAML scene file){RESET}")
+        if scene_arg:
+            print(
+                f"{ERR_COLOR}scene YAML not found: {scene_arg} (check the path/name or rebuild genie_sim_bringup){RESET}"
+            )
+        else:
+            print(f"{ERR_COLOR}scene is required (YAML scene file){RESET}")
         sys.exit(1)
     scene_yaml: dict = {}
     if scene_resolved:
@@ -1109,22 +1360,31 @@ def resolve_scene_yaml_robot_params(
 def resolve_assets_folder() -> str:
     """Return the assets folder path.
 
-    Prefers ``./assets`` relative to cwd when it exists; falls back to
-    ``geniesim_assets.ASSETS_PATH`` from the installed module.
-    Hard-exits if neither is available.
+    Search order:
+      1. ``./assets`` relative to cwd.
+      2. ``/geniesim_assets`` provisioned by runtime.
+      3. ``geniesim_assets.ASSETS_PATH`` from the legacy module.
+
+    Hard-exits if none is available.
     """
     local_assets = os.path.abspath("./assets")
     if os.path.isdir(local_assets):
         print(f"{MSG_COLOR}assets folder: {local_assets} (local){RESET}")
         return local_assets
 
+    global_assets = "/geniesim_assets"
+    if os.path.isdir(global_assets):
+        print(f"{MSG_COLOR}assets folder: {global_assets} (industrial){RESET}")
+        return global_assets
+
     try:
         import geniesim_assets as _ga  # type: ignore
     except ImportError as exc:
         print(
-            f"{ERR_COLOR}./assets not found and geniesim_assets is not installed.\n"
+            f"{ERR_COLOR}No usable assets folder found.\n"
+            f"  Checked: {local_assets}, {global_assets}, geniesim_assets.ASSETS_PATH.\n"
             f"  ImportError: {exc}\n"
-            f"  Fix: create an ./assets directory or ``pip install geniesim_assets``.{RESET}"
+            f"  Fix: provide ./assets, provision /geniesim_assets, or install geniesim_assets.{RESET}"
         )
         sys.exit(1)
     assets_path = getattr(_ga, "ASSETS_PATH", None)
@@ -1215,14 +1475,14 @@ def build_robot_description(
     """Return the robot_description XML string for the active scene.
 
     Reads ``robot.robot_source.package`` (default :data:`DEFAULT_ROBOT_MODEL_PACKAGE`)
-    and ``robot.robot_source.urdf.xacro_relpath`` (default
-    :data:`DEFAULT_ROBOT_XACRO_RELPATH`) to locate the xacro entry, then
+    and ``robot.robot_source.urdf.xacro_entry`` (default
+    :data:`DEFAULT_ROBOT_XACRO_ENTRY`) to locate the xacro entry, then
     processes it with the mappings derived from ``robot_source`` / ``resolved``
     via :func:`build_urdf_xacro_mappings`.  Returns ``""`` on any failure
     (caller should treat as a fatal launch error).
 
-    The same ``package`` / ``xacro_relpath`` contract is honored by
-    ``assemble_robot.py`` at offline-cache build time, so the runtime
+    The same ``package`` / ``xacro_entry`` contract is honored by
+    the urdf_to_usd stage at offline-cache build time, so the runtime
     ``robot_description`` here resolves to the same xacro tree the
     cached ``robot.usda`` was produced from.
     """
@@ -1234,18 +1494,18 @@ def build_robot_description(
 
     pkg = (robot_source.get("package") or "").strip() or DEFAULT_ROBOT_MODEL_PACKAGE
     urdf_block = robot_source.get("urdf") if isinstance(robot_source.get("urdf"), dict) else {}
-    xacro_relpath = (urdf_block.get("xacro_relpath") or "").strip() or DEFAULT_ROBOT_XACRO_RELPATH
+    xacro_entry = (urdf_block.get("xacro_entry") or "").strip() or DEFAULT_ROBOT_XACRO_ENTRY
     try:
         pkg_share = Path(get_package_share_directory(pkg))
     except Exception as exc:
         print(f"{ERR_COLOR}Failed to locate robot description package {pkg!r}: {exc}{RESET}")
         return ""
-    robot_xacro_file = pkg_share / xacro_relpath
+    robot_xacro_file = pkg_share / xacro_entry
     if not robot_xacro_file.exists():
         print(f"{ERR_COLOR}xacro entry not found: {robot_xacro_file}{RESET}")
         return ""
     xacro_args = build_urdf_xacro_mappings(robot_source, resolved)
-    print(f"{MSG_COLOR}xacro_args (description): {xacro_args} (package={pkg}, relpath={xacro_relpath}){RESET}")
+    print(f"{MSG_COLOR}xacro_args (description): {xacro_args} (package={pkg}, entry={xacro_entry}){RESET}")
     if "robot_model" not in xacro_args:
         print(f"{ERR_COLOR}no robot_model in scene.robot_source (or launch arg){RESET}")
         return ""
@@ -1281,6 +1541,117 @@ def build_robot_description(
     return rd
 
 
+def _isaacsim_render_env() -> tuple[str, dict]:
+    """Interpreter + environment for ``isaacsim_render.py``.
+
+    Honor the CLI's ``$GENIESIM_PY_CMD`` convention. When Isaac is installed
+    in the launch interpreter, use that interpreter and preserve its ROS
+    underlay. Otherwise use bundled ``omni_python`` and remove incompatible
+    system-Python native packages as described below.
+
+    The launch process has already sourced the system ROS tree, which puts
+    ``/opt/ros/<distro>/lib/python3.<system>`` on ``PYTHONPATH`` and its ``lib``
+    on ``LD_LIBRARY_PATH``, and a robotics image typically also has
+    ``/opt/openrobots/lib/python3.<system>/site-packages`` (Pinocchio & co.) on
+    ``PYTHONPATH``. All of those are built for the system Python, so inside
+    Isaac's own interpreter they make ``import rclpy`` resolve to the wrong ABI
+    (``ModuleNotFoundError: No module named 'rclpy._rclpy_pybind11'``) and make
+    ``import torch`` abort in ``torch._C`` (``SystemError: ... bad call flags``).
+    Strip every entry tagged with the system interpreter's ``pythonX.Y`` (not
+    just ``/opt/ros``) and let the node use Isaac's bundled bridge instead — the
+    same thing the ``omni_python`` wrapper does, repeated here so the node works
+    even when that wrapper is an older revision that lacks the stripping.
+
+    Two further Isaac Sim 5.1 packaging defects are compensated for here, since
+    neither is fixable from the node itself:
+
+    * ``/isaac-sim/setup_ros_env.sh`` only appends the ROS2-bridge lib dir to
+      ``LD_LIBRARY_PATH`` inside an ``if [ -z "$ROS_DISTRO" ]`` guard, but the
+      ``omni_python`` wrapper exports ``ROS_DISTRO`` before sourcing it — so the
+      guard never fires and ``rclpy`` fails to load
+      (``libament_index_cpp.so: cannot open shared object file``).
+    * Isaac Sim's bundled numpy carries a dangling ``libgfortran`` symlink,
+      which breaks every extension that imports numpy unless it has been
+      repaired in the image.
+
+    Returns ``(interpreter, extra_env)``.
+    """
+
+    import importlib.metadata
+    import shlex
+
+    interpreter = os.environ.get("GENIESIM_PY_CMD") or ""
+    if not interpreter:
+        try:
+            importlib.metadata.distribution("isaacsim")
+        except importlib.metadata.PackageNotFoundError:
+            interpreter = "omni_python" if shutil.which("omni_python") else (sys.executable or "python3")
+        else:
+            interpreter = sys.executable or "python3"
+
+    executable = shutil.which(shlex.split(interpreter)[0])
+    if executable and os.path.realpath(executable) == os.path.realpath(sys.executable):
+        return interpreter, {}
+
+    # The launch process runs under the system Python (e.g. 3.10 in the Humble
+    # tree). Any PYTHONPATH / LD_LIBRARY_PATH entry that carries that version's
+    # ``pythonX.Y`` marker holds extensions built against the system ABI; inside
+    # Isaac Sim's own interpreter (3.11 on 5.1, 3.12 on 6.2) they load the wrong
+    # ABI. It is NOT enough to strip ``/opt/ros`` — sibling robotics trees like
+    # ``/opt/openrobots/lib/python3.10/site-packages`` are just as poisonous:
+    # they inject a system-Python numpy/torch that makes ``torch._C`` abort with
+    # ``SystemError: ... bad call flags``. Strip by the system interpreter's own
+    # ``pythonX.Y`` tag so every such tree is dropped, whatever its prefix.
+    _sys_pytag = f"python{sys.version_info.major}.{sys.version_info.minor}"
+
+    # ...but exempt this repo's own colcon overlay. ``ament_cmake`` installs a
+    # package's python modules under ``<prefix>/lib/pythonX.Y/site-packages``,
+    # which carries the system ``pythonX.Y`` tag too — so on a base image whose
+    # system Python (which built the workspace) differs from Isaac's bundled
+    # interpreter (here: 3.12 workspace vs 3.11 ``omni_python``), the blanket
+    # strip above deletes the entry that holds ``genie_sim_engine_core`` and the
+    # render node dies with ``No module named 'genie_sim_engine_core'``. The
+    # overlay holds only geniesim's own pure-python packages — never a
+    # system-ABI numpy/torch/rclpy — so keeping it is safe under Isaac's
+    # interpreter. ``COLCON_PREFIX_PATH`` lists exactly these overlay prefixes
+    # (the ROS underlay at ``/opt/ros`` is not among them and stays stripped).
+    _ws_prefixes = tuple(p for p in os.environ.get("COLCON_PREFIX_PATH", "").split(":") if p)
+
+    def _under_workspace(path: str) -> bool:
+        return any(path == pre or path.startswith(pre + os.sep) for pre in _ws_prefixes)
+
+    def _strip_system_python(value: str) -> str:
+        keep = []
+        for p in value.split(":"):
+            if not p:
+                continue
+            if _under_workspace(p):
+                keep.append(p)
+                continue
+            if p.startswith("/opt/ros/") or _sys_pytag in p:
+                continue
+            keep.append(p)
+        return ":".join(keep)
+
+    extra_env: dict = {}
+    # The colcon overlay tree (genie_sim_engine_core, the sibling render module)
+    # is on PYTHONPATH; ``_strip_system_python`` preserves it (see above) while
+    # dropping the system-Python entries that would break Isaac's interpreter.
+    extra_env["PYTHONPATH"] = _strip_system_python(os.environ.get("PYTHONPATH", ""))
+
+    ld_library_path = _strip_system_python(os.environ.get("LD_LIBRARY_PATH", ""))
+    isaac_root = Path("/isaac-sim")
+    if isaac_root.is_dir():
+        distro = os.environ.get("ROS_DISTRO", "jazzy")
+        bridge_lib = isaac_root / "exts" / "isaacsim.ros2.bridge" / distro / "lib"
+        if bridge_lib.is_dir() and str(bridge_lib) not in ld_library_path.split(":"):
+            ld_library_path = f"{ld_library_path}:{bridge_lib}" if ld_library_path else str(bridge_lib)
+        extra_env.setdefault("ROS_DISTRO", distro)
+    extra_env["LD_LIBRARY_PATH"] = ld_library_path
+
+    return interpreter, extra_env
+
+
 def make_render_isaacsim_node(
     *,
     stage_manifest: str,
@@ -1298,6 +1669,8 @@ def make_render_isaacsim_node(
     ``renders:`` list in the launcher YAML.
     """
     from launch.actions import TimerAction
+
+    interpreter, render_env = _isaacsim_render_env()
 
     isaacsim_parameters: list = []
     if plugins_params_path:
@@ -1321,6 +1694,8 @@ def make_render_isaacsim_node(
                 parameters=isaacsim_parameters,
                 remappings=[("~/free_cam_pose", f"/{physics_node_name}/viewer/camera_pose")],
                 arguments=list(ros_log_args),
+                prefix=interpreter if interpreter != "isaacsim_render.py" else None,
+                additional_env=render_env,
             )
         ],
     )
@@ -1339,22 +1714,32 @@ def make_render_ovrtx_node(
 
     The OVRTX render node reads the same ``stage_manifest`` produced by
     ``assemble_scene``, ensuring a single source of truth for asset paths.
-    ``ovrtx_root`` is discovered by filesystem inspection of ``site-packages``;
+    ``ovrtx_root`` is discovered from the active Python import specification;
     we intentionally avoid ``import ovrtx`` here because importing the package
     runs ``register_schema_paths()`` which writes to ``PXR_PLUGINPATH_NAME``
     in the launch process's env and corrupts every child (notably
     ``assemble_scene``) with ``TfType::AddAlias`` collisions on
     ``ParticleField*``.
     """
-    import site
+    import importlib.util
+
     from launch.actions import TimerAction
 
     ovrtx_root_default = ""
-    for site_dir in site.getsitepackages() + [site.getusersitepackages()]:
-        candidate = os.path.join(site_dir, "ovrtx", "bin")
-        if os.path.isdir(candidate):
-            ovrtx_root_default = candidate
-            break
+    ovrtx_spec = importlib.util.find_spec("ovrtx")
+    if ovrtx_spec is not None and ovrtx_spec.submodule_search_locations:
+        for package_dir in ovrtx_spec.submodule_search_locations:
+            candidate = os.path.realpath(os.path.join(package_dir, "bin"))
+            if os.path.isfile(os.path.join(candidate, "libovrtx-dynamic.so")):
+                ovrtx_root_default = candidate
+                break
+
+    render_env = {}
+    if ovrtx_root_default:
+        inherited_library_path = os.environ.get("LD_LIBRARY_PATH", "")
+        render_env["LD_LIBRARY_PATH"] = os.pathsep.join(
+            part for part in (ovrtx_root_default, inherited_library_path) if part
+        )
 
     ovrtx_parameters: list = []
     if plugins_params_path:
@@ -1382,6 +1767,7 @@ def make_render_ovrtx_node(
                 parameters=ovrtx_parameters,
                 remappings=[("~/free_cam_pose", f"/{physics_node_name}/viewer/camera_pose")],
                 arguments=list(ros_log_args),
+                additional_env=render_env,
             )
         ],
     )

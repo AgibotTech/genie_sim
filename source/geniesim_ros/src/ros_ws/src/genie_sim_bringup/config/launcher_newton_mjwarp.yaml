@@ -1,6 +1,6 @@
 # GenieSim launcher config — Newton standalone, MuJoCo-Warp rigid-body solver.
 #
-# Runs genie_sim_engine_newton.py Kit-free.  MuJoCo-Warp is an implicit
+# Runs genie_sim_engine_newton_node.py Kit-free.  MuJoCo-Warp is an implicit
 # integrator built for stiff articulated bodies: single-pass convergence,
 # stable at high Hz, no iteration count tuning required.
 #
@@ -23,11 +23,11 @@
 #   ovrtx   — In-process OVRTX RTX render (kit-free); publishes
 #             <cam.topic>/image_raw + camera_info via gsi::RosBridge
 #             from a dedicated render thread.  See docs/ovrtx_sync.md.
-#   rerun   — TODO: Rerun gRPC stream (falls back to none)
+#   rerun   — accepted name, not implemented; falls back to none
 #
-# Note: physics_engine_visualizer:=ovrtx still requires headless:=false
-# (treated as a non-headless visualizer for forward compatibility with a
-# future GUI).  The kit visualizer was removed when newton-standalone
+# Note: physics_engine_visualizer:=ovrtx still requires headless:=false —
+# it is treated as a non-headless visualizer.  The kit visualizer was
+# removed when newton-standalone
 # went Kit-free; use physics_engine:=isaac_newton for the Kit viewport.
 #
 # Usage — headless (default):
@@ -54,15 +54,27 @@ launcher:
     engine: genie_sim_engine_newton
     engines:
       genie_sim_engine_newton:
-        package: genie_sim_engine
-        executable: genie_sim_engine_newton.py
-        name: genie_sim_engine_newton
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
     industrial_bridge: ""
   renders: []
 
-genie_sim_engine_newton:
+genie_sim_engine:
   ros__parameters:
-    # Visualizer: none | newton | ovrtx | rerun (todo)
+    # ---- physics profile ----------------------------------------------
+    # Which tuning profile in ``genie_sim_engine_core/config/`` this session
+    # loads.  A bare filename resolves against that directory; an absolute
+    # path is also accepted for a profile kept outside the package.
+    #
+    # Say it explicitly even when it names the default.  Until 2026-08-21 no
+    # launcher set this key at all, so ``session.py`` fell back to the base
+    # profile for every one of them and ``physics_params_rlinf.yaml`` shipped
+    # with zero readers — twice a knob was added to it and was inert, and
+    # nothing in a bring-up log said so.
+    physics_params_file: physics_params.yaml
+
+    # Visualizer: none | newton | ovrtx | rerun (not implemented)
     physics_engine_visualizer: newton
 
     physics_solver: mujoco-warp
@@ -72,6 +84,7 @@ genie_sim_engine_newton:
     # fast manipulation; drop to 60 Hz if the scene has many contacts.
     realtime_factor: 1.0
     physics_hz: 100.0
+    dds_hz: 100.0
 
     # Render rate.  Drives:
     #  * newton GL ViewerGL frame cadence
@@ -134,6 +147,77 @@ genie_sim_engine_newton:
     # mujoco_pd_ke: 50000.0
     # mujoco_pd_kd: 500.0
 
-    # Note: MuJoCo internal contact buffers (njmax, nconmax) are hardcoded in
-    # lifecycle.py (SolverMuJoCo constructor).  If you see "nefc overflow" or
-    # "nconmax overflow" in the log, increase njmax/nconmax there.
+    # MuJoCo internal constraint buffers.  njmax = max constraint Jacobian
+    # rows (contacts + limits + equality); nconmax = max active contact
+    # pairs.  Under-allocation produces `nefc overflow` spam and SILENTLY
+    # DROPS contacts, so raise these if the adapter logs overflow.
+    #
+    # 0 = leave it to the adapter, and the two mjwarp adapters read that
+    # differently: the stock `mujoco-warp` adapter (what this launcher
+    # selects) keeps its fixed 1024 / 512 defaults, while
+    # `mujoco-warp-multi-env` auto-scales with the per-env body count.
+    # Either way the adapter logs the values it ended up with.
+    # mujoco_njmax: 0
+    # mujoco_nconmax: 0
+
+    # -----------------------------------------------------------------
+    # step_mode — WHEN a physics tick is allowed to run
+    # -----------------------------------------------------------------
+    # The tick body is identical in every mode.  Only the gate in front
+    # of it changes, so a mode is a pacing policy and nothing else:
+    # commands still apply, contacts still resolve, publishes still go
+    # out on the same channels.  See docs/step_modes.md for the full
+    # treatment; the modes live in engine_core/common/pacing.py.
+    #
+    #   realtime   (DEFAULT)  wall clock, scaled by realtime_factor.
+    #              What this engine has always done.  Leave it unset and
+    #              nothing about this launcher changes.
+    #
+    #   lockstep   one command == exactly step_lockstep_ticks physics
+    #              ticks, published on the last tick of the burst.  For
+    #              RL training, where the unit of work is a step, not a
+    #              second: the trainer's step rate sets the sim rate, and
+    #              a slow policy update no longer means the sim ran ahead
+    #              of the action that was supposed to cause it.
+    #
+    #   freerun    no pacing at all — step as fast as the hardware goes.
+    #              Benchmarking and offline replay.  Nothing throttles
+    #              publishing either, so expect to saturate DDS.
+    #
+    # A typo here RAISES at startup rather than falling back to the
+    # default.  That is deliberate and differs from the tri-state
+    # contact_publish_* strings: a wrong contact scope publishes
+    # slightly wrong topics, whereas a wrong step mode silently
+    # redefines what "one training step" means and every number the run
+    # produces is then wrong with nothing in the log to show it.
+    #
+    # step_mode: realtime
+
+    # Seconds of no command before the loop pauses.  realtime ONLY;
+    # ignored by the other modes.  0.0 (default) = never pause, which is
+    # the historical behaviour.
+    #
+    # Arms only AFTER the first command arrives, so bring-up is never
+    # gated by it — a scene that takes 40 s to load will not trip a 5 s
+    # timeout.  A pending reset counts as activity.  While paused the
+    # loop stops stepping and stops publishing /clock, so anything
+    # downstream running on sim time stops with it; that is the point,
+    # but it does mean a paused engine looks like a hung one to a
+    # consumer that is not expecting it.
+    #
+    # The pause is NOT charged to spin_ms — an unbounded wait would
+    # otherwise land as a single enormous sample and destroy the
+    # max/p95/p99 the perf triage in docs/perf.md relies on.
+    #
+    # step_idle_timeout: 0.0
+
+    # Physics ticks bought by one command in lockstep mode.  0 (default)
+    # = the pacer's own default.  Ignored by the other modes.
+    #
+    # This is the RL step size in physics ticks: at physics_hz 100 and
+    # step_lockstep_ticks 10, one command advances sim time by 100 ms.
+    # Set it to match the trainer's control period — a mismatch does not
+    # error, it just means the episode timeline is not what the trainer
+    # thinks it is.
+    #
+    # step_lockstep_ticks: 0

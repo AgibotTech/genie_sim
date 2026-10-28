@@ -1,4 +1,4 @@
-# GenieSim launcher config — Isaac Sim 6.0 with Isaac's Newton wrapper
+# GenieSim launcher config — Isaac Sim 6.x with Isaac's Newton wrapper
 # (isaacsim.physics.newton, rigid-body bridge only) + OVRtx renderer.
 #
 # Usage:
@@ -16,7 +16,7 @@
 #
 # physics_solver choices (isaac_newton only):
 #   mujoco-warp (only supported value; pinned at choices=["mujoco-warp"]
-#                in physics_isaacsim.launch.py — wrong values fail at launch)
+#                in physics_backend.launch.py — wrong values fail at launch)
 #
 # Newton's NewtonConfig defaults to 600 Hz; 200 Hz is a practical
 # starting point — tune up if your scene is simple, down if GPU budget
@@ -24,29 +24,42 @@
 #
 # CLI args defined here in ``genie_sim_engine.ros__parameters`` are
 # defaults that ``key:=value`` on the ros2 launch CLI overrides. See
-# physics_isaacsim.launch.py's ``_OVERRIDABLE_FROM_YAML`` set.
+# physics_backend.launch.py's ``_OVERRIDABLE_FROM_YAML`` set.
 launcher:
   physics:
-    engine: genie_sim_engine
+    engine: genie_sim_engine_isaacsim
     engines:
-      genie_sim_engine:
-        package: genie_sim_engine
-        executable: genie_sim_engine_isaacsim.py
+      genie_sim_engine_isaacsim:
+        package: genie_sim_engine_isaacsim
+        executable: genie_sim_engine_isaacsim_node.py
         name: genie_sim_engine
     industrial_bridge: ""
   renders: ["render_ovrtx"]
 
 genie_sim_engine:
   ros__parameters:
+    # ---- physics profile ----------------------------------------------
+    # Which tuning profile in ``genie_sim_engine_core/config/`` this session
+    # loads.  A bare filename resolves against that directory; an absolute
+    # path is also accepted for a profile kept outside the package.
+    #
+    # Say it explicitly even when it names the default.  Until 2026-08-21 no
+    # launcher set this key at all, so ``session.py`` fell back to the base
+    # profile for every one of them and ``physics_params_rlinf.yaml`` shipped
+    # with zero readers — twice a knob was added to it and was inert, and
+    # nothing in a bring-up log said so.
+    physics_params_file: physics_params.yaml
+
     # Isaac Sim's Newton wrapper (isaacsim.physics.newton). Override per
     # run with ``physics_engine:=…`` on the CLI.
     physics_engine: isaac_newton
     # MuJoCo-Warp is the only supported solver for the Newton wrapper in
-    # Isaac Sim 6.0. Pinned at choices=["mujoco-warp"] in the launch file.
+    # Isaac Sim 6.x. Pinned at choices=["mujoco-warp"] in the launch file.
     physics_solver: mujoco-warp
     # 200 Hz: practical default per the header note above.
     realtime_factor: 1.0
     physics_hz: 100.0
+    dds_hz: 100.0
     # 10 mjwarp substeps per 10 ms outer frame → dt_solver = 1 ms,
     # matching the pure-MuJoCo regime that was verified stable for
     # this robot's PD gains. Cranking physics_hz instead would pay
@@ -58,6 +71,20 @@ genie_sim_engine:
     # RTX submode that still has shadows + denoise; the default debug
     # viewport. Switch to ``pathtrace`` / ``offline`` for screenshots.
     render_mode: raster
+
+    # -----------------------------------------------------------------
+    # step_mode — WHEN a physics tick is allowed to run
+    # -----------------------------------------------------------------
+    # realtime (default) = wall clock, scaled by realtime_factor; the
+    # historical behaviour and what this launcher wants.  lockstep and
+    # freerun exist for RL training and benchmarking respectively — see
+    # docs/step_modes.md, and launcher_newton_mjwarp.yaml for the fully
+    # commented version of this block.  An unrecognised value RAISES at
+    # startup rather than silently falling back.
+    #
+    # step_mode: realtime
+    # step_idle_timeout: 0.0     # realtime only; 0 = never pause
+    # step_lockstep_ticks: 0     # lockstep only; 0 = pacer default
 
 render_ovrtx:
   ros__parameters:
