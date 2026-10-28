@@ -7,7 +7,7 @@ images via OVRtx and publishes them on ROS 2 image topics.
 
 | Mode | Where it runs | When you'd pick it |
 |---|---|---|
-| **Inline OVRtx** | Inside the Newton-standalone physics process (`InlineOvrtxVisualizer` in `genie_sim_engine`) | Newton-standalone runs (`launcher_newton_*`). Zero-copy `body_q → omni:xform` via Warp; no IPC. |
+| **Inline OVRtx** | Inside the Newton-standalone physics process (`InlineOvrtxVisualizer` in `genie_sim_engine_newton`) | Newton-standalone runs (`launcher_newton_*`). Zero-copy `body_q → omni:xform` via Warp; no IPC. |
 | **Standalone OVRtx node** | Separate ROS process (`render_ovrtx`, this package) | Isaac Sim runs (`launcher_ovrtx_isaac_*`). Physics and rendering get independent CPU/GPU budgets. |
 
 Both modes consume the **same `manifest.json`** schema (cameras,
@@ -18,6 +18,25 @@ A Python alternative — `render_isaacsim` — is also packaged for
 Isaac-Sim-native rendering. Both `render_ovrtx` and `render_isaacsim`
 publish the same topic shape.
 
+For paused Newton evaluation, an independent Isaac6 snapshot worker accepts
+the real Newton viewer geometry through a private Pipe and returns rendered
+RGB arrays for independent sensor/observer cameras. An authored visual robot
+reference replaces its Newton instance rows, retaining original MDL materials,
+UVs and texture maps while fresh Newton body poses drive its links. Procedural
+wok/stove/food geometry retains its source RGB; those objects originally have
+no image textures. The worker does not run physics. See [snapshot renderer](docs/snapshot_renderer.md)
+for its launch, protocol and cleanup contract.
+
+Build only the Isaac Python workers without requiring an OVRTX SDK:
+
+```bash
+colcon build --packages-select genie_sim_render --cmake-args -DGENIE_SIM_RENDER_BUILD_OVRTX=OFF
+```
+
+The option defaults to `ON`, retaining the existing OVRTX C++ node/plugin
+build. With `OFF`, Python entry points and docs are installed, and snapshot
+pytest can still run when `BUILD_TESTING` is enabled.
+
 ## Topics
 
 - `<camera_topic>/image_raw` — RGB (`sensor_msgs/Image`)
@@ -25,7 +44,8 @@ publish the same topic shape.
 - `<camera_topic>/camera_info` — intrinsics (`sensor_msgs/CameraInfo`)
 - `<node_ns>/free_cam_pose` — interactive free-camera pose
   (`geometry_msgs/PoseStamped`)
-- `/tf_render` — per-body local transforms from the engine
+- `/tf_scene` — per-body render transforms; absolute prim paths are used
+  directly, while MuJoCo body names resolve through the manifest map
 
 ## First-run warmup
 
@@ -40,11 +60,11 @@ start instantly.
 - Adding a new render plugin (`pluginlib` — see
   `RosImagePublisherPlugin`).
 - Changing topic conventions or `manifest.json` schema.
-- Modifying the `/tf_render` protocol or free-cam pose handling.
+- Modifying the `/tf_scene` protocol or free-cam pose handling.
 - Working on the C++ OVRtx node (`src/render_node.cpp`) or the Python
   Isaac Sim node (`scripts/isaacsim_render.py`).
 
 ## Mechanics
 
 See [AGENTS.md](AGENTS.md) for the manifest schema, plugin
-registration, `/tf_render` protocol details, and routing rules.
+registration, `/tf_scene` protocol details, and routing rules.

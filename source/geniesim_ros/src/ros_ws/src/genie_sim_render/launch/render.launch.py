@@ -93,7 +93,12 @@ def _launch_setup(context):
                     }
                 ],
                 remappings=[
-                    ("~/free_cam_pose", "/mujoco_geniesim/viewer/camera_pose"),
+                    # Match the rviz plugin / view_robot.rviz / ovrtx visualizer
+                    # default topic so the FreeCam follows RViz when this
+                    # launch file is used standalone. bringup overrides this
+                    # via make_render_ovrtx_node when the physics node name
+                    # differs.
+                    ("~/free_cam_pose", "/genie_sim_engine/viewer/camera_pose"),
                 ],
             )
         )

@@ -32,12 +32,14 @@ public:
       node_->create_publisher<sensor_msgs::msg::CameraInfo>(topic + "/camera_info", 10);
   }
 
-  void publish_camera_image(const std::string & topic, const CameraImageMsg & msg) override
+  void publish_camera_image(
+    const std::string & topic, const CameraImageMsgConstPtr & msg_ptr) override
   {
     auto it = img_pubs_.find(topic);
-    if (it == img_pubs_.end()) {
+    if (it == img_pubs_.end() || !msg_ptr) {
       return;
     }
+    const CameraImageMsg & msg = *msg_ptr;
     auto ros_msg = std::make_unique<sensor_msgs::msg::Image>();
     ros_msg->header.stamp.sec = static_cast<int32_t>(msg.timestamp);
     ros_msg->header.stamp.nanosec =
@@ -48,6 +50,7 @@ public:
     ros_msg->encoding = msg.encoding;
     ros_msg->is_bigendian = false;
     ros_msg->step = msg.step;
+    // sensor_msgs::Image must own its data.
     ros_msg->data.assign(msg.data.begin(), msg.data.end());
     it->second.publish(std::move(ros_msg));
   }
