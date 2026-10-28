@@ -7,7 +7,7 @@
 Dispatched by four CLI commands:
 
 * ``geniesim docker``    — default alias for ``docker5.1``.
-* ``geniesim docker6.0`` — Isaac Sim 6.0 variant (geniesim4) — **incoming, not implemented yet**.
+* ``geniesim docker6.2`` — Isaac Sim 6.2 variant (geniesim4).
 * ``geniesim docker5.1`` — Isaac Sim 5.1 variant (geniesim3).
 * ``geniesim docker4.5`` — Isaac Sim 4.5 variant (geniesim2 E.O.L.).
 
@@ -26,7 +26,7 @@ Subcommands:
 * ``into``    — ``docker exec -it <container> bash``.
 * ``logs``    — ``docker logs [-f] <container>``.
 
-Container name and image tag are variant-specific (see ``_VARIANTS``). Both can
+Container name and image tag are variant-specific (see :data:`VARIANTS`). Both can
 be overridden via env vars ``GENIESIM_CONTAINER`` / ``GENIESIM_IMAGE`` for
 parity with the shell scripts the verbs delegate to.
 """
@@ -37,7 +37,10 @@ import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
+from typing import Mapping
 
 from geniesim_cli import _env
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
@@ -52,57 +55,155 @@ _CHINA_NVCR_REGISTRY = "nvcr.m.daocloud.io/nvidia"
 _CHINA_APT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu"
 _CHINA_PIP_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
 
-_VARIANTS: dict[str, dict] = {
-    "": {
-        "dir": "docker",
-        "dockerfile": "Dockerfile",
-        "image": "registry.agibot.com/genie-sim/geniesim4:latest",
-        "container": "geniesim4",
-        # geniesim4 / Isaac Sim 6.0 is the incoming variant: Dockerfile is
-        # a placeholder, image is not published, runtime is unverified.
-        # Marked here so ``run()`` can refuse to dispatch it.
-        "implemented": False,
-        "env": {
-            "ROS_DISTRO": "jazzy",
-            "GENIESIM_PY_CMD": "python3",
-            "GENIESIM_BREAK_SYSTEM_PKGS": "1",
-            "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit",
-            "GENIESIM_EXTRA_CACHE_DIRS": "kit pip numba",
-            "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache",
-            "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache",
-        },
-    },
-    "4.5": {
-        "dir": "docker",
-        "dockerfile": "Dockerfile.4.5",
-        "image": "registry.agibot.com/genie-sim/geniesim2:latest",
-        "container": "geniesim2",
-        "env": {
-            "ROS_DISTRO": "humble",
-            "GENIESIM_PY_CMD": "python3",
-            "GENIESIM_BREAK_SYSTEM_PKGS": "1",
-            "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.10/dist-packages/isaacsim/kit",
-            "GENIESIM_EXTRA_CACHE_DIRS": "",
-            "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.10/dist-packages/isaacsim/kit/cache",
-            "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.10/dist-packages/ovrtx/bin/cache",
-        },
-    },
-    "5.1": {
-        "dir": "docker",
-        "dockerfile": "Dockerfile.5.1",
-        "image": "registry.agibot.com/genie-sim/geniesim3:latest",
-        "container": "geniesim3",
-        "env": {
-            "ROS_DISTRO": "jazzy",
-            "GENIESIM_PY_CMD": "omni_python",
-            "GENIESIM_BREAK_SYSTEM_PKGS": "0",
-            "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit",
-            "GENIESIM_EXTRA_CACHE_DIRS": "kit pip numba",
-            "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache",
-            "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache",
-        },
-    },
-}
+
+# ---------------------------------------------------------------------------
+# Public variant registry
+#
+# ``Variant`` + ``VARIANTS`` + ``get_variant`` + ``variant_env`` are the
+# stable API for downstream tooling that layers on top of geniesim_cli —
+# in particular ``geniesim_cli_industrial``, which reuses these env vars
+# so both CLIs launch containers with the same runtime baseline. Do not
+# rename or repurpose fields without a deprecation path.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Variant:
+    """Build + runtime config for one Isaac Sim variant.
+
+    Fields
+    ------
+    dockerfile : filename under ``dir`` (relative to the repo root).
+    image      : docker image tag used for pull/build/run.
+    container  : default container name for ``up``/``into``.
+    env        : runtime env vars passed to ``start.sh`` and forwarded
+                 into the container by ``entrypoint.sh``. Read-only view
+                 (``MappingProxyType``); mutations raise. Excluded from
+                 ``__hash__`` because mappings aren't hashable — kept in
+                 ``__eq__`` so two Variants with different env still
+                 compare unequal (hash collisions are permitted).
+    implemented: ``False`` enables an acknowledgement prompt before dispatch.
+    dir        : docker subdir (currently always ``"docker"``; kept as a
+                 field for future flexibility, e.g. per-variant subdir).
+    isaacsim_series : optional base-image spec resolved with its matching wheel.
+    """
+
+    dockerfile: str
+    image: str
+    container: str
+    env: Mapping[str, str] = field(default_factory=dict, hash=False)
+    implemented: bool = True
+    dir: str = "docker"
+    isaacsim_series: str | None = None
+
+    def __post_init__(self) -> None:
+        # Enforce read-only env at construction time so ``dataclasses.replace(v,
+        # env={...})`` — which bypasses the registry-level ``MappingProxyType``
+        # wrapping — still produces an immutable Variant.
+        if not isinstance(self.env, MappingProxyType):
+            object.__setattr__(self, "env", MappingProxyType(dict(self.env)))
+
+
+VARIANTS: Mapping[str, Variant] = MappingProxyType(
+    {
+        "": Variant(
+            dockerfile="Dockerfile",
+            image="registry.agibot.com/genie-sim/geniesim4:latest",
+            container="geniesim4",
+            implemented=True,
+            isaacsim_series="6.2.0.1",
+            env=MappingProxyType(
+                {
+                    "ROS_DISTRO": "jazzy",
+                    "GENIESIM_PY_CMD": "python3",
+                    "GENIESIM_BREAK_SYSTEM_PKGS": "1",
+                    "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit",
+                    "GENIESIM_EXTRA_CACHE_DIRS": "kit pip numba",
+                    "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache",
+                    "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache",
+                }
+            ),
+        ),
+        "4.5": Variant(
+            dockerfile="Dockerfile.4.5",
+            image="registry.agibot.com/genie-sim/geniesim2:latest",
+            container="geniesim2",
+            env=MappingProxyType(
+                {
+                    "ROS_DISTRO": "humble",
+                    "GENIESIM_PY_CMD": "python3",
+                    "GENIESIM_BREAK_SYSTEM_PKGS": "1",
+                    "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.10/dist-packages/isaacsim/kit",
+                    "GENIESIM_EXTRA_CACHE_DIRS": "",
+                    "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.10/dist-packages/isaacsim/kit/cache",
+                    "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.10/dist-packages/ovrtx/bin/cache",
+                }
+            ),
+        ),
+        "5.1": Variant(
+            dockerfile="Dockerfile.5.1",
+            image="registry.agibot.com/genie-sim/geniesim3:latest",
+            container="geniesim3",
+            env=MappingProxyType(
+                {
+                    "ROS_DISTRO": "jazzy",
+                    "GENIESIM_PY_CMD": "omni_python",
+                    "GENIESIM_BREAK_SYSTEM_PKGS": "0",
+                    "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit",
+                    "GENIESIM_EXTRA_CACHE_DIRS": "kit pip numba",
+                    "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache",
+                    "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache",
+                }
+            ),
+        ),
+    }
+)
+
+
+def get_variant(name: str) -> Variant:
+    """Return the :class:`Variant` for ``name``.
+
+    ``name`` is the variant key (``""``, ``"4.5"``, ``"5.1"``). Raises
+    ``KeyError`` with a helpful message on unknown names. Prefer this
+    over ``VARIANTS[name]`` at the boundary of another package so the
+    error path stays consistent.
+    """
+    try:
+        return VARIANTS[name]
+    except KeyError:
+        known = ", ".join(sorted(f"'{k}'" for k in VARIANTS)) or "(none)"
+        raise KeyError(f"unknown docker variant '{name}' (known: {known})") from None
+
+
+def variant_env(name: str) -> Mapping[str, str]:
+    """Return the runtime env dict for a variant.
+
+    Narrow accessor for downstream CLIs (``geniesim_cli_industrial``)
+    that only need the env vars — they don't have to know about the
+    rest of the :class:`Variant` shape.
+    """
+    return get_variant(name).env
+
+
+# Legacy dict-of-dicts alias — kept for one deprecation cycle so
+# out-of-tree callers that still poke at ``_VARIANTS`` don't break
+# silently. New code should use :data:`VARIANTS` / :func:`get_variant`
+# / :func:`variant_env`.
+_VARIANTS: Mapping[str, Mapping[str, object]] = MappingProxyType(
+    {
+        name: MappingProxyType(
+            {
+                "dir": v.dir,
+                "dockerfile": v.dockerfile,
+                "image": v.image,
+                "container": v.container,
+                "env": v.env,
+                "implemented": v.implemented,
+            }
+        )
+        for name, v in VARIANTS.items()
+    }
+)
 
 _active_variant: str = ""
 # Command word the user typed at the CLI ("docker", "docker5.1", ...).
@@ -116,13 +217,13 @@ def _cmd_label() -> str:
 
 
 def _image() -> str:
-    v = _VARIANTS[_active_variant]
-    return os.environ.get("GENIESIM_IMAGE", v["image"])
+    v = get_variant(_active_variant)
+    return os.environ.get("GENIESIM_IMAGE", v.image)
 
 
 def _container() -> str:
-    v = _VARIANTS[_active_variant]
-    return os.environ.get("GENIESIM_CONTAINER", v["container"])
+    v = get_variant(_active_variant)
+    return os.environ.get("GENIESIM_CONTAINER", v.container)
 
 
 def _repo_root() -> Path:
@@ -147,8 +248,8 @@ def _repo_root() -> Path:
 
 
 def _docker_dir() -> Path:
-    v = _VARIANTS[_active_variant]
-    return _repo_root() / v["dir"]
+    v = get_variant(_active_variant)
+    return _repo_root() / v.dir
 
 
 def _find_assets_src() -> str:
@@ -205,30 +306,92 @@ def _print_usage() -> None:
     print()
     print(f"{BOLD}Flags:{RST}")
     print(f"  {WHITE}--china{RST}  {DIM}use daocloud (nvcr) + tuna (apt/pip) mirrors during build{RST}")
+    v_series = get_variant(_active_variant).isaacsim_series
+    if v_series:
+        print(f"  {WHITE}--isaacsim{RST} {DIM}<spec>{RST}  {DIM}resolve Isaac Sim pins (default: {v_series}){RST}")
+        print(f"  {WHITE}--no-resolve{RST}       {DIM}use Dockerfile ARG defaults{RST}")
     print()
     print(f"{BOLD}Environment overrides:{RST}")
-    v = _VARIANTS[_active_variant]
-    print(f"  {WHITE}GENIESIM_IMAGE{RST}      {DIM}image tag (default: {v['image']}){RST}")
-    print(f"  {WHITE}GENIESIM_CONTAINER{RST}  {DIM}container name (default: {v['container']}){RST}")
+    v = get_variant(_active_variant)
+    print(f"  {WHITE}GENIESIM_IMAGE{RST}      {DIM}image tag (default: {v.image}){RST}")
+    print(f"  {WHITE}GENIESIM_CONTAINER{RST}  {DIM}container name (default: {v.container}){RST}")
     print(f"  {WHITE}GENIESIM_WORKSPACE{RST}  {DIM}host path bind-mounted at /workspace (default: cwd){RST}")
     print(f"  {WHITE}GENIESIM_CACHE_ROOT{RST} {DIM}host path for Isaac Sim cache (default: ~/docker/isaac-sim){RST}")
+    print(f"  {WHITE}GENIESIM_ISAACSIM_TAG{RST}         {DIM}pin the NGC base tag, skipping resolution{RST}")
+    print(f"  {WHITE}GENIESIM_ISAACSIM_PIP_VERSION{RST} {DIM}pin the PyPI wheel (set both or neither){RST}")
+
+
+_VARIANT_PYTHON_TAG = {"": "cp312", "5.1": "cp312", "4.5": "cp310"}
+
+
+def _isaacsim_build_args(spec: str | None) -> list[str]:
+    """``--build-arg`` pair for the Isaac Sim pins, or ``[]`` to leave the
+    Dockerfile's literal ``ARG`` defaults alone.
+
+    Three ways to get a concrete pair, in precedence order:
+
+    1. ``GENIESIM_ISAACSIM_TAG`` / ``GENIESIM_ISAACSIM_PIP_VERSION`` — both
+       must be set; skips the network entirely.
+    2. ``spec`` resolved against nvcr.io + pypi.nvidia.com.
+    3. Nothing — the ``ARG`` defaults in the Dockerfile apply.
+
+    A resolution failure is a warning, never fatal: offline builds must keep
+    behaving exactly as they did before the resolver existed.
+    """
+    tag = os.environ.get("GENIESIM_ISAACSIM_TAG")
+    wheel = os.environ.get("GENIESIM_ISAACSIM_PIP_VERSION")
+    if tag and wheel:
+        print(f"   {DIM}Isaac Sim:{RST}  {CYAN}tag {tag}, wheel {wheel}{RST} {DIM}(from env){RST}")
+    elif tag or wheel:
+        print(f"   {YELLOW}⚠️  set both GENIESIM_ISAACSIM_TAG and GENIESIM_ISAACSIM_PIP_VERSION, or neither{RST}")
+        return []
+    elif spec is None:
+        return []
+    else:
+        from geniesim_cli import _isaacsim
+
+        python_tag = _VARIANT_PYTHON_TAG.get(_active_variant)
+        resolved = _isaacsim.resolve(spec, python_tag=python_tag)
+        if resolved is None:
+            print(f"   {YELLOW}⚠️  could not resolve Isaac Sim {spec}; using the Dockerfile ARG defaults{RST}")
+            return []
+        tag, wheel = resolved
+        print(f"   {DIM}Isaac Sim:{RST}  {CYAN}{spec} → tag {tag}, wheel {wheel}{RST}")
+
+    # Echoed above on purpose: with a floating spec, the build log is the
+    # only record of what the pins actually resolved to.
+    return ["--build-arg", f"ISAACSIM_TAG={tag}", "--build-arg", f"ISAACSIM_PIP_VERSION={wheel}"]
 
 
 def _do_build(extra: list[str]) -> None:
     repo_root = _repo_root()
-    v = _VARIANTS[_active_variant]
-    dockerfile = _docker_dir() / v["dockerfile"]
+    v = get_variant(_active_variant)
+    dockerfile = _docker_dir() / v.dockerfile
     image = _image()
 
-    # Pull --china out of the user-supplied extras. Anything else is
+    # Pull our own flags out of the user-supplied extras. Anything else is
     # forwarded verbatim to `docker build` (e.g. --no-cache, --progress).
     china = False
+    resolve_pins = True
+    series = v.isaacsim_series
     forwarded: list[str] = []
+    expect_series = False
     for tok in extra:
-        if tok == "--china":
+        if expect_series:
+            series, expect_series = tok, False
+        elif tok == "--china":
             china = True
+        elif tok == "--no-resolve":
+            resolve_pins = False
+        elif tok == "--isaacsim":
+            expect_series = True
+        elif tok.startswith("--isaacsim="):
+            series = tok.split("=", 1)[1]
         else:
             forwarded.append(tok)
+    if expect_series:
+        print(f"{RED}❌ Error: --isaacsim needs a series spec (e.g. --isaacsim 6.X){RST}")
+        sys.exit(2)
 
     print(f"{BOLD}{MAGENTA}🔨 geniesim {_cmd_label()} build{RST}")
     print(f"   {DIM}Repo root:{RST}  {CYAN}{repo_root}{RST}")
@@ -236,13 +399,15 @@ def _do_build(extra: list[str]) -> None:
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
     if china:
         print(f"   {DIM}Mirrors:{RST}    {YELLOW}🇨🇳 china (daocloud + tuna){RST}")
+
+    # Resolved inside the banner block: the "Isaac Sim:" line it prints
+    # belongs with Repo root / Dockerfile / Tag, above the blank separator.
+    build_args: list[str] = _isaacsim_build_args(series if resolve_pins else None)
     print()
 
-    build_args: list[str] = []
     if china:
+        build_args += ["--build-arg", f"ISAACSIM_REGISTRY={_CHINA_NVCR_REGISTRY}"]
         build_args += [
-            "--build-arg",
-            f"ISAACSIM_REGISTRY={_CHINA_NVCR_REGISTRY}",
             "--build-arg",
             f"APT_MIRROR={_CHINA_APT_MIRROR}",
             "--build-arg",
@@ -303,7 +468,7 @@ def _do_up(headless: bool) -> None:
     # Use direct assignment (not setdefault) so the variant always wins over
     # any same-named vars the user may have exported on the host (e.g. ROS_DISTRO).
     env.setdefault("GENIESIM_VARIANT_LABEL", _cmd_label())
-    for key, val in _VARIANTS[_active_variant]["env"].items():
+    for key, val in variant_env(_active_variant).items():
         env[key] = val
     cmd = ["bash", str(script)]
     if headless:
@@ -376,19 +541,16 @@ def run(args: list[str], variant: str = "", invoked_as: str = "docker") -> None:
     _ensure_docker_cli()
 
     # ---- experimental variant warning -----------------------------------
-    # geniesim4 / Isaac Sim 6.0 is incoming — Dockerfile is a placeholder,
-    # image is not published, runtime is unverified. Let developers who
-    # explicitly want to try it through, but make them acknowledge first
-    # so failures aren't mistaken for bugs in their setup.
-    if not _VARIANTS[_active_variant].get("implemented", True):
+    v = get_variant(_active_variant)
+    if not v.implemented:
         print(
             f"\n{YELLOW}"
             f"╔════════════════════════════════════════════════════════════════╗\n"
-            f"║  🚧  INCOMING variant: {invoked_as + ' (geniesim4)':<40}║\n"
+            f"║  🚧  UNVERIFIED variant: {invoked_as + ' (' + v.container + ')':<40}║\n"
             f"╠════════════════════════════════════════════════════════════════╣\n"
-            f"║  This variant targets Isaac Sim 6.0 / geniesim4 and is not     ║\n"
-            f"║  fully implemented yet. The Dockerfile is a placeholder, the   ║\n"
-            f"║  image is not published, and runtime is unverified.            ║\n"
+            f"║  This variant is not fully implemented. Build and validate    ║\n"
+            f"║  its image before use.                                       ║\n"
+            f"║                                                              ║\n"
             f"║                                                                ║\n"
             f"║  For a stable container use geniesim docker (→ docker5.1).     ║\n"
             f"╚════════════════════════════════════════════════════════════════╝"

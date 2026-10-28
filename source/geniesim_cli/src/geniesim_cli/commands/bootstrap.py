@@ -82,15 +82,14 @@ def _install_command(dist_name: str) -> list[str] | None:
         # Locate the source root the package was installed from. The
         # *standard* layout (`<root>/src/<pkg>/__init__.py`) means the
         # source root is two ``.parent`` hops up. But some peers ship
-        # as a *flat* install (e.g. ``geniesim_assets`` at
-        # ``/home/zy/assets/__init__.py`` — no ``src/`` shim), and a
-        # blind ``.parent.parent`` there walks two levels above the
-        # package and lands on a meaningless directory (``/home``),
-        # which then breaks the ``pip install -e <…>`` command.
+        # as a *flat* install (``<root>/<pkg>/__init__.py`` — no ``src/``
+        # shim), and a blind ``.parent.parent`` there walks two levels
+        # above the package and lands on a meaningless directory, which
+        # then breaks the ``pip install -e <…>`` command.
         # Walk outward and pick the closest ancestor that actually
         # carries packaging metadata. If nothing matches, fall back to
         # the package directory itself so pip's error message is
-        # informative instead of "no setup.py found in /home".
+        # informative instead of naming an unrelated ancestor.
         source_root: Path | None = None
         for candidate in (pkg_dir.parent.parent, pkg_dir.parent, pkg_dir):
             if (candidate / "pyproject.toml").is_file() or (candidate / "setup.py").is_file():

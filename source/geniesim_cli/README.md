@@ -29,11 +29,11 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim version` | Print versions of all distributions + Python |
 | `geniesim status` | Per-distribution health probe |
 | `geniesim doctor` | Diagnose & repair (status + rosdep + env) |
-| `geniesim bootstrap` | Install every peer distribution in topological order |
+| `geniesim bootstrap` | Install required peers from local sources in dependency order |
 | `geniesim env` | Show `GENIESIM_*` env vars |
 | `geniesim completion bash\|zsh` | Generate shell completion |
 | `geniesim docker {build,up,down,into,logs}` | Manage the Genie Sim container |
-| `geniesim docker5.1 …` / `docker6.0 …` / `docker4.5 …` | Per–Isaac-Sim variants |
+| `geniesim docker5.1 …` / `docker6.2 …` / `docker4.5 …` | Per–Isaac-Sim variants |
 | `geniesim ros build {dev,release,cleanup}` | `colcon build` the ROS 2 workspace |
 | `geniesim ros doctor` | Repair rosdep |
 | `geniesim tool {deps-dag,ros-dag,docs} [--fix]` | Repo-maintenance audits (DAG + doc-coverage) |
@@ -51,7 +51,7 @@ Run `geniesim -h` for the full list.
 git clone https://github.com/AgibotTech/genie_sim.git
 cd genie_sim
 pip install -e source/geniesim_cli/   # 1. CLI first (no heavy deps)
-geniesim bootstrap                    # 2. installs siblings + assets
+geniesim bootstrap                    # 2. installs required local peers; reports missing asset sources
 geniesim status                       # 3. all-green check
 geniesim doctor                       # 4. repair if not
 ```
@@ -62,10 +62,10 @@ See [`AGENTS.md` § 0 — Fresh-machine setup](AGENTS.md) for the install-order 
 
 ## 🏗️ Architecture (in one line)
 
-`cli.py` is a single-file dispatcher: every subcommand lives in
+`cli.py` dispatches public commands: every subcommand lives in
 `commands/<name>.py` and is loaded lazily so the import cost stays near
 zero. Heavy deps (USD, MuJoCo, anything `geniesim.*`) must NEVER be
-imported at module top-level — see [`AGENTS.md`](AGENTS.md) §6.
+imported at module top-level — see [`AGENTS.md`](AGENTS.md) §4.
 
 ---
 

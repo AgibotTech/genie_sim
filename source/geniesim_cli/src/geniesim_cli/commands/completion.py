@@ -16,7 +16,7 @@ _geniesim_completions() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
 
-    local cmds="ros deploy benchmark teleop autocollect docker docker6.0 docker4.5 docker5.1 status doctor env bootstrap tool dataset version completion"
+    local cmds="ros deploy benchmark teleop autocollect docker docker6.2 docker4.5 docker5.1 status doctor env bootstrap tool dataset version completion"
 
     case "${#words[@]}" in
         2)
@@ -37,7 +37,7 @@ _geniesim_completions() {
             if [[ "${#words[@]}" -eq 3 ]]; then
                 COMPREPLY=($(compgen -W "list geniesim geniesim_cli geniesim_benchmark geniesim_generator geniesim_ros geniesim_teleop" -- "${cur}"))
             fi ;;
-        docker6.0|docker|docker4.5|docker5.1)
+        docker6.2|docker|docker4.5|docker5.1)
             if [[ "${#words[@]}" -eq 3 ]]; then
                 COMPREPLY=($(compgen -W "build up down into logs" -- "${cur}"))
             fi ;;
@@ -74,7 +74,7 @@ _geniesim() {
         'teleop:VR / Pico teleoperation (W.I.P.)'
         'autocollect:Auto-collect benchmark trajectories'
         'docker:Manage the GenieSim container (default → docker5.1)'
-        'docker6.0:Isaac Sim 6.0 variant (geniesim4) — incoming, not implemented'
+        'docker6.2:Isaac Sim 6.2 variant (geniesim4) — behavior unverified'
         'docker4.5:Isaac Sim 4.5 variant (geniesim2 E.O.L.)'
         'docker5.1:Isaac Sim 5.1 variant (geniesim3)'
         'status:Health-check all distributions'
@@ -115,7 +115,7 @@ _geniesim() {
             if (( CURRENT == 3 )); then
                 _values 'target' ${deploy_targets[@]}
             fi ;;
-        docker6.0|docker|docker4.5|docker5.1)
+        docker6.2|docker|docker4.5|docker5.1)
             if (( CURRENT == 3 )); then
                 _values 'action' ${docker_cmds[@]}
             fi ;;

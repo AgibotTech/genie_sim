@@ -135,8 +135,7 @@ def _locate_pyproject(dist_name: str, top_name: str) -> Path | None:
          tolerance (the directory name often uses underscores even when
          the PyPI name has dashes).
       3. ``<installed_pkg_dir>/pyproject.toml`` — flat installs that ship
-         their packaging metadata next to the code (e.g. ``geniesim_assets``
-         at ``/home/zy/assets``).
+         their packaging metadata next to the code, with no ``src/`` shim.
       4. ``<installed_pkg_dir>/../pyproject.toml`` — standard layout where
          pyproject sits one level above ``src/<pkg>``.
     """

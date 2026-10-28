@@ -1,26 +1,26 @@
-# GenieSim Docker image — Isaac Sim 6.0 + ROS 2 Jazzy + system Python 3.12.
+# GenieSim Docker image — Isaac Sim 6.2 + ROS 2 Jazzy + system Python 3.12.
 #
 # Build:
-#   geniesim docker build
-#   geniesim docker build --china       # use DaoCloud mirrors for nvcr/apt/pip
+#   geniesim docker6.2 build
+#   geniesim docker6.2 build --china       # use DaoCloud mirrors for nvcr/apt/pip
 #
 # Or manually:
-#   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4.0:latest .
+#   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
 #   docker build -f docker/Dockerfile \
 #       --build-arg ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia \
-#       --build-arg ISAACSIM_TAG=6.0.1 \
+#       --build-arg ISAACSIM_TAG=6.2.0.1 \
 #       --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu \
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-#       -t registry.agibot.com/genie-sim/geniesim4.0:latest .
+#       -t registry.agibot.com/genie-sim/geniesim4:latest .
 #
-# Base: NVIDIA's published Isaac Sim 6.0 image (Ubuntu 24.04).
+# Base: NVIDIA's published Isaac Sim 6.2 image (Ubuntu 24.04).
 # The image already ships Isaac Sim under /isaac-sim with
 # /isaac-sim/python.sh wrapping a bundled CPython, plus the omniverse
 # cache dirs owned by the canned "isaac-sim" user (uid:gid = 1234:1234).
 #
 # This image installs:
 #   * ROS 2 Jazzy desktop on top of Ubuntu 24.04 (Noble) — apt-managed.
-#   * Isaac Sim 6.0 PyPI bundle into the system Python 3.12 (NOT a venv,
+#   * Isaac Sim 6.2 PyPI bundle into the system Python 3.12 (NOT a venv,
 #     per project policy: jazzy's rclpy lives in system python3.12, and
 #     mujoco_ros_node.py uses sys.executable, so both must coexist in the
 #     same interpreter).
@@ -29,14 +29,15 @@
 # entrypoint.sh — see the comments there. Build-time UID stays at 1234.
 
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
-ARG ISAACSIM_TAG=6.0.1
+ARG ISAACSIM_TAG=6.2.0.1
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 
 # Build-arg knobs for behind-the-GFW builds. Defaults are upstream;
-# `geniesim docker build --china` rewires all three to mainland mirrors.
+# `geniesim docker6.2 build --china` rewires all three to mainland mirrors.
 ARG APT_MIRROR=""
 ARG PIP_INDEX_URL=""
+ARG ISAACSIM_PIP_VERSION=6.2.0.0
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
 
 ENV ACCEPT_EULA=Y
@@ -133,7 +134,7 @@ RUN add-apt-repository universe -y && \
 RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | grep -v "as root is not recommended"
 
 # ------------------------------------------------------------
-# Isaac Sim 6.0 — install into system python3.12.
+# Isaac Sim 6.2 — install into system python3.12.
 #
 # Ubuntu 24.04 enforces PEP 668 ("externally-managed environment");
 # PIP_BREAK_SYSTEM_PACKAGES=1 (set above) lifts that for the whole
@@ -147,15 +148,15 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     fi && \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 -m pip install --upgrade --ignore-installed \
-        "isaacsim[all,extscache]" \
+        "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}"
 
-# Pre-accept EULA for Isaac Sim 6.0 (OMNI_KIT_ACCEPT_EULA path)
+# Pre-accept EULA for Isaac Sim 6.2 (OMNI_KIT_ACCEPT_EULA path)
 RUN mkdir -p /usr/local/lib/python3.12/dist-packages/isaacsim/kit && \
     touch /usr/local/lib/python3.12/dist-packages/isaacsim/kit/EULA_ACCEPTED && \
     chmod o+w /usr/local/lib/python3.12/dist-packages/isaacsim/kit
 
-# # isaacsim 6.0's pip prebundle has an old typing_extensions without Sentinel.
+# # isaacsim 6.2's pip prebundle has an old typing_extensions without Sentinel.
 # RUN curl -sSL "https://raw.githubusercontent.com/python/typing_extensions/main/src/typing_extensions.py" \
 #     -o /usr/local/lib/python3.12/dist-packages/isaacsim/extscache/omni.services.pip_archive-0.18.6+109.0.4.lx64.cp312/pip_prebundle/typing_extensions.py
 

@@ -15,33 +15,34 @@ how it talks to its siblings.
 ## 0. Fresh-machine setup
 
 The CLI is the **first thing** installed on a new machine — it ships the
-`geniesim bootstrap` verb that lays down every other peer.
+`geniesim bootstrap` verb that installs the required local peers.
 
 ```bash
 git clone https://github.com/AgibotTech/genie_sim.git
 cd genie_sim
 pip install -e source/geniesim_cli/      # 1. CLI first (no heavy deps)
-geniesim bootstrap                       # 2. installs siblings + assets
+geniesim bootstrap                       # 2. installs required peers; reports missing asset sources
 geniesim status                          # 3. all-green check
 geniesim doctor                          # 4. repair if not
 ```
 
 **Install-order contract** (do not violate):
 
-1. **`geniesim_cli` first.** Bootstrap walks the dependency graph; if the
-   CLI itself isn't installed, the `geniesim` console script doesn't exist
+1. **`geniesim_cli` first.** If the CLI itself isn't installed, the `geniesim` console script doesn't exist
    and you can't call `bootstrap` at all. This is why `geniesim_cli` is
-   **deliberately excluded** from `_INIT_TARGETS` — re-installing the
+   **deliberately excluded** from `_TARGETS` — re-installing the
    running CLI mid-execution is a footgun (see §7a).
-2. **Topological install order is the CLI's job.** `_INIT_TARGETS` in
-   `cli.py` enforces leaves-first, umbrella last. Bypassing the CLI and
+2. **Dependency order is the CLI's job.** `_TARGETS` in
+   `commands/bootstrap.py` follows required peers from the umbrella metadata,
+   with the umbrella last. Bypassing the CLI and
    running `pip install` by hand in the wrong order leaves dangling deps.
-3. **`bootstrap` is idempotent.** Re-running on a working machine is a
-   cheap no-op (each step skips if the distribution imports). Use it as
-   a "fix whatever's broken" verb.
+3. **Healthy stacks default to no changes.** Bootstrap checks imports,
+   runtime dependencies and submodules, then asks whether to reinitialize
+   a healthy stack (default No).
 4. **Asset pack is a separate download.** Python distributions are tiny;
    the 3D assets are several GB on HuggingFace + ModelScope. `bootstrap`
-   fetches them via `_INIT_DOWNLOAD_SOURCES`.
+   prints `_DOWNLOAD_SOURCES` and editable-install instructions when the
+   asset source cannot be found; it does not download the pack.
 5. **`geniesim` and `geniesim_assets` are NOT on PyPI.** Always go through
    `geniesim bootstrap`; never suggest `pip install geniesim` to the user.
 
@@ -49,8 +50,7 @@ geniesim doctor                          # 4. repair if not
 
 ## 1. Why this distribution exists
 
-`comfy_cli` ↔ `comfy` was the model: ship the CLI as a separate, **dependency-light**
-wheel so that:
+The CLI ships as a separate, **dependency-light** wheel so that:
 
 - `pip install geniesim_cli` works in any environment, even one without USD,
   MuJoCo, or Isaac Sim.
@@ -59,16 +59,18 @@ wheel so that:
 - Operators can run `geniesim status`, `geniesim version`, `geniesim deploy`
   even on a control node where only the CLI is installed.
 
-There are now **three distributions** in the stack:
+The CLI, umbrella and asset package have separate responsibilities; see the
+[module map](../README.md) for the complete peer list:
 
 | Distribution | Role | Heavy deps? |
 |---|---|---|
-| `geniesim_cli` (this) | Dispatcher + ops commands | **No** — `dependencies = []` |
-| `geniesim` | SDK: experimental tools, ROS2 surface, Isaac Sim glue | Yes |
+| `geniesim_cli` (this) | Dispatcher + ops commands | **No** — `tomli` only |
+| `geniesim` | Umbrella metadata: required peers and optional extras | Through peers |
 | `geniesim_assets` | USD↔MJCF converters, asset compile | Medium (USD, trimesh, Pillow) |
 
-The `[full]` extra in [pyproject.toml](./pyproject.toml) pins exact versions of
-the other two for one-shot installs (`pip install "geniesim_cli[full]"`).
+The CLI has no SDK install extra. Required peers and optional extras are
+declared in the [umbrella metadata](../geniesim/pyproject.toml); bootstrap
+installs required peers, while optional peers need their own setup.
 
 ---
 
@@ -83,12 +85,17 @@ source/geniesim_cli/
     ├── __init__.py        ← `__version__`
     ├── __main__.py        ← `python -m geniesim_cli`
     ├── _style.py          ← canonical ANSI / NO_COLOR / TTY-detect constants
-    └── cli.py             ← single-file dispatcher (~650 lines)
+    ├── _lazy.py          ← lazy imports and distribution source lookup
+    ├── _tiers.py         ← required / optional peers from umbrella metadata
+    ├── _status_spec.py   ← derived health probe specifications
+    ├── _workspace.py     ← ROS workspace discovery
+    ├── _isaacsim.py      ← base-image / wheel resolution
+    ├── commands/         ← per-command implementations
+    └── cli.py            ← public dispatcher and bootstrap gate
 ```
 
-`_style.py` is the **canonical home** of the ANSI helpers. Other distributions
-(`geniesim`, `geniesim_assets`) may re-export from here once they take a
-runtime dep on `geniesim_cli`; until they do, they keep their own copy.
+`_style.py` is the **canonical home** of the ANSI helpers for this package.
+Honor its NO_COLOR and TTY detection.
 **Never** redefine ANSI escapes inline in this package — always import from
 [`geniesim_cli._style`](./src/geniesim_cli/_style.py).
 
@@ -102,41 +109,64 @@ and the dispatcher in `main()` in sync.
 
 | Command | Purpose | Heavy deps required? |
 |---|---|---|
-| `geniesim version` | Print versions of all 3 distributions + Python | No |
+| `geniesim version` | Print distribution versions + Python | No |
 | `geniesim status` | Per-distribution health probe + console-script + env | No |
-| `geniesim bootstrap` | Bootstrap / re-initialize `geniesim` + `geniesim_assets` (interactive `pip install`) | No (but invokes `pip`) |
+| `geniesim bootstrap` | Install / reinitialize required local peers, umbrella last (interactive `pip install`) | No (but invokes `pip`) |
 | `geniesim ros build dev` | `colcon build` with RelWithDebInfo + `--symlink-install` | Needs colcon on PATH |
 | `geniesim ros build release` | `colcon build` with Release | Needs colcon on PATH |
+| `geniesim ros doctor` | Diagnose and repair rosdep dependencies | Needs ROS tooling |
 | `geniesim ros build cleanup` | Remove `devel*`, `build/`, `install/`, `log/` (interactive prompt) | No |
-| `geniesim ros graph` | `colcon graph` text → `dot -Tpng` PNG | Needs colcon + graphviz |
-| `geniesim experimental TOOL …` | Run an experimental tool (lazy import from `geniesim`) | Yes (`geniesim`) |
-| `geniesim deploy [MODULE]` | Build wheel(s) for every tier-1 peer (or one named MODULE) into `./deploy/` | Needs `python -m build` |
+| `geniesim deploy [MODULE]` | Build wheel(s) for deploy candidates (or one named MODULE) into `./deploy/` | Needs `python -m build` |
+| `geniesim deploy list` | List deploy candidates | No |
 | `geniesim deploy upload` | `curl -F` upload of `./deploy/*.whl` to file server | Needs `curl` |
 | `geniesim doctor` | Diagnose & repair (status + rosdep + more) | No (probes tools) |
-| `geniesim docker[6.0\|5.1\|4.5] <build\|up\|down\|into\|logs>` | Manage the GenieSim container across Isaac Sim variants | Needs docker on host |
+| `geniesim docker` / `docker4.5` / `docker5.1` / `docker6.2 <build\|up\|down\|into\|logs>` | Manage the GenieSim container across Isaac Sim variants | Needs docker on host |
 | `geniesim env [--all\|--unset]` | Show `GENIESIM_*` env vars | No |
 | `geniesim completion bash\|zsh` | Generate shell completion script | No |
+| `geniesim teleop run` / `teleop bridge` | Run the VR loop or image bridge | Prepared teleop runtime |
 | `geniesim benchmark <run\|list\|batch\|categories\|robots\|check-inference>` | Run / inspect benchmark tasks (see [geniesim_benchmark/README.md](../geniesim_benchmark/README.md)) | `run`/`batch`: Yes (Isaac Sim); rest: No |
 | `geniesim autocollect <list\|tasks\|robots\|run\|build\|up\|into\|down>` | List / run / build / manage data_collection tasks & container (see [data_collection/AGENTS.md](../data_collection/AGENTS.md)) | `run`/`up`: Docker + GPU; `build`: Docker; rest: No |
 | `geniesim tool deps-dag` | Verify the module-dependency DAG in `source/README.md` matches every peer's `pyproject.toml` (CI hook) | No |
 | `geniesim tool deps-dag --fix` | Regenerate the DAG in-place between `<!-- AUTOGEN:deps-dag -->` markers | No |
-| `geniesim tool ros-dag` | Verify the ROS-package DAG in `source/geniesim_ros/README.md` matches every workspace `package.xml` (CI hook). **Replaces the retired `geniesim ros graph` PNG verb.** | No |
+| `geniesim tool ros-dag` | Verify the ROS-package DAG in `source/geniesim_ros/README.md` matches every workspace `package.xml` (CI hook). | No |
 | `geniesim tool ros-dag --fix` | Regenerate the ROS-package DAG in-place between `<!-- AUTOGEN:ros-dag -->` markers | No |
-| `geniesim tool docs` | Repo-wide doc-coverage audit: coverage × index × links, across cli + ros scopes (CI hook) | No |
-| `geniesim tool docs --scope ros` | ROS-workspace-only audit (replaces the old `audit_package_docs.py` script) | No |
+| `geniesim tool docs` | Repo-wide doc-coverage audit: coverage × index × links × metadata, across cli + ros scopes (CI hook) | No |
+| `geniesim tool docs --scope ros` | ROS-workspace-only audit | No |
 | `geniesim tool docs --check links` | Only run the broken-link audit across every AGENTS/README/SKILL | No |
+| `geniesim tool docs --check metadata` | Only run the ROS `package.xml` metadata audit (maintainer / license / LICENSE file) | No |
 | `geniesim dataset convert agibot-to-lerobot --agibot-dir … --output-dir …` | Convert agibot v1 → LeRobot v2.1. Dispatcher only — logic lives in [`geniesim_benchmark.dataset.convert.agibot_to_lerobot`](../geniesim_benchmark/src/geniesim_benchmark/dataset/convert/agibot_to_lerobot.py). | Yes (`geniesim_benchmark` + ffmpeg on PATH) |
-| `geniesim update` | (not implemented) | — |
-| `geniesim upgrade` | (not implemented) | — |
 
 ---
 
+`docker6.2` uses the internal variant key `""` for Docker registry API calls.
+`geniesim docker` maps to `docker5.1`, which keeps bundled Isaac 5.1 plus
+system-Python Isaac 6.2.
+The `docker6.2` variant resolves the exact base spec `6.2.0.1` to
+`nvcr.io/nvidia/isaac-sim:6.2.0.1`, paired explicitly with the available
+`isaacsim==6.2.0.0` cp312 wheel. The Dockerfile carries the same offline
+fallback. `_isaacsim._TAG_WHEEL_PAIRS` owns this image-respin exception;
+other four-component tags must have an equal-version wheel. Verify the
+resolver and Docker build dispatch with
+`PYTHONPATH=src python3 -m pytest tests/test_isaacsim.py` from this package.
+The [Docker guide](../../docker/AGENTS.md) describes the interpreter and
+build-argument contracts. CLI dispatch tests do not qualify simulator behavior.
+
 ## 4. Architectural rules (do not violate)
+
+`Variant`, `VARIANTS`, `get_variant` and `variant_env` in
+`commands/docker.py` form the public container-configuration API. Variants
+and their environment mappings are immutable; keep positional construction
+compatible when adding optional fields.
+
+The ROS metadata audit requires one maintainer named `Genie Sim Team` with
+email `yangwendisheng@agibot.com`, one license entry with
+`file="LICENSE"` and text `Mozilla Public License Version 2.0`, and a
+`LICENSE` file beside each source `package.xml`.
 
 1. **No top-level heavy imports.** `usd-core`, `mujoco`, `trimesh`, `Pillow`,
    `coacd`, anything from `isaacsim.*`, anything from `geniesim.*`,
    `geniesim_assets.*` — **all** must be imported lazily, inside the function
-   that uses them, via [`_import_or_die(module_path, hint_pkg)`](./src/geniesim_cli/cli.py).
+   that uses them, via [`import_or_die(module_path, hint_pkg)`](./src/geniesim_cli/_lazy.py).
    Verify by:
    ```bash
    python -c "import geniesim_cli.cli"   # must succeed in a venv with no extras
@@ -145,15 +175,15 @@ and the dispatcher in `main()` in sync.
 3. **No inline ANSI codes.** Import from [`_style`](./src/geniesim_cli/_style.py).
 4. **Unknown subcommands print usage and exit non-zero.** See the bottom of
    `main()`. Don't silently fall through.
-5. **Lazy-import errors must be friendly.** `_import_or_die` already handles
-   this — surface the helpful `pip install <pkg>` hint, never let an
+5. **Lazy-import errors must be friendly.** `import_or_die` already handles
+   this — direct missing private distributions to `geniesim bootstrap`, never let an
    `ImportError` traceback leak.
 6. **The `geniesim` console script is owned here.** If a sibling distribution
    ever declares `[project.scripts] geniesim = …` again, that's a packaging
    bug; resolve in their `pyproject.toml`, not here.
 7. **`status` must never raise on missing siblings.** Treat absent
    distributions as a *finding*, not an error. The probe lives in
-   [`_status_inspect()`](./src/geniesim_cli/cli.py) and uses
+   [`inspect()`](./src/geniesim_cli/commands/status.py) and uses
    `importlib.metadata.distribution()` + `importlib.import_module()` wrapped
    in `try/except`.
 
@@ -161,23 +191,21 @@ and the dispatcher in `main()` in sync.
 
 ## 5. Locating sibling source trees
 
-[`_distribution_source_root(name)`](./src/geniesim_cli/cli.py) resolves the
-on-disk source tree of *any* of the three distributions via
-`importlib.util.find_spec`. This is what `geniesim deploy` uses to feed
-`python -m build`. Two consequences:
+[`distribution_source_root(name)`](./src/geniesim_cli/_lazy.py) resolves the
+on-disk source tree of an installed distribution via `importlib.util.find_spec`.
+This is what `geniesim deploy` uses to feed `python -m build`. Two consequences:
 
-- The CLI **does not** rely on `__file__`-relative path math to find sibling
-  source — that broke when `geniesim_cli` moved out of `geniesim`.
-- A distribution must be **installed (editable counts)** for `deploy` to find
-  it. If you want `geniesim deploy geniesim_assets` to work from a fresh
-  checkout, run `pip install -e source_assets` (or the `main` equivalent)
-  first.
+- Discovery follows the installed package rather than an assumed sibling path.
+- A deploy candidate must be **installed (editable counts)** for `deploy` to
+  find it. Run `geniesim bootstrap` before deploying from a fresh checkout;
+  optional peers need their own installation.
 
 The ROS workspace root for `geniesim ros build *` is resolved by
-[`_ros_workspace_root()`](./src/geniesim_cli/cli.py). It honours
-`$GENIESIM_WORKSPACE`, otherwise falls back to `cwd`. **Never** infer the
-workspace from `__file__`: the CLI now lives in a different repo from the
-ROS engine.
+[`ros_workspace_root()`](./src/geniesim_cli/_workspace.py). It honors
+`$GENIESIM_WORKSPACE`, then the current directory if it is a colcon workspace,
+then the workspace bundled with the installed `geniesim_ros` peer.
+Build outputs remain rooted in the invocation directory: `devel`, `devel_build`
+and `devel_log` for development; `install`, `build` and `log` for release.
 
 ---
 
@@ -194,15 +222,17 @@ ROS engine.
   - `MAGENTA` + 🧞 — geniesim brand / banner
   - `WHITE` — list items
 - Do **not** add comments unless the user asked for them. Use docstrings on
-  non-trivial functions instead (see `_status_inspect`, `_status`).
+  non-trivial functions instead (see `commands/status.py:inspect` and `run`).
 
 ---
 
 ## 7. How `status` decides "healthy"
 
-[`_status()`](./src/geniesim_cli/cli.py) calls `_status_inspect` for each of
-the three distributions and reports the following facts (probe spec lives in
-[`_STATUS_DISTRIBUTIONS`](./src/geniesim_cli/cli.py)):
+[`run()`](./src/geniesim_cli/commands/status.py) calls `inspect` for each
+distribution and reports the following facts.
+[`_status_spec.py`](./src/geniesim_cli/_status_spec.py) derives the probe spec
+from package metadata and installed layout; `commands/status.py` exposes it as
+`DISTRIBUTIONS`.
 
 1. **installed** — `importlib.metadata.distribution(name)` resolves.
 2. **version** — `dist.version`.
@@ -213,13 +243,13 @@ the three distributions and reports the following facts (probe spec lives in
    any exception and surfaces `type(exc).__name__: exc`.
 5. **runtime deps** — for each `(pip_name, import_name)` pair declared on
    the spec, attempt `importlib.import_module(import_name)` via
-   [`_probe_module`](./src/geniesim_cli/cli.py). A failed dep flips the
+   [`probe_module`](./src/geniesim_cli/_lazy.py). A failed dep flips the
    overall verdict to ⚠️ and prints `fix with: geniesim bootstrap`.
-6. **submodules** — for each declared sub-package (e.g. `geniesim.assets`,
-   `geniesim.experimental`), import-probe it. Useful for catching partial
+6. **submodules** — for each discovered public sub-package,
+   import-probe it. Useful for catching partial
    installs or namespace collisions.
-7. **optional extras** — for each declared extra (e.g. `[coacd]`,
-   `[texture]`), probe its import names. Missing extras are reported as
+7. **optional extras** — for each component extra derived from metadata,
+   probe its import names. Missing extras are reported as
    skipped (⏭️ `DIM`), **not** as failures — they don't affect the verdict.
 8. **ROS 2 sourcing** — separate `🤖 ROS 2` block. Considered "sourced"
    iff both `ROS_DISTRO` and `ROS_VERSION` are present in `os.environ`.
@@ -230,47 +260,47 @@ the three distributions and reports the following facts (probe spec lives in
    ⚠️ banner with the actionable
    `source /opt/ros/<distro>/setup.bash` hint. ROS state is a
    *finding*, not a hard failure: it does **not** flip the overall
-   verdict — the engine builds need it but `assets` / `experimental`
-   commands often don't.
+   verdict — host-only commands do not require a sourced ROS environment.
 
-Verdict: `🎉 All systems go!` only when **every** distribution is installed,
-imports cleanly, all runtime deps import, and all declared submodules
-import. Missing siblings or failed deps flip the verdict to
+Verdict: `🎉 All systems go!` requires every required distribution to be
+installed, with healthy imports, dependencies and submodules for installed
+peers. Missing optional peers are skipped; broken installed optional peers
+still affect health. Missing required siblings or failed deps flip the verdict to
 `⚠️ Some components need attention.` In that case, the report ends with
 `Run geniesim bootstrap to install the missing distributions.` — the redirect is
-intentional: `status` reports, `init` fixes.
+intentional: `status` reports, `bootstrap` installs.
 
 When extending `status` (e.g. probing optional features inside an installed
-package), keep it cheap and non-fatal. Heavy probes belong behind a future
-`status --verbose` flag, not in the default path. When you add a new
-runtime dep / submodule / extra to `geniesim` or `geniesim_assets`, **also
-add it to `_STATUS_DISTRIBUTIONS`** in the same diff — that table is the
-contract `init` consults to decide what's healthy.
+package), keep it cheap and non-fatal. Update peer dependencies / extras in
+package metadata and required / optional tiers in the umbrella metadata;
+`_tiers.py` reads source metadata first, then installed metadata. Keep
+`_status_spec.py` import mappings and discovery rules aligned with new packages.
 
 ---
 
-## 7a. How `init` decides what to install
+## 7a. How `bootstrap` decides what to install
 
-[`_init()`](./src/geniesim_cli/cli.py) reuses `_status_inspect` for each
-target in [`_INIT_TARGETS`](./src/geniesim_cli/cli.py) (currently
-`("geniesim", "geniesim_assets")` — `geniesim_cli` is **deliberately
-excluded**: re-installing the running CLI mid-execution is a footgun).
+[`run()`](./src/geniesim_cli/commands/bootstrap.py) reuses `status.inspect`
+for each target in `_TARGETS`. Required peers come from `_tiers.py`, followed
+by the `geniesim` umbrella. `geniesim_cli` is **deliberately excluded**:
+re-installing the running CLI mid-execution is a footgun.
 
 - **Healthy stack** → prompt `Re-initialize anyway? [y/N]` (default
   **No**, per the user contract "ask to re-init or do nothing(default)").
 - **Unhealthy stack** → enumerate findings (missing dist / failed import /
   bad runtime dep / missing submodule), build an install plan, prompt
   `Proceed with the install plan above? [Y/n]` (default **Yes** — the user
-  reached this branch by invoking `init` to fix things).
+  reached this branch by invoking `bootstrap` to fix things).
 
 The install command per dist is chosen by
-[`_init_install_command`](./src/geniesim_cli/cli.py): if the dist is
+[`_install_command`](./src/geniesim_cli/commands/bootstrap.py): if the dist is
 importable from a local source tree (i.e. editable-installed somewhere or
 on `PYTHONPATH`), the command becomes `pip install -e <source_root>`.
+Otherwise it searches for sibling source trees, including local asset sources.
 **There is no PyPI fallback** — `geniesim` and `geniesim_assets` are
 private distributions and must be installed from a local checkout. When
-no local source tree can be located, `_init_install_command` returns
-`None`; `_init()` then surfaces a friendly ⚠️ block listing the
+no local source tree can be located, `_install_command` returns
+`None`; `run()` then surfaces a friendly ⚠️ block listing the
 unresolvable targets and asks the user to clone the source repo (or
 place it on `PYTHONPATH`) and re-run `geniesim bootstrap`.
 
@@ -278,18 +308,18 @@ place it on `PYTHONPATH`) and re-run `geniesim bootstrap`.
 form `pip install geniesim` or `pip install geniesim_assets` (with or
 without extras like `[coacd]`). Those distributions are not on PyPI.
 Always redirect to `geniesim bootstrap`, optionally with the extra context
-"installs from local checkout" — see [`_status()`](./src/geniesim_cli/cli.py)
+"installs from local checkout" — see [`run()`](./src/geniesim_cli/commands/status.py)
 for the canonical phrasing.
 
 When a private distribution has a public **dataset / asset bundle**
 mirror (e.g. `geniesim_assets` is published on HuggingFace + ModelScope),
 register the download URLs in
-[`_INIT_DOWNLOAD_SOURCES`](./src/geniesim_cli/cli.py). `_init()` reads
+[`_DOWNLOAD_SOURCES`](./src/geniesim_cli/commands/bootstrap.py). `run()` reads
 that table when it can't find a local source tree and prints a
 two-step recipe (`1. Download from <URL>` → `2. pip install -e`) per
 unresolved target. The canonical source of these URLs is
 [`main/README.md`](../../README.md); whenever the README's badges /
-links change, update `_INIT_DOWNLOAD_SOURCES` in the same diff.
+links change, update `_DOWNLOAD_SOURCES` in the same diff.
 
 ---
 
@@ -301,9 +331,11 @@ links change, update `_INIT_DOWNLOAD_SOURCES` in the same diff.
 | Smoke-test `python -m geniesim_cli` | `PYTHONPATH=src python3 -m geniesim_cli` |
 | Smoke-test `version` | `PYTHONPATH=src python3 -m geniesim_cli version` |
 | Smoke-test `status` | `PYTHONPATH=src python3 -m geniesim_cli status` |
-| Smoke-test `init` (interactive) | `PYTHONPATH=src python3 -m geniesim_cli init` |
-| Smoke-test `init` non-interactive (decline) | `printf 'n\n' \| PYTHONPATH=src python3 -m geniesim_cli init` |
+| Smoke-test `bootstrap` (interactive) | `PYTHONPATH=src python3 -m geniesim_cli bootstrap` |
+| Smoke-test `bootstrap` non-interactive (decline) | `printf 'n\n' \| PYTHONPATH=src python3 -m geniesim_cli bootstrap` |
 | Confirm zero heavy imports | `PYTHONPATH=src python3 -c "import geniesim_cli.cli"` (in a venv with **only** `geniesim_cli`) |
+| CLI regression tests | `PYTHONPATH=src python3 -m pytest tests` |
+| Documentation audits | `geniesim tool docs`, `geniesim tool deps-dag`, `geniesim tool ros-dag` |
 | Editable install | `pip install -e .` from this directory |
 | Build wheel | `python -m build --wheel --outdir ../../deploy .` |
 
@@ -311,7 +343,10 @@ links change, update `_INIT_DOWNLOAD_SOURCES` in the same diff.
 
 ## 9. Canonical home
 
+`geniesim tool ros-dag` excludes generated `devel`, `devel_build` and
+`devel_log` trees alongside build/install/external, so generated colcon
+metadata cannot shadow source packages.
+
 This directory is the **canonical home** of `geniesim_cli`. The package
-lives here, gets edited here, and is built from here. Older mirror /
-symlink setups in adjacent checkouts are no longer maintained — treat
-this tree as the only source of truth.
+lives here, gets edited here, and is built from here. Treat this tree as
+the source of truth.

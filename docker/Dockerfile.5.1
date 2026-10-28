@@ -1,4 +1,4 @@
-# GenieSim Docker image — Isaac Sim 5.1 (omni_python) + Isaac Sim 6.0 (python3.12) + ROS 2 Jazzy.
+# GenieSim Docker image — Isaac Sim 5.1 (omni_python) + Isaac Sim 6.2 (python3.12) + ROS 2 Jazzy.
 #
 # Build:
 #   geniesim docker5.1 build
@@ -11,10 +11,10 @@
 # pre-installed at /isaac-sim with its own bundled Python accessible
 # via /isaac-sim/python.sh (aliased as omni_python).
 #
-# On top of that, Isaac Sim 6.0 is pip-installed into system python3.12,
+# On top of that, Isaac Sim 6.2 is pip-installed into system python3.12,
 # exactly as in the main Dockerfile. This gives a single image where:
 #   omni_python  → Isaac Sim 5.1 (bundled /isaac-sim)
-#   python3      → Isaac Sim 6.0 (system python3.12) + ROS 2 Jazzy
+#   python3      → Isaac Sim 6.2 (system python3.12) + ROS 2 Jazzy
 #
 # Host-user remap (1234 vs $(id -u)) is handled at *runtime* by
 # entrypoint.sh — see the comments there. Build-time UID stays at 1234.
@@ -28,6 +28,7 @@ FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 # `geniesim docker build --china` rewires all three to mainland mirrors.
 ARG APT_MIRROR=""
 ARG PIP_INDEX_URL=""
+ARG ISAACSIM_PIP_VERSION=6.2.0.0
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
 
 ENV ACCEPT_EULA=Y
@@ -124,7 +125,7 @@ RUN add-apt-repository universe -y && \
 RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | grep -v "as root is not recommended"
 
 # ------------------------------------------------------------
-# Isaac Sim 6.0 — install into system python3.12.
+# Isaac Sim 6.2 — install into system python3.12.
 #
 # PIP_BREAK_SYSTEM_PACKAGES=1 (set above) lifts Ubuntu 24.04's PEP 668
 # restriction. The NVIDIA index is always supplied as --extra-index-url
@@ -136,15 +137,15 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     fi && \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 -m pip install --upgrade --ignore-installed \
-        "isaacsim[all,extscache]" \
+        "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}"
 
-# Pre-accept EULA for Isaac Sim 6.0 (OMNI_KIT_ACCEPT_EULA path)
+# Pre-accept EULA for Isaac Sim 6.2 (OMNI_KIT_ACCEPT_EULA path)
 RUN mkdir -p /usr/local/lib/python3.12/dist-packages/isaacsim/kit && \
     touch /usr/local/lib/python3.12/dist-packages/isaacsim/kit/EULA_ACCEPTED && \
     chmod o+w /usr/local/lib/python3.12/dist-packages/isaacsim/kit
 
-# # isaacsim 6.0's pip prebundle has an old typing_extensions without Sentinel.
+# # isaacsim 6.2's pip prebundle has an old typing_extensions without Sentinel.
 # RUN curl -sSL "https://raw.githubusercontent.com/python/typing_extensions/main/src/typing_extensions.py" \
 #     -o /usr/local/lib/python3.12/dist-packages/isaacsim/extscache/omni.services.pip_archive-0.18.6+109.0.4.lx64.cp312/pip_prebundle/typing_extensions.py
 
@@ -164,7 +165,7 @@ RUN id isaac-sim >/dev/null 2>&1 || useradd -m -u 1234 -s /bin/bash isaac-sim &&
 
 # ------------------------------------------------------------
 # GeneSim module dependencies (extracted from **tier-1** pyproject.toml files).
-# Installed into both omni_python (5.1 runtime) and system python3 (6.0 + ROS).
+# Installed into both omni_python (5.1 runtime) and system python3 (6.2 + ROS).
 # NOTE: collect_deps.py is shared across all variants — lives in docker/.
 # Tier-2 peers (`geniesim_teleop`, `geniesim_generator`, `geniesim_world`)
 # are opt-in via the umbrella's `[teleop|generator|world|all]` extras and

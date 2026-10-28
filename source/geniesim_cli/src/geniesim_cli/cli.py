@@ -84,7 +84,7 @@ _BOOTSTRAP_SKIP_VERBS: frozenset[str] = frozenset(
         "docker",
         "docker4.5",
         "docker5.1",
-        "docker6.0",
+        "docker6.2",
         "tool",
         "deploy",
     }
@@ -198,7 +198,7 @@ def _print_usage() -> None:
         f"  {CYAN}docker{RST} <build|up|down|into|logs>    🐳 Manage the Genie Sim container {DIM}(default → docker5.1){RST}"
     )
     print(
-        f"  {CYAN}docker6.0{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.0 variant (geniesim4) {DIM}— incoming, not implemented{RST}"
+        f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4) {DIM}— behavior unverified{RST}"
     )
     print(f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant (geniesim3, default)")
     print(f"  {CYAN}docker4.5{RST} <build|up|down|into|logs>  🐳 Isaac Sim 4.5 variant (geniesim2 E.O.L.)")
@@ -282,10 +282,10 @@ def main(argv: list[str] | None = None) -> None:
         _m.run(sub_args, variant="5.1", invoked_as="docker")
         sys.exit(0)
 
-    if cmd == "docker6.0":
+    if cmd == "docker6.2":
         from geniesim_cli.commands import docker as _m
 
-        _m.run(sub_args, variant="", invoked_as="docker6.0")
+        _m.run(sub_args, variant="", invoked_as="docker6.2")
         sys.exit(0)
 
     if cmd == "docker4.5":
