@@ -29,7 +29,7 @@ from geniesim_cli.commands.status import DISTRIBUTIONS, inspect
 #
 # The tier-1 list is **derived** from `source/geniesim/pyproject.toml`'s
 # `[project].dependencies` via ``geniesim_cli._tiers``. Tier-2 peers
-# (`geniesim_teleop`, `geniesim_generator`, `geniesim_world`) are
+# (`geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world`) are
 # opt-in via ``pip install -e "source/geniesim/[<extra>]"`` and
 # deliberately excluded from the default bootstrap flow.
 #

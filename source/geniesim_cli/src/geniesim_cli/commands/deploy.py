@@ -17,6 +17,7 @@ DEPLOY_MODULES: dict[str, str] = {
     "geniesim_benchmark": "geniesim_benchmark",
     "geniesim_cli": "geniesim_cli",
     "geniesim_generator": "geniesim_generator",
+    "geniesim_scene_agent": "geniesim_scene_agent",
     "geniesim_ros": "geniesim_ros",
     "geniesim_teleop": "geniesim_teleop",
 }

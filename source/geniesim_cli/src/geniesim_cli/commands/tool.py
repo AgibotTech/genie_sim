@@ -86,6 +86,7 @@ _ANNOTATIONS: dict[str, dict] = {
     "geniesim_teleop": {"note": "🎮 VR / Pico"},
     "geniesim_world": {"status": "leaf", "note": "🌍 pano → 3D world (own env)"},
     "geniesim_generator": {"note": "🏗️ scene gen (optional extra)"},
+    "geniesim_scene_agent": {"note": "🏗️ scene gen (optional extra)"},
 }
 
 # Cross-package data-flow edges that are not in pyproject.toml deps but
@@ -252,7 +253,7 @@ def _emit_mermaid(peers: dict[str, dict]) -> str:
     # Optional dep edges (-.->) from [project.optional-dependencies].
     # Group by (src, dst) so multiple extras pointing at the same peer
     # collapse into one edge with a combined label (e.g. geniesim's
-    # `[generator]` and `[full]` both pull in geniesim_generator).
+    # `[scene_agent]` and `[full]` both pull in geniesim_scene_agent).
     # Skip self-edges (`pkg[extra1,extra2]` recursive-extra pattern).
     optional_edges: dict[tuple[str, str], list[str]] = {}
     for name in ordered:

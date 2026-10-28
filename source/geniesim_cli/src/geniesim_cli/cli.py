@@ -88,6 +88,7 @@ _BOOTSTRAP_SKIP_VERBS: frozenset[str] = frozenset(
         "post-train",
         "tool",
         "deploy",
+        "data-collection",
     }
 )
 
@@ -191,8 +192,13 @@ def _print_usage() -> None:
     print(
         f"  {CYAN}teleop bridge{RST} [...]                 🌉 Launch the in-process image pub/sub bridge {YELLOW}(🚧 W.I.P.){RST}"
     )
-    print(f"  {CYAN}autocollect list{RST} [--robot/--task]   📋 List data_collection task templates")
-    print(f"  {CYAN}autocollect run{RST} <TASK> [...]        📥 Collect one task (wraps run_data_collection.sh)")
+    print(f"  {CYAN}data-collection install{RST}              📦 Register the collection module from this checkout")
+    print(f"  {CYAN}data-collection list{RST} [--robot/--task]   📋 List data_collection task templates")
+    print(f"  {CYAN}data-collection llm list/show{RST}           📋 Browse external LLM tasks and scenes")
+    print(f"  {CYAN}data-collection replay{RST} <TASK|EPISODE>  🎬 Replay a saved recording")
+    print(
+        f"  {CYAN}data-collection run{RST} <TASK> [...]        📥 Collect an LLM task; --task-json selects a JSON job"
+    )
     print(f"  {CYAN}status{RST}                              🔍 Health-check all geniesim distributions")
     print(f"  {CYAN}doctor{RST}                              🩺 Diagnose & repair (status + rosdep + more)")
     print(
@@ -359,7 +365,7 @@ def main(argv: list[str] | None = None) -> None:
         _m.run(sub_args)
         sys.exit(0)
 
-    if cmd == "autocollect":
+    if cmd == "data-collection":
         from geniesim_cli.commands import data_collection as _m
 
         _m.run(args[1:])

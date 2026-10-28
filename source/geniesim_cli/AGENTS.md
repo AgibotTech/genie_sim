@@ -128,7 +128,7 @@ and the dispatcher in `main()` in sync.
 | `geniesim completion bash\|zsh` | Generate shell completion script | No |
 | `geniesim teleop run` / `teleop bridge` | Run the VR loop or image bridge | Prepared teleop runtime |
 | `geniesim benchmark <run\|list\|batch\|categories\|robots\|check-inference>` | Run / inspect benchmark tasks (see [geniesim_benchmark/README.md](../geniesim_benchmark/README.md)) | `run`/`batch`: Yes (Isaac Sim); rest: No |
-| `geniesim autocollect <list\|tasks\|robots\|run\|build\|up\|into\|down>` | List / run / build / manage data_collection tasks & container (see [data_collection/AGENTS.md](../data_collection/AGENTS.md)) | `run`/`up`: Docker + GPU; `build`: Docker; rest: No |
+| `geniesim data-collection <install\|config\|llm\|list\|tasks\|robots\|run\|replay\|build\|up\|into\|down>` | List / run / build / manage data_collection tasks & container (see [data_collection/AGENTS.md](../data_collection/AGENTS.md)) | `run`/`up`: Docker + GPU; `build`: Docker; rest: No |
 | `geniesim tool deps-dag` | Verify the module-dependency DAG in `source/README.md` matches every peer's `pyproject.toml` (CI hook) | No |
 | `geniesim tool deps-dag --fix` | Regenerate the DAG in-place between `<!-- AUTOGEN:deps-dag -->` markers | No |
 | `geniesim tool ros-dag` | Verify the ROS-package DAG in `source/geniesim_ros/README.md` matches every workspace `package.xml` (CI hook). | No |
@@ -377,3 +377,60 @@ links change, update `_DOWNLOAD_SOURCES` in the same diff.
 This directory is the **canonical home** of `geniesim_cli`. The package
 lives here, gets edited here, and is built from here. Treat this tree as
 the source of truth.
+
+## Public data collection installation and image builds
+
+`geniesim data-collection install [--task-root PATH] [--assets-root PATH] [--dry-run]` registers the editable standalone
+module locator from the current checkout. Data collection is exempt from automatic
+tier-1 bootstrap, as it orchestrates its own image on the host. Do not add its
+Isaac Sim, cuRobo, or ROS dependencies to the lightweight CLI.
+
+
+`geniesim data-collection build` builds the complete image using
+`source/data_collection/docker/Dockerfile`, starting from official Isaac Sim 5.1.
+It accepts `--image=TAG`, `--dry-run`, and Docker build arguments, including
+`--build-arg ISAAC_SIM_BASE_IMAGE=IMAGE`. `DATA_COLLECTION_IMAGE` selects the
+application image; the default is
+`registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
+Default container name is `geniesim4-data-collection`; `--container-name`
+overrides it. Dependency installation and application copies share a single
+Dockerfile. Use this complete-image build path.
+
+`data-collection run/up` resolve assets through the module's standard-library
+`scripts/resolve_assets.py`. Forward `_env.assets_path()` using the canonical
+environment name and export the resolved `SIM_ASSETS` for the launch scripts.
+An editable asset-package install is optional; relative asset directories also
+work. Resolve external task libraries through `scripts/resolve_llm_task_root.py`;
+forward `_env.llm_task_root()` and export both configured task-root names. The
+JSON/GUI launchers remap them to `/llm_tasks` inside the container.
+Install persists roots in `~/.config/geniesim/data-collection.json` (override:
+`GENIESIM_DATA_COLLECTION_CONFIG`); explicit environment roots take precedence.
+`config` displays saved/effective settings. `llm list/show` inspects external tasks.
+`run <TASK>` defaults to LLM collection; `run --task-json PATH` selects the JSON job launcher. `llm run` is an alternate alias. New LLM workflows copy tasks to
+`recording_data/llm/<task>/<run>/tasks` and mount that working copy at `/run/tasks`.
+`replay <TASK_OR_EPISODE>` isolates input and verifies newly converted H5/video
+outputs; task names resolve the latest successful CLI recording. Do not add
+Isaac/ROS dependencies to the host CLI. Keep direct scripts on the shared
+resource discovery path. Before launching LLM collection, apply the module
+`llm_task_policy.py` guard: deformable tasks cannot use `run_times > 1`.
+USD assets with attached behavior scripts also require one run; the README
+documents this restriction because host catalog inspection does not compose USD.
+
+
+## Scene agent peer
+
+`geniesim_scene_agent` is optional via
+`source/geniesim/[scene_agent]` after installing the local peer. Its distribution
+and import name match; deploy and shell completion use `geniesim_scene_agent`.
+The peer owns its scene/asset tool commands and bundles its skills/examples in
+wheels. Default bootstrap and the shared tier-1 container install remain unchanged.
+See the scene agent guide.
+
+The scene agent optionally consults `_env.assets_path()` for external assets,
+then locates the installed asset package without importing it, and falls back
+to relative `assets/` layouts. It does not require a CLI dependency. Existing
+example USD references can be bound with the module’s auto-discovery helper.
+
+`geniesim tool ros-dag` excludes generated `devel`, `devel_build` and
+`devel_log` trees alongside build/install/external, so stale colcon package.xml
+symlinks cannot shadow source packages or break the generator.

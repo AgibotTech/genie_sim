@@ -150,10 +150,31 @@ GENIESIM_ASSETS_PATH = _register(
             "geniesim_benchmark/teleop/replay_state.py",
             "geniesim_benchmark/plugins/ader/action/common_actions.py",
             "geniesim_benchmark/plugins/tgs/taskgen_utils.py",
+            "geniesim_cli/commands/data_collection.py",
             "data_collection/server/command_controller.py",
             "data_collection/client/agent/omniagent.py",
             "data_collection/client/layout/*.py",
         ),
+    )
+)
+
+GENIESIM_DATA_COLLECTION_CONFIG = _register(
+    EnvVar(
+        name="GENIESIM_DATA_COLLECTION_CONFIG",
+        description="User settings for collection task and asset roots; environment overrides remain available.",
+        default="$XDG_CONFIG_HOME/geniesim/data-collection.json (or $HOME/.config/geniesim/data-collection.json)",
+        category="workspace",
+        consumers=("geniesim_cli/commands/data_collection.py", "data_collection/scripts/collection_settings.py"),
+    )
+)
+
+GENIESIM_LLM_TASK_ROOT = _register(
+    EnvVar(
+        name="GENIESIM_LLM_TASK_ROOT",
+        description="External LLM task library; legacy LLM_TASK_ROOT is accepted. Mounted by data-collection launchers.",
+        default="(auto-discovered from scene agent examples or standalone task library)",
+        category="workspace",
+        consumers=("geniesim_cli/commands/data_collection.py", "data_collection/scripts/resolve_llm_task_root.py"),
     )
 )
 
@@ -348,6 +369,11 @@ def repo_root() -> Optional[str]:
 def repo_path() -> Optional[str]:
     """Return ``$GENIESIM_REPO_PATH``, falling back to legacy ``$SIM_REPO_ROOT``."""
     return GENIESIM_REPO_PATH.get() or os.environ.get("SIM_REPO_ROOT")
+
+
+def llm_task_root() -> Optional[str]:
+    """Return the configured task library, accepting the existing client variable."""
+    return GENIESIM_LLM_TASK_ROOT.get() or os.environ.get("LLM_TASK_ROOT")
 
 
 def assets_path() -> Optional[str]:

@@ -218,8 +218,8 @@ _pip_install() {
 # ``source/geniesim/pyproject.toml``. ``docker/collect_deps.py --peers``
 # reads that pyproject (same parser as ``geniesim_cli._tiers``) and
 # prints the peer names one per line. Tier-2 peers (geniesim_teleop /
-# generator / world) are not installed by default. Users opt in via
-# ``pip install -e "source/geniesim/[teleop|generator|world|all]"``
+# scene agent / world) are not installed by default. Users opt in via
+# ``pip install -e "source/geniesim/[teleop|scene_agent|world|all]"``
 # inside the container.
 #
 # Two non-pyproject inputs the script can't derive:

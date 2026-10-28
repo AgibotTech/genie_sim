@@ -2,27 +2,28 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""``geniesim autocollect {list,tasks,robots,run,build,up,into,down}`` —
+"""``geniesim data-collection {install,config,llm,replay,list,tasks,robots,run,build,up,into,down}`` —
 drive the standalone ``source/data_collection`` automated trajectory-collection
 module from the CLI.
 
 Unlike ``geniesim benchmark`` (which execs a single ``app.py`` *inside* an
 already-running container), ``data_collection`` is a host-orchestrated,
 two-process module: ``scripts/run_data_collection.sh`` does ``docker run -d``
-against its own image (``geniesim3-data-collection``) and the in-container
+against its dedicated collection image and the in-container
 entrypoint launches both ``data_collector_server.py`` and
 ``run_data_collection.py``. This verb therefore wraps those shell scripts on
 the host rather than exec-ing a single process — see
 ``source/data_collection/AGENTS.md`` for the full driving model.
 
-``data_collection`` is not (yet) a pip-installable distribution, so its source
-tree is located by walking up from cwd / this file (or ``$GENIESIM_REPO_ROOT``)
-to ``source/data_collection`` — mirroring ``commands/docker.py:_repo_root``.
+The editable ``geniesim-data-collection`` locator registers this source tree.
+Without it, discovery walks up from cwd / this file (or ``$GENIESIM_REPO_ROOT``)
+to ``source/data_collection``. Runtime dependencies are supplied by its image.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
@@ -38,9 +39,9 @@ _DC_REL = Path("source") / "data_collection"
 _DC_MARKER = Path("scripts") / "run_data_collection.sh"
 _TASKS_DIRNAME = "tasks"
 
-# Container defaults (match scripts/start_gui.sh + dockerfile).
-_DC_IMAGE = "registry.agibot.com/genie-sim/geniesim3-data-collection:latest"
-_DC_CONTAINER = "data_collection_open_source"
+# Container defaults match the public v2 Dockerfiles and launch scripts.
+_DC_IMAGE = "registry.agibot.com/genie-sim/geniesim4-data-collection:latest"
+_DC_CONTAINER = "geniesim4-data-collection"
 
 
 def _dc_root() -> Path:
@@ -154,34 +155,47 @@ def _filter_tasks(robot: str | None, task: str | None, needle: str | None) -> li
 
 
 def _print_usage() -> None:
-    print(f"{BOLD}{MAGENTA}🤖 geniesim autocollect{RST}")
+    print(f"{BOLD}{MAGENTA}🤖 geniesim data-collection{RST}")
     print()
-    print(f"{BOLD}Usage:{RST} geniesim autocollect {CYAN}<subcommand>{RST} [args...]")
+    print(f"{BOLD}Usage:{RST} geniesim data-collection {CYAN}<subcommand>{RST} [args...]")
     print()
     print(f"{BOLD}Subcommands:{RST}")
+    print(f"  {CYAN}install{RST} [--task-root=PATH] [--assets-root=PATH] [--dry-run]  📦 Install and save defaults")
+    print(f"  {CYAN}config{RST}                                    ⚙️ Show saved settings and active task root")
+    print(f"  {CYAN}llm list{RST} [--robot=R] [--json]                📋 List external LLM tasks")
+    print(f"  {CYAN}llm show{RST} TASK                               🔎 Show metadata and available scenes")
+    print(f"  {CYAN}llm run{RST} TASK [--scene=ID] [--run-times=N]    ▶️ Collect an LLM task (recording enabled)")
+    print(
+        f"  {CYAN}replay{RST} EPISODE_OR_TASK [--config=JSON]        🎬 Replay an episode or a task's latest recording"
+    )
     print(f"  {CYAN}list{RST} [--robot=R] [--task=T] [SUBSTR]      📋 List task templates")
     print(f"  {CYAN}tasks{RST}                                     🏷  Distinct tasks (families) + counts")
     print(f"  {CYAN}robots{RST}                                    🤖 Distinct robots + counts")
-    print(
-        f"  {CYAN}run{RST} {WHITE}<TASK>{RST} [--headless] [--no-record] [--standalone] [--container-name=N] [--dry-run]"
-    )
-    print(f"     {DIM}▶️  Collect one task (wraps scripts/run_data_collection.sh on the host).{RST}")
-    print(f"  {CYAN}build{RST} [--image=TAG] [docker-build args...] 🔨 Build the autocollect image")
+    print(f"  {CYAN}run{RST} {WHITE}<LLM_TASK>{RST} [--scene=ID] [--run-times=N] [--dry-run]")
+    print(f"     {DIM}Default: collect an LLM task. Use --task-json PATH for a JSON job/template.{RST}")
+    print(f"  {CYAN}build{RST} [--image=TAG] [docker-build args...] 🔨 Build the collection/replay image")
     print(f"  {CYAN}up{RST} [--container-name=N]                  🐳 Create + enter interactive GUI container")
     print(
         f"  {CYAN}into{RST} {DIM}/{RST} {CYAN}down{RST} [--container-name=N]         🐳 Enter running container / stop + remove"
     )
     print()
-    print(f"{BOLD}TASK resolution (for run):{RST}")
+    print(f"{BOLD}JSON task resolution (run --task-json PATH):{RST}")
     print(f"  {DIM}1. literal path (absolute / relative to the data_collection dir){RST}")
     print(f"  {DIM}2. basename: 'sort_the_fruit_into_the_box_apple_g2'{RST}")
     print(f"  {DIM}3. unique substring match against task stems{RST}")
     print()
     print(f"{BOLD}Examples:{RST}")
-    print(f"  {CYAN}geniesim autocollect list{RST} --robot=g2 sort_fruit")
-    print(f"  {CYAN}geniesim autocollect run{RST} sort_the_fruit_into_the_box_apple_g2 --headless --standalone")
+    print(f"  {CYAN}geniesim data-collection llm list{RST} --robot g2")
     print(
-        f"  {CYAN}geniesim autocollect run{RST} apple_g2 --dry-run   {DIM}# resolve + print the command, don't launch{RST}"
+        f"  {CYAN}geniesim data-collection run{RST} place_long_block_across_two_supports_g2 --scene 2026121696_166a0404"
+    )
+    print(f"  {CYAN}geniesim data-collection replay{RST} place_long_block_across_two_supports_g2")
+    print(f"  {CYAN}geniesim data-collection list{RST} --robot=g2 sort_fruit")
+    print(
+        f"  {CYAN}geniesim data-collection run{RST} --task-json sort_the_fruit_into_the_box_apple_g2 --headless --standalone"
+    )
+    print(
+        f"  {CYAN}geniesim data-collection run{RST} --task-json apple_g2 --dry-run   {DIM}# resolve + print the command, don't launch{RST}"
     )
 
 
@@ -312,35 +326,67 @@ def _resolve_task(arg: str, dc_root: Path) -> str:
         _ambiguous(arg, matches)
 
     print(f"{RED}❌ No task matches '{arg}'.{RST}")
-    print(f"   {DIM}Try{RST} {CYAN}geniesim autocollect list{RST}{DIM} to enumerate.{RST}")
+    print(f"   {DIM}Try{RST} {CYAN}geniesim data-collection list{RST}{DIM} to enumerate.{RST}")
     sys.exit(1)
 
 
 _RUN_BOOL_FLAGS = ("--headless", "--no-record", "--standalone")
 
 
-def _find_assets_src() -> str:
-    """Locate the editable-installed ``geniesim_assets`` source dir on the host
-    (the dir holding its ``pyproject.toml``) — same discovery as
-    ``geniesim_cli.commands.docker._find_assets_src``. Returns "" if not found."""
-    import importlib.util
+def _resolve_assets(dc_root: Path, *, required: bool = True) -> str:
+    """Use the standalone module's asset locator, without importing its runtime."""
+    env = dict(os.environ)
+    configured = _env.assets_path()
+    if configured:
+        env[_env.GENIESIM_ASSETS_PATH.name] = configured
+    result = subprocess.run(
+        [sys.executable, str(dc_root / "scripts" / "resolve_assets.py")],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode:
+        if required:
+            print(f"{RED}{result.stderr.strip()}{RST}")
+            sys.exit(result.returncode)
+        return ""
+    return result.stdout.strip()
 
-    spec = importlib.util.find_spec("geniesim_assets")
-    if not spec:
-        return ""
-    if spec.submodule_search_locations:
-        loc = Path(list(spec.submodule_search_locations)[0])
-    elif spec.origin:
-        loc = Path(spec.origin).parent
-    else:
-        return ""
-    for p in [loc, *loc.parents]:
-        if (p / "pyproject.toml").is_file():
-            return str(p)
-    return ""
+
+def _resolve_llm_tasks(dc_root: Path) -> str:
+    env = dict(os.environ)
+    configured = _env.llm_task_root()
+    if configured:
+        env[_env.GENIESIM_LLM_TASK_ROOT.name] = configured
+    result = subprocess.run(
+        [sys.executable, str(dc_root / "scripts" / "resolve_llm_task_root.py")],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode:
+        print(f"{RED}{result.stderr.strip()}{RST}")
+        sys.exit(result.returncode)
+    return result.stdout.strip()
 
 
 def _do_run(args: list[str]) -> None:
+    json_task, rest = _extract_flag(args, "task-json")
+    if json_task is not None:
+        if not json_task or json_task.startswith("--"):
+            print(f"{RED}--task-json needs a JSON file path.{RST}")
+            sys.exit(1)
+        _do_json_run([json_task, *rest])
+        return
+    if "--task-json" in args:
+        print(f"{RED}--task-json needs a JSON file path.{RST}")
+        sys.exit(1)
+    from geniesim_cli.commands.data_collection_workflows import run
+
+    run("run", args)
+
+
+def _do_json_run(args: list[str]) -> None:
     if args and args[0] in ("-h", "--help", "help"):
         _print_usage()
         return
@@ -363,10 +409,10 @@ def _do_run(args: list[str]) -> None:
             unknown.append(a)
 
     if task_arg is None:
-        print(f"{RED}❌ Missing TASK.{RST} {DIM}Try{RST} {CYAN}geniesim autocollect list{RST}.")
+        print(f"{RED}❌ Missing TASK.{RST} {DIM}Try{RST} {CYAN}geniesim data-collection list{RST}.")
         sys.exit(1)
     if unknown:
-        print(f"{RED}❌ Unsupported option(s) for autocollect run:{RST} {WHITE}{' '.join(unknown)}{RST}")
+        print(f"{RED}❌ Unsupported option(s) for data-collection run:{RST} {WHITE}{' '.join(unknown)}{RST}")
         print(
             f"   {DIM}run_data_collection.sh only accepts{RST} "
             f"{CYAN}--headless --no-record --standalone --container-name{RST}"
@@ -380,22 +426,36 @@ def _do_run(args: list[str]) -> None:
     dc_root = _dc_root()
     rel = _resolve_task(task_arg, dc_root)
 
-    # Discover the editable-installed geniesim_assets on the host, to bind-mount
-    # + editable-install it in the container.
-    assets_src = _find_assets_src()
-    if not assets_src and not dry_run:
-        print(f"{RED}❌ geniesim_assets is not pip-installed (editable) on the host.{RST}")
-        print(f"   {DIM}Install it first, e.g.{RST} {CYAN}pip install -e /path/to/geniesim_assets{RST}")
-        sys.exit(1)
+    assets_src = _resolve_assets(dc_root, required=not dry_run)
+    llm_tasks = _resolve_llm_tasks(dc_root)
+    job = json.loads((dc_root / rel).read_text(encoding="utf-8"))
+    if job.get("mode") == "llm" and job.get("run_mode") != "replay":
+        from geniesim_cli.commands.data_collection_workflows import _validate_run_times
+
+        if not llm_tasks:
+            print(f"{RED}Error: No LLM task library configured{RST}", file=sys.stderr)
+            raise SystemExit(1)
+        task_name = job["task_name"]
+        if Path(task_name).name != task_name or task_name in (".", ".."):
+            print(f"{RED}Error: Use a task directory name{RST}", file=sys.stderr)
+            raise SystemExit(1)
+        try:
+            _validate_run_times(
+                dc_root, Path(llm_tasks) / task_name, job.get("scene_dir", "random"), job.get("run_times", 1)
+            )
+        except ValueError as exc:
+            print(f"{RED}Error: {exc}{RST}", file=sys.stderr)
+            raise SystemExit(1)
 
     cmd = ["bash", "scripts/run_data_collection.sh", "--task", rel, *passthru]
     if container_name:
         cmd += ["--container-name", container_name]
 
     flags = " ".join(passthru) + (f" --container-name {container_name}" if container_name else "")
-    print(f"{BOLD}{MAGENTA}📥 geniesim autocollect run{RST}")
+    print(f"{BOLD}{MAGENTA}📥 geniesim data-collection run{RST}")
     print(f"   {DIM}Task:{RST}    {CYAN}{rel}{RST}")
-    print(f"   {DIM}Assets:{RST}  {CYAN}{assets_src or '(geniesim_assets not pip-installed — required)'}{RST}")
+    print(f"   {DIM}Assets:{RST}  {CYAN}{assets_src or 'assets not found — configure before launching'}{RST}")
+    print(f"   {DIM}LLM tasks:{RST} {CYAN}{llm_tasks or '(not configured)'}{RST}")
     print(f"   {DIM}Workdir:{RST} {CYAN}{dc_root}{RST}")
     print(f"   {DIM}Flags:{RST}   {CYAN}{flags.strip() or '(none)'}{RST}")
     print()
@@ -407,7 +467,11 @@ def _do_run(args: list[str]) -> None:
         return
 
     env = dict(os.environ)
-    env["GENIESIM_ASSETS_SRC"] = assets_src
+    env[_env.GENIESIM_ASSETS_PATH.name] = assets_src
+    env["SIM_ASSETS"] = assets_src
+    if llm_tasks:
+        env[_env.GENIESIM_LLM_TASK_ROOT.name] = llm_tasks
+        env["LLM_TASK_ROOT"] = llm_tasks
     result = subprocess.run(cmd, cwd=str(dc_root), env=env)
     sys.exit(result.returncode)
 
@@ -435,22 +499,24 @@ def _container_state(name: str) -> str | None:
     return result.stdout.strip() or None
 
 
+def _do_install(args: list[str]) -> None:
+    from geniesim_cli.commands.data_collection_workflows import run
+
+    run("install", args)
+
+
 def _do_build(args: list[str]) -> None:
     _ensure_docker()
     dry_run, args = _pop_flag(args, "--dry-run")
     image, args = _extract_flag(args, "image")
-    image = image or _DC_IMAGE
+    image = image or os.environ.get("DATA_COLLECTION_IMAGE") or _DC_IMAGE
     dc_root = _dc_root()
-
-    # dockerfile already pins china pip/cuda mirrors and ENV TORCH_CUDA_ARCH_LIST=8.9
-    # (RTX 4090D). Other GPUs need a dockerfile edit — it's ENV, not a build-arg.
-    cmd = ["docker", "build", "-f", "dockerfile", "-t", image, *args, "."]
-    print(f"{BOLD}{MAGENTA}🔨 geniesim autocollect build{RST}")
-    print(f"   {DIM}Dockerfile:{RST} {CYAN}{dc_root / 'dockerfile'}{RST}")
+    dockerfile = "docker/Dockerfile"
+    cmd = ["docker", "build", "-f", dockerfile, "-t", image]
+    cmd += [*args, "."]
+    print(f"{BOLD}{MAGENTA}🔨 geniesim data-collection build{RST}")
+    print(f"   {DIM}Dockerfile:{RST} {CYAN}{dc_root / dockerfile}{RST}")
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
-    print(
-        f"   {DIM}Base:{RST}       {CYAN}registry.agibot.com/genie-sim/geniesim3:latest{RST} {DIM}(must exist first){RST}"
-    )
     print()
     print(f"   {YELLOW}$ (cd {dc_root} && {' '.join(cmd)}){RST}")
     print()
@@ -468,20 +534,20 @@ def _do_up(args: list[str]) -> None:
     container, _ = _extract_flag(args, "container-name")
     container = container or _DC_CONTAINER
 
-    assets_src = _find_assets_src()
-    if not assets_src:
-        print(f"{RED}❌ geniesim_assets is not pip-installed (editable) on the host.{RST}")
-        print(f"   {DIM}start_gui.sh needs it; install e.g.{RST} {CYAN}pip install -e /path/to/geniesim_assets{RST}")
-        sys.exit(1)
-
     dc_root = _dc_root()
+    assets_src = _resolve_assets(dc_root)
+    llm_tasks = _resolve_llm_tasks(dc_root)
     cmd = ["bash", "scripts/start_gui.sh", "run", container]
-    print(f"{BOLD}{MAGENTA}🐳 geniesim autocollect up{RST} {DIM}(interactive GUI container){RST}")
+    print(f"{BOLD}{MAGENTA}🐳 geniesim data-collection up{RST} {DIM}(interactive GUI container){RST}")
     print(f"   {DIM}Container:{RST} {CYAN}{container}{RST}")
     print(f"   {YELLOW}$ (cd {dc_root} && {' '.join(cmd)}){RST}")
     print()
     env = dict(os.environ)
-    env["GENIESIM_ASSETS_SRC"] = assets_src
+    env[_env.GENIESIM_ASSETS_PATH.name] = assets_src
+    env["SIM_ASSETS"] = assets_src
+    if llm_tasks:
+        env[_env.GENIESIM_LLM_TASK_ROOT.name] = llm_tasks
+        env["LLM_TASK_ROOT"] = llm_tasks
     result = subprocess.run(cmd, cwd=str(dc_root), env=env)
     sys.exit(result.returncode)
 
@@ -493,7 +559,7 @@ def _do_into(args: list[str]) -> None:
     state = _container_state(container)
     if state != "running":
         print(f"{RED}❌ Container {BOLD}{container}{RST}{RED} is not running (state: {state}).{RST}")
-        print(f"   {DIM}Start it with{RST} {CYAN}geniesim autocollect up{RST}{DIM}.{RST}")
+        print(f"   {DIM}Start it with{RST} {CYAN}geniesim data-collection up{RST}{DIM}.{RST}")
         sys.exit(1)
     dc_root = _dc_root()
     result = subprocess.run(["bash", "scripts/start_gui.sh", "exec", container], cwd=str(dc_root))
@@ -508,7 +574,7 @@ def _do_down(args: list[str]) -> None:
     if state is None:
         print(f"{DIM}No container named {BOLD}{container}{RST}{DIM}; nothing to do.{RST}")
         return
-    print(f"{BOLD}{MAGENTA}🛑 geniesim autocollect down{RST}")
+    print(f"{BOLD}{MAGENTA}🛑 geniesim data-collection down{RST}")
     print(f"   {DIM}Container:{RST} {CYAN}{container}{RST} {DIM}(state: {state}){RST}")
     if state == "running":
         subprocess.run(["docker", "stop", container], check=False)
@@ -524,6 +590,14 @@ def run(args: list[str]) -> None:
     sub = args[0]
     rest = args[1:]
 
+    if sub in ("config", "llm", "replay"):
+        from geniesim_cli.commands.data_collection_workflows import run
+
+        run(sub, rest)
+        return
+    if sub == "install":
+        _do_install(rest)
+        return
     if sub == "list":
         _do_list(rest)
         return
@@ -549,7 +623,7 @@ def run(args: list[str]) -> None:
         _do_down(rest)
         return
 
-    print(f"{RED}❌ Error: unknown autocollect subcommand '{sub}'{RST}")
+    print(f"{RED}❌ Error: unknown data-collection subcommand '{sub}'{RST}")
     print()
     _print_usage()
     sys.exit(1)
