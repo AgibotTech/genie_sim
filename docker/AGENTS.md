@@ -171,6 +171,10 @@ and examples live in the owning engine package. Do not add task menus, duplicate
 container managers, render consumers, recording controls or per-task cache
 ownership repair here. Use the existing Docker CLI and normal ROS build/launch.
 
+Both Jazzy image recipes include teleop dependencies through
+`collect_deps.py --include-peer geniesim_teleop` plus the pinned Wuji SDK
+in system Python; this does not alter the SDK-owned Newton, MuJoCo or Warp
+versions.
 
 
 
@@ -190,6 +194,10 @@ a specific cache; it must not recurse into source assets or unrelated scenes.
 - **`collect_deps.py` is shared.** Base Dockerfiles `COPY docker/collect_deps.py`;
   Post-training layers reuse the base dependencies.
 
+- **Build contexts are recipe-specific.** `Dockerfile.dockerignore` and
+  `Dockerfile.5.1.dockerignore` admit only these recipes' COPY inputs, excluding
+  the large source asset tree and generated Python caches. Keep both inclusion
+  lists aligned when adding a COPY input. Other recipes retain their own context.
 
 - **Entrypoint is bind-mounted at runtime.** `start.sh` mounts
   `docker/entrypoint.sh` over `/usr/local/bin/geniesim-entrypoint` so changes

@@ -113,6 +113,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
         python3-venv \
         python3-dev \
+        python3-numpy python3-scipy python3-opencv \
+        iproute2 procps gettext-base \
         libvulkan1 vulkan-tools \
         libx11-6 libxrandr2 libxss1 libxcursor1 libxi6 libglu1-mesa \
         libgl1 libegl1 libnss3 libxcomposite1 libxdamage1 libxext6 \
@@ -144,6 +146,7 @@ RUN add-apt-repository universe -y && \
         ros-jazzy-rmw-cyclonedds-cpp \
         ros-jazzy-vision-msgs-rviz-plugins \
         ros-jazzy-joy \
+        ros-jazzy-xacro ros-jazzy-cv-bridge ros-jazzy-gazebo-msgs \
         ros-dev-tools && \
     rm -rf /var/lib/apt/lists/*
 
@@ -193,22 +196,23 @@ RUN id isaac-sim >/dev/null 2>&1 || useradd -m -u 1234 -s /bin/bash isaac-sim &&
 # ------------------------------------------------------------
 # GeneSim module dependencies (extracted from **tier-1** pyproject.toml files).
 # NOTE: collect_deps.py is shared across all variants — lives in docker/.
-# Tier-2 peers (`geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world`)
-# are opt-in via the umbrella's `[teleop|scene_agent|world|all]` extras and
-# not installed by default — only their pyproject.tomls would need to be
-# COPY'd here if you want them baked in.
+# This 6.2 image also includes teleop dependencies for Pico and Wuji.
+# NumPy/SciPy remain SDK-owned globally; ROS controls use the apt overlay.
 # ------------------------------------------------------------
 COPY docker/collect_deps.py /tmp/collect_deps.py
 COPY source/geniesim_cli/pyproject.toml /tmp/source/geniesim_cli/pyproject.toml
 COPY source/geniesim/pyproject.toml /tmp/source/geniesim/pyproject.toml
 COPY source/geniesim_benchmark/pyproject.toml /tmp/source/geniesim_benchmark/pyproject.toml
 COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
+COPY source/geniesim_teleop/pyproject.toml /tmp/source/geniesim_teleop/pyproject.toml
+ARG WUJI_SDK_VERSION=2026.8.17
 COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 /opt/geniesim/docker/collect_runtime_constraints.py \
         --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
-    python3 /tmp/collect_deps.py /tmp/source > /tmp/geniesim_deps.txt && \
+    python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
     python3 -m pip install -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
+        "wuji-sdk==${WUJI_SDK_VERSION}" \
         -c /opt/geniesim/docker/isaac-constraints.txt && \
     rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt
 

@@ -15,7 +15,7 @@ Unknown flags are forwarded verbatim to the underlying ``argparse`` in
 each module, so this verb never has to mirror their option tables.
 
 The interpreter is picked the same way as ``geniesim benchmark`` so the
-verb works inside the 6.0 container (``python3``), the 5.1 container
+verb works inside the 6.x container (``python3``), the 5.1 container
 (``omni_python``), and on a host with a pip-installed isaacsim
 (``sys.executable``):
 

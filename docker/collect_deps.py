@@ -7,10 +7,10 @@
 
 Outputs a flat list of pip-installable package specs that the docker
 image needs to install at build time. Tier-2 peers are deliberately
-**excluded** — they're opt-in via
+**excluded** unless selected with ``--include-peer`` by an image recipe.
+They are otherwise opt-in via
 ``pip install -e "source/geniesim/[teleop|scene_agent|world|all]"``
-and their heavy stacks (VR / LLM / CUDA-ML) shouldn't be baked into
-the default container.
+and their heavy stacks remain separate from the default tier-1 selection.
 
 **Single source of truth:** ``source/geniesim/pyproject.toml``.
 
@@ -36,16 +36,14 @@ Skips, per-package:
   runtime base image, not by pip
 """
 
+import argparse
 import pathlib
 import re
-import sys
 
 SKIP_PREFIXES = ("geniesim",)
 SKIP_EXACT = {"isaacsim", "cv_bridge", "numpy", "scipy"}
 
-SOURCE_DIR = (
-    pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "source"
-)
+SOURCE_DIR = pathlib.Path(__file__).resolve().parent.parent / "source"
 
 
 def _strip_specifier(req: str) -> str:
@@ -107,6 +105,15 @@ def discover_tier1_packages() -> list[str]:
 
 
 def main() -> None:
+    global SOURCE_DIR
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", nargs="?", type=pathlib.Path, default=SOURCE_DIR)
+    parser.add_argument("--peers", action="store_true")
+    parser.add_argument(
+        "--include-peer", action="append", default=[], help="Also bake this optional peer's dependencies"
+    )
+    args = parser.parse_args()
+    SOURCE_DIR = args.source
     # Two-mode CLI:
     #   collect_deps.py            → third-party pip deps (default, image-build use)
     #   collect_deps.py --peers    → tier-1 peer source paths, one per line,
@@ -119,13 +126,20 @@ def main() -> None:
     # (via ``discover_tier1_packages``). Each emitted line is a directory name
     # under ``SOURCE_DIR``; the caller is responsible for confirming
     # ``${SOURCE_DIR}/<name>/pyproject.toml`` actually exists before pip-installing.
-    if "--peers" in sys.argv[2:]:
+    if args.peers:
         for pkg in discover_tier1_packages():
             print(pkg)
         return
 
     all_deps: set[str] = set()
     tier1_packages = discover_tier1_packages()
+    for pkg in args.include_peer:
+        if not pkg.startswith("geniesim_") or pathlib.Path(pkg).name != pkg:
+            parser.error(f"Invalid optional peer: {pkg}")
+        if not (SOURCE_DIR / pkg / "pyproject.toml").is_file():
+            parser.error(f"Missing optional peer metadata: {pkg}")
+        if pkg not in tier1_packages:
+            tier1_packages.append(pkg)
     for pkg in tier1_packages:
         pyproject = SOURCE_DIR / pkg / "pyproject.toml"
         if not pyproject.exists():
