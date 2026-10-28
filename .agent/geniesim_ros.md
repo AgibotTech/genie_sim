@@ -22,7 +22,7 @@ Three physics backends coexist as switchable launcher choices:
 | Canonical package table + invariants | [`source/geniesim_ros/AGENTS.md`](../source/geniesim_ros/AGENTS.md) |
 | User-facing engine overview + scene × launcher matrix | [`source/geniesim_ros/README.md`](../source/geniesim_ros/README.md) |
 | Agent skills (build, launch, MoveIt, teleop bridge, record, debug, material) | [`source/geniesim_ros/skills/`](../source/geniesim_ros/skills/) |
-| Engine internals (deep-dives) | [`source/geniesim_ros/src/ros_ws/src/genie_sim_engine/docs/`](../source/geniesim_ros/src/ros_ws/src/genie_sim_engine/docs/) |
+| Engine internals (deep-dives) | [`source/geniesim_ros/src/ros_ws/src/genie_sim_engine_core/docs/`](../source/geniesim_ros/src/ros_ws/src/genie_sim_engine_core/docs/) |
 | Launch + scene/launcher yamls | [`source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/`](../source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/) |
 
 ## Invariants the rest of the repo relies on

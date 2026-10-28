@@ -13,6 +13,11 @@ reacts to the simulation as if it were hardware.
 
 License: [Mozilla Public License Version 2.0](LICENSE)
 Routing / contributor map: [AGENTS.md](AGENTS.md)
+Shared runtime references and acceptance: [docs/README.md](docs/README.md)
+
+Shared Python code is maintained for Python **3.10 and 3.12**. `geniesim docker` stays on `docker5.1`
+as the default. The dedicated `geniesim docker6.2` image has measured component
+coverage; see [runtime acceptance](docs/ISAACSIM_ACCEPTANCE.md).
 
 ---
 
@@ -21,14 +26,14 @@ Routing / contributor map: [AGENTS.md](AGENTS.md)
 | | |
 |---|---|
 | ⚡ **Interactive realtime physics** | Closed-loop sim that responds to live teleop, planner, and controller commands without buffering or replay tricks. Physics, render, and ROS publishers share a single `sim_time` so the operator and the robot agree on what's happening *now*. |
-| 🧮 **Multiple physics backends, one workspace** | Pick at launch with `launcher_config:=…`: Isaac Sim PhysX (stable rigid), Isaac Sim Newton (rigid, experimental), or **Newton-standalone** (Kit-free, the only path that supports cloth + soft bodies in addition to rigid). |
+| 🧮 **Multiple physics backends, one workspace** | Pick at launch with `launcher_config:=…`: Isaac Sim PhysX (stable rigid), Isaac Sim Newton (rigid, experimental), or **Newton-standalone** (Kit-free, supports cloth + soft bodies in addition to rigid). |
 | 👕 **Cloth & soft body in the loop** | Newton-standalone is designed for deformables — cloth folding, fabric drape, FEM tet bars — alongside the rigid robot. Multiple solvers are wired in so a scene yaml can opt into the one that fits the material; the engine bridges them all to the same render and RViz feedback. |
 | 🦿 **Customizable robots, AS3-native assets** | `genie_sim_robot_model` ships multiple robots out of the box (Genie G2 family, Franka, UR5, Aloha, ARX, …) and lets you bring your own via xacro / URDF — the offline mesh tools normalize OBJ names, inject missing inertials, and stage the result into Isaac Sim's **AS3 asset layout** (per-robot directory with `robot.usda` + `payloads/Physics/{physics,physx,mujoco}.usda`). The engine consumes that layout uniformly; switching physics backends never rewrites the asset. |
-| 🤖 **Isaac Sim 5.1 today, ready for 6.0** | The current target is Isaac Sim **5.1** (the `geniesim docker` default). Isaac Sim **6.0** support is incoming. Isaac Sim **4.5** is **EOL** — kept buildable for legacy users, no new features. Layout (AS2 flat ↔ AS3 nested), URDF→USD importer differences, and mimic-joint API differences are absorbed by runtime detection — your scene yaml doesn't change across versions. |
+| 🤖 **Isaac Sim runtimes** | `docker5.1` is the default combo: bundled 5.1 and system Python 6.2. `docker6.2` uses base 6.2.0.1 and wheel 6.2.0.0. `docker4.5` provides the Python 3.10/Humble compatibility runtime. AS2/AS3 import and layout differences are handled at the runtime boundary; acceptance is recorded per image and interpreter. |
 | 🦾 **MoveIt 2 for Genie G2** | Drop-in `move_group` + WBC RViz for the Genie G2 family (G2 is the Tier 1 robot). Ships three IK plugins (KDL-coupled, bio_ik-coupled, relaxed-IK) with G2 coupled-joint constraints, plus an RRT-Connect + TOPP-RA planner. Other robots run on the engine but don't have a packaged MoveIt config — port the SRDF and `coupled_constraints.yaml` if you need one. |
-| 🎨 **OVRtx rendering, two modes** | **Inline OVRtx** runs inside the Newton-standalone process — zero-copy `body_q → omni:xform` via Warp, photoreal viewport with no IPC. **Standalone OVRtx render node** runs as a separate ROS process consuming `/tf_render`, ideal when physics and rendering need different CPU/GPU budgets. Both paths print a first-run shader-compile heartbeat so operators know warmup vs hang. |
-| 📦 **Ships as a single pip wheel** | `pip install geniesim_ros` lands the pre-built colcon `--merge-install` tree (modes preserved via a tarball trick); consumers don't need colcon. Editable installs still let you `geniesim ros build dev` for iteration. |
-| 🌐 **ROS 2 Jazzy** | Jazzy is the current target distro (used by the Isaac Sim 5.1 and 6.0 containers). Humble is reachable only through the EOL Isaac Sim 4.5 container and gets no new features. |
+| 🎨 **OVRtx rendering, two modes** | **Inline OVRtx** runs inside the Newton-standalone process — zero-copy `body_q → omni:xform` via Warp, photoreal viewport with no IPC. **Standalone OVRtx render node** runs as a separate ROS process consuming `/tf_scene` and robot `/tf`, ideal when physics and rendering need different CPU/GPU budgets. Both paths print a first-run shader-compile heartbeat so operators know warmup vs hang. |
+| 📦 **Ships as a single pip wheel** | A built `geniesim_ros` wheel contains the pre-built colcon `--merge-install` tree (modes preserved via a tarball trick); consumers don't need colcon. Editable installs still let you `geniesim ros build dev` for iteration. |
+| 🌐 **ROS 2 Jazzy** | Jazzy is the system runtime for the 5.1 combo and dedicated 6.2 containers. Python 3.10/Humble compatibility uses the 4.5 container. |
 | 🛰️ **Live RViz integrations** | Custom marker / PointCloud2 publishers for deformable surfaces, free-joint rigid objects, and an RViz2-driven free-camera pose plugin. The renderer's `/tf_render` channel pushes per-body local transforms so the USD stage stays in lockstep with physics. |
 
 ---
@@ -37,10 +42,14 @@ Routing / contributor map: [AGENTS.md](AGENTS.md)
 
 Demos use **Genie G2 (Tier 1)**.
 
+For the Wuji wok scene, use the
+[Wuji chef Newton startup recipe](skills/run-wuji-chef-newton/SKILL.md)
+to launch the Newton XPBD engine.
+
 ### 1. Bring up the container
 
 ```bash
-geniesim docker up            # boots the Isaac Sim 5.1 + Jazzy container
+geniesim docker up            # boots the 5.1 combo container (system Python 6.2 + Jazzy)
 geniesim docker into          # opens an interactive shell inside it
 ```
 
@@ -77,7 +86,7 @@ the scene yaml decides the **robot variant + task**.
 | Launcher | Physics engine | Renderer | Status |
 |---|---|---|---|
 | `launcher_ovrtx_isaac_physx` | Isaac Sim PhysX | Standalone OVRtx node | ✅ Stable — start here |
-| `launcher_newton_mjwarp`     | Newton-standalone (mujoco-warp) | Inline OVRtx/Newton GL/RViz | ✅ Stable |
+| `launcher_newton_mjwarp`     | Newton-standalone (mujoco-warp) | Inline OVRtx/Newton GL/RViz | Tier-1 rigid path |
 
 **Combinations** — any scene with any launcher:
 
@@ -90,7 +99,7 @@ ros2 launch genie_sim_bringup app.launch.py \
 ```
 
 ```bash
-# Pick-and-place + experimental Newton-standalone
+# Pick-and-place + standalone Newton MuJoCo-Warp
 ros2 launch genie_sim_bringup app.launch.py \
   scene:=scene_pnp_g2_op \
   launcher_config:=launcher_newton_mjwarp \
@@ -106,7 +115,7 @@ ros2 launch genie_sim_bringup app.launch.py \
 ```
 
 ```bash
-# Whole-body control + experimental Newton-standalone
+# Whole-body control + standalone Newton MuJoCo-Warp
 ros2 launch genie_sim_bringup app.launch.py \
   scene:=scene_wbc_g2_sp \
   launcher_config:=launcher_newton_mjwarp \
@@ -116,8 +125,9 @@ ros2 launch genie_sim_bringup app.launch.py \
 The two axes are independent: swapping the scene changes which gripper
 the robot is built with and which RViz layout / demo task you see;
 swapping the launcher changes the physics backend and which OVRtx mode
-runs (separate process for `launcher_ovrtx_isaac_physx`, in-process for
-`launcher_newton_mjwarp`). See the
+runs. `launcher_ovrtx_isaac_physx` starts a separate renderer.
+`launcher_newton_mjwarp` defaults to Newton GL; select
+`physics_engine_visualizer:=ovrtx` for inline OVRtx. See the
 [Engine support matrix](#engine-support-matrix) below for the full grid.
 
 ### 4. (optional) MoveIt 2 + WBC RViz
@@ -150,29 +160,23 @@ Each row is a `launcher_config:=…` value. Mix-and-match physics + renderer
 is controlled by the launcher yaml; you don't pass `physics_engine` or
 `physics_solver` on the CLI.
 
-> ⚠️ **Experimental rows are unstable.** `launcher_ovrtx_isaac_newton`
-> and every `launcher_newton_*` configuration are research / preview
-> code paths — physics behaviour, performance, API surface, and yaml
-> schema can break between commits without notice. **Cloth and
-> soft-body support is itself experimental**: it runs only on
-> Newton-standalone, results are not contact-validated, and the solver
-> name in a launcher filename is not a stability guarantee. Use the
-> stable row (`launcher_ovrtx_isaac_physx`) for any work that needs
-> reproducible behaviour.
+> The Isaac Newton wrapper and deformable solver combinations are experimental.
+> Standalone MuJoCo-Warp is a Tier-1 rigid test path. A configured route is not
+> per-scene acceptance; use the [bringup results](src/ros_ws/src/genie_sim_bringup/README.md#results-matrix).
 
 | Launcher | Physics engine | Solver | Rigid bodies | Cloth / soft body | Renderer | Status |
 |---|---|---|---|---|---|---|
 | `launcher_ovrtx_isaac_physx` | Isaac Sim PhysX | PhysX 5 | ✅ | ⚠️ via PhysX (PhysxParticleCloth etc.) — not actively maintained | Standalone OVRtx node | ✅ **Stable — default** |
 | `launcher_ovrtx_isaac_newton` | Isaac Sim Newton (wrapper) | mujoco-warp | 🧪 **UNSTABLE** | ❌ (wrapper bridges rigid-body schemas only) | Standalone OVRtx node | 🚨 **EXPERIMENTAL** |
-| `launcher_newton_mjwarp` | Newton-standalone | mujoco-warp | ✅ | ❌ | Inline OVRtx | ✅ **Stable** |
+| `launcher_newton_mjwarp` | Newton-standalone | mujoco-warp | ✅ | ❌ | Newton GL by default; optional inline OVRtx | Tier-1 rigid path |
 | `launcher_newton_fsvbd` | Newton-standalone | Featherstone + VBD-family | 🧪 **UNSTABLE** |🚨 **EXPERIMENTAL** | Inline OVRtx | 🚨 **EXPERIMENTAL** |
 | `launcher_newton_avbd`  | Newton-standalone | augmented-VBD-family | ✅ |🚨 **EXPERIMENTAL** | Inline OVRtx | 🚨 **EXPERIMENTAL** |
 | `launcher_newton_mjvbd` | Newton-standalone | mujoco-warp + VBD-family | ✅ |🚨 **EXPERIMENTAL** | Inline OVRtx | 🚨 **EXPERIMENTAL** |
 | `launcher_newton_mjxpbd` | Newton-standalone | mujoco-warp + XPBD-family | ✅ |🚨 **EXPERIMENTAL** | Inline OVRtx | 🚨 **EXPERIMENTAL** |
 
-> Newton-standalone is the only path that even attempts cloth and soft
-> bodies — Isaac Sim Newton is rigid-only today. Treat any cloth /
-> soft-body result from this stack as a preview, not a benchmark.
+> Newton provides the cloth/soft-body combinations listed here. Libuipc owns
+> native IPC scenes. Deformable routes are experimental; use backend-specific
+> acceptance checks before drawing task-level conclusions.
 
 ### Isaac Sim × ROS distro × Docker variant
 
@@ -181,15 +185,15 @@ is exposed; bare `geniesim docker` aliases to the default (`docker5.1`).
 
 | Isaac Sim | ROS 2 | Container image | CLI entry | Status |
 |---|---|---|---|---|
-| **5.1** | **Jazzy** | `geniesim3` | `geniesim docker` / `geniesim docker5.1` | ✅ **Current target — default** |
-| 6.0 | Jazzy | `geniesim4` | `geniesim docker6.0` | 🚧 Incoming, **not implemented** |
-| 4.5 | Humble | `geniesim2` | `geniesim docker4.5` | ⚠️ **EOL** — kept buildable, no new features |
+| **5.1 bundled / 6.2 system** | **Jazzy** | `geniesim3` | `geniesim docker` / `geniesim docker5.1` | ✅ **Current target — default** |
+| 6.2 (tag **6.2.0.1**, wheel **6.2.0.0**) | Jazzy | `geniesim4` | `geniesim docker6.2` | Component checks recorded; full release acceptance incomplete |
+| 4.5 | Humble | `geniesim2` | `geniesim docker4.5` | Python 3.10 / Humble compatibility; GPU capture not qualified on RTX 5090 |
 
 ### Robot tiers (from `genie_sim_robot_model`)
 
 | Tier | Robots | What it means |
 |---|---|---|
-| **Tier 1** | Genie G2 family (`crs` / `crsB` arm × `omnipicker` / `swiftpicker` gripper) | Continuously validated. Physics tuning, contact compliance, mimic constraints, mobile-base pin/free behaviour are all maintained against every release. MoveIt config + WBC launch are G2-only. |
+| **Tier 1** | Genie G2 family (crs/omnipicker, crsB/Swiftpicker and crsB/Wuji) | Primary maintained test family. Use the scene results matrix for completed checks. MoveIt config + WBC launch are G2-only. |
 | **Tier 2 — reference only** | `agilex/aloha`, `agilex/piper`, `arx/x5`, `arx/acone`, `franka/fr3`, `universal_robots/ur5` | URDF/xacro kept correct; URDF→USD import expected to work. Scene yamls and physics tuning may be stale — treat as starting points. |
 
 Bring-your-own robots are supported via xacro / URDF — see
@@ -200,10 +204,11 @@ into the AS3 layout the engine consumes.
 
 ## What's in the box
 
-Twelve ROS packages, each with its own `AGENTS.md` for routing details:
+Thirteen ROS packages, each with its own `AGENTS.md` for routing details:
 
-- **Shared foundations**: [genie_sim_common](src/ros_ws/src/genie_sim_common/README.md), [genie_sim_engine_core](src/ros_ws/src/genie_sim_engine_core/README.md)
-- **Bringup & engine**: `genie_sim_bringup`, `genie_sim_engine`, `genie_sim_render`
+- **Bringup & engine**: `genie_sim_bringup`, `genie_sim_engine_core`,
+  `genie_sim_engine_isaacsim`, `genie_sim_engine_newton`, `genie_sim_render`
+- **Shared build glue**: `genie_sim_common`
 - **Robot + visualization**: `genie_sim_robot_model`, `genie_sim_rviz_plugins`
 - **Motion stack (Genie G2)**: `genie_sim_moveit`, `genie_sim_moveit_plugins`
 - **ros2_control**: `genie_sim_control`, `genie_sim_controllers`
@@ -229,7 +234,6 @@ graph TD
   genie_sim_common["<b>genie_sim_common</b>"]
   genie_sim_control["<b>genie_sim_control</b>"]
   genie_sim_controllers["<b>genie_sim_controllers</b>"]
-  genie_sim_engine["<b>genie_sim_engine</b>"]
   genie_sim_engine_core["<b>genie_sim_engine_core</b>"]
   genie_sim_engine_isaacsim["<b>genie_sim_engine_isaacsim</b>"]
   genie_sim_engine_newton["<b>genie_sim_engine_newton</b>"]
@@ -240,13 +244,17 @@ graph TD
   genie_sim_robot_model["<b>genie_sim_robot_model</b>"]
   genie_sim_rviz_plugins["<b>genie_sim_rviz_plugins</b>"]
 
-  genie_sim_bringup ==>|exec| genie_sim_engine
+  genie_sim_bringup ==>|exec| genie_sim_engine_newton
+  genie_sim_bringup ==>|exec| genie_sim_engine_isaacsim
+  genie_sim_bringup ==>|exec| genie_sim_render
   genie_sim_bringup ==>|exec| genie_sim_robot_model
   genie_sim_moveit ==>|exec| genie_sim_robot_model
   genie_sim_moveit ==>|exec| genie_sim_moveit_plugins
   genie_sim_moveit ==>|exec| genie_sim_control
   genie_sim_moveit ==>|exec| genie_sim_controllers
   genie_sim_moveit ==>|exec| genie_sim_planning
+  genie_sim_render ==>|exec| genie_sim_engine_isaacsim
+  genie_sim_bringup ==>|exec| genie_sim_common
   genie_sim_control ==>|exec| genie_sim_common
   genie_sim_controllers ==>|exec| genie_sim_common
   genie_sim_engine_core ==>|exec| genie_sim_common
@@ -258,6 +266,7 @@ graph TD
   genie_sim_moveit ==>|exec| genie_sim_common
   genie_sim_moveit_plugins ==>|exec| genie_sim_common
   genie_sim_planning ==>|exec| genie_sim_common
+  genie_sim_render ==>|exec| genie_sim_common
   genie_sim_robot_model ==>|exec| genie_sim_common
   genie_sim_rviz_plugins ==>|exec| genie_sim_common
 ```
