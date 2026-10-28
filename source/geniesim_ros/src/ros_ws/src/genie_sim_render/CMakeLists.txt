@@ -110,6 +110,17 @@ install(DIRECTORY config/
   DESTINATION share/${PROJECT_NAME}/config
 )
 
-install(PROGRAMS scripts/isaacsim_render.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS
+  scripts/isaacsim_render.py
+  scripts/_isaac_render_common.py
+  scripts/_instance_materials.py
+  scripts/_render_randomize.py
+  scripts/_fused_point_instancers.py
+  scripts/_fused_background_reset.py
+  scripts/_fused_mimic_pose.py
+  scripts/_render_perf.py
+  scripts/isaacsim_tiled_render.py
+  scripts/isaacsim_fused_sim.py
+  DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
