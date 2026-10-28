@@ -55,9 +55,24 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
+        # `cz check` takes --allowed-prefixes as a SPACE-separated list
+        # (nargs="*"), and each entry it matches SKIPS the conventional-commit
+        # regex.  So list only the prefixes this repo adds on top of
+        # commitizen's own types (chore, ci, docs, feat, fix, perf, refactor,
+        # revert, test) — those stay regex-checked — plus `Merge`, so the
+        # subjects `git merge` generates are not rejected.
+        # Overriding `args` also drops the hook's own defaults, so the trailing
+        # --allow-abort / --commit-msg-file pair has to be restored here, with
+        # --commit-msg-file last: pre-commit appends the message path after
+        # these args.
         args:
           [
             --allowed-prefixes,
-            "add,dev,chore,ci,perf,update,fix,feat,docs,refactor,revert,test,format",
-            --min-length=10,
+            add,
+            dev,
+            update,
+            format,
+            Merge,
+            --allow-abort,
+            --commit-msg-file,
           ]
