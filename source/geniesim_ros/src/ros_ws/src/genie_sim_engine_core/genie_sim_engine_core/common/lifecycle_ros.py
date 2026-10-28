@@ -99,7 +99,7 @@ class RosResetCoordinator:
         """
         try:
             import rclpy  # noqa: PLC0415
-            from rclpy.executors import SingleThreadedExecutor  # noqa: PLC0415
+            from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor  # noqa: PLC0415
             from rclpy.node import Node  # noqa: PLC0415
             from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy  # noqa: PLC0415
             from std_msgs.msg import Int32MultiArray  # noqa: PLC0415
@@ -161,7 +161,14 @@ class RosResetCoordinator:
 
             ex = SingleThreadedExecutor()
             ex.add_node(node)
-            th = threading.Thread(target=ex.spin, name="reset-listener-spin", daemon=True)
+            def _spin() -> None:
+                try:
+                    ex.spin()
+                except ExternalShutdownException:
+                    # SIGINT closes the ROS context before this daemon exits.
+                    pass
+
+            th = threading.Thread(target=_spin, name="reset-listener-spin", daemon=True)
             th.start()
             self._node = node
             self._executor = ex
