@@ -1,0 +1,223 @@
+# G2 (crsB + Wuji) standing in front of a wok holding chow-mein
+# noodles to flip.  Uses the scene_flat_g2_sp_chef.py plugin (sibling
+# file) — port of chow_mein_flip_fem.py — to add the kinematic wok body,
+# FEM tetrahedral noodles + ham dice + julienne strips, and the
+# autonomous SETTLE→GATHER→TOSS→CATCH→DWELL controller.
+#
+# Run:
+#   ros2 launch genie_sim_bringup app.launch.py \
+#     scene:=scene_flat_g2_sp_chef_wuji_eval \
+#     launcher_config:=launcher_newton_mjxpbd \
+#     headless:=false \
+#     physics_engine_visualizer:=newton
+#
+# Solver choice: XPBD (not VBD).  The FEM tet noodles need XPBD because
+# (a) ``add_soft_grid`` produces tet constraints, not cloth triangles,
+# and (b) VBD's per-substep displacement cap mutes the toss.  The
+# ``mjxpbd`` launcher pairs MuJoCo-Warp (rigid) with SolverXPBD
+# (particles).
+
+robot:
+  robot_name: G2_crsB_wuji
+  robot_prefix: genie
+  robot_source:
+    arm: crsB
+    body: g2
+    gripper: "wuji"
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: true
+    convert_joints_to_fixed: [base, head, body]   # weld all sub-trees → 16 DOFs gone from Featherstone
+    urdf:
+      inertia_source: default  # Explicit baseline used by the validated evaluation.
+    prebaked:
+      usda: robot/G2_crsB_wuji/robot.usda
+      visual_only: true  # Preserve authored materials; physics stays on the staged URDF.
+  init_base_pose:
+    # NOTE: pin_base_to_world welds base_link to the WORLD ORIGIN, so these
+    # values are ignored — base_link's tf really is (0,0,0).  Anything solved
+    # offline against the URDF must therefore add NO base offset.  (Verified:
+    # putting x=-0.03 here changed nothing, and the measured hand pose matched
+    # the zero-offset prediction to 1.2 mm.)
+    x: 0.0
+    y: 0.0
+    z: 0.04
+    theta: 0.0
+  # Start pose: LEFT arm in a T-pose, RIGHT five-finger hand cupped under the
+  # wok handle, palm up — the way a person reaches under a wok to lift it.
+  #
+  # LEFT ARM = all zeros IS the T-pose on this robot: at zero, FK puts
+  # arm_l_end_link at (0.2585, 0.9435, 1.3139), i.e. the same x and z as
+  # arm_base_link and 0.94 m straight out to the left.  Nothing to solve.
+  #
+  # RIGHT ARM solved offline against the URDF for two conditions:
+  #   1. the hand's grasp centre (where the thumb and finger pads meet when
+  #      closed, = (0.050, -0.007, 0.095) in hand_r_base_link) lands on the wok
+  #      handle centre, world (0.749, 0, 1.0711);
+  #   2. the PALM faces up.  The palm normal is +x of hand_r_base_link — derived
+  #      empirically, not guessed: flexing the four fingers moves their pads
+  #      toward +x, and the thumb/index pads meet at x≈0.05.  Via the
+  #      hand_r_base_joint mount (rpy 0,0,-pi/2) that is -y of arm_r_end_link.
+  #      The handle axis is put along the hand's y (the index→pinky spread
+  #      direction) so all four fingers can wrap the same cylinder.
+  # The redundant IK degree of freedom is selected for a natural palm-up reach:
+  # shoulder axial rotation (joint3) stays near neutral, elbow joint4 bends in
+  # its ordinary negative direction, and the required palm-up rotation happens
+  # mainly at forearm joint5 instead of twisting the shoulder.  The unrounded
+  # solution has numerical-zero pose residual and >=9.6 deg of limit headroom.
+  # Re-solve if the wok home pose moves — and solve with NO base offset (see
+  # init_base_pose above).
+  #
+  # RIGHT HAND is NOT at zero: at zero the thumb is splayed flat and pokes ~11 mm
+  # INTO the wok bowl (the open thumb points along world +X, straight at the
+  # bowl wall), which would kick the wok on the first physics step.  Every
+  # finger joint sits at 25% of its dominant limit instead — verified to clear
+  # the bowl on all five fingertips, and it reads as a hand about to close
+  # rather than a flat paddle.  The other four fingers were never the problem.
+  #
+  # pin_base_to_world + welded chassis/head/body keep the robot stable; the wok
+  # is its own free body (see scene_flat_g2_sp_chef.py header).
+  init_joint_pos:
+    # --- left arm: T-pose ---
+    idx21_arm_l_joint1: 0
+    idx22_arm_l_joint2: 0
+    idx23_arm_l_joint3: 0
+    idx24_arm_l_joint4: 0
+    idx25_arm_l_joint5: 0
+    idx26_arm_l_joint6: 0
+    idx27_arm_l_joint7: 0
+    # --- right arm: palm-up under the wok handle ---
+    idx61_arm_r_joint1: -7.24
+    idx62_arm_r_joint2: -73.74
+    idx63_arm_r_joint3: -10.00
+    idx64_arm_r_joint4: -41.72
+    idx65_arm_r_joint5: 131.97
+    idx66_arm_r_joint6: 48.36
+    idx67_arm_r_joint7: 50.78
+    # --- right hand: pre-grasp (25% of each joint's dominant limit) ---
+    hand_r_thumb_joint1: 22.97
+    hand_r_thumb_joint2: 13.36
+    hand_r_thumb_joint3: 22.38
+    hand_r_thumb_joint4: 22.30
+    hand_r_index_joint1: 22.35
+    hand_r_index_joint2: 5.30
+    hand_r_index_joint3: 22.18
+    hand_r_index_joint4: 22.56
+    hand_r_middle_joint1: 22.23
+    hand_r_middle_joint2: 5.30
+    hand_r_middle_joint3: 22.22
+    hand_r_middle_joint4: 22.55
+    hand_r_ring_joint1: 22.32
+    hand_r_ring_joint2: 5.30
+    hand_r_ring_joint3: 22.18
+    hand_r_ring_joint4: 22.39
+    hand_r_pinky_joint1: 22.32
+    hand_r_pinky_joint2: 5.30
+    hand_r_pinky_joint3: 22.19
+    hand_r_pinky_joint4: 22.54
+    idx03_body_joint3: 20
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  Frames the G2 chassis (~1.4 m tall) from
+# front-right, aimed at chest height.
+viewer_camera:
+  pos:    [1.6, -1.6, 1.2]
+  lookat: [0.0,  0.0, 0.8]
+
+cameras: []
+lidars: []
+
+# Keep this empty for the Newton-standalone demo.  assemble_scene synthesizes
+# a local scene_empty.usda (visual ground + dome light), while Newton adds its
+# own physical ground plane and the chef plugin adds the stove/ring.  The old
+# scenes/blank/blank.usda references Isaac's remote gridroom_black.usd; Newton
+# 1.4 rejects the stage when that network asset is unavailable.
+scene:
+
+# Newton particle extras — only active when launched with
+#   physics_engine:=newton  (or :=isaac_newton).
+# This scene is plugin-driven: the Python file referenced by
+# ``scene_plugin`` adds the wok body + FEM noodles + ham + strips at
+# engine build time, and runs the autonomous wok controller every step.
+# No ``entries:`` block is needed — the plugin handles everything.
+newton:
+  scene_plugin: scene_flat_g2_sp_chef.py
+
+  # Authored task visuals only: Newton keeps the original chef collision
+  # bodies, particles and scoring. Asset paths resolve under the assets root.
+  authored_visuals:
+    asset_path: background/home/fried_noodles/background.usda
+    root_prim: /World
+    hide_prims: [/World/objects]
+    use_asset_lights: true
+    # The source objects include a resting pot and 42 static food instances.
+    # Hide those copies; the pot below follows the actual Newton rigid body,
+    # while the original deforming particle surfaces remain authoritative.
+    body_visuals:
+      - body: chef_wok
+        source_prim: /World/objects/benchmark_pot_013
+        # World rim frame, NOT the authored pot's off-centre root origin.
+        reference_pose: [0.9949, 0.0, 1.09, 0.0, 0.0, 0.0, 1.0]
+    # Replace the stove display and hide Newton's default grey ground_plane.
+    # Its collision shape stays intact; the authored background remains visible.
+    hide_shape_prefixes: [chef_stove_, ground_plane]
+
+  # XPBD relaxation for stable resting FEM particles.
+  xpbd:
+    soft_body_relaxation: 0.7
+    soft_contact_relaxation: 0.3
+
+  # Experimental two-way rigid/particle coupling.  The fallback path remains
+  # in the engine and is restored by setting enabled=false.  MuJoCo owns all
+  # robot/wok/stove rigid bodies; XPBD owns the food particles and sees the
+  # rigid bodies as proxies.  Momentum harvested from XPBD contacts is fed
+  # back to MuJoCo on the next proxy pass.
+  coupling:
+    enabled: true
+    type: proxy
+    mode: lagged
+    iterations: 1
+    mass_scale: 1.0
+    proxy_relaxation: 0.5
+
+  # This robot has a five-finger hand, not a parallel-jaw gripper, so the wok
+  # handle stays a ROUND capsule and becomes a real collider in the DEFAULT
+  # collision group — the hand's own finger meshes contact it directly.  The
+  # square grip box + pad/lip geometry exists to give a two-point parallel jaw
+  # some form closure; a finger envelope gets its contact manifold from many
+  # links at once and does not need it.  See GraspGeometry in the plugin.
+  #
+  # This also avoids a dead end: the pads are looked up by the swiftpicker link
+  # names (gripper_r_*_support_link), which do NOT exist on this robot, so with
+  # enable=true the box would be created in a private collision_group with no
+  # pads to pair against — colliding with nothing, and the hand would pass
+  # straight through the handle.
+  chef:
+    grasp:
+      enable: false
+      # Remove Newton's imported 0.1 m inactive-contact shell from the right
+      # Wuji hand only.  Real contact still activates at geometric distance 0;
+      # this prevents nearby non-contacting finger geoms from consuming MJW's
+      # finite contact-record budget during a dense wrap grasp.
+      hand_body_prefix: "hand_r_"
+      hand_geom_gap: 0.0
+      # Enable sliding, torsional and rolling friction rows for the round handle.
+      condim: 6
+  # Wok friction tuple: sliding, torsional, rolling.
+  mjc_contact:
+    passive:
+      friction: [1.9, 0.08, 0.06]
+
+  solver:
+    # FEM tet noodles need XPBD (no per-substep velocity cap, real flip).
+    # The launcher_newton_mjxpbd.yaml routes this preference through.
+    prefer: xpbd
+
+  contact:
+    # Particle-vs-rigid contact defaults; the plugin applies wok values.
+    soft_ke: 1.0e3
+    soft_kd: 1.0
+    soft_mu: 0.3
+
+  # No ``entries:`` — the plugin emits all particles via add_soft_grid
+  # in on_build, which the assemble_newton sidecar doesn't know about.

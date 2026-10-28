@@ -1,0 +1,64 @@
+# Wuji chef evaluation: unchanged mjxpbd working point and scene physics.
+# Launch with scene_flat_g2_sp_chef_wuji_eval and headless:=false. The evaluator
+# attaches to the normally assembled engine so the scene's init pose is kept.
+launcher:
+  physics:
+    engine: genie_sim_engine_newton
+    engines:
+      genie_sim_engine_newton:
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
+    industrial_bridge: ""
+  renders: []
+
+genie_sim_engine:
+  ros__parameters:
+    physics_params_file: physics_params.yaml
+    physics_engine_visualizer: isaacsim
+    physics_solver: mjxpbd
+    realtime_factor: 0.5
+    physics_hz: 60.0
+    dds_hz: 60.0
+    render_hz: 30.0
+    render_mode: raster
+    physics_solver_substep: 24
+    physics_solver_iterations: 4
+    physics_solver_mass_matrix_interval: 100000
+    num_envs: 1
+    step_mode: lockstep
+    step_lockstep_ticks: 1
+    use_tf_render: true
+
+    # Task observation only: thresholds do not change scene or solver physics.
+    # Empty/absent JSON disables scoring in other launchers. Points persist;
+    # earning both continues the budget so a later dropped wok still fails.
+    wok_evaluation_json: >-
+      {"topic":"/wuji_eval/task_progress","thresholds":{
+      "lift_height_m":0.05,"stable_hold_s":0.5,
+      "max_tilt_deg":45.0,
+      "toss_height_m":0.10,"toss_object_fraction":0.20,
+      "min_food_upward_speed_m_s":0.05,"rim_xy_margin_m":0.03,"in_pan_margin_m":0.01}}
+
+    # Optional observer MP4. Set an unused absolute artifact path in a local
+    # launcher copy; pauses add no repeated wall-clock frames, and mounted
+    # sensor captures never appear in this video. Requires ffmpeg on PATH.
+    newton_video_path: ""
+    newton_video_fps: 30.0
+    # Owned Isaac Sim process. Choose a new log path per run; the default
+    # is relative to the launch working directory and refuses overwrite.
+    isaac_render_log_path: wuji_isaac_render.log
+    isaac_render_timeout_s: 120.0
+    isaac_render_startup_timeout_s: 600.0
+    isaac_render_required_meshes_json: '["/chef_noodles","/chef_pepper","/chef_carrot","/chef_ham"]'
+
+    # Real Isaac Sim renders of mounted virtual cameras, captured while paused.
+    # eye/look_at are metres and up is a direction in the body's local frame;
+    # wrist camera roll follows that body. These are
+    # explicit evaluation views, not claimed hardware camera calibration.
+    newton_rgb_width: 640
+    newton_rgb_height: 480
+    newton_rgb_views_json: >-
+      [{"name":"head","topic":"/wuji_eval/head/image_raw","body":"head_link3","eye":[0.12,0.0,0.08],"look_at":[0.9,0.0,-0.45],"up":[0.0,0.0,1.0],"fov_degrees":65.0},
+       {"name":"hand_left","topic":"/wuji_eval/hand_left/image_raw","body":"hand_l_base_link","eye":[0.08,0.0,-0.04],"look_at":[0.08,0.0,0.18],"up":[1.0,0.0,0.0],"fov_degrees":80.0},
+       {"name":"hand_right","topic":"/wuji_eval/hand_right/image_raw","body":"hand_r_base_link","eye":[0.08,0.0,-0.04],"look_at":[0.08,0.0,0.18],"up":[1.0,0.0,0.0],"fov_degrees":80.0}]

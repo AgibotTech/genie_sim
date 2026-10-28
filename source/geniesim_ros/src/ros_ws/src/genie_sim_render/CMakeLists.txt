@@ -121,6 +121,16 @@ install(PROGRAMS
   scripts/_render_perf.py
   scripts/isaacsim_tiled_render.py
   scripts/isaacsim_fused_sim.py
+  scripts/isaacsim_snapshot_render.py
+  scripts/_isaac_snapshot_scene.py
   DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY docs/ DESTINATION share/${PROJECT_NAME}/docs)
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(isaacsim_transport_tests test/test_isaacsim_transport.py)
+  ament_add_pytest_test(isaac_snapshot_tests test/test_isaac_snapshot.py TIMEOUT 30)
+endif()
 
 ament_package()

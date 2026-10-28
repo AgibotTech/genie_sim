@@ -4,10 +4,14 @@
   <name>genie_sim_render</name>
   <version>3.2.0</version>
   <description>RTX renderer node using NVIDIA ovrtx C API for physically-accurate sensor simulation</description>
-  <maintainer email="yangwendisheng@agibot.com" />
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
   <license file="LICENSE">Mozilla Public License Version 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
+  <exec_depend>genie_sim_engine_isaacsim</exec_depend>
+  <exec_depend>python3-pil</exec_depend>
 
   <build_depend>nlohmann-json-dev</build_depend>
 
@@ -20,6 +24,9 @@
   <depend>image_transport</depend>
   <depend>image_transport_plugins</depend>
   <depend>pluginlib</depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
