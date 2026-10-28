@@ -2,12 +2,14 @@
 
 #include "genie_sim_rviz_plugins/view_camera_pose_publisher_display.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
 
 #include <OgreCamera.h>
 #include <OgreQuaternion.h>
+#include <QVariant>
 // OGRE renamed ``OgreVector{3,4}.h`` to a single ``OgreVector.h`` (the
 // old headers are deprecation stubs that #include the new one and emit
 // a #pragma warning). Humble ships OGRE 1.12 where the rename hadn't
@@ -45,6 +47,30 @@ ViewCameraPosePublisherDisplay::ViewCameraPosePublisherDisplay()
     "~/free_cam_pose to /<physics_node>/viewer/camera_pose by default.",
     this, SLOT(updateTopic()));
 
+  zoom_topic_property_ = new rviz_common::properties::StringProperty(
+    "OVRtx Zoom Topic",
+    "",
+    "Optional std_msgs/Float64 optical-zoom topic. Empty keeps the existing "
+    "pose-only contract used by external renderers; Newton inline OVRtx can "
+    "opt in through its launcher YAML.",
+    this, SLOT(updateZoomTopic()));
+
+  zoom_factor_property_ = new rviz_common::properties::FloatProperty(
+    "OVRtx Zoom Factor",
+    1.0f,
+    "Optical focal-length multiplier published on OVRtx Zoom Topic. "
+    "1.0 keeps the authored FreeCam field of view.",
+    this);
+  zoom_factor_property_->setMin(0.25f);
+  zoom_factor_property_->setMax(8.0f);
+
+  auto_orbit_zoom_property_ = new rviz_common::properties::BoolProperty(
+    "OVRtx Auto Zoom from Orbit",
+    true,
+    "Convert changes to the active Orbit view's Distance property (including "
+    "mouse-wheel motion) into OVRtx optical focal-length zoom.",
+    this);
+
   rate_property_ = new rviz_common::properties::FloatProperty(
     "Publish Rate (Hz)",
     30.0f,
@@ -76,7 +102,7 @@ ViewCameraPosePublisherDisplay::ViewCameraPosePublisherDisplay()
     "child_frame_id used when ``Publish TF`` is on.  Must match the "
     "header.frame_id the in-process OVRtx visualizer stamps onto its "
     "FreeCam image and camera_info — see CameraCfg.frame_id in "
-    "genie_sim_engine/scripts/engine/newton/ovrtx_visualizer.py and "
+    "the physics visualizer and "
     "render_node.cpp's CameraConfig.path on the cross-process side.",
     this);
 }
@@ -111,12 +137,18 @@ void ViewCameraPosePublisherDisplay::onEnable()
 void ViewCameraPosePublisherDisplay::onDisable()
 {
   has_last_ = false;
+  has_last_zoom_ = false;
+  has_last_orbit_distance_ = false;
+  last_view_controller_ = nullptr;
 }
 
 void ViewCameraPosePublisherDisplay::reset()
 {
   Display::reset();
   has_last_ = false;
+  has_last_zoom_ = false;
+  has_last_orbit_distance_ = false;
+  last_view_controller_ = nullptr;
 }
 
 void ViewCameraPosePublisherDisplay::updateTopic()
@@ -124,6 +156,14 @@ void ViewCameraPosePublisherDisplay::updateTopic()
   pose_pub_.reset();
   ensurePublisher();
   has_last_ = false;
+}
+
+void ViewCameraPosePublisherDisplay::updateZoomTopic()
+{
+  zoom_pub_.reset();
+  current_zoom_topic_.clear();
+  has_last_zoom_ = false;
+  ensurePublisher();
 }
 
 void ViewCameraPosePublisherDisplay::ensurePublisher()
@@ -138,29 +178,50 @@ void ViewCameraPosePublisherDisplay::ensurePublisher()
     setStatus(
       rviz_common::properties::StatusProperty::Warn, "Topic",
       "Topic is empty.");
-    return;
+  } else if (!pose_pub_ || desired != current_topic_) {
+    try {
+      // Latched QoS: KeepLast(1) + Reliable + TransientLocal —
+      // new subscribers immediately receive the last camera state.
+      rclcpp::QoS latched_qos(rclcpp::KeepLast(1));
+      latched_qos.reliable();
+      latched_qos.transient_local();
+      pose_pub_ = node_->create_publisher<geometry_msgs::msg::PoseStamped>(
+        desired, latched_qos);
+      current_topic_ = desired;
+      setStatus(
+        rviz_common::properties::StatusProperty::Ok, "Topic",
+        QString::fromStdString("Publishing on " + desired));
+    } catch (const std::exception & e) {
+      pose_pub_.reset();
+      current_topic_.clear();
+      setStatus(
+        rviz_common::properties::StatusProperty::Error, "Topic",
+        QString::fromStdString(std::string("Failed to create publisher: ") + e.what()));
+    }
   }
-  if (pose_pub_ && desired == current_topic_) {
-    return;
-  }
-  try {
-    // Latched QoS: KeepLast(1) + Reliable + TransientLocal —
-    // Equivalent to ROS 1 latched; new subscribers immediately receive the last published camera pose.
-    rclcpp::QoS latched_qos(rclcpp::KeepLast(1));
-    latched_qos.reliable();
-    latched_qos.transient_local();
-    pose_pub_ = node_->create_publisher<geometry_msgs::msg::PoseStamped>(
-      desired, latched_qos);
-    current_topic_ = desired;
-    setStatus(
-      rviz_common::properties::StatusProperty::Ok, "Topic",
-      QString::fromStdString("Publishing on " + desired));
-  } catch (const std::exception & e) {
-    pose_pub_.reset();
-    current_topic_.clear();
-    setStatus(
-      rviz_common::properties::StatusProperty::Error, "Topic",
-      QString::fromStdString(std::string("Failed to create publisher: ") + e.what()));
+
+  const std::string desired_zoom = zoom_topic_property_->getStdString();
+  if (desired_zoom.empty()) {
+    zoom_pub_.reset();
+    current_zoom_topic_.clear();
+  } else if (!zoom_pub_ || desired_zoom != current_zoom_topic_) {
+    try {
+      rclcpp::QoS latched_qos(rclcpp::KeepLast(1));
+      latched_qos.reliable();
+      latched_qos.transient_local();
+      zoom_pub_ = node_->create_publisher<std_msgs::msg::Float64>(desired_zoom, latched_qos);
+      current_zoom_topic_ = desired_zoom;
+      has_last_zoom_ = false;
+      setStatus(
+        rviz_common::properties::StatusProperty::Ok, "OVRtx Zoom Topic",
+        QString::fromStdString("Publishing on " + desired_zoom));
+    } catch (const std::exception & e) {
+      zoom_pub_.reset();
+      current_zoom_topic_.clear();
+      setStatus(
+        rviz_common::properties::StatusProperty::Error, "OVRtx Zoom Topic",
+        QString::fromStdString(std::string("Failed to create publisher: ") + e.what()));
+    }
   }
 }
 
@@ -185,9 +246,68 @@ bool poses_equal(
 
 }  // namespace
 
+void ViewCameraPosePublisherDisplay::updateZoomFromOrbit(
+  rviz_common::properties::Property * view_controller, const QString & class_id)
+{
+  if (!auto_orbit_zoom_property_->getBool() || !view_controller) {
+    has_last_orbit_distance_ = false;
+    last_view_controller_ = view_controller;
+    return;
+  }
+
+  if (view_controller != last_view_controller_) {
+    has_last_orbit_distance_ = false;
+    last_view_controller_ = view_controller;
+  }
+
+  // Orbit's public property tree is the stable interface available to an
+  // independent Display plugin. Reading it avoids a build/runtime dependency
+  // on rviz_default_plugins and tracks wheel events after Orbit applies them.
+  // Other view-controller types keep the manual zoom factor.
+  if (!class_id.endsWith("/Orbit")) {
+    has_last_orbit_distance_ = false;
+    return;
+  }
+  bool ok = false;
+  const double orbit_distance =
+    view_controller->subProp("Distance")->getValue().toDouble(&ok);
+  if (!ok || !std::isfinite(orbit_distance) || orbit_distance <= 1.0e-6) {
+    has_last_orbit_distance_ = false;
+    return;
+  }
+  if (!has_last_orbit_distance_) {
+    last_orbit_distance_ = orbit_distance;
+    has_last_orbit_distance_ = true;
+    return;
+  }
+  if (std::fabs(orbit_distance - last_orbit_distance_) <= 1.0e-9) {
+    return;
+  }
+
+  const double distance_ratio = last_orbit_distance_ / orbit_distance;
+  const double current_zoom = static_cast<double>(zoom_factor_property_->getFloat());
+  const double next_zoom = std::min(8.0, std::max(0.25, current_zoom * distance_ratio));
+  last_orbit_distance_ = orbit_distance;
+  zoom_factor_property_->setFloat(static_cast<float>(next_zoom));
+}
+
+void ViewCameraPosePublisherDisplay::publishZoom()
+{
+  if (zoom_pub_) {
+    const double zoom = static_cast<double>(zoom_factor_property_->getFloat());
+    if (!has_last_zoom_ || std::fabs(zoom - last_zoom_) > 1e-6) {
+      std_msgs::msg::Float64 zoom_msg;
+      zoom_msg.data = zoom;
+      zoom_pub_->publish(zoom_msg);
+      last_zoom_ = zoom;
+      has_last_zoom_ = true;
+    }
+  }
+}
+
 void ViewCameraPosePublisherDisplay::update(float wall_dt, float /*ros_dt*/)
 {
-  if (!isEnabled() || !pose_pub_) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -206,6 +326,12 @@ void ViewCameraPosePublisherDisplay::update(float wall_dt, float /*ros_dt*/)
   if (!view_manager) {return;}
   auto * vc = view_manager->getCurrent();
   if (!vc) {return;}
+  updateZoomFromOrbit(vc, vc->getClassId());
+  publishZoom();
+
+  if (!pose_pub_) {
+    return;
+  }
   Ogre::Camera * cam = vc->getCamera();
   if (!cam) {return;}
 

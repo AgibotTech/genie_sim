@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(rviz_common REQUIRED)
 find_package(rviz_rendering REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
@@ -40,6 +41,7 @@ ament_target_dependencies(${PROJECT_NAME}
   rviz_common
   rviz_rendering
   geometry_msgs
+  std_msgs
   tf2_ros
   pluginlib
 )
@@ -70,6 +72,15 @@ install(
 
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(rclcpp rviz_common rviz_rendering geometry_msgs pluginlib)
+ament_export_dependencies(rclcpp rviz_common rviz_rendering geometry_msgs std_msgs pluginlib)
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  genie_sim_add_gtest(test_camera_zoom test/test_camera_zoom.cpp
+    ENV QT_QPA_PLATFORM=offscreen
+    ROS_LOG_DIR=${CMAKE_CURRENT_BINARY_DIR}/test_logs)
+  target_link_libraries(test_camera_zoom ${PROJECT_NAME} Qt5::Widgets)
+  ament_target_dependencies(test_camera_zoom rclcpp rviz_common std_msgs)
+endif()
 
 ament_package()

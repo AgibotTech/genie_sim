@@ -8,7 +8,9 @@
       Publishes the active RViz 3D view's camera pose as
       geometry_msgs/PoseStamped on a configurable topic. Intended to drive
       the headless OVRTX render node's FreeCam so the off-screen render
-      mirrors the user's interactive RViz viewpoint.
+      mirrors the user's interactive RViz viewpoint. An optional independent
+      std_msgs/Float64 topic controls Newton inline OVRtx optical zoom and can
+      follow Orbit-controller mouse-wheel distance changes automatically.
     </description>
   </class>
 </library>
