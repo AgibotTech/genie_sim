@@ -5,7 +5,7 @@
   <version>3.2.0</version>
   <description> An automatically generated package with all the configuration and launch files for
     using the genie with the MoveIt Motion Planning Framework </description>
-  <maintainer email="yangwendisheng@agibot.com" />
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
 
   <license file="LICENSE">Mozilla Public License Version 2.0</license>
 
@@ -16,6 +16,8 @@
   <author email="yangwendisheng@agibot.com">yangwendisheng@agibot.com</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
 
   <exec_depend>moveit_ros_move_group</exec_depend>
   <exec_depend>moveit_kinematics</exec_depend>
@@ -35,6 +37,8 @@
   <exec_depend>genie_sim_robot_model</exec_depend>
   <exec_depend>genie_sim_moveit_plugins</exec_depend>
   <exec_depend>genie_sim_control</exec_depend>
+  <exec_depend>genie_sim_controllers</exec_depend>
+  <exec_depend>genie_sim_planning</exec_depend>
   <exec_depend>moveit_configs_utils</exec_depend>
   <exec_depend>moveit_ros_move_group</exec_depend>
   <exec_depend>moveit_ros_visualization</exec_depend>
@@ -52,7 +56,6 @@
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>genie_sim_planning</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

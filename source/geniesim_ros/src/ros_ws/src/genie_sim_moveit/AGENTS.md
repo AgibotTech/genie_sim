@@ -31,8 +31,8 @@ genie_sim_moveit/
 │   ├── genie.ros2_control.xacro    ← ros2_control hardware/controller bindings
 │   ├── moveit_controllers.yaml     ← MoveIt → controller_manager wiring
 │   ├── ros2_controllers.yaml       ← controller_manager spawn manifest
-│   ├── kinematics.yaml             ← active IK plugin (relaxed-IK by default)
-│   ├── kinematics_vanilla.yaml     ←   alternate: stock KDL for A/B testing
+│   ├── kinematics.yaml             ← KDL for arm groups; BioIK for WBC groups
+│   ├── kinematics_vanilla.yaml     ←   same solvers with human-prior weights zeroed
 │   ├── ompl_planning.yaml          ← OMPL pipeline tuning
 │   ├── pilz_cartesian_limits.yaml  ← Pilz pipeline cartesian limits
 │   ├── joint_limits.yaml           ← per-joint vel/accel overrides
@@ -58,11 +58,14 @@ genie_sim_moveit/
 
 ## Cross-distro contract
 
-This package is **distro-agnostic** (ROS 2 Humble + Jazzy). Distro-specific
-header / API differences are absorbed by `moveit_compat.hpp` in
-`../genie_sim_moveit_plugins/` — never `#ifdef` here. If a launch file or
-yaml needs to switch on distro, the cleaner fix is almost always to push
-the difference into the compat header.
+This package supports **ROS 2 Humble + Jazzy**. C++ header / API
+differences belong in `moveit_compat.hpp` in
+`../genie_sim_moveit_plugins/`. The OMPL parameter schema is normalised
+in `wbc.launch.py` using `ROS_DISTRO`: Humble uses a singular planner
+string and request-adapter string (including time parameterization),
+while Jazzy uses planner, request-adapter and response-adapter lists.
+Keep the YAML in Jazzy form and preserve the shared per-group tuning
+when changing this conversion. See the README's OMPL parameter section.
 
 ---
 

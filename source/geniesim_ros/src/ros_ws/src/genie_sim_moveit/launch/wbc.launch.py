@@ -76,6 +76,26 @@ def _launch_setup(context):
         .to_moveit_configs()
     )
 
+    # Humble expects one planner and a space-separated request-adapter chain.
+    # Its time parameterization adapter runs on requests; Jazzy uses responses.
+    if os.environ.get("ROS_DISTRO", "").strip().lower() == "humble":
+        ompl = moveit_config.planning_pipelines["ompl"]
+        planners = ompl.pop("planning_plugins", None)
+        if isinstance(planners, (list, tuple)) and planners:
+            ompl["planning_plugin"] = planners[0]
+        elif isinstance(planners, str) and planners:
+            ompl["planning_plugin"] = planners
+        ompl["request_adapters"] = (
+            "default_planner_request_adapters/AddTimeOptimalParameterization "
+            "default_planner_request_adapters/ResolveConstraintFrames "
+            "default_planner_request_adapters/FixWorkspaceBounds "
+            "default_planner_request_adapters/FixStartStateBounds "
+            "default_planner_request_adapters/FixStartStateCollision "
+            "default_planner_request_adapters/FixStartStatePathConstraints"
+        )
+        ompl.pop("response_adapters", None)
+        print("[wbc.launch.py] using Humble OMPL planner and request-adapter parameters", flush=True)
+
     # Widen URDF joint <limit> by a small pad so MoveIt's CheckStartStateBounds
     # tolerates the sub-mrad drift that MuJoCo's soft joint limit lets through
     # under contact load.  CheckStartStateBounds reads URDF limits directly

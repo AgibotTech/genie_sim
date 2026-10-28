@@ -6,11 +6,11 @@ overrides, ros2_control wiring, and the canonical launch files for
 `move_group` + RViz.
 
 The package is **cross-distro** (ROS 2 Humble and Jazzy).  Distro-specific
-behaviour is centralised in
+C++ compatibility is centralised in
 `genie_sim_moveit_plugins/include/genie_sim_moveit_plugins/moveit_compat.hpp`
 (field-name macros, `solve()` return-type macros, `.h` vs `.hpp` include
-routing).  The launch files and yaml configs in this package work
-unchanged on both distros.
+routing). `wbc.launch.py` also normalises the OMPL parameter schema
+for Humble; the YAML stores the Jazzy plugin and adapter lists.
 
 ---
 
@@ -125,7 +125,7 @@ kinematic tree it needs for precision WBC.
 | View | Sees `base_footprint`? |
 |---|---|
 | Simulator USD / physics | No -- canonical URDF only |
-| `assemble_robot.py` cache | No -- canonical URDF only |
+| URDF-to-USD cache | No -- canonical URDF only |
 | MoveIt RobotModel | Yes -- this xacro declares it |
 | `robot_state_publisher` | Yes -- publishes `base_footprint -> base_link` from /joint_states |
 | RViz `RobotModel` displays | Yes -- consumes RSP's TF |
@@ -169,6 +169,16 @@ tick.
 ---
 
 ## Other launch-side fixes
+
+### OMPL parameters on Humble and Jazzy
+
+`wbc.launch.py` selects the OMPL schema using `ROS_DISTRO`. On Humble,
+`planning_plugin` is a string, `request_adapters` is a space-separated
+string using `default_planner_request_adapters/*`, and
+`AddTimeOptimalParameterization` runs in that request chain. On Jazzy,
+the YAML's `planning_plugins`, `request_adapters`, and `response_adapters`
+remain lists, with time parameterization in the response chain. Both
+forms retain the same planner IDs and per-group tuning.
 
 ### URDF joint-limit padding
 

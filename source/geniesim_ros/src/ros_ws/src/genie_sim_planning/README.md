@@ -4,12 +4,9 @@ Python tooling and demo scripts for the GenieSim chassis pipeline —
 teleop, navigation, follow-trajectory glue, and a small library of
 helpers shared between them.
 
-> **Status: scheduled for refactor.** The C++ four-wheel-steering
-> servo, ServoBase strategies, MPC solver, and tracking differentiator
-> have already moved to
-> [`../genie_sim_ros_control/genie_sim_controllers/`](../genie_sim_ros_control/genie_sim_controllers/)
-> (ros2_control controller form). What remains here is the Python
-> side; expect more code to migrate out.
+The Python helpers and demo scripts live here. The C++ chassis servo,
+ServoBase strategies, MPC solver and tracking differentiator belong to
+[genie_sim_controllers](../genie_sim_ros_control/genie_sim_controllers/).
 
 ## What's here
 
@@ -32,5 +29,7 @@ helpers shared between them.
 
 ## Mechanics
 
-See [AGENTS.md](AGENTS.md) for the layout, the migration map (which
-files moved to `genie_sim_controllers`), and the routing rules.
+The Python helpers require NumPy and SciPy. The clothoid generator in
+`planner.py` also requires `pyclothoids` in the ROS Python environment.
+
+See [AGENTS.md](AGENTS.md) for the layout and routing rules.

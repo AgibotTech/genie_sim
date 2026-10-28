@@ -1,16 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(genie_sim_moveit_plugins)
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
-
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-endif()
+find_package(genie_sim_common REQUIRED)
+genie_sim_package(WERROR)
 
 # Detect ROS 2 distro and toggle the MoveIt planning_interface API
 # compatibility macros — see ``include/.../moveit_compat.hpp`` for

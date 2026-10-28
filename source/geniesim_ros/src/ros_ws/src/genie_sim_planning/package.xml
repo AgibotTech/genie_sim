@@ -6,19 +6,20 @@
   <description>
     Python tooling and scripts for the GenieSim chassis pipeline
     (teleop, navigation, follow_trajectory). The C++ four-wheel-steering
-    servo and its supporting plugins/solvers/tracking-differentiator
-    have moved to genie_sim_controllers (ros2_control controller form).
-    This package is slated for further refactor.
+    servo, strategies, MPC solver and tracking differentiator are
+    provided by genie_sim_controllers.
 
     Includes LQR / discrete Riccati helpers adapted from Atsushi Sakai's
     PythonRobotics (MIT-licensed) — see THIRD_PARTY_LICENSES.md for the
     full attribution.
   </description>
-  <maintainer email="yangwendisheng@agibot.com" />
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
   <license file="LICENSE">Mozilla Public License Version 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>std_msgs</exec_depend>

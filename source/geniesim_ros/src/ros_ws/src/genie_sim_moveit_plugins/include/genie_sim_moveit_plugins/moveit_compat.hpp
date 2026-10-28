@@ -94,9 +94,9 @@
 #define MOVEIT_H_PLANNING_REQUEST_ADAPTER  <moveit/planning_interface/planning_request_adapter.hpp>
 #define MOVEIT_H_PLANNING_SCENE            <moveit/planning_scene/planning_scene.hpp>
 #define MOVEIT_H_PLANNING_SCENE_INTERFACE \
-  < moveit / planning_scene_interface / planning_scene_interface.hpp >
+  "moveit/planning_scene_interface/planning_scene_interface.hpp"
 #define MOVEIT_H_PLANNING_SCENE_MONITOR \
-  < moveit / planning_scene_monitor / planning_scene_monitor.hpp >
+  "moveit/planning_scene_monitor/planning_scene_monitor.hpp"
 #define MOVEIT_H_JOINT_MODEL_GROUP         <moveit/robot_model/joint_model_group.hpp>
 #define MOVEIT_H_LINK_MODEL                <moveit/robot_model/link_model.hpp>
 #define MOVEIT_H_ROBOT_MODEL_LOADER        <moveit/robot_model_loader/robot_model_loader.hpp>
@@ -110,10 +110,11 @@
 #define MOVEIT_H_KINEMATICS_BASE           <moveit/kinematics_base/kinematics_base.h>
 #define MOVEIT_H_MOVE_GROUP_INTERFACE      <moveit/move_group_interface/move_group_interface.h>
 #define MOVEIT_H_PLANNING_INTERFACE        <moveit/planning_interface/planning_interface.h>
-#define MOVEIT_H_PLANNING_REQUEST_ADAPTER  <moveit/planning_request_adapter/planning_request_adapter.h>
+#define MOVEIT_H_PLANNING_REQUEST_ADAPTER \
+  "moveit/planning_request_adapter/planning_request_adapter.h"
 #define MOVEIT_H_PLANNING_SCENE            <moveit/planning_scene/planning_scene.h>
 #define MOVEIT_H_PLANNING_SCENE_INTERFACE \
-  < moveit / planning_scene_interface / planning_scene_interface.h >
+  "moveit/planning_scene_interface/planning_scene_interface.h"
 #define MOVEIT_H_PLANNING_SCENE_MONITOR    <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #define MOVEIT_H_JOINT_MODEL_GROUP         <moveit/robot_model/joint_model_group.h>
 #define MOVEIT_H_LINK_MODEL                <moveit/robot_model/link_model.h>

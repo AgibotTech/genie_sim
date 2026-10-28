@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 project(genie_sim_moveit)
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
+find_package(genie_sim_common REQUIRED)
+genie_sim_package()
 
 find_package(ament_cmake REQUIRED)
 

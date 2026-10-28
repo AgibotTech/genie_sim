@@ -10,6 +10,7 @@ the attribution + license terms for the derived portions.
 
 ## PythonRobotics
 
+* **Project**: PythonRobotics, Atsushi Sakai and contributors
 * **Upstream**: https://github.com/AtsushiSakai/PythonRobotics
 * **License**: MIT
 * **Files derived from this project**:

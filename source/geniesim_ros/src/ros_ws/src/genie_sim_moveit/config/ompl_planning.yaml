@@ -2,14 +2,12 @@
 # moveit_config calls .planning_pipelines(pipelines=["ompl"]); see
 # wbc.launch.py).
 #
-# History note: this file used to declare planning_plugin
-# genie_sim_moveit_plugins/GeniePlannerManager and a custom GenieRRTConnect
-# type.  Neither was honoured -- MoveIt 2's pipeline machinery loads
-# moveit_planners_ompl for the "ompl" pipeline name regardless of any
-# planning_plugin field, so every plan silently fell back to OMPL's
-# default RRTConnect with no per-group config.  We now align with that
-# reality: OMPL planner_ids ("geometric::RRTConnect" etc.) and per-group
-# OMPL knobs.
+# OMPL planner IDs and per-group settings are shared across distributions.
+# The plugin and adapter lists below use the Jazzy parameter schema.
+# wbc.launch.py converts these on Humble to a singular planning_plugin and
+# a space-separated request_adapters string using Humble's adapter classes.
+# Time parameterization is a request adapter on Humble and a response adapter
+# on Jazzy; response_adapters is omitted on Humble.
 
 planning_plugins:
   - ompl_interface/OMPLPlanner
