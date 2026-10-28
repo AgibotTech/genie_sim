@@ -6,7 +6,7 @@ description: >
   the scene × launcher matrix (pick-and-place / whole-body-control /
   flat-table demos × Isaac PhysX / Newton-standalone backends) and the
   optional MoveIt 2 + WBC RViz overlay.
-  Trigger: When the user asks to "launch a scene", "启动场景", "run pnp",
+  Trigger: When the user asks to "launch a scene", "run pnp",
   "run wbc", "start the simulator", names any `scene_*.yaml` or
   `launcher_*.yaml`, or wants to bring up the RT Engine in interactive
   mode (with or without rviz / moveit).

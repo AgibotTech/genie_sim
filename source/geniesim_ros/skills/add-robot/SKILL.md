@@ -10,7 +10,7 @@ description: >
   consumes, and wire the result into a `scene_*.yaml`.
   Trigger: When the user asks to "add a new robot", "import a robot",
   "support <vendor> in geniesim", names a URDF / xacro not currently
-  in `genie_sim_robot_model/robots/`, or wants to convert a third-party
+  in `genie_sim_robot_model/urdf/`, or wants to convert a third-party
   mesh pack into AS3-ready USD.
 license: MPL-2.0
 metadata:
@@ -52,13 +52,12 @@ Do **not** use for:
 ## Critical Patterns
 
 1. **Tier 1 only validates Genie G2.** Reference robots (Franka,
-   UR5, Aloha, ARX, Agilex) have correct URDFs and import cleanly,
-   but scene yamls and physics tuning may be stale. Treat them as
+   UR5, Aloha, ARX, Agilex) need platform-specific import and physics checks. Treat them as
    starting points, not certified configs.
-2. **AS3 layout is mandatory.** The engine expects the per-robot
+2. **Isaac 6.2 assembly produces AS3.** Preserve the complete per-robot
    directory `robot.usda` + `payloads/Physics/{physics,physx,mujoco}.usda`
-   regardless of which backend is active — switching physics never
-   rewrites the asset.
+   for the 6.2 workflow. Isaac 4.5/5.1 retain flat AS2 support. Switching
+   physics selects a variant without rewriting the source asset.
 3. **Fix the URDF before importing.** `diagnose_urdf.py` catches
    missing inertia, zero-mass links, collision/visual mismatches,
    and bad OBJ name collisions — every one of these breaks the
@@ -66,9 +65,9 @@ Do **not** use for:
 4. **Mesh names must be unique.** USD's flat namespace will silently
    merge two meshes that share an OBJ name. `normalize_obj_names.py`
    rewrites names to be prefix-unique.
-5. **Mimic joints handled at runtime.** Don't model gripper mimics
-   inside the URDF — the engine bridges them via the controller
-   layer (see `86308f040` in git history). URDF stays plain.
+5. **Author mimic relations in URDF.** The importer carries them into USD
+   schemas; PhysX uses mimic constraints and Newton MuJoCo-Warp uses equality
+   constraints. Followers remain undriven. See the core pipeline guide.
 6. **Robots live in `genie_sim_robot_model`, not in `geniesim_assets`.**
    Meshes can move to `geniesim_assets` once stabilised, but URDFs +
    xacros stay in the ROS package.
@@ -78,22 +77,20 @@ Do **not** use for:
 ### Step 1 — Stage the URDF / xacro
 
 Drop the file under
-`source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/<vendor>/<model>/`
-next to the reference robots. Name follows the convention
-`<model>[_<gripper>].urdf.xacro`, with meshes in a sibling `meshes/`.
+`source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/` next
+to the reference robots. Name follows the convention
+`<vendor>_<model>[_<gripper>].urdf`.
 
 ```bash
-ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/
-# agilex/ arx/ franka/ genie/ universal_robots/
-ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/franka/fr3/
-# fr3.urdf.xacro, meshes/
+ls source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/
+# e.g. franka_fr3.urdf, ur5_robotiq_140.urdf, your_robot.urdf
 ```
 
 ### Step 2 — Diagnose
 
 ```bash
 cd source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
-python scripts/diagnose_urdf.py robots/<vendor>/<model>/<your_robot>.urdf
+python scripts/diagnose_urdf.py urdf/<your_robot>.urdf
 ```
 
 Look for: missing `<inertial>`, zero mass, visual/collision link
@@ -152,16 +149,7 @@ Required keys:
 
 ```yaml
 robot:
-  robot_name: <your_robot>_manifold
-  robot_prefix: <your_robot>
-  robot_source:                      # composed by xacro/robot.xacro providers
-    arm: <model>                     # e.g. fr3 — selects the provider macro
-    body: T2                         # case-sensitive; "" drops the body
-    gripper: ""
-    robot_model: <vendor>            # e.g. franka — picks xacro/providers/<vendor>.xacro
-    package: genie_sim_robot_model
-    pin_base_to_world: true
-    urdf: {}                         # per-robot xacro args, {} for none
+  urdf: <your_robot>.urdf            # filename, resolved against genie_sim_robot_model/urdf/
   init_base_pose:                    # non-physics teleport at spawn
     x: 0.0
     y: 0.0
@@ -199,7 +187,7 @@ or applies to all backends.
 cd source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
 
 # 1. Diagnose
-python scripts/diagnose_urdf.py robots/<vendor>/<model>/<your_robot>.urdf
+python scripts/diagnose_urdf.py urdf/<your_robot>.urdf
 
 # 2. Mesh prep (only the ones the diagnose tool flagged)
 python scripts/normalize_obj_names.py path/to/meshes/
@@ -240,7 +228,7 @@ ros2 launch genie_sim_bringup app.launch.py \
 
 - **Robot package**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/](../../src/ros_ws/src/genie_sim_robot_model/)
 - **Mesh-prep scripts**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/scripts/](../../src/ros_ws/src/genie_sim_robot_model/scripts/)
-- **Reference URDFs**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/](../../src/ros_ws/src/genie_sim_robot_model/robots/)
+- **Reference URDFs**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/urdf/](../../src/ros_ws/src/genie_sim_robot_model/urdf/)
 - **Scene yamls**: [source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/config/](../../src/ros_ws/src/genie_sim_bringup/config/)
 - **Engine overview**: [source/geniesim_ros/README.md](../../README.md)
 - **Package routing**: [source/geniesim_ros/AGENTS.md](../../AGENTS.md)

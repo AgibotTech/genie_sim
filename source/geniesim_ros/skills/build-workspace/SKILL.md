@@ -5,8 +5,7 @@ description: >
   container using the `geniesim ros build` CLI verb. Produces the
   `./devel` overlay that every `ros2 launch genie_sim_bringup …` step
   depends on.
-  Trigger: When the user asks to "build ros workspace", "编译 ros 工作空间",
-  "colcon build", "build genie_sim_bringup", "set up the ROS overlay",
+  Trigger: When the user asks to "build ros workspace", "colcon build", "build genie_sim_bringup", "set up the ROS overlay",
   or after a fresh `geniesim docker into` shell where the workspace
   isn't sourced yet.
 license: MPL-2.0

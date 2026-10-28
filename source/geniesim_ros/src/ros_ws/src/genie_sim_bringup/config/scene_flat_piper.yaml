@@ -1,0 +1,93 @@
+robot:
+  robot_name: agilex_piper
+  robot_prefix: agilex
+  robot_source:
+    arm: piper
+    body: ""
+    gripper: with_gripper   # agilex.xacro matches this string exactly; the only
+                            # other value is `no_gripper`. An empty string
+                            # matches neither branch and yields no arm at all.
+    robot_model: agilex
+    package: genie_sim_robot_model
+    pin_base_to_world: true   # default mode (weld): stationary tabletop arm,
+                              # so the URDF root_joint stays active. Piper has
+                              # no chassis -- a free root would simply fall.
+    convert_joints_to_fixed: []
+    urdf: {}
+  init_base_pose:
+    x: 0.0
+    y: 0.0
+    z: 0.05
+    theta: 0.0
+  # Revolute values are DEGREES here; engine/newton/topology.py converts.
+  # Piper's j2 range starts AT 0 and j3's ends AT 0, so an all-zero pose would
+  # sit on both bounds -- j3 is non-positive throughout, so it folds negative.
+  # Ranges: j1 -150/150, j2 0/179.9, j3 -170/0, j4 -100/100,
+  #         j5 -69.9/69.9, j6 -120/120.
+  init_joint_pos:
+    arm_joint1: 0
+    arm_joint2: 45
+    arm_joint3: -45
+    arm_joint4: 0
+    arm_joint5: 0
+    arm_joint6: 0
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  Piper is a single stationary 6-DOF arm (~50 cm reach)
+# at origin -- frame from front-right at arm height.
+viewer_camera:
+  pos:    [0.9, -0.9, 0.6]
+  lookat: [0.25, 0.0, 0.35]
+
+cameras:
+- prim_path: base_link/head_camera
+  frame_id: base_link
+  topic:
+    rgb: /genie_sim/head_camera_rgb
+    depth: /genie_sim/head_camera_depth
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 461.67999
+    fy: 617.12
+    k1: -0.015
+    k2: 0.0
+    p1: 0.0
+    p2: 0.0
+    k3: 0.0
+  extrinsic:
+    xyz: [0.1, 0.0, 0.6]
+    wxyz: [0.68757, 0.16507, -0.16507, -0.68757]
+
+- prim_path: arm_end_link/hand_camera
+  frame_id: arm_end_link
+  topic:
+    rgb: /genie_sim/hand_camera_rgb
+    depth: /genie_sim/hand_camera_depth
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 461.67999
+    fy: 617.12
+    k1: -0.015
+    k2: 0.0
+    p1: 0.0
+    p2: 0.0
+    k3: 0.0
+  extrinsic:
+    xyz: [0.07289, 0.0, 0.07162]
+    wxyz: [0.63281, 0.31551, 0.31551, -0.63281]
+lidars: []
+scene:

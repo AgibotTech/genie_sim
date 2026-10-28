@@ -217,9 +217,9 @@ Reserved xacro mappings (set by the launch system):
 ## URDF→USD pipeline (upstream context)
 
 This package is a **pure description provider**. The current bringup path
-uses [`genie_sim_engine/scripts/assemble_robot.py`](../genie_sim_engine/scripts/assemble_robot.py)
+uses [`genie_sim_engine_isaacsim/genie_sim_engine_isaacsim/assemble/_robot_impl.py`](../genie_sim_engine_isaacsim/genie_sim_engine_isaacsim/assemble/_robot_impl.py)
 for URDF→USD conversion. See the
-[engine pipeline](../genie_sim_engine/docs/pipeline.md) for the launch and
+[engine pipeline](../genie_sim_engine_core/docs/pipeline.md) for the launch and
 asset-cache contract.
 
 In this launch path, `robot.robot_source.fix_base` defaults to `true` and
@@ -396,5 +396,5 @@ instead of automatically changing an unrelated link.
 - OBJ mesh-name normalizer → `scripts/normalize_obj_names.py`
 - URDF/xacro diagnostics → `scripts/diagnose_urdf.py`
 - Third-party license notices → `THIRD_PARTY_NOTICES`
-- URDF→USD conversion logic → `../genie_sim_engine/scripts/assemble_robot.py`
+- URDF→USD conversion logic → `../genie_sim_engine_isaacsim/genie_sim_engine_isaacsim/assemble/_robot_impl.py`
 - Scene YAML robot block parsing → `../genie_sim_bringup/launch/utils.py`

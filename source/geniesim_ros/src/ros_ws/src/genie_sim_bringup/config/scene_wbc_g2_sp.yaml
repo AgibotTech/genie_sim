@@ -1,4 +1,7 @@
 robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_crsB.sysid-2026-09-22.yaml
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_swiftpicker.sysid-2026-09-18.yaml
   robot_name: G2_crsB_swiftpicker
   robot_prefix: genie
   robot_source:
@@ -7,9 +10,13 @@ robot:
     gripper: "swiftpicker"
     robot_model: genie
     package: genie_sim_robot_model
-    pin_base_to_world: false
+    pin_base_to_world: false   # resolves to mode `free`: root_joint deactivated →
+                               # plain substep, real gravity + contacts
+                               # (init_base_pose.z holds it off the floor).
+                               # `pin_base_mode` is ignored while this is false.
     convert_joints_to_fixed: []   # [base, head, body] to weld sub-trees; empty = keep all articulated
-    urdf: {}
+    urdf:
+      inertia_source: sysid
   init_base_pose:
     x: -0.25
     y: 0.0

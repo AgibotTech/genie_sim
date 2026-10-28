@@ -82,18 +82,18 @@ Do **not** use for:
 | Check | What to do |
 |---|---|
 | Was `init_joint_pos` set? | Add to scene yaml under the robot block. |
-| Did the swing happen on PhysX? | Engine seeds `state:angular/linear:physics:position` *before* `world.reset()`. If swing returns, you're on an old build — rebuild via `build-workspace`. |
-| Did the swing happen on Newton? | Engine writes `model.joint_q` + `control.joint_target_pos` + syncs `state_0.joint_q` + calls `eval_fk` in `_phase_finalize_init_state` *before* `_warmup`. Confirm with `cat source/geniesim_ros/src/ros_ws/src/genie_sim_engine/scripts/engine/newton/setup/init_pose.py` |
+| Did the swing happen on PhysX? | Engine seeds `state:angular/linear:physics:position` *before* `world.reset()`. Inspect the seed attributes, selected gains, and reset ordering before the first step. |
+| Did the swing happen on Newton? | Engine writes `model.joint_q` + `control.joint_target_pos` + syncs `state_0.joint_q` + calls `eval_fk` in `_phase_finalize_init_state` *before* `_warmup`. Confirm with `cat source/geniesim_ros/src/ros_ws/src/genie_sim_engine_newton/genie_sim_engine_newton/engine/newton/setup/init_pose.py` |
 | Mimic followers still swing? | Mimic states are trivial — they ride the constraint. If they swing, the **master** joint init pose is wrong, not the follower. |
 
 ### Symptom: contact tunnelling / objects sink through floor
 
 | Check | What to do |
 |---|---|
-| Backend? | Try the other launcher — PhysX 5 vs mujoco-warp have very different defaults. |
+| Backend? | Try the other launcher — Isaac PhysX vs MuJoCo-Warp have very different defaults. |
 | Was `collisionEnabled=False` set on the floor / object? | The engine strips the `physics:approximation` token only; if the whole `CollisionAPI` is disabled it'll fall through. Re-enable in the USD. |
 | Soft joint limit drift? | MoveIt URDF limits are padded ±0.01 rad / ±0.001 m at launch (see `wbc.launch.py`). For the engine itself, raise the URDF `<limit>` if real contact load is pushing past it. |
-| MuJoCo soft contact? | mjwarp uses a softer contact model than PhysX; reduce `solref` / `solimp` in the scene mjcf injection block. |
+| MuJoCo soft contact? | mjwarp uses a softer contact model than PhysX; inspect `newton.mjc_contact` in scene YAML and the substep stability warning. |
 
 ### Symptom: shelf / object renders as a convex hull
 
@@ -101,7 +101,7 @@ Do **not** use for:
 |---|---|
 | GL viewer or OVRtx? | OVRtx renders visual mesh; GL viewer renders both visual + collision. If only GL shows the hull, that's expected — toggle off the collision layer. |
 | `collisionEnabled` value on the prim | If `False`, the engine should not be authoring a collision shape at all. If a hull renders, the USD still has `physics:approximation=convexDecomposition`. The engine blocks that token at load — rebuild via `build-workspace` if not. |
-| Recently merged scene? | Re-run `assemble_scene.py` (`rm -rf assets/scenes/<scene>/` + relaunch). |
+| Recently merged scene? | Re-run the `isaac_scene` assemble stage (`rm -rf assets/scenes/<scene>/` + relaunch). |
 
 ### Symptom: gripper poses wrong / EEF off
 
@@ -109,8 +109,7 @@ Common one for omnipicker / swiftpicker — verify:
 
 - Scene yaml `gripper:` matches the URDF you built MoveIt for.
 - MoveIt's `(arm, gripper)` matches the engine's. See `moveit-wbc`.
-- `EEF_ABS` payloads use `arm_base_link` framing (not `base_link`) —
-  this was the most common confusion before commit `6391cdcf6`.
+- `EEF_ABS` payloads use `arm_base_link` framing.
 
 ## Toggles & visualizers
 
@@ -188,8 +187,8 @@ cat assets/scenes/<scene>/robot_runtime.usda
 
 ## Resources
 
-- **Engine entry**: [source/geniesim_ros/src/ros_ws/src/genie_sim_engine/](../../src/ros_ws/src/genie_sim_engine/)
-- **Init pose pipeline**: `genie_sim_engine/scripts/engine/newton/setup/init_pose.py`, `kit/stage.py`
+- **Engine packages**: [genie_sim_engine_core](../../src/ros_ws/src/genie_sim_engine_core/) (ABC, ROS bridge, assemble), [genie_sim_engine_newton](../../src/ros_ws/src/genie_sim_engine_newton/), [genie_sim_engine_isaacsim](../../src/ros_ws/src/genie_sim_engine_isaacsim/)
+- **Init pose pipeline**: `genie_sim_engine_newton/engine/newton/setup/init_pose.py`, `genie_sim_engine_isaacsim/kit/stage.py`
 - **Scene yamls**: [source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/config/](../../src/ros_ws/src/genie_sim_bringup/config/)
 - **Engine overview**: [source/geniesim_ros/README.md](../../README.md)
 - **Related skills**: `launch-scene`, `moveit-wbc`, `add-robot`

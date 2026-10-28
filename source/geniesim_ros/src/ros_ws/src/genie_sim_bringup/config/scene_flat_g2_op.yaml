@@ -1,0 +1,65 @@
+# Self-contained G2 crs + Omnipicker motion test; source baseline parameters.
+robot:
+  robot_name: G2_crs_omnipicker
+  robot_prefix: genie
+  robot_source:
+    arm: crs
+    body: g2
+    gripper: "omnipicker"
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: false   # resolves to mode `free`: root_joint deactivated →
+                               # plain substep, real gravity + contacts
+                               # (init_base_pose.z holds it off the floor).
+                               # `pin_base_mode` is ignored while this is false.
+    convert_joints_to_fixed: []   # [base, head, body] to weld sub-trees; empty = keep all articulated
+    urdf: {}   # No compatible crs arm / Omnipicker sysid selection is shipped.
+  init_base_pose:
+    x: 0.0
+    y: 0.0
+    z: 0.04
+    theta: 0.0
+  init_joint_pos:
+    idx22_arm_l_joint2: -45
+    idx24_arm_l_joint4: -75
+    idx26_arm_l_joint6: -55
+    idx62_arm_r_joint2: -45
+    idx64_arm_r_joint4: -75
+    idx66_arm_r_joint6: -55
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  Frames the G2 chassis (~1.4 m tall) from
+# front-right, aimed at chest height.
+viewer_camera:
+  pos:    [1.6, -1.6, 1.2]
+  lookat: [0.0,  0.0, 0.8]
+
+cameras:
+- prim_path: head_link3/Head_Front_Camera
+  frame_id: head_link3
+  topic:
+    rgb: /genie_sim/head_front_camera_rgb
+    depth: /genie_sim/head_front_camera_depth
+  sensor:
+    width: 640
+    height: 400
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 318.7979431152
+    cy: 202.4943847656
+    fx: 305.6425170898
+    fy: 305.6007080078
+    k1: 0
+    k2: 0
+    p1: 0
+    p2: 0
+    k3: 0
+  extrinsic:
+    # G2_omnipicker/robot.usda: head_link3/head_front_Camera, USD graphics frame.
+    # Identity places the optical centre inside the head housing.
+    xyz: [0.10237, 0.02375, 0.10256]
+    wxyz: [-0.5945104121873723, -0.3868316461705513, 0.37872914728340207, 0.5945442627086478]
+lidars: []
+scene:

@@ -6,8 +6,7 @@ description: >
   with `use_ros2_control:=false` so move_group serves `/compute_ik`
   while the teleop publisher owns `/joint_command`, and confirm no
   topic fighting.
-  Trigger: When the user asks to "connect teleop to the sim", "桥接
-  teleop", "drive the engine with VR", "use teleop instead of
+  Trigger: When the user asks to "connect teleop to the sim", "drive the engine with VR", "use teleop instead of
   ros2_control", "stop the controllers from fighting teleop", or has
   a teleop loop ready and a scene up but the robot jitters / flicks.
 license: MPL-2.0

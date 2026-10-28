@@ -9,7 +9,8 @@ Each `SKILL.md` is a self-contained recipe an agent (or human) can follow end-to
 | [moveit-wbc](moveit-wbc/SKILL.md) | Plan + RViz on top of a running G2 scene. Arm/gripper matrix, IK plugin A/B, `/joint_command` mode. |
 | [add-robot](add-robot/SKILL.md) | URDF / xacro intake, offline mesh-prep tools, AS3 layout, scene wiring. |
 | [teleop-bridge](teleop-bridge/SKILL.md) | Wire `geniesim_teleop` into `/joint_command` without ros2_control fighting it. |
-| [record-episode](record-episode/SKILL.md) | `ros2 bag` canonical-topic capture (the only recording path until a dedicated recorder distribution lands). |
+| [run-wuji-chef-newton](run-wuji-chef-newton/SKILL.md) | Start the Wuji chef scene with Newton XPBD: OpenGL by default, optional OVRtx with RViz or image-viewer instructions. |
+| [record-episode](record-episode/SKILL.md) | `ros2 bag` canonical-topic capture and deformable replay conversion. |
 | [debug-physics](debug-physics/SKILL.md) | Contact / init / backend cookbook — convex hull, init swing, tunnelling, backend bisection. |
 | [material-override](material-override/SKILL.md) | Tune metallic / roughness PBR via `<material_override>` inside URDF `<visual>`. |
 

@@ -11,8 +11,8 @@ stage-dir artifacts before the engine starts, and the **pacing layer**
 (step modes, lifecycle coordination) that decouples loop timing from
 physics implementation.
 
-The workspace launchers currently use `genie_sim_engine`. This package provides
-independent contracts and does not change those launch paths.
+The workspace launchers select `genie_sim_engine_isaacsim` or
+`genie_sim_engine_newton`; both consume these shared contracts and the ROS bridge.
 
 ## Step modes and lifecycle
 

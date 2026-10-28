@@ -11,9 +11,10 @@ A new goal is generated only after every joint reaches the current one
 
 Joint groups and default excursion ranges
 -----------------------------------------
-  body     ±5 deg   (conservative — heavy torso)
+  body     ±3 deg   (conservative — heavy torso)
   head     ±15 deg  (light, sensor head)
   arm      ±20 deg  (arm links)
+  hand     ±20 deg  (Wuji hand_l_* / hand_r_* fingers, independently actuated)
   gripper  full [lower, upper] — non-mimic joints only (mimic followers skipped at parse)
   chassis  ±30 deg  absolute steering range from neutral; --no-with-chassis to skip
 
@@ -44,6 +45,7 @@ Usage
     ros2 run genie_sim_bringup wbc_cmds.py --tol 0.03 --goal-timeout 8
     ros2 run genie_sim_bringup wbc_cmds.py --exclude head
     ros2 run genie_sim_bringup wbc_cmds.py --duration 60 --seed 42
+    ros2 run genie_sim_bringup wbc_cmds.py --joints hand_l_ hand_r_ --cmd-mode ramp --hand-deg 30
 """
 
 from __future__ import annotations
@@ -84,6 +86,7 @@ _GROUP_PATTERNS: List[Tuple[str, str]] = [
 DEFAULT_BODY_DEG = 3.0
 DEFAULT_HEAD_DEG = 15.0
 DEFAULT_ARM_DEG = 20.0
+DEFAULT_HAND_DEG = 20.0
 DEFAULT_CHASSIS_DEG = 30.0
 DEFAULT_GUARD = 0.005  # rad/m kept inside each limit
 DEFAULT_TOL = 0.05  # rad/m — "goal reached" threshold per joint
@@ -118,6 +121,7 @@ DEFAULT_VEL_HEAD_DEG = 30.0  # light, no effective saturation
 DEFAULT_VEL_ARM_DEG = 10.0  # main throttle — pick based on arm_shoulder sat envelope
 DEFAULT_VEL_CHASSIS_DEG = 40.0  # steering wheel — fast snap to setpoint, kd=200 settles
 DEFAULT_VEL_GRIPPER_DEG = 60.0  # gripper close/open — light master, mimic followers brake naturally
+DEFAULT_VEL_HAND_DEG = 30.0  # independent Wuji finger joints
 # ---------------------------------------------------------------------------
 
 
@@ -155,9 +159,11 @@ def _parse_urdf_joints(
 def _classify(name: str) -> str:
     """Return the group key for a joint name.
 
-    Gripper joints: all are classified as 'gripper' and will be commanded
-    with their full range.  The WBC/controller handles follower mirroring.
+    Parallel grippers use full range; independently actuated Wuji fingers
+    use the hand excursion. Mimic followers were excluded during URDF parsing.
     """
+    if name.startswith(("hand_l_", "hand_r_")):
+        return "hand"
     if "gripper" in name:
         return "gripper"
     for pat, group in _GROUP_PATTERNS:
@@ -190,6 +196,7 @@ class WbcCommander(Node):
             "arm": math.radians(args.vel_arm),
             "chassis": math.radians(args.vel_chassis),
             "gripper": math.radians(args.vel_gripper),
+            "hand": math.radians(args.vel_hand),
             # "other" — fall through to body's slower velocity for
             # safety against unclassified joints.
             "other": math.radians(args.vel_body),
@@ -216,6 +223,7 @@ class WbcCommander(Node):
             "arm": math.radians(args.arm_deg),
             "chassis": math.radians(args.chassis_deg),
             "gripper": None,
+            "hand": math.radians(args.hand_deg),
             "other": math.radians(args.body_deg),
         }
 
@@ -247,6 +255,17 @@ class WbcCommander(Node):
             g = _classify(name)
             by_group.setdefault(g, []).append(f"{name}[{lo:.3f},{hi:.3f}]")
         self.get_logger().info(json.dumps({"event": "description_received", "joints": len(joints), "groups": groups}))
+        if not joints:
+            self.get_logger().error(
+                json.dumps(
+                    {
+                        "event": "no_matching_joints",
+                        "filters": self._filter,
+                        "exclude": self._exclude,
+                        "hint": "Wuji fingers use --joints hand_l_ hand_r_; parallel jaws use gripper",
+                    }
+                )
+            )
         # Log the active command mode + per-group velocity table so
         # the operator can verify what's running without re-reading
         # the CLI.  In step mode the velocity table is informational
@@ -279,7 +298,7 @@ class WbcCommander(Node):
             rclpy.shutdown()
             return
 
-        if not self._joints or not self._states:
+        if not self._joints or any(name not in self._states for name in self._joints):
             return
 
         advance = False
@@ -289,9 +308,26 @@ class WbcCommander(Node):
             advance = True
         elif time.monotonic() - self._goal_start >= self._goal_timeout:
             stuck = [n for n, g in self._goals.items() if n in self._states and abs(self._states[n] - g) >= self._tol]
+            stuck_detail = {
+                n: {
+                    "goal": self._goals[n],
+                    "command": self._goals[n] if self._cmd_mode == "step" else self._smoothed.get(n, self._states[n]),
+                    "state": self._states[n],
+                    "error": self._goals[n] - self._states[n],
+                }
+                for n in stuck
+            }
             self.get_logger().warn(
                 json.dumps(
-                    {"event": "goal_timeout", "goal": self._goal_count, "stuck": stuck, "timeout_s": self._goal_timeout}
+                    {
+                        "event": "goal_timeout",
+                        "goal": self._goal_count,
+                        "stuck": stuck,
+                        "stuck_detail": stuck_detail,
+                        "timeout_s": self._goal_timeout,
+                        "tolerance": self._tol,
+                        "cmd_mode": self._cmd_mode,
+                    }
                 )
             )
             advance = True
@@ -306,8 +342,9 @@ class WbcCommander(Node):
         self._publish_goals()
 
     def _all_reached(self) -> bool:
-        tracked = [(n, g) for n, g in self._goals.items() if n in self._states]
-        return bool(tracked) and all(abs(self._states[n] - g) < self._tol for n, g in tracked)
+        return bool(self._goals) and all(
+            n in self._states and abs(self._states[n] - g) < self._tol for n, g in self._goals.items()
+        )
 
     def _new_goals(self) -> Dict[str, float]:
         goals: Dict[str, float] = {}
@@ -383,7 +420,9 @@ class WbcCommander(Node):
 
         if not self._description_received:
             status = "WAITING_FOR_DESCRIPTION"
-        elif not self._states:
+        elif not self._joints:
+            status = "NO_MATCHING_JOINTS"
+        elif any(name not in self._states for name in self._joints):
             status = "WAITING_FOR_STATES"
         elif not self._goals:
             status = "INITIALIZING"
@@ -395,18 +434,19 @@ class WbcCommander(Node):
             g = _classify(name)
             by_group.setdefault(g, [0, 0])
             by_group[g][1] += 1
-            if abs(self._states.get(name, goal) - goal) < self._tol:
+            if name in self._states and abs(self._states[name] - goal) < self._tol:
                 by_group[g][0] += 1
         group_summary = {g: f"{v[0]}/{v[1]}" for g, v in by_group.items()}
 
         total = len(self._goals)
-        reached = sum(1 for n, g in self._goals.items() if abs(self._states.get(n, g) - g) < self._tol)
+        reached = sum(1 for n, g in self._goals.items() if n in self._states and abs(self._states[n] - g) < self._tol)
 
         record = {
             "t": round(elapsed, 2),
             "status": status,
             "goal": self._goal_count,
             "progress": f"{reached}/{total}",
+            "missing_feedback": [n for n in self._joints if n not in self._states],
             "on_goal_s": round(time.monotonic() - self._goal_start, 1),
             **group_summary,
         }
@@ -448,6 +488,12 @@ def _parse_args(argv: List[str]) -> argparse.Namespace:
     )
     p.add_argument(
         "--arm-deg", type=float, default=DEFAULT_ARM_DEG, help=f"arm joint excursion ±deg (default {DEFAULT_ARM_DEG})"
+    )
+    p.add_argument(
+        "--hand-deg",
+        type=float,
+        default=DEFAULT_HAND_DEG,
+        help=f"Wuji finger excursion ±deg from initial measured pose (default {DEFAULT_HAND_DEG})",
     )
     p.add_argument(
         "--chassis-deg",
@@ -528,6 +574,12 @@ def _parse_args(argv: List[str]) -> argparse.Namespace:
         type=float,
         default=DEFAULT_VEL_GRIPPER_DEG,
         help=f"ramp-mode gripper velocity ceiling (deg/s, default {DEFAULT_VEL_GRIPPER_DEG})",
+    )
+    p.add_argument(
+        "--vel-hand",
+        type=float,
+        default=DEFAULT_VEL_HAND_DEG,
+        help=f"ramp-mode Wuji finger velocity ceiling (deg/s, default {DEFAULT_VEL_HAND_DEG})",
     )
     p.add_argument("--duration", type=float, default=None, help="auto-stop after N seconds")
     p.add_argument("--exclude", nargs="*", metavar="PATTERN", help="skip joints whose name contains any of these")

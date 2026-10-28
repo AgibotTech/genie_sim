@@ -1,4 +1,6 @@
 robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/arx/acone/overlays/ac1.sysid-2026-09-30.yaml
   robot_name: arx_acone
   robot_prefix: arx
   robot_source:
@@ -8,7 +10,8 @@ robot:
     robot_model: arx
     package: genie_sim_robot_model
     pin_base_to_world: true
-    urdf: {}
+    urdf:
+      param_source: sysid
   init_base_pose:
     x: 0.0
     y: 0.0
@@ -78,7 +81,7 @@ cameras:
     k3: 0.0
   extrinsic:
     xyz: [0.07289, 0.0, 0.07162]
-    wxyz: [0.63281, 0.31551, 0.31551, -0.63281]
+    wxyz: [0.63281, 0.31551, -0.31551, -0.63281]
 
 - prim_path: arm_r_end_link/hand_right_camera
   frame_id: arm_r_end_link
@@ -101,7 +104,8 @@ cameras:
     p1: 0.0
     p2: 0.0
     k3: 0.0
+  extrinsic:
     xyz: [0.07289, 0.0, 0.07162]
-    wxyz: [0.63281, 0.31551, 0.31551, -0.63281]
+    wxyz: [0.63281, 0.31551, -0.31551, -0.63281]
 lidars: []
 scene:

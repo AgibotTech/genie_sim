@@ -13,10 +13,12 @@ from __future__ import annotations
 import pathlib
 
 import pytest
+import yaml
 
 from genie_sim_engine_core.common.session import _resolve_physics_params_file
 
 _CONFIG = pathlib.Path(__file__).resolve().parents[2] / "config"
+_LAUNCHERS = _CONFIG.parents[1] / "genie_sim_bringup" / "config"
 
 
 @pytest.fixture(autouse=True)
@@ -107,3 +109,53 @@ def test_ament_failure_still_reports_a_requested_profile(monkeypatch):
     assert out == ""
     assert log.warn_lines, "ament failure was not reported"
     assert log.error_lines, "a requested profile silently vanished"
+
+
+# ---------------------------------------------------------------- launchers
+
+
+def _engine_launchers():
+    out = []
+    for p in sorted(_LAUNCHERS.glob("launcher_*.yaml")):
+        doc = yaml.safe_load(p.read_text()) or {}
+        if "genie_sim_engine" in doc:
+            out.append(p)
+    return out
+
+
+def test_the_sweep_found_launchers_to_check():
+    """Guards the glob: a moved config directory would otherwise make every
+    test below pass by checking nothing."""
+    found = _engine_launchers()
+    assert len(found) >= 5, f"only {len(found)} engine launchers found under {_LAUNCHERS}"
+
+
+@pytest.mark.parametrize("path", _engine_launchers(), ids=lambda p: p.name)
+def test_every_engine_launcher_names_a_profile(path):
+    params = (yaml.safe_load(path.read_text()) or {})["genie_sim_engine"]["ros__parameters"]
+    assert "physics_params_file" in params, (
+        f"{path.name} does not set physics_params_file. It will silently load the base "
+        f"profile — which may even be what you want, but say so, because an unset key is "
+        f"indistinguishable from the bug this file exists to prevent."
+    )
+
+
+@pytest.mark.parametrize("path", _engine_launchers(), ids=lambda p: p.name)
+def test_every_named_profile_exists(path):
+    params = (yaml.safe_load(path.read_text()) or {})["genie_sim_engine"]["ros__parameters"]
+    name = params.get("physics_params_file", "")
+    assert name, f"{path.name}: empty physics_params_file"
+    resolved = pathlib.Path(name) if pathlib.Path(name).is_absolute() else _CONFIG / name
+    assert resolved.is_file(), f"{path.name} names {name!r}, which does not exist at {resolved}"
+
+
+def test_the_rlinf_profile_has_a_consumer():
+    """The point of the exercise.  If this fails, the profile is back to being
+    config nothing can reach — delete it or wire it, but do not ship it dead."""
+    named = set()
+    for p in _engine_launchers():
+        params = (yaml.safe_load(p.read_text()) or {})["genie_sim_engine"]["ros__parameters"]
+        named.add(params.get("physics_params_file", ""))
+    assert (
+        "physics_params_rlinf.yaml" in named
+    ), "no launcher selects physics_params_rlinf.yaml — it ships with zero readers again"

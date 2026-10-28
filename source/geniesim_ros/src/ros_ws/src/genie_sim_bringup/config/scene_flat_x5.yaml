@@ -1,0 +1,94 @@
+robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/arx/x5/overlays/x5a.sysid-2026-09-30.yaml
+  robot_name: arx_x5
+  robot_prefix: arx
+  robot_source:
+    arm: x5
+    body: ""
+    gripper: ""          # X5A's parallel gripper is part of the arm xacro
+    robot_model: arx
+    package: genie_sim_robot_model
+    pin_base_to_world: true   # default mode (weld): stationary tabletop arm,
+                              # so the URDF root_joint stays active. X5A has no
+                              # chassis -- a free root would simply fall.
+    convert_joints_to_fixed: []
+    urdf:
+      param_source: sysid
+  init_base_pose:
+    x: 0.0
+    y: 0.0
+    z: 0.05
+    theta: 0.0
+  # Revolute values are DEGREES here; engine/newton/topology.py converts.
+  # Folded rest pose kept clear of the SDK limits -- j2's lower bound is only
+  # -2.9 deg and j3's -5.7 deg, so an all-zero pose would sit on j2's bound.
+  # Ranges: j1 -180/150, j2 -2.9/200.5, j3 -5.7/183.3, j4 -91.7/88.8,
+  #         j5 -90/90, j6 -114.6/114.6.
+  init_joint_pos:
+    arm_joint1: 0
+    arm_joint2: 45
+    arm_joint3: 45
+    arm_joint4: 0
+    arm_joint5: 0
+    arm_joint6: 0
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  X5A is a single stationary 6-DOF arm (~60 cm reach)
+# at origin -- frame from front-right at arm height.
+viewer_camera:
+  pos:    [1.0, -1.0, 0.7]
+  lookat: [0.3,  0.0, 0.4]
+
+cameras:
+- prim_path: base_link/head_camera
+  frame_id: base_link
+  topic:
+    rgb: /genie_sim/head_camera_rgb
+    depth: /genie_sim/head_camera_depth
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 461.67999
+    fy: 617.12
+    k1: -0.015
+    k2: 0.0
+    p1: 0.0
+    p2: 0.0
+    k3: 0.0
+  extrinsic:
+    xyz: [0.1, 0.0, 0.6]
+    wxyz: [0.68757, 0.16507, -0.16507, -0.68757]
+
+- prim_path: arm_end_link/hand_camera
+  frame_id: arm_end_link
+  topic:
+    rgb: /genie_sim/hand_camera_rgb
+    depth: /genie_sim/hand_camera_depth
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 461.67999
+    fy: 617.12
+    k1: -0.015
+    k2: 0.0
+    p1: 0.0
+    p2: 0.0
+    k3: 0.0
+  extrinsic:
+    xyz: [0.07289, 0.0, 0.07162]
+    wxyz: [0.63281, 0.31551, 0.31551, -0.63281]
+lidars: []
+scene:

@@ -15,7 +15,7 @@ description: >
 license: MPL-2.0
 metadata:
   author: genie-sim
-  version: "1.0"
+  version: "1.1"
 prerequisites:
   - geniesim_ros:build-workspace
 inputs:
@@ -54,15 +54,21 @@ Do **not** use for:
 1. **Author inside `<visual>`, not on the link.** The override
    auto-scopes to exactly the mesh it sits under. A link with N
    `<visual>` elements just gets N independent overrides.
-2. **`urdfdom` / RSP / MoveIt / Isaac's converter all ignore it.**
-   `assemble_robot.py` strips the element from the URDF it feeds the
-   converter, then re-applies the values to the converted USD via
-   `_parse_material_override_blocks` / `_apply_material_overrides`.
+2. **Isaac Sim 6.2 AS3 assembly owns the extension.**
+   The `urdf_to_usd` stage strips the element from the URDF it feeds the
+   converter, then applies the values after the AS3 transformer via
+   `_parse_material_override_blocks` / `_apply_material_overrides` in
+   `genie_sim_engine_isaacsim/assemble/_robot_impl.py`.
 3. **Only `roughness` and `metallic` are exposed.** Other UsdPreviewSurface
    inputs (specular, opacity, IOR) are not on the contract.
-4. **Range 0..1.** Outside that range the importer warns and clamps.
+4. **Range 0..1.** Finite out-of-range values warn and clamp. Malformed,
+   NaN and infinite fields warn and remain unchanged.
 5. **No attributes needed.** Scoping is positional. Don't try to
-   target a sibling visual by name — author one override per visual.
+   target a sibling visual by name — author one override per visual. The
+   converter copy assigns stable names; private material references isolate
+   shared materials. Source xacro and payload materials remain unchanged.
+6. **Only the 6.2 path applies these overrides.** Isaac 4.5/5.1 is unchanged.
+   Regenerate old caches after updating the converter naming implementation.
 
 ## Schema
 
@@ -152,20 +158,32 @@ Iterate values, rebuild, re-launch.
 
 ### Step 6 — Verify the converted USD
 
-```bash
-grep -n "roughness\|metallic" assets/scenes/<scene>/robot/robot.usda | head
+Read the composed USD, including its payloads, rather than grepping the
+root file alone. Use the USD-enabled Python in the prepared 6.2 runtime:
+
+```python
+from pxr import Usd, UsdShade
+stage = Usd.Stage.Open("assets/scenes/<scene>/robot.usda")
+for prim in stage.Traverse():
+    if prim.IsA(UsdShade.Material) and "/GenieMaterialOverrides/" in str(prim.GetPath()):
+        mat = UsdShade.Material(prim)
+        print(prim.GetPath(), {name: mat.GetInput(name).Get()
+                              for name in ("roughness", "metallic")})
 ```
 
-You should see the patched values on the relevant material prims.
+Verify the intended visuals and preserved albedo in OVRtx or Isaac rendering.
+Regression tests: `python3 -m pytest
+source/geniesim_ros/src/ros_ws/src/genie_sim_engine_isaacsim/tests/test_material_overrides.py`.
+The installed 6.2 converter enables the fresh-URDF SDK tests for repeated boxes
+and meshes; other environments skip those cases explicitly.
 
 ## Notes
 
-- `assemble_robot.py` walks each `<visual>` in author order; if a
-  visual has multiple meshes (rare in our robots), the override
-  applies to every embedded material of that visual.
-- The override is stripped from the URDF *before* it reaches the
-  converter, so MoveIt / RSP / urdfdom never see it. They'll happily
-  consume the same xacro.
+- The stage walks each `<visual>` in author order; if a visual has
+  multiple meshes (rare in our robots), the override applies to every
+  embedded material of that visual.
+- The override is stripped only from the converter copy. MoveIt / RSP /
+  urdfdom consume the authored xacro and ignore the extension.
 - For brand-new materials (no DAE-embedded source), prefer authoring
   a real `<material>` block — material_override is patch-only.
 - Material is rendered by OVRtx + Isaac Sim. The Newton GL viewer
@@ -174,7 +192,7 @@ You should see the patched values on the relevant material prims.
 
 ## Resources
 
-- **Engine source**: [source/geniesim_ros/src/ros_ws/src/genie_sim_engine/scripts/assemble_robot.py](../../src/ros_ws/src/genie_sim_engine/scripts/assemble_robot.py) → `_parse_material_override_blocks` / `_apply_material_overrides`
+- **Engine source**: [genie_sim_engine_isaacsim/assemble/_robot_impl.py](../../src/ros_ws/src/genie_sim_engine_isaacsim/genie_sim_engine_isaacsim/assemble/_robot_impl.py) → `_parse_material_override_blocks` / `_apply_material_overrides`
 - **Reference usage**: [source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model/robots/agilex/aloha/aloha.urdf.xacro](../../src/ros_ws/src/genie_sim_robot_model/robots/agilex/aloha/aloha.urdf.xacro)
-- **Engine AGENTS.md** → "<material_override>": [source/geniesim_ros/src/ros_ws/src/genie_sim_engine/AGENTS.md](../../src/ros_ws/src/genie_sim_engine/AGENTS.md)
+- **Pipeline doc** → "<material_override>": [genie_sim_engine_core/docs/pipeline.md](../../src/ros_ws/src/genie_sim_engine_core/docs/pipeline.md)
 - **Related skills**: `add-robot`, `launch-scene`

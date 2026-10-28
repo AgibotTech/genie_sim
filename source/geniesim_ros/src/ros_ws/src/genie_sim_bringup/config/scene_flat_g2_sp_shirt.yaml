@@ -1,0 +1,339 @@
+# G2 (crsB + swiftpicker) standing in front of a cube box with a t-shirt
+# draped on top, ready to be folded.  Companion scene for
+#   launcher_newton_fsvbd.yaml (physics_solver: fsvbd, physics_hz: 60).
+#
+# Run:
+#   ros2 launch genie_sim_bringup app.launch.py \
+#     scene:=scene_flat_g2_sp_fsvbd \
+#     launcher_config:=launcher_newton_fsvbd \
+#     physics_engine_visualizer:=newton
+#
+# Geometry rationale — three spawn constraints must hold simultaneously:
+#
+#   1. Cube must NOT penetrate base_link.
+#      G2's base_link collision (T2 body + legs) extends out to x≈+0.32
+#      in the world frame.  A cube with half_extent x=0.25 must therefore
+#      have its CENTER at x ≥ 0.32 + 0.25 + margin ≈ 0.62.
+#      We use 0.75 for a comfortable 18 cm gap.
+#
+#   2. Shirt mesh must NOT penetrate cube at spawn.
+#      The decimated T_Shirt_fold.usd mesh is laid out FLAT (collar +
+#      sleeves spread on a plane), so its rest bbox is 0.56 × 0.60 × 0.26 m.
+#      The 0.26 m z-extent means the shirt's geometric centre sits 0.13 m
+#      above its lowest vertex.  To spawn the shirt 5 cm above the cube
+#      top, shirt_pose_z = cube_top_z + 0.05 + 0.13 = cube_top_z + 0.18.
+#
+#   3. Shirt must NOT penetrate the arm at spawn.
+#      With init_joint_pos below (j2=-45°, j4=-75°, j6=-60°) the wrist
+#      ends up roughly at z≈0.84 m.  Shirt top after the y-extent (cloth
+#      half-height 0.13 m above its pose centre) must clear that:
+#      shirt_pose_z + 0.13 < 0.84  →  shirt_pose_z ≤ 0.71.
+#      Cube_top_z ≤ shirt_pose_z − 0.18 = 0.53, so we choose cube_top_z
+#      = 0.50 (3 cm of arm-tip clearance once the shirt drapes).
+
+robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_crsB.sysid-2026-09-22.yaml
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_swiftpicker.sysid-2026-09-18.yaml
+  robot_name: G2_crsB_swiftpicker
+  robot_prefix: genie
+  robot_source:
+    arm: crsB
+    body: g2
+    gripper: "swiftpicker"
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: true
+    convert_joints_to_fixed: [base, head, body]   # weld all sub-trees → 16 DOFs gone from Featherstone
+    urdf:
+      inertia_source: sysid
+  init_base_pose:
+    x: 0.0
+    y: 0.0
+    z: 0.04
+    theta: 0.0
+  # Same "standing-ready" arm pose as scene_flat_g2_sp.yaml — arms folded
+  # forward-and-down so the wrists hover above the box, ready for the
+  # fold sequence to take over.
+  init_joint_pos:
+    idx22_arm_l_joint2: -45
+    idx24_arm_l_joint4: -75
+    idx26_arm_l_joint6: -55
+    idx62_arm_r_joint2: -45
+    idx64_arm_r_joint4: -75
+    idx66_arm_r_joint6: -55
+    idx03_body_joint3: 20
+    idx61_arm_r_joint1: 20
+    idx21_arm_l_joint1: -20
+
+# Viewport camera for the Newton GL viewer (physics_engine_visualizer:=newton)
+# and the OVRtx FreeCam.  Z-up world frame.  ``lookat`` sets the orbit pivot
+# so middle-drag rotates around the chosen target.  Frames the G2 chassis at
+# spawn (~origin, ~1.4 m tall) from front-right, aimed at chest height.
+viewer_camera:
+  pos:    [1.6, -1.6, 1.2]
+  lookat: [0.0,  0.0, 0.8]
+
+cameras:
+# - prim_path: head_link3/Head_Front_Camera
+#   frame_id: head_link3
+#   topic:
+#     rgb: /genie_sim/head_front_camera_rgb
+#     depth: /genie_sim/head_front_camera_depth
+#   sensor:
+#     width: 640
+#     height: 400
+#     freq: 10.0
+#     min_range: 0.01
+#     max_range: 10000
+#   intrinsic:
+#     cx: 318.7979431152
+#     cy: 202.4943847656
+#     fx: 305.6425170898
+#     fy: 305.6007080078
+#     k1: 0
+#     k2: 0
+#     p1: 0
+#     p2: 0
+#     k3: 0
+#   extrinsic:
+#     xyz: [0.0, 0.0, 0.0]
+#     wxyz: [1.0, 0.0, 0.0, 0.0]
+
+lidars: []
+
+scene: scenes/blank/blank_cloth.usda
+
+# Newton particle extras — only active when launched with
+#   physics_engine:=newton  (or :=isaac_newton).
+# Mirrors the cloth setup from scene_flat_fr3_fsvbd.yaml but sized for G2
+# and positioned to satisfy the three spawn-clearance constraints listed
+# in the file header.
+newton:
+  # Debug-only knobs (every flag defaults to off, no production cost).
+  # See engine/newton/debug_visualizer.py — one shared rclpy node lives
+  # alongside the engine's C++ gsi::RosBridge in the same process.  All
+  # publishers use ``qos_profile_sensor_data`` (BEST_EFFORT + KEEP_LAST 5)
+  # so RViz subscribes with no manual QoS override.  When every flag is
+  # ``false`` (or absent), the engine never imports rclpy /
+  # visualization_msgs and there is zero per-tick cost.
+  debug:
+    # Publish deformable / cloth surface as visualization_msgs/Marker
+    # TRIANGLE_LIST.  Covers VBD cloth, XPBD cloth, and FEM tet bars —
+    # anything that produces surface tris in ``model.tri_indices``.  RViz
+    # renders the actual fabric / soft-body surface (folds, drape,
+    # orientation) so you can sanity-check shape even when the GL
+    # viewer is unavailable (headless runs, remote dev boxes).  Add a
+    # "Marker" display, set Topic to /genie_sim_engine/deformable_marker,
+    # fixed frame = map.  Wire cost ≈ 3 × n_tri × 12 B per tick (no
+    # shared indexing in the ROS Marker format) — well under 25 MB/s at
+    # 60 Hz for typical decimated cloth.  The debug rclpy node lives
+    # under the ``/genie_sim_engine`` namespace so all engine topics
+    # group together in RViz; topic names below are RELATIVE to that.
+    pub_deformable_marker: true
+    # Optional overrides (defaults shown — relative names resolve under
+    # /genie_sim_engine; pass an absolute "/foo" to escape the namespace).
+    # deformable_marker_topic: deformable_marker
+    # deformable_marker_frame_id: map
+
+    # Publish raw particle positions as sensor_msgs/PointCloud2.  Same
+    # source data as ``pub_deformable_marker`` (Newton's
+    # ``state.particle_q``) but no triangle indexing — every particle is
+    # one point.  Useful when ``model.tri_count == 0`` (particle-only
+    # soft body) where the TRIANGLE_LIST renders nothing, or when an
+    # RViz "PointCloud2" display fits the debugging task better than a
+    # flat-shaded triangle marker.  Wire format: contiguous float32 XYZ,
+    # ``point_step=12`` — denser than Marker's per-vertex Point list.
+    # The two flags are independent: enable either, both, or neither.
+    pub_deformable_pointcloud: true
+    # Optional overrides (defaults shown).
+    # deformable_pointcloud_topic: deformable_pointcloud
+    # deformable_pointcloud_frame_id: map
+
+    # Publish every free-joint rigid object's pose as a
+    # visualization_msgs/MarkerArray.  RViz: add a "MarkerArray" display,
+    # set Topic to /genie_sim_engine/object_marker, fixed frame = map.
+    # Each free body becomes a PRIMITIVE marker (CUBE / SPHERE /
+    # CYLINDER) sized to its first shape's bounding box, plus a small
+    # TEXT_VIEW_FACING with the body label.  Primitive markers render
+    # in one RViz GL call — no ``MESH_RESOURCE`` (mesh markers force a
+    # per-frame asset reload).
+    pub_object_marker: true
+    # Optional overrides (defaults shown).
+    # object_marker_topic: object_marker
+    # object_marker_frame_id: map
+
+  solver:
+    # Required explicit choice — no 'auto'.  One of: vbd, xpbd, style3d.
+    # newton-standalone currently fully supports vbd (matches the franka
+    # cloth demo); xpbd / style3d wire through but drop the VBD-only
+    # self-contact tuning params.
+    prefer: vbd
+
+  contact:
+    # Franka demo (cm scale): soft_contact_ke = 1e4, kd = 1e-2, mu = 0.25.
+    # Identical values work in meter scale because the cloth params below
+    # are kept at the same magnitudes — see header in scene_flat_fr3_fsvbd.yaml
+    # for the cm→m conversion note.
+    soft_ke: 1.0e4
+    soft_kd: 1.0e-2
+    soft_mu: 0.25
+
+  # MuJoCo-style rigid contact tuning (mjvbd / mujoco-warp paths only;
+  # ignored by Featherstone / AVBD).  Each entry overrides the per-class
+  # default in genie_sim_engine_newton/common/object_classification.py:
+  # MJC_CONTACT_DEFAULTS.
+  #
+  #   solref = (timeconst, dampratio)         — 2 floats
+  #   solimp = (d0, dN, width, mid, power)    — 5 floats
+  #
+  # Shapes are bucketed by ``classify_shape`` (the object-classification
+  # companion to common.joint_classification used for PD gains):
+  #
+  #   robot         — colliders under the active robot's prim path
+  #                   (matched by robot_prefix from robot.robot_prefix)
+  #   floor         — the ground plane (lifecycle.add_ground_plane)
+  #   passive       — passive scene rigid bodies (hanger, dropped objects)
+  #   static_prop   — world-static USD shapes that aren't the floor
+  #                   (cube props, tables, walls under /World/*)
+  #   other         — anything that didn't match
+  #
+  # Any class omitted here keeps its Python default — currently
+  # solref=(0.005, 5.0) and solimp=(0.9, 0.95, 0.001, 0.5, 2.0) for
+  # every class.
+  #
+  # On startup the lifecycle logs the resolved per-class values plus a
+  # stability check comparing sub_dt against min(timeconst)/2.
+  # mjc_contact:
+  #   floor:
+  #     solref: [0.02, 1.0]      # loosen back to MuJoCo stock if needed
+  #   passive:
+  #     solimp: [0.95, 0.99, 0.001, 0.5, 2.0]   # stiffen impedance only
+  mjc_contact:
+    # ----------------------------------------------------------------
+    # SUB-MM PENETRATION — TUNED FOR substep=10 / iterations=5
+    # ----------------------------------------------------------------
+    # Defaults (object_classification.py):
+    #   solref=(0.002, 1.0)  solimp=(0.9, 0.95, 0.001, 0.5, 2.0)
+    #
+    # The defaults are already at the stability floor (timeconst =
+    # 2·sub_dt = 2 ms at sub_dt=1 ms) with critical damping.  Holding
+    # timeconst at the floor and at dampratio=1.0 maximises the spring
+    # constant:
+    #
+    #   ke = (1/(timeconst · dampratio))²
+    #
+    # Concretely: ke = (1/(0.002·1))² = 250 000.  Steady-state
+    # penetration under a 10 N load = 10/250 000 = 0.04 mm.
+    #
+    # Why NOT bump dampratio to "make it stiffer".  MuJoCo's contact
+    # impedance recomputes both kp and kd from solref each step.  kd
+    # only depends on timeconst (kd = 2/timeconst), while kp drops as
+    # the SQUARE of dampratio.  So dampratio=5 vs dampratio=1 at the
+    # same timeconst leaves kd unchanged but cuts kp by 25× — the
+    # damper gets stronger but the spring (which bounds steady-state
+    # penetration) gets 25× weaker.  An "overdamped" contact sinks
+    # deeper, not less.  This was the bug in the original 4ms/5.0
+    # tuning that motivated the rewrite.
+    #
+    # Why this scene still overrides the defaults: solimp.  The
+    # default impedance band (d0=0.9, dN=0.95, width=0.001) is too
+    # soft at small penetrations for the gripper-on-rod / gripper-on-
+    # cube grasps in this scene.  Bumping d0/dN to 0.95/0.99 narrows
+    # the soft transition and makes the contact register full
+    # impedance within the first 1 mm of penetration.  Combined with
+    # the default tight solref this gives sub-mm grasp slip even
+    # under fast finger closure.
+    #
+    # Stability constraints (must hold at substep=10 / sub_dt=1 ms):
+    #   * timeconst >= 2·sub_dt = 2 ms.  Tighter would silently soften
+    #     contact every other substep (Baumgarte stabiliser kicks in).
+    #   * solimp width >= 1 mm.  Per-substep contact-normal jitter
+    #     scales with sub_dt × v — at a gripper closing speed of
+    #     0.5 m/s the normal moves 0.5 mm per substep, so a sub-mm
+    #     width would have half the substeps see "no contact".
+    #
+    # To do better than ~0.04 mm steady-state penetration:
+    #   * substep=20 → sub_dt=0.5 ms, can drop timeconst to 1 ms →
+    #     ke = 1 000 000, penetration ~0.01 mm.  Doubles MJW per-frame
+    #     cost; cloth/VBD is unaffected.
+    #   * Raise impratio (``solver.impratio`` in physics_params.yaml).
+    #     MuJoCo defaults to impratio=1; 10-100 makes the normal
+    #     direction much stiffer than friction — fixes "round object
+    #     squirts out of jaw" without affecting normal penetration.
+    # ----------------------------------------------------------------
+    robot:
+      solref: [0.002, 1.0]
+      solimp: [0.95, 0.99, 0.001, 0.5, 2.0]
+      # Rubber-tipped fingers: tangential / torsional / rolling.
+      # Defaults are (1.0, 0.005, 0.0001) which is enough to push a
+      # cube but lets round rods (the hanger) roll right out of the
+      # jaws.  Bumping torsional & rolling is what stops the rotation,
+      # not bumping tangential — even μ_t=5.0 won't grip a smooth rod
+      # if μ_rolling stays at 1e-4.  MJW pair-mixes friction as MAX of
+      # both surfaces, so writing it on the robot side alone is
+      # sufficient even if the hanger keeps its passive defaults.
+      friction: [2.0, 0.1, 0.01]
+    passive:
+      solref: [0.002, 1.0]
+      solimp: [0.95, 0.99, 0.001, 0.5, 2.0]
+      friction: [2.0, 0.1, 0.01]
+    floor:
+      solref: [0.002, 1.0]
+      solimp: [0.95, 0.99, 0.001, 0.5, 2.0]
+    static_prop:
+      solref: [0.002, 1.0]
+      solimp: [0.95, 0.99, 0.001, 0.5, 2.0]
+    other:
+      solref: [0.002, 1.0]
+      solimp: [0.95, 0.99, 0.001, 0.5, 2.0]
+
+  entries:
+    # Cube authored as a UsdGeom.Cube with UsdPhysics.CollisionAPI; Newton's
+    # add_usd parses it as a world-static shape.
+    #
+    #   pose center  = (0.75, 0, 0.70) m
+    #   half_extents = (0.30, 0.50, 0.25) m   (wider in both x and y)
+    #   x range      = 0.45 → 1.05   (near-face 0.45 > base extent 0.32 ✓)
+    #   y range      = −0.50 → 0.50  (1 m wide, comfortably catches the shirt)
+    #   z range      = 0.45 → 0.95   (top at z=0.95, raised for the new
+    #                                 body_joint3=+20° tilted arm reach)
+    # - kind: box
+    #   name: fold_box
+    #   pose: [0.75, 0.0, 0.70, 0.0, 0.0, 0.0, 1.0]
+    #   params:
+    #     half_extents: [0.30, 0.50, 0.25]
+
+    - kind: cloth
+      name: tshirt
+      # Decimated 10× T-shirt (≈4535 verts) — same mesh the fr3_vbd and
+      # ur5_tshirt scenes use.  Swap to Female_T_Shirt.usd / _2x / _5x for
+      # higher resolution at the cost of substep budget.
+      mesh_usd: scenes/blank/T_Shirt_fold.usd
+      # Pose centre z=1.13 → mesh bottom at 1.00 (5 cm above cube top 0.95).
+      # Orientation: 180° yaw about Z so the collar faces -X (toward the
+      # robot) — sleeves end up on the robot's left/right, hem facing away.
+      # Quaternion in [qx, qy, qz, qw] order: (0, 0, 1, 0).
+      pose: [0.75, 0.0, 1.13, 0.0, 0.0, 1.0, 0.0]
+      vel: [0.0, 0.0, 0.0]
+      params:
+        # METER-SCALE values calibrated for a light-to-medium woven fabric
+        # (≈100 g/m², similar to a cotton t-shirt).  Do NOT copy the franka
+        # demo's cm-scale literals here — VBD energy scales with triangle
+        # area and edge length, and going cm→m makes A 1e-4× and L 1e-2×.
+        # Reusing the demo values would make the shirt behave like rubber.
+        #
+        # Tuning starting points:
+        #   * Too stretchy / "noodle-like"   → bump tri_ke (× 2-10).
+        #   * Too rigid / "wetsuit"          → cut tri_ke (× 0.1-0.5).
+        #   * Won't drape / stays in a hoop  → cut edge_ke (× 0.1).
+        #   * Folds collapse on themselves   → bump edge_ke (× 5).
+        #   * Cloth bounces / jiggles a lot  → bump tri_kd & edge_kd.
+        #   * Cloth feels too heavy / slow   → cut density.
+        density: 0.1            # kg/m²
+        tri_ke: 5.0e2           # stretch stiffness
+        tri_ka: 5.0e2           # area-preservation
+        tri_kd: 1.0e-3          # stretch damping
+        edge_ke: 1.0e-2         # bending stiffness
+        edge_kd: 1.0e-2         # bending damping
+        particle_radius: 0.01  # m

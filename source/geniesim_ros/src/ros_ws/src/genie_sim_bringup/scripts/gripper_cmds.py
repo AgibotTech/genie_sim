@@ -6,7 +6,7 @@
 
 Publishes JointState setpoints on the leader joints (one per side); the
 follower / support joints are mimicked at the simulator's command-apply
-stage (see ``genie_sim_engine.py`` mimic broadcast).
+stage (see the engine's mimic broadcast).
 
 Robot-agnostic by construction: this script does NOT assume the leader is
 prismatic-in-meters or revolute-in-radians. It just pushes whatever
@@ -45,40 +45,77 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import JointState
 
 # ---------------------------------------------------------------------------
-# Per-robot tuning. Edit these for the robot you're testing against.
+# Per-robot tuning. Pick a preset with ``ACTIVE_ROBOT`` below.
 #
-# The joint NAMES below must match the leader names exposed by the staged
-# robot USD. URDF→USD imports prefix every joint with ``idxNN_`` (ascending
-# along the kinematic tree); legacy hand-authored USDs do not. Open the
-# console log right after bringup — the "[genie_sim_engine] joints …" line
-# lists the exact names.
-LEFT_LEADER = "idx31_gripper_l_inner_joint1"
-RIGHT_LEADER = "idx71_gripper_r_inner_joint1"
-LEFT_LEADER = "gripper_l_active_joint"
-RIGHT_LEADER = "gripper_r_active_joint"
-LEFT_LEADER = "gripper_active_master_joint"
-RIGHT_LEADER = "gripper_active_master_joint"
+# The joint NAMES must match the leader names exposed by the staged robot USD.
+# URDF→USD imports prefix every joint with ``idxNN_`` (ascending along the
+# kinematic tree); legacy hand-authored USDs do not. Open the console log right
+# after bringup — the "[genie_sim_engine] joints …" line lists the exact names.
+#
+# These used to be six bare module constants, each assigned three times in a
+# row; Python kept only the LAST assignment, so the file silently shipped the
+# ``gripper_active_master_joint`` preset. That joint does not exist on the G2
+# swiftpicker/omnipicker URDFs, so every command was dropped as `unknown` and
+# the jaws never moved. Presets are now a dict — adding a robot can't shadow
+# another one.
+#
+# open / close are in the leader joint's native unit:
+#   * prismatic gripper → meters  (e.g. open=0.0, close=0.024)
+#   * revolute  gripper → radians (e.g. open=0.0, close=-0.85)
+# ``limits`` should match the leader joint's URDF lower/upper; order doesn't
+# matter (the clamp takes min/max).
+#
+# On ``close`` past first contact: commanding all the way to the kinematic
+# limit is DELIBERATE for grasping. The swiftpicker master runs kp=2000 with
+# actuator force capped at ±50 N·m, so it saturates at only 0.025 rad of
+# position error. A 19 mm object blocks the jaws around -0.733; commanding
+# -0.91 leaves ~0.18 rad of standing error, which pins the actuator at its
+# 50 N·m ceiling — that saturation IS the grip force. Command only to
+# first-contact and you get a limp hold.
+_PRESETS = {
+    # G2 with swiftpicker or omnipicker (URDF→USD, idxNN_ prefixed).
+    # Master URDF limits: lower=-0.91, upper=0.0 → 0.0 is fully open.
+    # Measured on the live mjxpbd chef scene (tf2_echo between
+    # gripper_r_left_support_link and gripper_r_right_support_link):
+    #     command  0.0   → pad-link separation 0.141 m  (jaws OPEN)
+    #     command -0.91  → pad-link separation 0.051 m  (jaws CLOSED)
+    # NOTE the /joint_states readback for the master reports +0.91 after a
+    # -0.91 command: the staged USD's joint frame is mirrored relative to the
+    # URDF axis. The mechanism closes correctly — don't "fix" the sign here
+    # based on the readback alone, measure the pads.
+    "g2": {
+        "left": "idx31_gripper_l_inner_joint1",
+        "right": "idx71_gripper_r_inner_joint1",
+        "open": 0.0,
+        "close": -0.91,
+        "limits": (-0.91, 0.0),
+    },
+    # Hand-authored USD naming, no idxNN_ prefix, prismatic jaws in meters.
+    "legacy_active_joint": {
+        "left": "gripper_l_active_joint",
+        "right": "gripper_r_active_joint",
+        "open": 0.024,
+        "close": 0.0,
+        "limits": (0.0, 0.024),
+    },
+    # Single shared master joint name for both sides.
+    "legacy_shared_master": {
+        "left": "gripper_active_master_joint",
+        "right": "gripper_active_master_joint",
+        "open": 0.8,
+        "close": 0.0,
+        "limits": (0.0, 0.8),
+    },
+}
 
-# OPEN / CLOSE setpoints in the leader joint's native unit.
-#   * prismatic gripper → meters (e.g. OPEN=0.0, CLOSE=0.024)
-#   * revolute  gripper → radians (e.g. OPEN=0.0, CLOSE=-0.85)
-# The signs and magnitudes are robot-specific; consult the URDF / staged
-# USD to find the URDF lower/upper for the leader joint and pick a CLOSE
-# inside that range that's just past first-contact (going all the way to
-# the kinematic limit will stall the controller against self-collision).
-OPEN_POS = 0.0
-CLOSE_POS = -1.0
-OPEN_POS = 0.024
-CLOSE_POS = 0.0
-OPEN_POS = 0.8
-CLOSE_POS = 0.0
+ACTIVE_ROBOT = "g2"
 
-# Safety bounds — the publisher clamps every outgoing setpoint to this
-# interval. Order doesn't matter; the clamp uses min/max of both. Set the
-# pair to match the URDF lower/upper of the leader joint (whether that's
-# meters or radians, possibly negative).
-LIMIT_A = -10.0
-LIMIT_B = 10.0
+_P = _PRESETS[ACTIVE_ROBOT]
+LEFT_LEADER = _P["left"]
+RIGHT_LEADER = _P["right"]
+OPEN_POS = _P["open"]
+CLOSE_POS = _P["close"]
+LIMIT_A, LIMIT_B = _P["limits"]
 
 DEFAULT_RATE_HZ = 50.0
 TOGGLE_PERIOD_SEC = 2.0
