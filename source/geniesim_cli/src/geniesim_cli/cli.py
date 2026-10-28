@@ -185,6 +185,8 @@ def _print_usage() -> None:
     print(f"  {CYAN}benchmark run{RST} <CONFIG> [...]        🧪 Run a benchmark task (wraps app/app.py)")
     print(f"  {CYAN}benchmark list{RST} [--robot/--category] 📋 List task configs by robot / category")
     print(f"  {CYAN}benchmark batch{RST} --category=C [...]  🧬 Run every task in a category sequentially")
+    print(f"  {CYAN}benchmark generate-layouts{RST} [...]     🧬 Generate reproducible Wuji chef layouts")
+    print(f"  {CYAN}benchmark run-layouts{RST} [...]          🧪 Evaluate layouts with a fresh engine per scene")
     print(f"  {CYAN}benchmark check-inference{RST} [...]     🔌 Probe the inference server with a saved payload")
     print(
         f"  {CYAN}teleop run{RST} [...]                    🎮 Launch the VR / Pico teleoperation loop {YELLOW}(🚧 W.I.P.){RST}"

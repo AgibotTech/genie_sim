@@ -254,6 +254,10 @@ in system Python; this does not alter the SDK-owned Newton, MuJoCo or Warp
 versions.
 
 
+`install_ros_build_deps.py` reads build SDK requirements from package metadata
+and installs with --no-deps. Preserve the mounted OVRtx cache during upgrades;
+overlay the wheel and retire superseded dist-info only after pip succeeds. Do
+not unmount caches to work around uninstall failures.
 
 Build/assemble/launch as the intended user. Existing generated caches must be
 writable by that user. Ownership repair is an explicit owner/admin operation on

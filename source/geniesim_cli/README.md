@@ -119,6 +119,7 @@ task-level metadata. Deformable tasks reject `--run-times` greater than 1.
 Tasks whose USD assets have attached behavior scripts also require
 `--run-times 1`; this asset condition requires manual inspection.
 
+Newton Wuji evaluation uses `geniesim benchmark run g2wuji_dexmanip_wok_flip`. Portable scene layouts can be generated with `benchmark generate-layouts` and evaluated with `benchmark run-layouts`; see the evaluation guide.
 
 Commands for optional modules require a matching consumer checkout. Post-training
 commands require the server launchers; Newton layout commands require the

@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""``geniesim benchmark {run,list,batch,categories,robots,check-inference}`` — drive
+"""``geniesim benchmark {run,list,batch,generate-layouts,run-layouts,categories,robots,check-inference}`` — drive
 ``geniesim_benchmark/app/app.py`` from the CLI, plus a probe for the inference server it talks to.
 
 The underlying invocation this verb wraps is::
@@ -24,7 +24,7 @@ deterministic tag inference without having to maintain per-file
 metadata.
 
 The interpreter is picked in this order so the same verb works inside
-the standard 6.0 container (``python3``), inside the 5.1 container
+the standard 6.x container (``python3``), inside the 5.1 container
 (``omni_python``), and on a host that ``pip install``\\ed isaacsim
 (``sys.executable``):
 
@@ -57,6 +57,10 @@ _KNOWN_CATEGORIES: frozenset[str] = frozenset(
         "wbc",
         "lp",
         "manip",
+        "finemanip",
+        "dexmanip",
+        "crsemb",
+        "agent",
         "probe",
         "robust",
         "spatial",
@@ -238,7 +242,22 @@ def _extract_flag(args: list[str], name: str) -> tuple[str | None, list[str]]:
 
 
 def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None) -> list[str]:
-    cmd: list[str] = [_python_cmd(), str(_app_py()), "--config", str(config_path)]
+    try:
+        from geniesim_benchmark.runtime import runtime_for_config
+    except ModuleNotFoundError as error:
+        if error.name != "geniesim_benchmark.runtime":
+            raise
+        # Benchmark packages without the selector expose only app/app.py.
+        runtime = "isaac"
+    else:
+        runtime = runtime_for_config(config_path)
+    if runtime == "newton":
+        interpreter = os.environ.get("GENIESIM_PY_CMD") or sys.executable or "python3"
+        cmd = [interpreter, "-m", "geniesim_benchmark.newton.runner", "--config", str(config_path)]
+    elif runtime == "isaac":
+        cmd = [_python_cmd(), str(_app_py()), "--config", str(config_path)]
+    else:
+        raise ValueError(f"Unsupported benchmark runtime: {runtime!r}")
     if infer_host:
         cmd.append(f"--benchmark.infer_host={infer_host}")
     cmd.extend(forwarded)
@@ -254,6 +273,9 @@ def _print_usage() -> None:
     print(f"  {CYAN}run{RST} {WHITE}<CONFIG>{RST} [--infer-host=H:P] [extras...]   ▶️  Run one task")
     print(f"  {CYAN}list{RST} [--robot=R] [--category=C] [SUBSTR]      📋 List configs")
     print(f"  {CYAN}batch{RST} --category=C [--robot=R] [extras...]    🧬 Run every matching task")
+    print(f"  {CYAN}generate-layouts{RST} [args...]                       🧬 Generate a portable Wuji layout bundle")
+    print(f"  {CYAN}run-layouts{RST} --bundle PATH --infer-host H:P --output-dir PATH [--dry-run]")
+    print(f"     {DIM}Run each Wuji layout in a fresh ROS engine; --layout-ids 0,1 selects a subset.{RST}")
     print(f"  {CYAN}categories{RST}                                    🏷  Distinct categories + counts")
     print(f"  {CYAN}robots{RST}                                        🤖 Distinct robot prefixes + counts")
     print(f"  {CYAN}check-inference{RST} [PAYLOAD] [--infer-host=H:P] [extras...]")
@@ -543,6 +565,17 @@ def _do_check_inference(args: list[str]) -> None:
     os.execvp(cmd[0], cmd)
 
 
+def _do_layouts(module: str, args: list[str]) -> None:
+    """Exec the benchmark's pure dispatch entry with the current prepared ROS Python."""
+    package = _benchmark_root()
+    if not (package / "newton" / f"{module}.py").is_file():
+        print(f"{RED}❌ The benchmark package does not provide Newton layout commands.{RST}", file=sys.stderr)
+        sys.exit(1)
+    interpreter = os.environ.get("GENIESIM_PY_CMD") or sys.executable or "python3"
+    command = [interpreter, "-m", f"geniesim_benchmark.newton.{module}", *args]
+    os.execvp(interpreter, command)
+
+
 def run(args: list[str]) -> None:
     if not args or args[0] in ("-h", "--help", "help"):
         _print_usage()
@@ -551,6 +584,9 @@ def run(args: list[str]) -> None:
     sub = args[0]
     rest = args[1:]
 
+    if sub in ("generate-layouts", "run-layouts"):
+        _do_layouts("layouts" if sub == "generate-layouts" else "layout_batch", rest)
+        return
     if sub == "run":
         _do_run(rest)
         return

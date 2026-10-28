@@ -434,3 +434,17 @@ example USD references can be bound with the module’s auto-discovery helper.
 `geniesim tool ros-dag` excludes generated `devel`, `devel_build` and
 `devel_log` trees alongside build/install/external, so stale colcon package.xml
 symlinks cannot shadow source packages or break the generator.
+
+## Newton benchmark dispatch
+
+`benchmark run` reads the task YAML `runtime` before selecting an interpreter: omitted/isaac retains the existing app; newton executes `geniesim_benchmark.newton.runner` in the prepared ROS Python. `--manifest` and task-runner options are forwarded. `benchmark generate-layouts` and `run-layouts` dispatch to the benchmark-owned Newton modules; the CLI imports no ROS, physics or rendering runtime. See Wuji evaluation.
+
+### Benchmark task categories
+
+`benchmark list`, `batch` and `categories` recognize the second token in
+`<robot>_<category>_<task>.yaml`. New task categories `finemanip`, `dexmanip`,
+`crsemb` and `agent` are registered alongside `if`, `wbc`, `spatial`, `manip`
+and `s2r`. Use the single-token `g2op` prefix for G2 Omnipicker task entries.
+Task renaming changes config resolution only; YAML runtime contents and the
+published G2 track entries remain unchanged. Control and validation utility
+configs retain their separate names.
