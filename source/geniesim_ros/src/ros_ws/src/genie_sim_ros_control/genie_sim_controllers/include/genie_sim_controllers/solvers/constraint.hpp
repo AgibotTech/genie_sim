@@ -145,7 +145,8 @@ class BoundConstraint : public InequalityConstraint
 {
 public:
   BoundConstraint(size_t input_dim, Eigen::VectorXd lower_bound, Eigen::VectorXd upper_bound)
-  : BoundConstraint(std::make_shared<IdentityFunction>(input_dim), std::move(lower_bound), std::move(
+  : BoundConstraint(
+      std::make_shared<IdentityFunction>(input_dim), std::move(lower_bound), std::move(
         upper_bound)) {}
 
   BoundConstraint(

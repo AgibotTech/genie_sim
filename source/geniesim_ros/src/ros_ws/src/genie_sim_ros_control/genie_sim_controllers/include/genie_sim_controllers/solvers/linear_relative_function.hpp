@@ -53,7 +53,8 @@ class FilterIdentityFunction final : public LinearFunction
 {
 public:
   FilterIdentityFunction(size_t input_dim, const std::vector<size_t> & local_indices)
-  : LinearFunction(input_dim, local_indices.size()), local_indices_(local_indices), r_(Eigen::VectorXd::Zero(
+  : LinearFunction(input_dim, local_indices.size()), local_indices_(local_indices),
+    r_(Eigen::VectorXd::Zero(
         (int)local_indices.size())) {}
 
   FilterIdentityFunction(

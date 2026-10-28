@@ -1,17 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(genie_sim_controllers)
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
+find_package(genie_sim_common REQUIRED)
+genie_sim_package(WERROR)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror
-                      -Wno-unused-parameter -Wno-reorder
+  add_compile_options(-Wno-unused-parameter -Wno-reorder
                       -Wno-sign-compare -Wno-unused-variable)
 endif()
-
-set(CMAKE_CXX_STANDARD 20)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -150,13 +146,19 @@ install(
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
+# Current bringup resolves the G2 profile by robot_model/body. Keep the
+# installed name available while 4wd.yaml remains the single source of tuning.
+install(FILES config/4wd.yaml
+  DESTINATION share/${PROJECT_NAME}/config
+  RENAME genie_g2.yaml
+)
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
-  ament_add_pytest_test(test_teleop_joy test/test_teleop_joy.py)
+  genie_sim_add_pytest_test(test_teleop_joy test/test_teleop_joy.py)
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(test_chassis_kinematics test/test_chassis_kinematics.cpp)
+  genie_sim_add_gtest(test_chassis_kinematics test/test_chassis_kinematics.cpp)
   target_link_libraries(test_chassis_kinematics
     genie_sim_controllers_servo_plugins Eigen3::Eigen)
 

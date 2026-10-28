@@ -100,7 +100,8 @@ public:
   struct CostBlock
   {
     explicit CostBlock(const size_t dim)
-    : input(dim), gradient(Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dim))), hessian(Eigen::MatrixXd::Zero(
+    : input(dim), gradient(Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dim))),
+      hessian(Eigen::MatrixXd::Zero(
           static_cast<Eigen::Index>(dim),
           static_cast
           <Eigen::Index>(dim))) {}

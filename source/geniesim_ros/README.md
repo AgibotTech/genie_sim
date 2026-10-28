@@ -244,6 +244,8 @@ graph TD
   genie_sim_moveit ==>|exec| genie_sim_moveit_plugins
   genie_sim_moveit ==>|exec| genie_sim_control
   genie_sim_moveit ==>|exec| genie_sim_planning
+  genie_sim_control ==>|exec| genie_sim_common
+  genie_sim_controllers ==>|exec| genie_sim_common
   genie_sim_engine_core ==>|exec| genie_sim_common
   genie_sim_robot_model ==>|exec| genie_sim_common
 ```

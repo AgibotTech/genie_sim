@@ -13,7 +13,7 @@ def generate_launch_description():
     config = os.path.join(
         get_package_share_directory("genie_sim_controllers"),
         "config",
-        "servo_4ws.yaml",
+        "4wd.yaml",
     )
 
     servo_node = Node(
