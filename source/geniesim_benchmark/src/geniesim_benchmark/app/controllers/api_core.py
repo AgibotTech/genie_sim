@@ -134,6 +134,9 @@ class APICore:
         self.record_video = config.app.record_video
         self.data_convert = config.app.data_convert
         self.enable_playback = config.app.enable_playback
+        # Whether to put scene objects back to their initial poses when an episode
+        # ends. getattr so older configs without the key keep working.
+        self.reset_scene_after_episode = getattr(config.app, "reset_scene_after_episode", True)
         self.on_demand_render = getattr(config.app, "on_demand_render", False)
         self.enable_gpu_dynamics = getattr(config.app, "enable_gpu_dynamics", False)
 
@@ -2833,6 +2836,16 @@ class APICore:
             # instead of auto-starting from stale signals.
             server_node.reset_recording_state()
             self.teleop_recording = False
+            # Put the objects back where they started, so the next episode begins
+            # from a clean state instead of from wherever the last episode left
+            # them. init_frame_info is captured by collect_init_physics() after the
+            # scene is loaded, which task_benchmark.py also runs in teleop mode, so
+            # the data is available here. _on_recording already runs on the render
+            # loop (render_step -> _on_recording), hence the direct call rather than
+            # run_on_render_loop.
+            if self.reset_scene_after_episode:
+                self._reset_env()
+                logger.info("Scene reset to initial state")
 
         if self.teleop_recording and self.wait_recording:
             self.set_record_topics()
