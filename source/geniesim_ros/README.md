@@ -200,8 +200,9 @@ into the AS3 layout the engine consumes.
 
 ## What's in the box
 
-Ten ROS packages, each with its own `AGENTS.md` for routing details:
+Twelve ROS packages, each with its own `AGENTS.md` for routing details:
 
+- **Shared foundations**: [genie_sim_common](src/ros_ws/src/genie_sim_common/README.md), [genie_sim_engine_core](src/ros_ws/src/genie_sim_engine_core/README.md)
 - **Bringup & engine**: `genie_sim_bringup`, `genie_sim_engine`, `genie_sim_render`
 - **Robot + visualization**: `genie_sim_robot_model`, `genie_sim_rviz_plugins`
 - **Motion stack (Genie G2)**: `genie_sim_moveit`, `genie_sim_moveit_plugins`
@@ -225,9 +226,11 @@ graph TD
   %% Source: source/geniesim_ros/src/ros_ws/src/*/package.xml.
 
   genie_sim_bringup["<b>genie_sim_bringup</b>"]
+  genie_sim_common["<b>genie_sim_common</b>"]
   genie_sim_control["<b>genie_sim_control</b>"]
   genie_sim_controllers["<b>genie_sim_controllers</b>"]
   genie_sim_engine["<b>genie_sim_engine</b>"]
+  genie_sim_engine_core["<b>genie_sim_engine_core</b>"]
   genie_sim_moveit["<b>genie_sim_moveit</b>"]
   genie_sim_moveit_plugins["<b>genie_sim_moveit_plugins</b>"]
   genie_sim_planning["<b>genie_sim_planning</b>"]
@@ -241,6 +244,7 @@ graph TD
   genie_sim_moveit ==>|exec| genie_sim_moveit_plugins
   genie_sim_moveit ==>|exec| genie_sim_control
   genie_sim_moveit ==>|exec| genie_sim_planning
+  genie_sim_engine_core ==>|exec| genie_sim_common
 ```
 <!-- AUTOGEN:ros-dag end -->
 

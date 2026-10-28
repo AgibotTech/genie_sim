@@ -1,0 +1,611 @@
+# genie_sim_engine physics tuning parameters.
+#
+# Scope: this file is consumed by both engines:
+#
+#   * Isaac Sim path (``physics_engine=isaac_physx`` /
+#     ``physics_engine=isaac_newton``) — ``kit/stage.py:
+#     _configure_drives`` writes Layer 1 to USD ``DriveAPI`` prims,
+#     ``_init_articulation`` writes Layer 2 via the Isaac tensor
+#     ``ArticulationView.set_dof_stiffnesses``.
+#   * Newton-standalone path (``physics_engine=newton``) —
+#     ``engine/newton/adapters/mujoco_warp.py:MuJoCoWarpAdapter
+#     .prepare_model`` classifies each DOF via
+#     ``common.joint_classification`` and pulls per-class kp / kd /
+#     max_effort from Layer 2 (body / arm / head / chassis_drive /
+#     chassis_steer) plus the gripper master from Layer 1.  Brings
+#     newton-standalone into runtime parity with the wrapper, since
+#     the wrapper's runtime gains all live in Layer 2.
+#
+# Historical note: this file was named ``params.yaml`` originally,
+# briefly renamed to ``isaac_params.yaml`` while only the Isaac path
+# read it, then renamed to ``physics_params.yaml`` once the newton-
+# standalone wiring closed that gap.  Both engines now consume it.
+#
+# Loaded by ``EngineSession`` at startup via the ``physics_params_file``
+# ROS parameter (defaults to ``share/genie_sim_engine_core/config/
+# physics_params.yaml`` when unset).  Missing keys fall back to the
+# built-in defaults defined in ``common/params.py``.  Unknown joint
+# names are a HARD ERROR — the adapter exits at startup rather than
+# silently leaving the offending joint at the URDF importer's
+# vestigial defaults.  Add a regex to ``common/joint_classification
+# .py`` if a new robot family needs its joints classified.
+#
+# All stiffness / damping / max_force values are in PhysX units
+# (effectively N/rad and N*s/rad for revolute joints, N/m and N*s/m
+# for prismatic).
+#
+# Two-layer drive authoring
+# -------------------------
+# A joint in Isaac Sim has TWO independent PD layers, and this file
+# controls both.  They write to DIFFERENT APIs and have DIFFERENT
+# consumers.  Renaming the blocks from the legacy ``drive:`` /
+# ``articulation:`` (which read as a single concept) to make the
+# distinction unmissable:
+#
+#   usd_drive_api:                ← Layer 1 (USD-authored)
+#     Writes to ``UsdPhysics.DriveAPI`` attributes on each joint prim
+#     in ``robot.usda`` at assemble / launch time
+#     (``kit/stage.py:_configure_drives``, before ``world.reset()``).
+#     The values STICK to the USD asset and are picked up by ANY
+#     consumer that parses the stage:
+#       * PhysX's USD parser → articulation initial gains
+#       * Newton's ``add_usd`` → ``model.joint_target_ke`` /
+#         ``joint_target_kd`` → ``actuator gainprm/biasprm`` in the
+#         dumped MJCF (newton-standalone) or the live mjwarp
+#         (isaac_newton wrapper)
+#     Persistent.  Cross-engine.  Also the only place to author
+#     USD-schema features that have no ArticulationView analogue:
+#     joint limits, ``physxJoint:armature``,
+#     ``PhysxMimicJointAPI:angular:naturalFrequency`` etc.
+#
+#   articulation_view_runtime:    ← Layer 2 (runtime tensor override)
+#     Writes via Isaac's ``ArticulationView.set_dof_stiffnesses`` /
+#     ``set_dof_dampings`` / ``set_dof_max_forces`` after
+#     ``world.reset()`` (``kit/stage.py:_init_articulation``).  Reaches
+#     PhysX directly (it owns the articulation handle) AND reaches
+#     Newton mjwarp on the isaac_newton wrapper path because the Isaac
+#     tensor view's setter calls ``_notify_joint_dof_properties_changed``
+#     which mutates ``model.joint_target_ke`` and the live
+#     ``mjw_model.actuator_gainprm``.
+#     Run-only.  Wins over Layer 1 when an ``ArticulationRootAPI`` is
+#     present (i.e. always, for our robots).
+#     Invisible to newton-standalone: that path never instantiates an
+#     Isaac ``ArticulationView``, so these values don't reach it.
+#     Tune newton-standalone via the launcher's ``mujoco_pd_ke`` /
+#     ``mujoco_pd_kd`` or by re-baking the USD overlay in
+#     the urdf_to_usd assemble stage.
+#
+# Why have both blocks?
+# - Layer 1 is the SEED that runs in the brief window between USD load
+#   and ``_init_articulation``.  It also reaches engines that don't run
+#   the Isaac tensor API (newton-standalone).
+# - Layer 2 is the runtime AUTHORITY for Isaac tensor paths.
+# - Most classes use matching values in both layers (no surprise on
+#   handover).  The chassis_drive intentionally diverges: Layer 1
+#   damping=1e6 is a safe-fallback seed (so wheels can't oscillate
+#   pre-init), Layer 2 kd=1e4 is the actual runtime target.
+
+# Layer 1 — per-joint UsdPhysics.DriveAPI authored to USD.
+# (Was named ``drive:`` historically; renamed to make the API and
+# scope explicit.  See top-of-file block comment.)
+usd_drive_api:
+  chassis_drive_joint:        # chassis_*wheel*joint* with very wide limits — free-spin road wheel
+    free_limits: true         # set lower/upper limits to +/- 1e20
+    stiffness: 0.0
+    damping: 1.0e6            # safe-fallback seed (Layer 2's kd=1e4 wins at runtime)
+    max_force: 1.0e7
+    # Drive-wheel exception to the x2 uniform baseline:
+    # ``dof_frictionloss=0`` instead of the uniform 0.3.  A free-rolling
+    # road wheel should NOT have a static-friction floor — at fl=0.3,
+    # the wheel can't START rolling until commanded torque > 0.3 N·m,
+    # which gives a velocity-dead-band of ~0.03 rad/s and produces
+    # stick-slip under contact.  Reference G2 wheels also use 0 here.
+    # Viscous braking still comes from the velocity actuator kd=10
+    # (see ``articulation_view_runtime.chassis_drive``).
+    dof_damping: 0.0
+    dof_frictionloss: 0.05
+    # ``armature: 0`` is intentional on the road wheel — adding rotor
+    # inertia here makes the chassis feel sticky / inertial under
+    # navigation commands (heavy flywheel on each wheel).  Free-roll
+    # behaviour requires zero here.
+    armature: 0.0
+  chassis_steer_joint:        # chassis_*wheel*joint* with normal limits — stiffer/faster than body so the rack tracks fast & accurate
+    stiffness: 1.0e5
+    damping: 5.0e3
+    max_force: 5.0e3
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    armature: 0.05
+  default_revolute:           # body / arm / head revolute joints
+    stiffness: 5.0e4
+    damping: 5.0e3
+    max_force: 5.0e3
+    # Passive joint physics (independent of the actuator's PD above).
+    # Authored on USD as ``mjc:damping`` / ``mjc:frictionloss`` and
+    # land as MuJoCo ``dof_damping`` / ``dof_frictionloss``.
+    #
+    # Strategy (x2_31dof_hand convention): uniform
+    # ``armature=0.03 / frictionloss=0.3 / damping=0`` across every
+    # joint.  Pure-torque mental model — actuator's PD provides the
+    # restoring force, joint adds a constant Coulomb-like friction
+    # floor (``frictionloss``) for numerical robustness, and a tiny
+    # rotor inertia (``armature``) for kp/dt² stability headroom.
+    # No viscous damping = no implicit-velocity-feedback dependency,
+    # simpler tuning, behaviour matches RL/WBC-friendly references.
+    #
+    # Reference G2 MJCF uses tiered damping (shoulder 3.0, mid 1.5, wrist 0.8) and tiered
+    # frictionloss — that's the alternative "in-sim PD damps itself"
+    # path.  We picked x2's simpler uniform approach instead so all
+    # arm/body/head/chassis/gripper joints carry the SAME passive
+    # tuning, and the PD layer ALONE is what we tune per class.
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    # Fallback armature for joints that classify into the generic
+    # ``JK_ARM`` bucket (didn't match shoulder/mid/wrist regexes).
+    # 0.05 = midpoint of the per-tier values below.
+    armature: 0.05
+  # Per-sub-class passive-joint overrides.  Only the ``dof_*`` fields
+  # are read by the mjwarp adapter on these blocks (the
+  # ``stiffness``/``damping``/``max_force`` actuator gains live in
+  # ``articulation_view_runtime`` for the runtime PD path).  Each
+  # block now carries the SAME uniform values — the sub-class blocks
+  # are kept (instead of collapsed into ``default_revolute``) so a
+  # later operator can re-tier them per-joint without re-introducing
+  # the block structure.  Omit any field and it falls back to the
+  # matching field on ``default_revolute``.
+  body:                       # body_joint1..5 — torso chain
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    # Per-class armature: torso links are heavy (7-20 kg) so 0.1 of
+    # rotor inertia is < 1% of M_eff — invisible to tracking but adds
+    # solver-conditioning headroom and damps the kp=1e5 / dt² term.
+    armature: 0.1
+  head:                       # head_joint1..3 — neck chain
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    # Head joints span a wide inertia range (link3 is ~18 kg, links
+    # 1-2 are ~0.1 kg).  0.05 keeps the light-link tracking penalty
+    # small while still giving the heavier link enough damping.
+    armature: 0.05
+  arm_shoulder:               # arm_*_joint1, joint2 — proximal / heavy
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    armature: 0.05
+  arm_mid:                    # arm_*_joint3, 4, 5 — elbow region
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    armature: 0.05
+  arm_wrist:                  # arm_*_joint6, joint7 — distal / light
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+    # Wrist links are ≈ 0.3-0.8 kg — armature=0.1 here would inflate
+    # effective inertia by 30-100% and visibly slow tracking.  0.02
+    # is the smallest value that still gives meaningful stick-slip
+    # smoothing across the 1 ms substep.
+    armature: 0.02
+  default_prismatic:          # any prismatic joint
+    stiffness: 5.0e4
+    damping: 5.0e3
+    max_force: 5.0e4
+  scene_articulation:         # articulated SCENE objects (door hinges, drawer slides) — Task 2
+    # Classified by body OWNERSHIP (parent + child both OUTSIDE the robot
+    # prefix), NOT by joint name — an articulated prop authored with any
+    # joint name (``door_hinge_left``, ``RevoluteJoint_00``, …) lands here.
+    # The mjwarp adapter routes these to ``JK_SCENE_ARTICULATION``: zero PD
+    # gains (passive — no ghost drive, the hinge is free to be pushed) PLUS
+    # the ``dof_*`` below so it settles under damping instead of swinging
+    # near-frictionlessly (T1 door-probe Fact 4 measured a barely-damped
+    # oscillation under the old JK_PASSIVE "leave damping untouched" path).
+    # Only ``dof_damping`` / ``dof_frictionloss`` are read (the actuator
+    # gains are ignored for a passive joint).  Starting values — tune up if
+    # a heavier door still overshoots, down if it feels sticky to push.
+    dof_damping: 0.5
+    dof_frictionloss: 0.1
+  gripper:                    # URDF-route Robotiq-style grippers (one master + N mimics)
+    # Applied ONLY when the robot was built from a URDF (urdf_to_usd stage).
+    # Legacy hand-authored USDs are left alone so their hand-tuning survives.
+    # The master joint is identified purely by `HasAPI(DriveAPI)` — it is
+    # the only drive-carrying joint in a Robotiq-style topology, so this
+    # works for 2F-85, 2F-140, and any other gripper that follows the same
+    # one-master-N-mimics pattern.
+    #
+    # NOTE: master_stiffness / master_damping ALSO flow into Layer 2
+    # (articulation_view_runtime) for the master DOF — see
+    # ``_init_articulation`` line ~1309.  Both layers carry the SAME
+    # values for the master, because the master is the one DOF where
+    # both APIs are meaningful in this topology (followers are
+    # constraint-driven, so they get kp=0/kd=0 on both layers).
+    #
+    # Tuning history (read before changing):
+    #   master_stiffness=1e4 / master_damping=10: original "reference G2 MJCF"
+    #     gainprm.  Worked for static grasps but coupled badly with the mimic
+    #     equality constraint under arm motion — the high PD interacted with
+    #     the equality solver and AMPLIFIED follower swing
+    #     (follower amp 0.06 rad, drift 0.01 rad at 0.5 rad / 0.5 Hz arm
+    #     sweep).  Verified empirically via
+    #     ``test_robot_xml_dynamic.py --cross-impact-mode sweep``.
+    #
+    #   master_stiffness=2e3 / master_damping=200: the sweep-determined
+    #     sweet spot.  Drops follower drift 30× (0.01 → 0.0003 rad) and
+    #     follower amplitude ~33% (0.06 → 0.04 rad) without compromising
+    #     grip force: at 0.025 rad command error the master saturates
+    #     against ``actfrcrange=±50 N·m`` (from URDF
+    #     ``<limit effort=50>``), delivering the same peak torque as the
+    #     prior config — just with less PD-vs-equality feedback at small
+    #     errors.
+    # 2026-07-13 REVERTED to the benchmark/URDF-authored drive profile
+    # (stiffness=100, damping=20, maxForce=15 — what the Isaac/PhysX
+    # benchmark runs).  The historical kp=2000/kd=200 value above was
+    # tuned while the gripper MECHANISM was broken (four-bar loops never
+    # closed, coupler joints PD-locked — see rlinf PHYSICS_FIDELITY doc
+    # §7.8): heavy-handed drive compensating for an unassembled linkage.
+    # With the loops properly closed and couplers freed, the heavy drive
+    # became the ejection energy source (squeeze force + compliant
+    # equalities + single-point convex contacts = stored energy +
+    # contact-walk ejection).  History for reference:
+    #   master_stiffness=1e4 / master_damping=10 then
+    #   master_stiffness=2000 / master_damping=200: 2026-06/07 sweeps,
+    #     anti-flap tuning against the broken linkage (see block above).
+    master_stiffness: 100.0     # kp — benchmark/URDF-authored value
+    master_damping: 20.0        # kd — benchmark/URDF-authored value
+    # 2026-07-27 gripper-closing investigation: URDF effort=15 is not enough on
+    # the mjwarp path — torque is clipped for the whole closing motion, and
+    # against the armature/frictionloss the overlay authors the gripper can only
+    # crawl at a constant ~0.87 rad/s, taking 1.07 s to close fully unloaded
+    # (measured on the rig; kp 100->2000 and friction/armature changes made no
+    # difference, and the constant speed is conclusive evidence that clipping
+    # dominates). Raising it to 50 (the URDF effort=50 the 2F-85 reference uses
+    # in the tuning history) took a half close from 0.47 s to 0.27 s, and turned
+    # a pi-0.5 run on the same instance and instruction from a 200-step timeout
+    # failure into a 98-step success.
+    # Fly-away regressions are gated by the full pick_block_number official
+    # protocol comparison (see GRIPPER_FORCE_VERIFICATION).
+    master_max_force: 50.0     # actuator forcerange cap (0 = keep the URDF effort; 15 measured insufficient, see above)
+    master_ctrl_range_from_joint_limit: true   # author ctrlrange from joint range so policy ctrl is clamped to hardware envelope
+
+    # Per-gripper-joint passive physics (applied to master + every follower).
+    # x2-style uniform passive tuning (matches the
+    # ``usd_drive_api.default_revolute`` and per-sub-class blocks).
+    # Gripper had its own tuning historically (armature=0.001,
+    # damping=0.05, frictionloss=0.01) lifted from the G2 reference,
+    # but the user moved every joint class to the x2 convention
+    # (uniform armature=0.03, damping=0, frictionloss=0.3) for a
+    # consistent passive baseline across the whole robot.
+    #
+    # Caveat: gripper followers are equality-constrained to the
+    # master.  Removing dof_damping eliminates the viscous brake on
+    # constraint cross-talk → if you see follower stick-slip or
+    # ringing under arm motion, bump ``dof_damping`` back up here
+    # without affecting other joints.
+    armature: 0.1
+    dof_damping: 0.0
+    dof_frictionloss: 0.3
+
+    # Mimic equality constraint solver tuning (mjwarp path only — the PhysX
+    # path uses PhysxMimicJointAPI fields below).  Default is MuJoCo's soft
+    # form ``[0.02, 1.0]`` / ``[0.9, 0.95, 0.001, 0.5, 2.0]``.  For stiff
+    # direct mode set negative values: ``mimic_eq_solref = [-10000, -100]``
+    # (= stiffness 1e4 N·m/rad, damping 100 N·m·s/rad on the equality).
+    # Going much stiffer than [-50000, -500] explodes at typical 2 ms substep.
+    # -50000/-500 (2026-07-13): the "direct" negative form is MASS-
+    # NORMALIZED (reference acceleration per rad), not N·m/rad as the
+    # note above assumed — measured joint-space stiffness at -10000 was
+    # only ~122 N·m/rad with the follower flapping ±0.15 rad during a
+    # commanded close and yielding to ~1 N fingertip loads ("inner
+    # finger gets bounced open by the object", no two-sided pinch).
+    # The old "explodes beyond -50000" warning was measured at 2 ms
+    # substeps; at the current 1.0 ms sub_dt (rolling's default substep=10 @
+    # 100Hz) there is 2.4x headroom.
+    mimic_eq_solref: [-50000, -500]
+    mimic_eq_solimp: [0.9, 0.95, 0.001, 0.5, 2.0]
+
+    # PhysX-only PhysxMimicJointAPI fields (ignored by mjwarp).
+    mimic_natural_frequency: 0.0  # physxMimicJoint:<axis>:naturalFrequency on mimics (0 = rigid)
+    mimic_damping_ratio: 0.0      # physxMimicJoint:<axis>:dampingRatio on mimics (0 = rigid)
+
+# Layer 2 — runtime gains pushed via ArticulationView tensor API.
+# (Was named ``articulation:`` historically; renamed to make the API
+# and scope explicit.  See top-of-file block comment.)  Applied after
+# ``world.reset()``.  Wins over Layer 1 for any path that runs the
+# Isaac tensor view (isaac_physx, isaac_newton wrapper).  ALSO read
+# by the newton-standalone ``MuJoCoWarpAdapter`` (since the adapter
+# rewrite that brought standalone into runtime parity with the
+# wrapper) — same per-class values land on both engines for any
+# scene whose joint names match the canonical regex set in
+# ``common/joint_classification.py``.
+articulation_view_runtime:
+  default:                    # any DOF that doesn't classify into a sub-class
+    # ``art_default`` is the fall-through tuning for joints whose
+    # name doesn't match any sub-class regex in
+    # ``common/joint_classification.py`` — e.g. an arm joint
+    # outside the canonical 1-7 numbering, or a robot family that
+    # hasn't been added to the classifier yet.  Body / head /
+    # arm_shoulder / arm_mid / arm_wrist all have their own
+    # blocks below; they don't fall back here.  Keep this set to
+    # something safe-but-stiff so an un-classified DOF still tracks
+    # commands instead of going limp.
+    kp: 5.0e4
+    kd: 5.0e3
+    max_effort: 5.0e3
+  body:                       # body_joint1..5 — torso / heavy
+    # Reference G2 MJCF uses kp=1e5 / kd=1e3 for body joints — the
+    # highest stiffness in the robot to keep the torso pose rock-
+    # steady under arm reaction torques.
+    #
+    # IDEAL-SIM tuning (current): max_effort raised to 1e7 (truly
+    # unlimited, matching the reference's forcerange=[0,0] semantics
+    # and our chassis_drive convention) so the actuator never
+    # saturates under any command.  No sim-to-real fidelity claim —
+    # this is "what the math says is best when you have a perfect
+    # torque source".  For real-robot tuning, restore max_effort
+    # to the URDF effort cap and either (a) lower kp to fit the
+    # saturation envelope, or (b) add dof_damping=3.0 (G2_t2v2
+    # convention) to bleed post-saturation overshoot.
+    kp: 1.0e5
+    kd: 5.0e3
+    max_effort: 1.0e7
+  head:                       # head_joint1..3 — neck / light
+    # Reference G2 MJCF: kp=1000 / kd=20 — sized for the head's
+    # tiny inertia (~0.1 kg·m²) so it doesn't over-actuate.  The
+    # auto-tuner suggested kp=45000 in ideal-sim mode (the head's
+    # M_eff supports MUCH stiffer kp); the conservative reference
+    # value is kept here for sim-to-real parity with the existing
+    # tuning.  Bump to 5e4 if you want snappy head tracking and
+    # don't care about real-robot replication.
+    kp: 1.0e3
+    kd: 40.0
+    max_effort: 1.0e7
+  arm_shoulder:               # arm_*_joint1, joint2 — proximal / heavy
+    # Reference G2_t2v2 values: kp=40000, kd=600.  IDEAL-SIM tuning:
+    # max_effort=1e7 (unlimited) so the actuator has full PD
+    # authority — matches the reference's [0,0] forcerange on
+    # position actuators (the [-108,108] on the reference is on the
+    # MOTOR actuator, not the POSITION one; ideal-sim leaves both
+    # unlimited).  Restore the URDF effort cap (108) and drop kp
+    # to ~6000 (Option α) for sim-to-real parity.
+    #
+    # 1e7 is NOT the net ceiling.  ``arm_contact.arm_max_torque`` (100.0,
+    # ~170 lines below) rewrites the compiled forcerange to +-100 N*m after
+    # this is applied, so the arm ends up at the URDF's own
+    # <limit effort="100"> reached by a 1e5x detour.  Both are needed; see
+    # the note on that key for which one does what.
+    kp: 4.0e4
+    kd: 1.2e3
+    max_effort: 1.0e7
+  arm_mid:                    # arm_*_joint3, 4, 5 — elbow region
+    # Reference G2_t2v2: kp=15000, kd=220.  Ideal-sim unlimited cap.
+    # Wok-flip stiffness: kp 1.5e4->6.0e4 (x4), kd 600->1200 (x2, keeps the
+    # damping ratio so it doesn't ring). The x4 (not x2) is what kills the
+    # ~5deg dynamic sideways/yaw of the wok at the toss reversal — bandwidth
+    # scales as sqrt(kp), so x2 (1.41x) was imperceptible while x4 halves the
+    # tracking lag (measured yaw 5.1->1.7deg). max_effort is already unlimited
+    # (1e7), so the lever is kp/kd, not the torque cap here -- the net torque
+    # cap is ``arm_contact.arm_max_torque`` (+-100 N*m), applied post-compile.
+    kp: 6.0e4
+    kd: 1200
+    max_effort: 1.0e7
+  arm_wrist:                  # arm_*_joint6, joint7 — distal / light
+    # Reference G2_t2v2: kp=8000, kd=100.  Ideal-sim unlimited cap.
+    # Wok-flip stiffness: kp 8e3->3.2e4 (x4), kd 200->400 (x2). See arm_mid.
+    # Net torque cap is ``arm_contact.arm_max_torque`` (+-100 N*m), not 1e7.
+    kp: 3.2e4
+    kd: 400.0
+    max_effort: 1.0e7
+  chassis_drive:              # chassis_*wheel*joint2 — free-spin road wheel, VELOCITY-controlled
+    # The adapter classifies these as ``JK_CHASSIS_DRIVE`` and forces
+    # the Newton mode to ``VELOCITY`` so SolverMuJoCo emits a
+    # velocity actuator: ``gainprm=[kd, ...] biasprm=[0, 0, -kd, ...]``,
+    # which is the exact form the reference G2 MJCF uses for
+    # navigation (``force = kd * ctrl - kd * qvel`` → ctrl is the
+    # commanded wheel velocity).
+    #
+    # ``kp`` is unused under VELOCITY mode (no position term in the
+    # emitted biasprm); kept here for shape parity with the other
+    # blocks.  ``kd`` is the velocity gain — bumping it stiffens the
+    # wheel's response to a velocity setpoint and increases the
+    # torque applied for a given velocity error.  Reference uses 10;
+    # higher than 100 makes the chassis brittle under contact.
+    # ``max_effort`` caps the per-step torque the actuator can
+    # apply (mjwarp ``forcerange``).
+    kp: 0.0
+    kd: 10.0                  # velocity gain (N·m·s/rad) — matches reference gainprm=10
+    max_effort: 1.0e7
+  chassis_steer:              # chassis_*wheel*joint1 — bounded-limit steering joint, POSITION-controlled
+    # kp / kd match the reference G2_t2v2_crsB MJCF exactly
+    # (gainprm=1000, biasprm[2]=-20 → kp=1000, kd=20).  Earlier
+    # local tuning used kp=1e5 (100× stiffer than the reference),
+    # rationalised as "stiffer than body so the rack tracks fast".
+    # In practice that level of stiffness produces a brittle steer
+    # response — small steer-angle commands fly through the
+    # actuator's authority at the slightest disturbance.  The
+    # reference's kp=1000 against M_eff ≈ 0.08 kg·m² gives
+    # ω_n ≈ 112 rad/s (18 Hz) which is plenty responsive for a
+    # mobile base navigation rate (< 5 Hz waypoint update).
+    #
+    # max_effort raised to 1e7 (effectively unlimited) so the
+    # steer rack can deliver whatever torque PD computes — matches
+    # the ideal-sim convention on body / head / arm.
+    kp: 1.0e3
+    kd: 20.0
+    max_effort: 1.0e7
+
+# Joint-command behaviour.
+command:
+  cmd_4ws_timeout_s: 0.1      # zero wheel velocities if no /cmd_4ws within this window
+
+stepping:
+  # Decoupled-render scheduler (single-thread adaptive) — always on when a
+  # GUI is present. Every physics tick runs PhysX directly (~2 ms) and the
+  # SimulationApp.update() call (~17 ms) is dispatched on its own cadence.
+  # The render is allowed to overrun a single tick (it has to — RTX frames
+  # are wider than a 10 ms tick at 100 Hz). The budget gate only vetoes a
+  # render when the loop is ALREADY behind by `render_safety_ms`, to avoid
+  # piling a render on top of a stalled tick. Has no effect in headless mode.
+  render_target_hz: 30.0      # visual rate target for the adaptive renderer
+  render_safety_ms: 2.0       # skip render only when already this many ms past deadline
+
+# ---------------------------------------------------------------------------
+# Contact / grasp solver parameters.
+#
+# This section was collected out of environment variables on 2026-07-31. Before
+# that they existed only as ``os.environ.get("RLINF_xxx", "default")`` in the
+# code — and were IN EFFECT by default: absent from the config file, unreported
+# in task_metadata, producing no diff when changed, and nobody could say when
+# impratio had become 30. These values genuinely change simulation results
+# (contact cone shape, how much force the gripper can apply, what collision
+# geometry the pads use); they are configuration and do not belong in a shell.
+#
+# They are now read from this file and from nowhere else. The env vars they came
+# from are gone rather than kept as a back door: a stale ``RLINF_*`` in a shell
+# is the same invisibility problem in a different place — it changes results
+# with no trace of it in the config the run was launched with. The name each
+# entry used to answer to is noted on it, so an old shell script that still
+# exports it can be found and repointed here.
+#
+# Tuning is still one edit per trial and does not need an image rebuild: dev
+# workspaces build with ``colcon build --symlink-install``, so this file is
+# live.
+# ---------------------------------------------------------------------------
+# Scene-wide physics-behaviour toggles applied by the mjwarp adapter.
+solver:
+  # mjwarp opt.impratio + elliptic friction cone. >0 turns on the elliptic cone
+  # (real static friction); 0 falls back to the pyramidal cone (regularised
+  # friction, no real static friction, and a grasped object creeps out at
+  # ~1 mm/s).
+  #
+  # Where 30 comes from (do not change it on a hunch): impratio=10 measurably
+  # cut static creep by 25x and was confirmed in teleoperation by the user
+  # ("much better", static slipping gone); the shake-rig A/B then found imp=10
+  # loses the block to vibration walk-off at ~0.32 rad amplitude while imp=30 is
+  # still stable past 0.43 rad, which is how 30 was settled on.
+  impratio: 30.0            # was env: RLINF_IMPRATIO (removed)
+
+  # SolverMuJoCo's rigid constraint-solver iteration count; 0 = MuJoCo's own
+  # default of 100. Deliberately separate from the launcher's
+  # ``physics_solver_iterations``, which is the PARTICLE count (a FEM tet scene
+  # runs it at 4). The combo solvers drive both from one adapter, and running
+  # the rigid solve at a particle scene's 4 makes frictional grasps creep in a
+  # way that reads as missing friction. Left at 0 here: the elliptic cone above
+  # is what this profile leans on, and 100 iterations already converge it.
+  mjc_iterations: 0
+
+  # SolverMuJoCo write-back cadence: how many substeps to wait before writing
+  # mjw state back into Newton state. Upstream default is 1 (every substep).
+  # This RLinf profile sets 0: the per-substep round trip accumulates numerical
+  # error into visible jitter on resting free bodies.
+  #
+  # 0 is only safe because the two jobs that round trip was doing are covered
+  # elsewhere: engine-side state writes are pushed explicitly
+  # (``sync_state_into_solver``, once after every direct write), and kinematic
+  # scene bodies are demoted to world-static colliders at stage level
+  # (``setup/stage.py::_demote_kinematic_bodies``) so they are never simulated
+  # bodies needing a per-substep clamp.
+  update_data_interval: 0
+
+  # NOTE: contact dimensionality + the friction coefficients that depend on it
+  # are NOT set here. They are per-class scene policy now —
+  # ``newton.mjc_contact.<kind>.{friction,condim}`` in the scene yaml, beside
+  # solref. See launcher_newton_mjwarp_multi_env.yaml for a worked example.
+
+# Gripper-specific contact / grasp parameters.
+gripper_contact:
+  # forcerange cap on the gripper master actuator (N*m). The code default is
+  # 0 = leave forcerange alone.
+  #
+  # ⚠ This entry is currently UNREACHABLE: the priority is
+  # ``usd_drive_api.gripper.master_max_force`` (>0) > this entry, and that
+  # value is 50.0 in this profile (18.0 in the shared one) — non-zero in
+  # both, so what is actually in effect is always the 50. The number below
+  # is only read once
+  # ``usd_drive_api.gripper.master_max_force`` is set to 0. It is kept as a
+  # fallback for such a profile, not as the current value — do not infer the
+  # grip force from it.
+  gripper_master_force_cap: 30.0    # was env: RLINF_GRIPPER_FORCE_CAP (removed)
+
+  # CoACD convex decomposition of the gripper pads. Turning it off leaves each
+  # pad as a single hull, degrading contact from a face to a point — one of the
+  # failure shapes pinned down while investigating "cannot hold the object" on
+  # 2026-07-30.
+  pad_decomposition:
+    enabled: true           # was env: RLINF_PAD_DECOMP (removed)
+    threshold: 0.01         # was env: RLINF_PAD_DECOMP_TH (removed)
+    max_hulls: 16           # was env: RLINF_PAD_DECOMP_MAXH (removed)
+
+# Arm-specific contact / actuator-force parameters.
+arm_contact:
+  # forcerange cap on the arm's position-servo actuators (N*m), applied
+  # POST-HOC to the compiled model regardless of what the URDF authored —
+  # NOT the same knob as
+  # ``articulation_view_runtime.arm_{shoulder,mid,wrist}.max_effort`` above
+  # (lines ~358-385, all three set to 1.0e7), which can only RAISE a joint's
+  # effort limit, never lower it.
+  #
+  # Without this, the arm's position-servo kp (32000-60000 N*m/rad) meets a
+  # compiled forcerange of [0,0] (MuJoCo: unlimited) — a 1mm tracking error
+  # then applies ~408 N*m at the end effector, 2mm applies 816, with no cap,
+  # enough to crush thin objects or launch light ones well past a plausible
+  # contact speed.
+  #
+  # 100.0 matches the URDF's own <limit effort="100"> for each arm joint —
+  # capping to it saturates end-effector pressure at 357 N (0.87mm
+  # penetration then holds, does not keep climbing).
+  #
+  # So the net arm ceiling is +-100 N*m, reached by raising to 1e7 up there
+  # and clawing back to 100 here.  Both halves are load-bearing:
+  #
+  #   * the raise is what the PD solve wants — the class table's effort value
+  #     is applied before the solve, and a joint clamped at 100 during it
+  #     tracks measurably worse than one clamped after it.
+  #   * this key is the only route DOWN.  The class table can only raise
+  #     (``adapters/mujoco_warp.py``, "Never LOWER the cap"), and a joint the
+  #     URDF leaves unauthored (effort <= ``_EFFORT_LIMIT_FLOOR``) is floored
+  #     up to ``_DEFAULT_EFFORT_LIMIT`` = 500 N*m.  Nothing but a post-hoc
+  #     cap can bring that 500 back down.
+  #
+  # Lowering max_effort instead of setting this gives a weaker PD solve AND
+  # leaves the 500 floor in place for unauthored joints; raising max_effort
+  # without this gives an uncapped arm.  Change one, check the other.
+  arm_max_torque: 100.0
+
+# Name-matching rules for gripper parts (fallback only).
+#
+# When the asset carries newton:isGripperPad / newton:isLoopCoupler annotations,
+# the engine reads those and ignores names entirely, so this section has no
+# effect. The regexes below are consulted only when the annotations are absent.
+#
+# What is written here IS the built-in default (the G2 omnipicker naming). For a
+# gripper with different naming, override the relevant entries here — no code
+# change needed; a malformed regex warns and falls back to the default.
+gripper_naming:
+  family:       "gripper|finger|jaw|knuckle"          # is this a gripper part
+  loop_coupler: "gripper_[lr]_(inner|outer)_joint[034]$"   # in-loop coupler joints
+  driven:       "gripper_[lr]_(inner|outer)_joint1$"       # the driven joints
+  master:       "gripper_[lr]_outer_joint1$"               # the master joint
+
+# ---------------------------------------------------------------------------
+# Scene collider geometry (CoACD decomposition + shell box cover)
+# ---------------------------------------------------------------------------
+# The shared profile ships this capability off. This profile turns it on,
+# because RLinf's tasks put the robot inside authored rooms and reach into
+# shells: mjwarp convex-hulls a mesh, so a sorter box, a shelf, or a room
+# comes out a solid brick that swallows whatever should drop through it.
+#
+# The numbers are measurements, not preferences — see the comments on each
+# in physics_params.yaml and docs/collision_pipeline.md.
+scene_colliders:
+  decomposition:
+    enabled: true
+    threshold: 0.05
+    max_hulls: 32
+    max_solidity: 0.5
+    min_void: 0.001
+    max_verts: 200000
+  box_cover:
+    # Every CoACD piece is an outer approximation, so a hole's rim always
+    # gets eaten — e.g. a 39.4mm hole came back 25.3mm, small enough to
+    # block cylinders down to 33.9mm. Voxel boxes cover a shell from the
+    # inside instead.
+    enabled: true
+    pitch: 0.0       # 0 = the algorithm's own measured constants
+    max_boxes: 0
+  background_decor_static: true

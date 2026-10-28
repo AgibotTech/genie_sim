@@ -1,6 +1,6 @@
 # geniesim_ros
 
-ROS 2 workspace for the Genie Sim simulation stack. Contains ten packages that
+ROS 2 workspace for the Genie Sim simulation stack. Contains twelve packages that
 together form the physics + render + MoveIt + ros2_control + visualization
 layer.
 
@@ -25,6 +25,8 @@ the package is added to this table; the doc-coverage audit
 | Package | Purpose | README | AGENTS |
 |---|---|---|---|
 | `genie_sim_bringup` | Launch orchestration, scene / launcher YAML, config | [README](src/ros_ws/src/genie_sim_bringup/README.md) | [AGENTS](src/ros_ws/src/genie_sim_bringup/AGENTS.md) |
+| `genie_sim_common` | Shared CMake conventions and test wrappers | [README](src/ros_ws/src/genie_sim_common/README.md) | [AGENTS](src/ros_ws/src/genie_sim_common/AGENTS.md) |
+| `genie_sim_engine_core` | Backend-independent engine contracts, assembly pipeline, schemas and ROS bridge | [README](src/ros_ws/src/genie_sim_engine_core/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_core/AGENTS.md) |
 | `genie_sim_engine` | Physics engine (Isaac PhysX / Isaac Newton / Newton-standalone) + ROS 2 bridge — deep-dives in [docs/](src/ros_ws/src/genie_sim_engine/docs/) | [README](src/ros_ws/src/genie_sim_engine/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine/AGENTS.md) |
 | `genie_sim_render` | OVRtx (C++) and Isaac Sim (Python) render nodes | [README](src/ros_ws/src/genie_sim_render/README.md) | [AGENTS](src/ros_ws/src/genie_sim_render/AGENTS.md) |
 | `genie_sim_robot_model` | Robot xacro / URDF descriptions + pre-baked USDs + mesh tools | [README](src/ros_ws/src/genie_sim_robot_model/README.md) | [AGENTS](src/ros_ws/src/genie_sim_robot_model/AGENTS.md) |
@@ -56,7 +58,7 @@ source devel/setup.bash
 ## Wheel design
 
 `geniesim_ros` ships as a single `pip`-installable wheel that contains
-the **pre-built colcon install tree** of all five ROS packages above.
+the **pre-built colcon install tree** of the ROS packages above.
 Consumers `pip install geniesim_ros-<ver>-py3-none-any.whl` and source
 `setup.bash` from the path returned by `setup_bash_path()` — no colcon
 required on the consumer side.

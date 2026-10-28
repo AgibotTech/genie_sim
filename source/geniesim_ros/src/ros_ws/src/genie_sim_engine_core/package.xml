@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>genie_sim_engine_core</name>
+  <version>3.2.0</version>
+  <description>
+    Cross-backend physics-engine contract for the GenieSim platform.
+
+    Hosts the abstractions every concrete physics-engine package
+    consumes: the PhysicsEngine ABC, the run loop, EngineSession,
+    EngineNodeParams, and the C++ pybind ROS bridge
+    (genie_sim_engine_py — publishes /joint_states, /tf_scene, /odom,
+    /clock and exposes the realtime scheduler / stats ring). Concrete
+    backends build-depend on this package and register their
+    implementations through the engine factory.
+  </description>
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
+  <license file="LICENSE">Mozilla Public License Version 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
+
+  <build_depend>pybind11_vendor</build_depend>
+  <build_depend>python_cmake_module</build_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>rosgraph_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>builtin_interfaces</depend>
+  <depend>gazebo_msgs</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>realtime_tools</depend>
+  <depend>image_transport</depend>
+  <exec_depend>image_transport_plugins</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-cryptography</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-pytest</test_depend>
+  <!-- typeguard registers itself as a pytest11 entry point; when it's
+       importable, the pytest CLI (which ament_cmake_pytest invokes at
+       configure time to probe for a working pytest) also loads
+       typing_extensions.  Both must be installable via rosdep so
+       `rosdep install` leaves the probe green — otherwise a partial
+       user-site typeguard collides with a mismatched typing_extensions
+       and the probe exits non-zero, silently disabling this package's
+       pytest tests. -->
+  <test_depend>python3-typeguard</test_depend>
+  <test_depend>python3-typing-extensions</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
