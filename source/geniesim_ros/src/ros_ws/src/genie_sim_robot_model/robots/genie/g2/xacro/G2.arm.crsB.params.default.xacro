@@ -1,0 +1,223 @@
+<?xml version="1.0"?>
+<!--
+  crsB arm parameters — DEFAULT set.
+
+  Values that historically lived inline in G2.arm.crsB.urdf.xacro:
+    * per-link mass / COM origin / inertia tensor
+    * per-joint velocity limit
+    * per-joint <dynamics> damping and friction
+
+  Everything else (joint kinematics, effort, position limits, meshes,
+  collisions, <drive> gains) stays in G2.arm.crsB.urdf.xacro.
+
+  The damping values are 0.0 because the <dynamics> tags carried no
+  damping attribute at all before this file existed, and URDF defaults
+  an absent damping to zero.  The friction values are the sim's own
+  1.0/1.0/0.5/0.5/0.5/0.2/0.2 N*m, verbatim.
+
+  Sibling file G2.arm.crsB.params.sysid.xacro carries the identified
+  set; both files share this exact schema so `diff` between them shows
+  only the substantive parameter drift.  Armature, which URDF cannot
+  express, lives in robots/genie/g2/g2_crsB_drive_params.sysid.yaml.
+
+  Selection: `xacro ... inertia_source:=default|sysid` (default: default).
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ================================ Left arm ================================ -->
+
+  <!-- link1 -->
+  <xacro:property name="crsB_l1_mass" value="2.17" />
+  <xacro:property name="crsB_l1_com_xyz" value="-0.000184301 0.001568154 0.172803911" />
+  <xacro:property name="crsB_l1_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_l1_ixx" value="0.0045684858" />
+  <xacro:property name="crsB_l1_iyy" value="0.0038299629" />
+  <xacro:property name="crsB_l1_izz" value="0.0036068582" />
+  <xacro:property name="crsB_l1_ixy" value="0" />
+  <xacro:property name="crsB_l1_ixz" value="0" />
+  <xacro:property name="crsB_l1_iyz" value="0" />
+  <xacro:property name="crsB_l1_damping" value="0.0" />
+  <xacro:property name="crsB_l1_friction" value="1.0" />
+
+  <!-- link2 -->
+  <xacro:property name="crsB_l2_mass" value="1.9" />
+  <xacro:property name="crsB_l2_com_xyz" value="-1.6932e-05 0.106689462 -0.00179469" />
+  <xacro:property name="crsB_l2_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_l2_ixx" value="0.0092901245" />
+  <xacro:property name="crsB_l2_iyy" value="0.0040692426" />
+  <xacro:property name="crsB_l2_izz" value="0.011083094" />
+  <xacro:property name="crsB_l2_ixy" value="0" />
+  <xacro:property name="crsB_l2_ixz" value="0" />
+  <xacro:property name="crsB_l2_iyz" value="0" />
+  <xacro:property name="crsB_l2_damping" value="0.0" />
+  <xacro:property name="crsB_l2_friction" value="1.0" />
+
+  <!-- link3 -->
+  <xacro:property name="crsB_l3_mass" value="1.86" />
+  <xacro:property name="crsB_l3_com_xyz" value="0.008226598 -0.001273425 0.311389109" />
+  <xacro:property name="crsB_l3_com_rpy" value="-3.295742e-05 0.121305 0.023560788" />
+  <xacro:property name="crsB_l3_ixx" value="0.0097378904" />
+  <xacro:property name="crsB_l3_iyy" value="0.0091706347" />
+  <xacro:property name="crsB_l3_izz" value="0.0025401782" />
+  <xacro:property name="crsB_l3_ixy" value="0" />
+  <xacro:property name="crsB_l3_ixz" value="0" />
+  <xacro:property name="crsB_l3_iyz" value="0" />
+  <xacro:property name="crsB_l3_damping" value="0.0" />
+  <xacro:property name="crsB_l3_friction" value="0.5" />
+
+  <!-- link4 -->
+  <xacro:property name="crsB_l4_mass" value="1.027" />
+  <xacro:property name="crsB_l4_com_xyz" value="-0.009241652 0.084042407 0.002171786" />
+  <xacro:property name="crsB_l4_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_l4_ixx" value="0.0030622237" />
+  <xacro:property name="crsB_l4_iyy" value="0.0018678507" />
+  <xacro:property name="crsB_l4_izz" value="0.0038286479" />
+  <xacro:property name="crsB_l4_ixy" value="0" />
+  <xacro:property name="crsB_l4_ixz" value="0" />
+  <xacro:property name="crsB_l4_iyz" value="0" />
+  <xacro:property name="crsB_l4_damping" value="0.0" />
+  <xacro:property name="crsB_l4_friction" value="0.5" />
+
+  <!-- link5 -->
+  <xacro:property name="crsB_l5_mass" value="1.276" />
+  <xacro:property name="crsB_l5_com_xyz" value="-0.000756035 0.000722914 0.191236396" />
+  <xacro:property name="crsB_l5_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_l5_ixx" value="0.0026521167" />
+  <xacro:property name="crsB_l5_iyy" value="0.0020061801" />
+  <xacro:property name="crsB_l5_izz" value="0.0018550889" />
+  <xacro:property name="crsB_l5_ixy" value="0" />
+  <xacro:property name="crsB_l5_ixz" value="0" />
+  <xacro:property name="crsB_l5_iyz" value="0" />
+  <xacro:property name="crsB_l5_damping" value="0.0" />
+  <xacro:property name="crsB_l5_friction" value="0.5" />
+
+  <!-- link6 -->
+  <xacro:property name="crsB_l6_mass" value="0.813" />
+  <xacro:property name="crsB_l6_com_xyz" value="-0.003932433 6.1837e-05 -0.000158947" />
+  <xacro:property name="crsB_l6_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_l6_ixx" value="0.00061048339" />
+  <xacro:property name="crsB_l6_iyy" value="0.000847455" />
+  <xacro:property name="crsB_l6_izz" value="0.00079808869" />
+  <xacro:property name="crsB_l6_ixy" value="0" />
+  <xacro:property name="crsB_l6_ixz" value="0" />
+  <xacro:property name="crsB_l6_iyz" value="0" />
+  <xacro:property name="crsB_l6_damping" value="0.0" />
+  <xacro:property name="crsB_l6_friction" value="0.2" />
+
+  <!-- link7 -->
+  <xacro:property name="crsB_l7_mass" value="0.312" />
+  <xacro:property name="crsB_l7_com_xyz" value="0.052854064 0.000277108 -0.001539537" />
+  <xacro:property name="crsB_l7_com_rpy" value="0.0021841338 0.74085621 0.0051921926" />
+  <xacro:property name="crsB_l7_ixx" value="0.00066707346" />
+  <xacro:property name="crsB_l7_iyy" value="0.00048288787" />
+  <xacro:property name="crsB_l7_izz" value="0.00033761546" />
+  <xacro:property name="crsB_l7_ixy" value="0" />
+  <xacro:property name="crsB_l7_ixz" value="0" />
+  <xacro:property name="crsB_l7_iyz" value="0" />
+  <xacro:property name="crsB_l7_damping" value="0.0" />
+  <xacro:property name="crsB_l7_friction" value="0.2" />
+
+  <!-- ================================ Right arm ================================ -->
+
+  <!-- link1 -->
+  <xacro:property name="crsB_r1_mass" value="2.17" />
+  <xacro:property name="crsB_r1_com_xyz" value="0.000186337 -0.001542822 0.172784077" />
+  <xacro:property name="crsB_r1_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_r1_ixx" value="0.0045671038" />
+  <xacro:property name="crsB_r1_iyy" value="0.0038292523" />
+  <xacro:property name="crsB_r1_izz" value="0.003606189" />
+  <xacro:property name="crsB_r1_ixy" value="0" />
+  <xacro:property name="crsB_r1_ixz" value="0" />
+  <xacro:property name="crsB_r1_iyz" value="0" />
+  <xacro:property name="crsB_r1_damping" value="0.0" />
+  <xacro:property name="crsB_r1_friction" value="1.0" />
+
+  <!-- link2 -->
+  <xacro:property name="crsB_r2_mass" value="1.9" />
+  <xacro:property name="crsB_r2_com_xyz" value="1.6928e-05 0.106691378 0.001794536" />
+  <xacro:property name="crsB_r2_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_r2_ixx" value="0.0092902802" />
+  <xacro:property name="crsB_r2_iyy" value="0.004069242" />
+  <xacro:property name="crsB_r2_izz" value="0.011083249" />
+  <xacro:property name="crsB_r2_ixy" value="0" />
+  <xacro:property name="crsB_r2_ixz" value="0" />
+  <xacro:property name="crsB_r2_iyz" value="0" />
+  <xacro:property name="crsB_r2_damping" value="0.0" />
+  <xacro:property name="crsB_r2_friction" value="1.0" />
+
+  <!-- link3 -->
+  <xacro:property name="crsB_r3_mass" value="1.86" />
+  <xacro:property name="crsB_r3_com_xyz" value="0.009022338 0.000900475 0.312063927" />
+  <xacro:property name="crsB_r3_com_rpy" value="0.00026345619 0.12734597 -0.038029706" />
+  <xacro:property name="crsB_r3_ixx" value="0.0098256538" />
+  <xacro:property name="crsB_r3_iyy" value="0.0092532856" />
+  <xacro:property name="crsB_r3_izz" value="0.0025417526" />
+  <xacro:property name="crsB_r3_ixy" value="0" />
+  <xacro:property name="crsB_r3_ixz" value="0" />
+  <xacro:property name="crsB_r3_iyz" value="0" />
+  <xacro:property name="crsB_r3_damping" value="0.0" />
+  <xacro:property name="crsB_r3_friction" value="0.5" />
+
+  <!-- link4 -->
+  <xacro:property name="crsB_r4_mass" value="1.027" />
+  <xacro:property name="crsB_r4_com_xyz" value="-0.009272377 0.084042199 -0.00216935" />
+  <xacro:property name="crsB_r4_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_r4_ixx" value="0.0030622132" />
+  <xacro:property name="crsB_r4_iyy" value="0.0018676121" />
+  <xacro:property name="crsB_r4_izz" value="0.0038284061" />
+  <xacro:property name="crsB_r4_ixy" value="0" />
+  <xacro:property name="crsB_r4_ixz" value="0" />
+  <xacro:property name="crsB_r4_iyz" value="0" />
+  <xacro:property name="crsB_r4_damping" value="0.0" />
+  <xacro:property name="crsB_r4_friction" value="0.5" />
+
+  <!-- link5 -->
+  <xacro:property name="crsB_r5_mass" value="1.276" />
+  <xacro:property name="crsB_r5_com_xyz" value="-0.000776373 -0.000803696 0.191266219" />
+  <xacro:property name="crsB_r5_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_r5_ixx" value="0.0026524324" />
+  <xacro:property name="crsB_r5_iyy" value="0.0020063812" />
+  <xacro:property name="crsB_r5_izz" value="0.0018552827" />
+  <xacro:property name="crsB_r5_ixy" value="0" />
+  <xacro:property name="crsB_r5_ixz" value="0" />
+  <xacro:property name="crsB_r5_iyz" value="0" />
+  <xacro:property name="crsB_r5_damping" value="0.0" />
+  <xacro:property name="crsB_r5_friction" value="0.5" />
+
+  <!-- link6 -->
+  <xacro:property name="crsB_r6_mass" value="0.813" />
+  <xacro:property name="crsB_r6_com_xyz" value="-0.003932145 -6.0365e-05 0.000158935" />
+  <xacro:property name="crsB_r6_com_rpy" value="0 0 0" />
+  <xacro:property name="crsB_r6_ixx" value="0.00061048324" />
+  <xacro:property name="crsB_r6_iyy" value="0.00084745225" />
+  <xacro:property name="crsB_r6_izz" value="0.0007980861" />
+  <xacro:property name="crsB_r6_ixy" value="0" />
+  <xacro:property name="crsB_r6_ixz" value="0" />
+  <xacro:property name="crsB_r6_iyz" value="0" />
+  <xacro:property name="crsB_r6_damping" value="0.0" />
+  <xacro:property name="crsB_r6_friction" value="0.2" />
+
+  <!-- link7 -->
+  <xacro:property name="crsB_r7_mass" value="0.312" />
+  <xacro:property name="crsB_r7_com_xyz" value="0.052862978 -0.000632229 -0.00134628" />
+  <xacro:property name="crsB_r7_com_rpy" value="-0.00048989154 0.7396867 -0.0047170399" />
+  <xacro:property name="crsB_r7_ixx" value="0.00066747328" />
+  <xacro:property name="crsB_r7_iyy" value="0.00048334854" />
+  <xacro:property name="crsB_r7_izz" value="0.00033778095" />
+  <xacro:property name="crsB_r7_ixy" value="0" />
+  <xacro:property name="crsB_r7_ixz" value="0" />
+  <xacro:property name="crsB_r7_iyz" value="0" />
+  <xacro:property name="crsB_r7_damping" value="0.0" />
+  <xacro:property name="crsB_r7_friction" value="0.2" />
+
+  <!-- ============================ Joint velocity limits ============================ -->
+  <!-- Sim runs these below the datasheet ceiling reported by sysid. -->
+  <xacro:property name="crsB_j1_vel" value="3.05" />
+  <xacro:property name="crsB_j2_vel" value="3.05" />
+  <xacro:property name="crsB_j3_vel" value="3.76" />
+  <xacro:property name="crsB_j4_vel" value="3.76" />
+  <xacro:property name="crsB_j5_vel" value="3.35" />
+  <xacro:property name="crsB_j6_vel" value="3.35" />
+  <xacro:property name="crsB_j7_vel" value="3.35" />
+
+</robot>

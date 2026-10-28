@@ -65,6 +65,9 @@ genie_sim_xacro_robot(genie_g2_crs_omnipicker robot_model:=genie body:=g2 arm:=c
 genie_sim_xacro_robot(genie_g2_crs_swiftpicker robot_model:=genie body:=g2 arm:=crs gripper:=swiftpicker)
 genie_sim_xacro_robot(genie_g2_crsB_omnipicker robot_model:=genie body:=g2 arm:=crsB gripper:=omnipicker)
 genie_sim_xacro_robot(genie_g2_crsB_swiftpicker robot_model:=genie body:=g2 arm:=crsB gripper:=swiftpicker)
+# Identified link inertials and passive joint parameters; kinematics are shared.
+genie_sim_xacro_robot(genie_g2_crsB_omnipicker_sysid robot_model:=genie body:=g2 arm:=crsB gripper:=omnipicker inertia_source:=sysid)
+genie_sim_xacro_robot(genie_g2_crsB_swiftpicker_sysid robot_model:=genie body:=g2 arm:=crsB gripper:=swiftpicker inertia_source:=sysid)
 genie_sim_xacro_robot(ur5_robotiq_85 robot_model:=universal_robots arm:=ur5 gripper:=robotiq_85)
 genie_sim_xacro_robot(ur5_robotiq_140 robot_model:=universal_robots arm:=ur5 gripper:=robotiq_140)
 genie_sim_xacro_robot(ur5_no_gripper robot_model:=universal_robots arm:=ur5 gripper:=no_gripper)

@@ -1,0 +1,81 @@
+# G2 crsB arm — identified per-joint passive parameters (the `sysid` set).
+#
+# Source: the accepted model of an offline system-identification run
+# against the physical G2 (model dated 2026-09-22), bodies
+# arm_{l,r}_link1..7, the joint armature / damping / frictionloss
+# attributes.
+#
+# WHY THIS FILE EXISTS, next to the xacro params files
+# ----------------------------------------------------
+# Two of the three families round-trip through URDF, as <dynamics
+# damping= friction=> in G2.arm.crsB.params.sysid.xacro.  `armature`
+# has no URDF representation at all — the engine only ever reads it
+# from the per-class table in
+# genie_sim_engine_core/config/physics_params.yaml.  So the xacro file
+# carries two families and this file carries all three, keyed by the
+# joint names as they appear in the generated URDF (the idxNN_ prefixes
+# are part of the name), in the shape a per-joint override layer would
+# want.
+#
+# NO kp/kd HERE, AND THAT IS NOT AN OMISSION.  The run declares no
+# actuator model, so it publishes no position gains and no torque
+# constant — it fits on the joint-torque plane and the
+# current-to-torque scale is an input to it, not an output.  The
+# <drive stiffness= damping=> gains in G2.arm.crsB.urdf.xacro are the
+# sim's own (40000/40000/15000/15000/15000/8000/8000 and
+# 600/600/220/220/220/100/100) and are recorded below as `sim_kp` /
+# `sim_kd` so the whole per-joint picture reads from one file.  They
+# are NOT identified values.
+#
+# NOTHING READS THIS FILE YET.  Same blocker as the arx sidecar:
+# genie_sim_engine_core's DriveParams loader keys off joint *class*,
+# not joint name (common/params.py, usd_drive_api.<class> blocks), and
+# the mjwarp adapter overwrites dof_damping/dof_frictionloss from that
+# table unconditionally for every DOF.  Consuming this file means a
+# {joint_name: DriveParams} map consulted before the class fallback.
+#
+# THE ARMATURE TIERS ARE THE INTERESTING PART.  Normalised to J1 the
+# fitted armature reads 1.000/0.991/0.375/0.377/0.189/0.189/0.188
+# (left) and 1.000/0.996/0.370/0.378/0.185/0.184/0.188 (right) — three
+# tiers, {J1,J2} {J3,J4} {J5,J6,J7}, identically on both arms.  The
+# engine's CAD-derived classes instead give arm_shoulder and arm_mid
+# the same armature=0.05 and group J5 with J3/J4, which merges two
+# different motor families.  A comparable commercial arm of the same
+# payload class publishes effort limits in exactly the fitted tier
+# pattern (108/108/66/66/19/19/19, reproducing the ratios to <0.5%)
+# while the CAD frcrange grouping is off by 1.9x on the mid tier.
+# Caveat: armature and tau_max both encode the gear ratio N, so the
+# tier *boundaries* are the claim here, not the absolute values.
+#
+# Units: armature kg*m^2, dof_damping N*m*s/rad, dof_frictionloss N*m,
+# sim_kp N*m/rad, sim_kd N*m*s/rad.
+#
+# Caveats on the numbers: damping and frictionloss were not refit in
+# this revision — they are held at the previous revision's values,
+# identical to 4 decimals on all 14 joints; only the inertials were
+# revised, and armature moved <=4.1%.  The shoulder frictionloss is
+# the least trustworthy entry: the run's friction basis zeroes F below
+# |v| < 0.02 rad/s and 42.2% of the J2 friction training points fall
+# inside that band without being stationary.  See
+# robots/genie/g2/xacro/G2.arm.crsB.params.sysid.xacro for the full
+# caveat list, including why the link masses are not identifiable from
+# this data.
+
+genie_g2_crsB:
+  # Left arm.
+  idx21_arm_l_joint1: {armature: 1.51643658513, dof_damping: 4.15966580248, dof_frictionloss: 5.24682837521, sim_kp: 40000, sim_kd: 600, fitted: armature_damping_frictionloss}
+  idx22_arm_l_joint2: {armature: 1.50286458875, dof_damping: 2.78498011652, dof_frictionloss: 5.36698311178, sim_kp: 40000, sim_kd: 600, fitted: armature_damping_frictionloss}
+  idx23_arm_l_joint3: {armature: 0.56894429841, dof_damping: 1.26793143313, dof_frictionloss: 1.85314824165, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx24_arm_l_joint4: {armature: 0.571721931374, dof_damping: 1.94533364621, dof_frictionloss: 1.63379362229, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx25_arm_l_joint5: {armature: 0.286984147643, dof_damping: 0.60188958467, dof_frictionloss: 1.33832580405, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx26_arm_l_joint6: {armature: 0.287126732263, dof_damping: 0.642163478836, dof_frictionloss: 1.97861733303, sim_kp: 8000, sim_kd: 100, fitted: armature_damping_frictionloss}
+  idx27_arm_l_joint7: {armature: 0.284978370614, dof_damping: 0.87954543843, dof_frictionloss: 1.54176181522, sim_kp: 8000, sim_kd: 100, fitted: armature_damping_frictionloss}
+
+  # Right arm.
+  idx61_arm_r_joint1: {armature: 1.55644600499, dof_damping: 3.81250852925, dof_frictionloss: 5.18029855661, sim_kp: 40000, sim_kd: 600, fitted: armature_damping_frictionloss}
+  idx62_arm_r_joint2: {armature: 1.55017654422, dof_damping: 2.6824372855, dof_frictionloss: 4.25819502017, sim_kp: 40000, sim_kd: 600, fitted: armature_damping_frictionloss}
+  idx63_arm_r_joint3: {armature: 0.576228196952, dof_damping: 1.43977327585, dof_frictionloss: 2.23545208471, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx64_arm_r_joint4: {armature: 0.587655301398, dof_damping: 2.08459642893, dof_frictionloss: 2.15345952027, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx65_arm_r_joint5: {armature: 0.287813029206, dof_damping: 0.631603632942, dof_frictionloss: 1.255381573, sim_kp: 15000, sim_kd: 220, fitted: armature_damping_frictionloss}
+  idx66_arm_r_joint6: {armature: 0.285802770738, dof_damping: 0.473751453164, dof_frictionloss: 1.61653412294, sim_kp: 8000, sim_kd: 100, fitted: armature_damping_frictionloss}
+  idx67_arm_r_joint7: {armature: 0.292475889962, dof_damping: 0.728274275345, dof_frictionloss: 1.46941705444, sim_kp: 8000, sim_kd: 100, fitted: armature_damping_frictionloss}

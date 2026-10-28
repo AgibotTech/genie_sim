@@ -1,0 +1,317 @@
+schema: genie_sim.joint_params/1
+id: g2_crsB.sysid-2026-09-22
+applies_to:
+  robot_model: genie
+  body: g2
+  arm: crsB
+meta:
+  kind: sysid
+  identified_on: '2026-09-22'
+  source_run: offline sysid run against the physical G2; supersedes the T2 v2 set (d440207856)
+  not_identified:
+  - effort
+  - velocity
+  - stiffness
+  - damping_drive
+  - max_effort
+  - command_delay
+  - torque_constant
+  caveats: 'Link masses are not identifiable from this run: the L2/L3 torque derivative is ~7e-10 N*m/kg.
+
+    Masses equal to CAD are marked frozen_to_cad.
+
+    damping and frictionloss were NOT refit in this revision - they are carried from the previous
+
+    one (identical to 4 decimals on all 14 joints); only inertials were revised and armature moved <=4.1%.
+
+    The friction basis zeroes F below |v| < 0.02 rad/s, and 42.2% of J2 friction training points fall
+    in
+
+    that band without being stationary; a 0.002 threshold cuts friction training RMSE from ~3.16 to ~1.17
+    N*m.
+
+    Right L3 mass distribution is 1.37x outside its collision shell.
+
+    Training provenance is unknown and may overlap the holdout set.
+
+    All 14 inertials are physically consistent (min eig 1.0e-4 to 1.2e-3).
+
+    Velocity limits are NOT carried: the sysid params file repeated the sim''s own
+
+    3.05/3.05/3.76/3.76/3.35/3.35/3.35 rad/s verbatim, so the run measured nothing there.
+
+    ENGINE SCOPE: THESE CONTROLLER NUMBERS ARE FLAT. The schema lets
+    stiffness, damping_drive, damping and frictionloss carry one value per
+    engine (mujoco / newton / physx); every one of them in this file is a
+    single flat value, which the schema reads as the same number claimed for
+    all three. No gains were identified at all here, so only damping and
+    frictionloss are at issue, and both came from an offline friction-basis
+    regression with no engine in the loop. meta.identified_on_engine is
+    therefore deliberately absent rather than forgotten: that field records
+    which servo law a stiffness or damping_drive was fitted against, the
+    schema requires it of any sysid overlay carrying either, and this set
+    carries neither. Note that frictionloss is itself a MuJoCo concept with no
+    physx counterpart, which is a separate problem from the one below.
+
+    ON PHYSX THE DAMPING MEANS SOMETHING ELSE. damping is nonzero on all 14
+    joints (0.473751 to 4.159666 N*m*s/rad) while damping_drive is absent.
+    physx folds passive damping into drive damping (kd + damping), so the
+    whole identified viscous term is added to whatever kd the class table
+    supplies and becomes a drive term proportional to the velocity ERROR,
+    while the regression measured the term proportional to the absolute joint
+    velocity. The two agree only while the velocity target is zero. Until the
+    adapter keeps the channels apart these values are faithful on mujoco and
+    newton only, and the fix belongs in the adapter: scaling them down to
+    compensate would hide the bug and break the moment it is fixed.'
+links:
+  arm_l_link1:
+    mass:
+      value: 2.17000000002
+      frozen_to_cad: true
+    com:
+    - -0.000184302910817
+    - 0.00156823885214
+    - 0.172803910998
+    inertia:
+      ixx: 0.00332249042299
+      iyy: 0.00260904299898
+      izz: 0.00317690280716
+      ixy: 3.1895956215e-07
+      ixz: -4.8071652675e-07
+      iyz: -1.48261817635e-05
+  arm_l_link2:
+    mass:
+      value: 1.90000000007
+      frozen_to_cad: true
+    com:
+    - -1.69320475097e-05
+    - 0.104979586654
+    - -0.00179476172306
+    inertia:
+      ixx: 0.00848489548354
+      iyy: 0.00305506923334
+      izz: 0.00743098247029
+      ixy: -2.21000139628e-06
+      ixz: -2.47999757109e-06
+      iyz: 0.000498643022581
+  arm_l_link3:
+    mass:
+      value: 1.86000000001
+      frozen_to_cad: true
+    com:
+    - 0.00818263090356
+    - -0.00127413304446
+    - 0.297129437404
+    inertia:
+      ixx: 0.0225905847258
+      iyy: 0.0217772897972
+      izz: 0.00276716111515
+      ixy: 9.18736269181e-06
+      ixz: 0.000105219572736
+      iyz: 1.02537699519e-05
+  arm_l_link4:
+    mass: 0.994797810103
+    com:
+    - -0.00958490948022
+    - 0.0843928935444
+    - 0.00224313940249
+    inertia:
+      ixx: 0.00311506522242
+      iyy: 0.00140576494704
+      izz: 0.00260812453448
+      ixy: -0.000129054648406
+      ixz: 2.34033769014e-05
+      iyz: -0.000219425217406
+  arm_l_link5:
+    mass: 1.23461331781
+    com:
+    - -0.000781741664324
+    - 0.000746967277712
+    - 0.182400654287
+    inertia:
+      ixx: 0.0079718622541
+      iyy: 0.00759225597958
+      izz: 0.00158686295222
+      ixy: -3.80975169277e-05
+      ixz: -3.69185207421e-05
+      iyz: 5.80428992858e-05
+  arm_l_link6:
+    mass: 0.737459935791
+    com:
+    - -0.00434196016458
+    - 6.81702237187e-05
+    - -0.000175224689599
+    inertia:
+      ixx: 0.000509161893074
+      iyy: 0.00066594698552
+      izz: 0.0006578219303
+      ixy: 9.34414510829e-07
+      ixz: 1.8589088865e-06
+      iyz: 4.55181758596e-07
+  arm_l_link7:
+    mass: 0.300874860983
+    com:
+    - 0.0545419344218
+    - 0.000287357799324
+    - -0.00159683450277
+    inertia:
+      ixx: 0.000433223386428
+      iyy: 0.000652807918005
+      izz: 0.000427709485626
+      ixy: 5.20986063196e-07
+      ixz: 3.79671472957e-05
+      iyz: -2.6559554658e-06
+  arm_r_link1:
+    mass:
+      value: 2.17000000005
+      frozen_to_cad: true
+    com:
+    - 0.000186337073974
+    - -0.00154257147843
+    - 0.172784076997
+    inertia:
+      ixx: 0.00329374367823
+      iyy: 0.0025880700009
+      izz: 0.0031481758917
+      ixy: 2.94101051086e-07
+      ixz: 4.79027736431e-07
+      iyz: 1.50509309174e-05
+  arm_r_link2:
+    mass:
+      value: 1.90000000002
+      frozen_to_cad: true
+    com:
+    - 1.69280354975e-05
+    - 0.103831292456
+    - 0.00179467313325
+    inertia:
+      ixx: 0.00894330704404
+      iyy: 0.00305516319345
+      izz: 0.00789085374463
+      ixy: 2.17301750352e-06
+      ixz: -2.47999543142e-06
+      iyz: -0.000502573351138
+  arm_r_link3:
+    mass:
+      value: 1.86000000001
+      frozen_to_cad: true
+    com:
+    - 0.00907326806181
+    - 0.000900723139341
+    - 0.288110157731
+    inertia:
+      ixx: 0.0332692183392
+      iyy: 0.0323545512074
+      izz: 0.00268943742367
+      ixy: 1.60844895786e-05
+      ixz: -7.50556367763e-05
+      iyz: 6.84945387686e-06
+  arm_r_link4:
+    mass: 0.984475180474
+    com:
+    - -0.0096222315125
+    - 0.0857868883303
+    - -0.00226374263839
+    inertia:
+      ixx: 0.00295383094538
+      iyy: 0.00140630871845
+      izz: 0.00244918826912
+      ixy: -0.000130832641145
+      ixz: -2.40200318962e-05
+      iyz: 0.000216160838101
+  arm_r_link5:
+    mass: 1.20095014476
+    com:
+    - -0.000824468625945
+    - -0.000853921339788
+    - 0.190865327069
+    inertia:
+      ixx: 0.00531175494307
+      iyy: 0.00491182200422
+      izz: 0.00158254726408
+      ixy: 4.1559326113e-05
+      ixz: -4.2617280686e-05
+      iyz: -6.44996454541e-05
+  arm_r_link6:
+    mass: 0.73578304112
+    com:
+    - -0.00433715378961
+    - -6.66997263994e-05
+    - 0.000175616238936
+    inertia:
+      ixx: 0.000509164022515
+      iyy: 0.000666028956084
+      izz: 0.000657885548395
+      ixy: -8.72124409858e-07
+      ixz: -1.85833852299e-06
+      iyz: 4.55181333129e-07
+  arm_r_link7:
+    mass: 0.300627896858
+    com:
+    - 0.0551640641421
+    - -0.000656146867853
+    - -0.00139688355378
+    inertia:
+      ixx: 0.000432899099182
+      iyy: 0.000633034359317
+      izz: 0.000407558208358
+      ixy: -4.39493646845e-06
+      ixz: 3.87848061336e-05
+      iyz: 2.89198255295e-06
+joints:
+  idx21_arm_l_joint1:
+    damping: 4.15966580248
+    frictionloss: 5.24682837521
+    armature: 1.51643658513
+  idx22_arm_l_joint2:
+    damping: 2.78498011652
+    frictionloss: 5.36698311178
+    armature: 1.50286458875
+  idx23_arm_l_joint3:
+    damping: 1.26793143313
+    frictionloss: 1.85314824165
+    armature: 0.56894429841
+  idx24_arm_l_joint4:
+    damping: 1.94533364621
+    frictionloss: 1.63379362229
+    armature: 0.571721931374
+  idx25_arm_l_joint5:
+    damping: 0.60188958467
+    frictionloss: 1.33832580405
+    armature: 0.286984147643
+  idx26_arm_l_joint6:
+    damping: 0.642163478836
+    frictionloss: 1.97861733303
+    armature: 0.287126732263
+  idx27_arm_l_joint7:
+    damping: 0.87954543843
+    frictionloss: 1.54176181522
+    armature: 0.284978370614
+  idx61_arm_r_joint1:
+    damping: 3.81250852925
+    frictionloss: 5.18029855661
+    armature: 1.55644600499
+  idx62_arm_r_joint2:
+    damping: 2.6824372855
+    frictionloss: 4.25819502017
+    armature: 1.55017654422
+  idx63_arm_r_joint3:
+    damping: 1.43977327585
+    frictionloss: 2.23545208471
+    armature: 0.576228196952
+  idx64_arm_r_joint4:
+    damping: 2.08459642893
+    frictionloss: 2.15345952027
+    armature: 0.587655301398
+  idx65_arm_r_joint5:
+    damping: 0.631603632942
+    frictionloss: 1.255381573
+    armature: 0.287813029206
+  idx66_arm_r_joint6:
+    damping: 0.473751453164
+    frictionloss: 1.61653412294
+    armature: 0.285802770738
+  idx67_arm_r_joint7:
+    damping: 0.728274275345
+    frictionloss: 1.46941705444
+    armature: 0.292475889962

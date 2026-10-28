@@ -1,4 +1,18 @@
 <?xml version="1.0"?>
+<!--
+  crsB arm structure.
+
+  Kinematics, meshes, collisions, and drive gains are the source of
+  truth here.  Per-link inertials, per-joint <dynamics> damping and
+  friction, and per-joint velocity limits are pulled in from a
+  companion params file:
+
+    G2.arm.crsB.params.default.xacro   (default, current sim values)
+    G2.arm.crsB.params.sysid.xacro     (identified set)
+
+  Selection is driven by the top-level `inertia_source` xacro arg
+  (default: default).  See g2_crsB_*.urdf.xacro for wiring.
+-->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- main xacro -->
@@ -9,9 +23,9 @@
     <!-- Arm -->
     <link name="arm_l_link1">
       <inertial>
-        <origin xyz="-0.000184301 0.001568154 0.172803911" rpy="0 0 0" />
-        <mass value="2.17" />
-        <inertia ixx="0.0045684858" iyy="0.0038299629" izz="0.0036068582" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l1_com_xyz}" rpy="${crsB_l1_com_rpy}" />
+        <mass value="${crsB_l1_mass}" />
+        <inertia ixx="${crsB_l1_ixx}" iyy="${crsB_l1_iyy}" izz="${crsB_l1_izz}" ixy="${crsB_l1_ixy}" ixz="${crsB_l1_ixz}" iyz="${crsB_l1_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -56,15 +70,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="108"
-        velocity="3.05" />
-      <dynamics friction="1.0" />
+        velocity="${crsB_j1_vel}" />
+      <dynamics damping="${crsB_l1_damping}" friction="${crsB_l1_friction}" />
       <drive stiffness="40000" damping="600" />
     </joint>
     <link name="arm_l_link2">
       <inertial>
-        <origin xyz="-1.6932e-05 0.106689462 -0.00179469" rpy="0 0 0" />
-        <mass value="1.9" />
-        <inertia ixx="0.0092901245" iyy="0.0040692426" izz="0.011083094" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l2_com_xyz}" rpy="${crsB_l2_com_rpy}" />
+        <mass value="${crsB_l2_mass}" />
+        <inertia ixx="${crsB_l2_ixx}" iyy="${crsB_l2_iyy}" izz="${crsB_l2_izz}" ixy="${crsB_l2_ixy}" ixz="${crsB_l2_ixz}" iyz="${crsB_l2_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -109,15 +123,15 @@
         lower="-2.0595"
         upper="2.0595"
         effort="108"
-        velocity="3.05" />
-      <dynamics friction="1.0" />
+        velocity="${crsB_j2_vel}" />
+      <dynamics damping="${crsB_l2_damping}" friction="${crsB_l2_friction}" />
       <drive stiffness="40000" damping="600" />
     </joint>
     <link name="arm_l_link3">
       <inertial>
-        <origin xyz="0.008226598 -0.001273425 0.311389109" rpy="-3.295742e-05 0.121305 0.023560788" />
-        <mass value="1.86" />
-        <inertia ixx="0.0097378904" iyy="0.0091706347" izz="0.0025401782" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l3_com_xyz}" rpy="${crsB_l3_com_rpy}" />
+        <mass value="${crsB_l3_mass}" />
+        <inertia ixx="${crsB_l3_ixx}" iyy="${crsB_l3_iyy}" izz="${crsB_l3_izz}" ixy="${crsB_l3_ixy}" ixz="${crsB_l3_ixz}" iyz="${crsB_l3_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -161,15 +175,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="35"
-        velocity="3.76" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j3_vel}" />
+      <dynamics damping="${crsB_l3_damping}" friction="${crsB_l3_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_l_link4">
       <inertial>
-        <origin xyz="-0.009241652 0.084042407 0.002171786" rpy="0 0 0" />
-        <mass value="1.027" />
-        <inertia ixx="0.0030622237" iyy="0.0018678507" izz="0.0038286479" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l4_com_xyz}" rpy="${crsB_l4_com_rpy}" />
+        <mass value="${crsB_l4_mass}" />
+        <inertia ixx="${crsB_l4_ixx}" iyy="${crsB_l4_iyy}" izz="${crsB_l4_izz}" ixy="${crsB_l4_ixy}" ixz="${crsB_l4_ixz}" iyz="${crsB_l4_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -214,15 +228,15 @@
         lower="-2.4959"
         upper="1.0123"
         effort="35"
-        velocity="3.76" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j4_vel}" />
+      <dynamics damping="${crsB_l4_damping}" friction="${crsB_l4_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_l_link5">
       <inertial>
-        <origin xyz="-0.000756035 0.000722914 0.191236396" rpy="0 0 0" />
-        <mass value="1.276" />
-        <inertia ixx="0.0026521167" iyy="0.0020061801" izz="0.0018550889" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l5_com_xyz}" rpy="${crsB_l5_com_rpy}" />
+        <mass value="${crsB_l5_mass}" />
+        <inertia ixx="${crsB_l5_ixx}" iyy="${crsB_l5_iyy}" izz="${crsB_l5_izz}" ixy="${crsB_l5_ixy}" ixz="${crsB_l5_ixz}" iyz="${crsB_l5_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -267,15 +281,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="35"
-        velocity="3.35" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j5_vel}" />
+      <dynamics damping="${crsB_l5_damping}" friction="${crsB_l5_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_l_link6">
       <inertial>
-        <origin xyz="-0.003932433 6.1837e-05 -0.000158947" rpy="0 0 0" />
-        <mass value="0.813" />
-        <inertia ixx="0.00061048339" iyy="0.000847455" izz="0.00079808869" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l6_com_xyz}" rpy="${crsB_l6_com_rpy}" />
+        <mass value="${crsB_l6_mass}" />
+        <inertia ixx="${crsB_l6_ixx}" iyy="${crsB_l6_iyy}" izz="${crsB_l6_izz}" ixy="${crsB_l6_ixy}" ixz="${crsB_l6_ixz}" iyz="${crsB_l6_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -320,16 +334,15 @@
         lower="-1.0123"
         upper="1.0123"
         effort="18"
-        velocity="3.35" />
-      <dynamics friction="0.2" />
+        velocity="${crsB_j6_vel}" />
+      <dynamics damping="${crsB_l6_damping}" friction="${crsB_l6_friction}" />
       <drive stiffness="8000" damping="100" />
     </joint>
     <link name="arm_l_link7">
       <inertial>
-        <origin xyz="0.052854064 0.000277108 -0.001539537"
-          rpy="0.0021841338 0.74085621 0.0051921926" />
-        <mass value="0.312" />
-        <inertia ixx="0.00066707346" iyy="0.00048288787" izz="0.00033761546" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_l7_com_xyz}" rpy="${crsB_l7_com_rpy}" />
+        <mass value="${crsB_l7_mass}" />
+        <inertia ixx="${crsB_l7_ixx}" iyy="${crsB_l7_iyy}" izz="${crsB_l7_izz}" ixy="${crsB_l7_ixy}" ixz="${crsB_l7_ixz}" iyz="${crsB_l7_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -374,8 +387,8 @@
         lower="-1.5359"
         upper="1.5359"
         effort="18"
-        velocity="3.35" />
-      <dynamics friction="0.2" />
+        velocity="${crsB_j7_vel}" />
+      <dynamics damping="${crsB_l7_damping}" friction="${crsB_l7_friction}" />
       <drive stiffness="8000" damping="100" />
     </joint>
     <link name="${end_link}">
@@ -401,9 +414,9 @@
     <!-- Arm -->
     <link name="arm_r_link1">
       <inertial>
-        <origin xyz="0.000186337 -0.001542822 0.172784077" rpy="0 0 0" />
-        <mass value="2.17" />
-        <inertia ixx="0.0045671038" iyy="0.0038292523" izz="0.003606189" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r1_com_xyz}" rpy="${crsB_r1_com_rpy}" />
+        <mass value="${crsB_r1_mass}" />
+        <inertia ixx="${crsB_r1_ixx}" iyy="${crsB_r1_iyy}" izz="${crsB_r1_izz}" ixy="${crsB_r1_ixy}" ixz="${crsB_r1_ixz}" iyz="${crsB_r1_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -447,15 +460,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="108"
-        velocity="3.05" />
-      <dynamics friction="1.0" />
+        velocity="${crsB_j1_vel}" />
+      <dynamics damping="${crsB_r1_damping}" friction="${crsB_r1_friction}" />
       <drive stiffness="40000" damping="600" />
     </joint>
     <link name="arm_r_link2">
       <inertial>
-        <origin xyz="1.6928e-05 0.106691378 0.001794536" rpy="0 0 0" />
-        <mass value="1.9" />
-        <inertia ixx="0.0092902802" iyy="0.004069242" izz="0.011083249" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r2_com_xyz}" rpy="${crsB_r2_com_rpy}" />
+        <mass value="${crsB_r2_mass}" />
+        <inertia ixx="${crsB_r2_ixx}" iyy="${crsB_r2_iyy}" izz="${crsB_r2_izz}" ixy="${crsB_r2_ixy}" ixz="${crsB_r2_ixz}" iyz="${crsB_r2_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -500,16 +513,15 @@
         lower="-2.0595"
         upper="2.0595"
         effort="108"
-        velocity="3.05" />
-      <dynamics friction="1.0" />
+        velocity="${crsB_j2_vel}" />
+      <dynamics damping="${crsB_r2_damping}" friction="${crsB_r2_friction}" />
       <drive stiffness="40000" damping="600" />
     </joint>
     <link name="arm_r_link3">
       <inertial>
-        <origin xyz="0.009022338 0.000900475 0.312063927"
-          rpy="0.00026345619 0.12734597 -0.038029706" />
-        <mass value="1.86" />
-        <inertia ixx="0.0098256538" iyy="0.0092532856" izz="0.0025417526" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r3_com_xyz}" rpy="${crsB_r3_com_rpy}" />
+        <mass value="${crsB_r3_mass}" />
+        <inertia ixx="${crsB_r3_ixx}" iyy="${crsB_r3_iyy}" izz="${crsB_r3_izz}" ixy="${crsB_r3_ixy}" ixz="${crsB_r3_ixz}" iyz="${crsB_r3_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -554,15 +566,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="35"
-        velocity="3.76" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j3_vel}" />
+      <dynamics damping="${crsB_r3_damping}" friction="${crsB_r3_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_r_link4">
       <inertial>
-        <origin xyz="-0.009272377 0.084042199 -0.00216935" rpy="0 0 0" />
-        <mass value="1.027" />
-        <inertia ixx="0.0030622132" iyy="0.0018676121" izz="0.0038284061" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r4_com_xyz}" rpy="${crsB_r4_com_rpy}" />
+        <mass value="${crsB_r4_mass}" />
+        <inertia ixx="${crsB_r4_ixx}" iyy="${crsB_r4_iyy}" izz="${crsB_r4_izz}" ixy="${crsB_r4_ixy}" ixz="${crsB_r4_ixz}" iyz="${crsB_r4_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -608,15 +620,15 @@
         lower="-2.4959"
         upper="1.0123"
         effort="35"
-        velocity="3.76" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j4_vel}" />
+      <dynamics damping="${crsB_r4_damping}" friction="${crsB_r4_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_r_link5">
       <inertial>
-        <origin xyz="-0.000776373 -0.000803696 0.191266219" rpy="0 0 0" />
-        <mass value="1.276" />
-        <inertia ixx="0.0026524324" iyy="0.0020063812" izz="0.0018552827" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r5_com_xyz}" rpy="${crsB_r5_com_rpy}" />
+        <mass value="${crsB_r5_mass}" />
+        <inertia ixx="${crsB_r5_ixx}" iyy="${crsB_r5_iyy}" izz="${crsB_r5_izz}" ixy="${crsB_r5_ixy}" ixz="${crsB_r5_ixz}" iyz="${crsB_r5_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -662,15 +674,15 @@
         lower="-3.0718"
         upper="3.0718"
         effort="35"
-        velocity="3.35" />
-      <dynamics friction="0.5" />
+        velocity="${crsB_j5_vel}" />
+      <dynamics damping="${crsB_r5_damping}" friction="${crsB_r5_friction}" />
       <drive stiffness="15000" damping="220" />
     </joint>
     <link name="arm_r_link6">
       <inertial>
-        <origin xyz="-0.003932145 -6.0365e-05 0.000158935" rpy="0 0 0" />
-        <mass value="0.813" />
-        <inertia ixx="0.00061048324" iyy="0.00084745225" izz="0.0007980861" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r6_com_xyz}" rpy="${crsB_r6_com_rpy}" />
+        <mass value="${crsB_r6_mass}" />
+        <inertia ixx="${crsB_r6_ixx}" iyy="${crsB_r6_iyy}" izz="${crsB_r6_izz}" ixy="${crsB_r6_ixy}" ixz="${crsB_r6_ixz}" iyz="${crsB_r6_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -716,16 +728,15 @@
         lower="-1.0123"
         upper="1.0123"
         effort="18"
-        velocity="3.35" />
-      <dynamics friction="0.2" />
+        velocity="${crsB_j6_vel}" />
+      <dynamics damping="${crsB_r6_damping}" friction="${crsB_r6_friction}" />
       <drive stiffness="8000" damping="100" />
     </joint>
     <link name="arm_r_link7">
       <inertial>
-        <origin xyz="0.052862978 -0.000632229 -0.00134628"
-          rpy="-0.00048989154 0.7396867 -0.0047170399" />
-        <mass value="0.312" />
-        <inertia ixx="0.00066747328" iyy="0.00048334854" izz="0.00033778095" ixy="0" ixz="0" iyz="0" />
+        <origin xyz="${crsB_r7_com_xyz}" rpy="${crsB_r7_com_rpy}" />
+        <mass value="${crsB_r7_mass}" />
+        <inertia ixx="${crsB_r7_ixx}" iyy="${crsB_r7_iyy}" izz="${crsB_r7_izz}" ixy="${crsB_r7_ixy}" ixz="${crsB_r7_ixz}" iyz="${crsB_r7_iyz}" />
       </inertial>
       <visual name="default_visual">
         <geometry>
@@ -778,8 +789,8 @@
         lower="-1.5359"
         upper="1.5359"
         effort="18"
-        velocity="3.35" />
-      <dynamics friction="0.2" />
+        velocity="${crsB_j7_vel}" />
+      <dynamics damping="${crsB_r7_damping}" friction="${crsB_r7_friction}" />
       <drive stiffness="8000" damping="100" />
     </joint>
     <joint name='arm_r_end_joint' type='fixed'>

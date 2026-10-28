@@ -57,6 +57,13 @@ def generate_launch_description():
             description="Gripper model (e.g. omnipicker, swiftpicker, no_gripper)",
         ),
         DeclareLaunchArgument(
+            "inertia_source",
+            default_value="",
+            description="crsB only: 'default' (current sim values) or 'sysid' "
+            "(identified set: link inertials plus joint damping and friction). "
+            "Empty = xacro default.",
+        ),
+        DeclareLaunchArgument(
             "rviz_config_file",
             default_value="",
             description="RViz config file (absolute path). Empty = default.",
@@ -74,6 +81,7 @@ def generate_launch_description():
         arm = context.perform_substitution(LaunchConfiguration("arm"))
         body = context.perform_substitution(LaunchConfiguration("body"))
         gripper = context.perform_substitution(LaunchConfiguration("gripper"))
+        inertia_source = context.perform_substitution(LaunchConfiguration("inertia_source"))
         rviz_cfg = context.perform_substitution(LaunchConfiguration("rviz_config_file"))
         debug = context.perform_substitution(LaunchConfiguration("debug"))
 
@@ -84,6 +92,8 @@ def generate_launch_description():
             xacro_args["body"] = body
         if gripper:
             xacro_args["gripper"] = gripper
+        if inertia_source:
+            xacro_args["inertia_source"] = inertia_source
 
         print(f"{CYAN}robot_model: {robot_model}{RST}")
         if arm:
@@ -92,6 +102,8 @@ def generate_launch_description():
             print(f"{CYAN}body: {body}{RST}")
         if gripper:
             print(f"{CYAN}gripper: {gripper}{RST}")
+        if inertia_source:
+            print(f"{CYAN}inertia_source: {inertia_source}{RST}")
 
         robot_description = _parse_xacro(xacro_file, **xacro_args)
         if not robot_description:

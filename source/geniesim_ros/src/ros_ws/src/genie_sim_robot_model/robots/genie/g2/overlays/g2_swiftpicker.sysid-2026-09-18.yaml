@@ -1,0 +1,382 @@
+schema: genie_sim.joint_params/1
+id: g2_swiftpicker.sysid-2026-09-18
+applies_to:
+  robot_model: genie
+  body: g2
+  arm: crsB
+  ee: swiftpicker
+meta:
+  kind: sysid
+  identified_on: '2026-09-18'
+  identified_on_engine: mujoco_pd
+  source_run: 'SwiftPicker (CTEK 90D) parallel-jaw gripper effective parameters
+    identified from real-hardware POSITION-ONLY data. No torque channel was
+    recorded, so armature, damping, frictionloss and the two master drive gains
+    are jointly identified from the closed-loop position response under a fixed
+    18 N*m runtime drive clamp and the current mimic topology - they are the
+    calibrated runtime values for that model and that excitation, and are not
+    asserted to be unique physical properties of the mechanism. The matching
+    simulation excitation is an open-close-hold-open ramp plus a square-wave
+    step on one master in free air (no object, no cloth), 10 s at 100 Hz,
+    closing to the URDF mechanical stop at -0.91 rad. Supersedes the 2026-06
+    sweep-tuned set (armature 0.03, damping 2.86479, stiffness 2000,
+    damping_drive 200).'
+  not_identified:
+  - mass
+  - com
+  - com_rpy
+  - inertia
+  - effort
+  - max_effort
+  - velocity
+  - command_delay
+  - torque_constant
+  caveats: 'SIX COUPLED JOINTS, ONE PARAMETER SET - BY CONSTRUCTION, NOT BY
+    MEASUREMENT. Each side is a four-bar mimic chain: one driven master
+    (inner_joint1) and five followers slaved to it through an equality
+    constraint. Only the master is actuated, so nothing in the run can separate
+    the six joints'' passive physics. The identified armature, damping and
+    frictionloss are written on all six so the whole chain uses one physical
+    set; read them as a lumped chain property reported six times, not as six
+    independent fits.
+
+    BOTH SIDES CARRY THE SAME NUMBERS AND THE SOURCE DOES NOT SAY WHOSE. The
+    frozen set is a single class value applied to the left and right grippers
+    alike. The dedicated open/close excitation drives only the RIGHT master
+    (idx71_gripper_r_inner_joint1); a two-master variant exists but the run that
+    produced these numbers is not recorded per side. Left/right agreement here
+    is an authoring decision, not a replication result.
+
+    THE BASELINE URDF DISAGREES, AND ITS NUMBERS WERE NEVER MEASURED. All twelve
+    joints are authored with damping 0.5 and friction 0.01 - a 2026-06 hand fix
+    that added viscous damping to stop the low-inertia fingertip pad springing
+    back from contact and spinning round grasped objects. The identified values
+    are 2.5x and 7.2x those. This overlay supersedes them; the fix they
+    implement is subsumed, not contradicted, since the identified damping is
+    larger.
+
+    NO VENDOR TORQUE LIMIT EXISTS FOR THIS GRIPPER, AND MAX_EFFORT IS NOT
+    PUBLISHED. The run clamped the master drive at 18 N*m, so that figure is a
+    condition of the fit; it is not hardware data and this overlay does not
+    restate it as a value. max_effort is the runtime drive clamp, a Channel B
+    field with no URDF counterpart, and both it and the URDF-side effort limit
+    are declared absent above. A re-test that wants the fit''s own saturation
+    behaviour has to apply 18 N*m itself.
+
+    The reason there is no figure to publish is that no source in the tree
+    carries one. Four numbers are in circulation for the master and none of them
+    is a rating: the upstream robot description authors effort 0 (and
+    velocity 0) on the master, with 10 on one follower and 0 on the other four;
+    the upstream reference MJCF has no force range at all, the actuator being a
+    plain kp=5 position servo; this repo''s URDF authors 50, raised from 5 in
+    2026-06 and self-documented as giving the master "10x more force authority"
+    to stop the jaw drifting under arm-motion coupling at a runtime stiffness of
+    10000 - the identified stiffness is 202, fifty times lower, so that
+    rationale no longer applies; and the real-robot motion controller authors a
+    per-module torque of 50, which is the same 50 it authors for the head, the
+    waist, the wheels and five other end effectors, and 100 for a hand whose
+    actual per-joint limits are 0.15-0.65 N*m, so that field is a clamp with a
+    default in it rather than a per-actuator rating. Until a datasheet figure
+    exists, the URDF''s 50 is the effective ceiling and should be read as a
+    simulation setting.
+
+    THE TEN FOLLOWERS WOULD CARRY NO CAP EITHER. They are mimic joints with no
+    independent actuator, so there is nothing to clamp and nothing to rate. The
+    baseline URDF authors effort 10 on all ten, which is a placeholder of the
+    same vintage as the master''s 50.
+
+    THREE FROZEN VALUES FROM THE SAME RUN HAVE NO FIELD IN THIS SCHEMA. The
+    follower equality constraint was frozen at stiffness 1e4 N*m/rad and damping
+    100 N*m*s/rad (MuJoCo solref -10000 / -100, solimp 0.9 0.95 0.001 0.5 2.0),
+    and the master actuator''s first-order input filter was REMOVED (previously
+    a 0.35 s low-pass emulating the driver''s inner velocity loop, giving an
+    effective 2 rad/s slew). Adopting only the joint fields below reproduces
+    part of the frozen configuration; the filter removal in particular changes
+    the master''s transient response and has no representation here.
+
+    FOLLOWER DRIVE GAINS ARE EXPLICIT ZEROS. stiffness and damping_drive are
+    written as 0.0 on the ten follower joints so no class table gives them a PD
+    loop that would fight the equality constraint. Zero is the value, not an
+    omission.
+
+    LINK INERTIALS ARE NOT TOUCHED. The baseline carries its own hand fix there
+    (support_link Iyy raised 4.2e-6 -> 2.0e-5 along the closing axis); that is a
+    separate, unmeasured correction and no part of this run.
+
+    ENGINE SCOPE: THESE CONTROLLER NUMBERS ARE FLAT. The schema lets
+    stiffness, damping_drive, damping and frictionloss carry one value per
+    engine (mujoco / newton / physx); every one of them in this file is a
+    single flat value, which the schema reads as the same number claimed for
+    all three. Identification was a single mujoco-family harness, as the
+    frozen follower constraint shows: it is specified in MuJoCo solref /
+    solimp terms, which have no physx equivalent. The class entry these gains
+    were published through carries two more MJCF-only keys beside them,
+    dyntype and the mimic equality solref/solimp pair, so the published form
+    of this fit is a MuJoCo actuator and nothing else -- hence
+    meta.identified_on_engine mujoco_pd. The two drive gains have since been
+    exercised on all three backends in deployment, which is experience with
+    them rather than a per-engine refit.
+
+    THE PHYSX FOLD DEFEATS THE FOLLOWER ZEROS. physx adds passive damping into
+    drive damping (kd + damping). On the two masters that is 13.345311 +
+    1.253346 = 14.598657, 9.4% high. On the ten followers it is wrong in kind
+    rather than in size: damping_drive is an explicit 0.0 there precisely so
+    that no PD loop fights the equality constraint, and the fold turns that
+    zero into 1.253346 of drive damping on every one of them. The explicit
+    zero documented above does not hold on physx. That is an adapter defect,
+    not a per-engine value.'
+joints:
+  # Left gripper. The master is idx31_gripper_l_inner_joint1; the five
+  # joints after it are its mimic followers, in xacro idx order.
+  idx31_gripper_l_inner_joint1:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 202.026337
+      note: jointly identified with the passive terms from position-only data; previous
+        frozen value was 2000
+    damping_drive:
+      value: 13.345311
+      note: jointly identified with stiffness; previous frozen value was 200
+  idx32_gripper_l_outer_joint1:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx33_gripper_l_left_support_joint:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx34_gripper_l_inner_joint2:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx35_gripper_l_outer_joint2:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx36_gripper_l_right_support_joint:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  # Right gripper. Identical to the left - see caveats before reading that
+  # as bilateral evidence.
+  idx71_gripper_r_inner_joint1:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 202.026337
+      note: jointly identified with the passive terms from position-only data; previous
+        frozen value was 2000
+    damping_drive:
+      value: 13.345311
+      note: jointly identified with stiffness; previous frozen value was 200
+  idx72_gripper_r_outer_joint1:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx73_gripper_r_left_support_joint:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx74_gripper_r_inner_joint2:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx75_gripper_r_outer_joint2:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+  idx76_gripper_r_right_support_joint:
+    damping:
+      value: 1.2533456087112427
+      note: supersedes the baseline URDF damping of 0.5, which was a hand fix for
+        fingertip spring-back rather than a measurement
+    frictionloss:
+      value: 0.07205305756313116
+      note: supersedes the baseline URDF friction of 0.01, which was authored by
+        the same 2026-06 hand fix
+    armature:
+      value: 0.00801871022251229
+      note: lumped mimic-chain value, written on all six coupled joints of this
+        side; the run cannot separate them
+    stiffness:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'
+    damping_drive:
+      value: 0.0
+      note: 'constraint-driven follower: no PD loop, so it cannot fight the mimic
+        equality'

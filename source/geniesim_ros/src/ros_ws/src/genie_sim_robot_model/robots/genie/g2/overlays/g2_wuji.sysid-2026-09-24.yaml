@@ -1,0 +1,1068 @@
+schema: genie_sim.joint_params/1
+id: g2_wuji.sysid-2026-09-24
+applies_to:
+  robot_model: genie
+  body: g2
+  arm: crsB
+  ee: wuji
+meta:
+  kind: sysid
+  identified_on: '2026-09-24'
+  identified_on_engine: mujoco_pd
+  source_run: 'Wuji five-finger hand drive/passive parameters as frozen for grasp
+    replay. This set is NOT a regression fit: armature, damping and frictionloss
+    are carried from the Wuji vendor reference MJCFs (20 position actuators, 4
+    joints x 5 fingers), and the two drive gains were selected by search against
+    recorded real-hand data - stiffness by three empty-grasp Real2Sim replays plus
+    24-object static and dynamic regressions in two engines, damping_drive by
+    step-response ringing. The replay dataset is the 22.5 s bimanual can-grasp
+    recording (11251 rows at 500 Hz, upright grasp-and-lift, source SDK capture
+    sha256 3bb4403b...). frictionloss is the one field with a diagnostic run
+    behind it: a finger-ramp sweep on 2026-08-11 showed every finger joint stalling
+    below ~34 deg of PD error against an inherited 0.3 N*m loss, and engines
+    disagreeing by up to 6 deg on stick-slip resolution for the same target.'
+  not_identified:
+  - mass
+  - com
+  - com_rpy
+  - inertia
+  - effort
+  - max_effort
+  - velocity
+  - command_delay
+  - torque_constant
+  caveats: 'ONE UNIFORM SET ON ALL 40 JOINTS, WITH ONE EXCEPTION. Every
+    IDENTIFIED field is identical on every finger joint of both hands; nothing
+    fitted here distinguishes thumb from pinky, or proximal from distal. The
+    vendor reference it derives from is itself per-actuator (stiffness
+    0.19-0.69, damping_drive 0.008-0.031, effort 0.15-0.65 N*m) and was
+    collapsed to a single class on purpose, so the per-joint spread is a known
+    unmodelled residual, not a measurement.
+
+    STIFFNESS IS A SELECTED VALUE, NOT A FITTED ONE. 0.65 is the top of the
+    vendor per-actuator range, chosen because it passed grasp replay - there is
+    no residual, no standard error, and no identifiability report for it. The
+    previous frozen value was 0.50 (the range midpoint) and replay accepted that
+    too; treat 0.65 as a working setpoint with at least +-0.15 of slack. Both
+    replays ran with the runtime drive clamp at a uniform 0.5 N*m - see the
+    max_effort paragraph below.
+
+    ARMATURE IS THE CONSERVATIVE END OF THE VENDOR TABLE. The reference authors
+    0.0002 on the distal phalanges and 0.0005 only on the five *_joint1
+    knuckles; 0.0005 is carried on all 40 here, so the distal joints are
+    reflected-inertia-heavy by 2.5x by construction.
+
+    MAX_EFFORT IS NOT PUBLISHED, AND THE RUN CONDITION WAS 0.5 N*M. max_effort
+    is the runtime drive clamp, a Channel B field with no URDF counterpart, so
+    no run identifies it and this file declares it absent. The clamp the gains
+    were selected under was a uniform 0.5 N*m - the midpoint of the vendor
+    per-actuator force range 0.15-0.65 - applied to all 40 joints. That is a
+    condition of the selection, not a measurement and not a limit: stiffness
+    0.65 and damping_drive 0.05 passed grasp replay with it in place, and a
+    re-test that wants the fit''s own saturation behaviour has to set it
+    itself. It is worth knowing the figure sits ABOVE the joint''s own
+    hardware limit on 32 of the 40 - as much as 3.4x above, worst case
+    thumb_joint4 at 0.5 against 0.1468 - so a run that applies it is giving
+    those joints more torque authority than the hand has.
+
+    THE HARDWARE LIMIT IS THE URDF''S, AND IS LEFT THERE. The per-joint vendor
+    torque limits are already in the baseline URDF <limit effort>: thumb 0.4452
+    / 0.4259 / 0.1888 / 0.1468, index 0.6188 / 0.1822 / 0.2251 / 0.2170, middle
+    0.6494 / 0.1827 / 0.2078 / 0.2018, ring 0.6389 / 0.1832 / 0.2249 / 0.2044,
+    pinky 0.6441 / 0.1798 / 0.2384 / 0.1866 (joints 1-4 in order, identical on
+    both sides). That is where a vendor figure belongs; the `effort` field is
+    declared not identified here precisely because this run did not measure it
+    and must not restate it.
+
+    DAMPING AND FRICTIONLOSS ARE EXPLICIT ZEROS, AND THAT IS THE POINT. The
+    vendor reference authors damping 0 and no frictionloss at all on finger
+    joints. They are written here rather than omitted because the engine''s
+    generic actuated-joint class otherwise supplies frictionloss 0.3 - sane for
+    a 500 N*m body actuator, catastrophic at 60% loss on a 0.5 N*m finger.
+
+    LINK INERTIALS ARE NOT TOUCHED. The hand link masses and tensors stay as the
+    baseline URDF authors them; the runtime work around this freeze was to stop
+    the assembly path from overwriting them, not to refit them.
+
+    ENGINE SCOPE: THESE CONTROLLER NUMBERS ARE FLAT. The schema lets
+    stiffness, damping_drive, damping and frictionloss carry one value per
+    engine (mujoco / newton / physx); every one of them in this file is a
+    single flat value, which the schema reads as the same number claimed for
+    all three. The two drive gains were selected by grasp replay in two
+    engines, and the source that publishes them names both: Newton and MuJoCo,
+    through three empty-grasp Real2Sim replays plus 24-object static and
+    dynamic regressions for stiffness, and a step-response test under
+    mujoco-warp for damping_drive. Both engines solve the same
+    position-actuator law, so the plane is mujoco_pd and the pair was never
+    fitted on physx; the starting point was a published MuJoCo reference model
+    for this hand, quoted in kp / kv / forcerange terms. PhysX remains an
+    extrapolation -- a well-behaved one, for the reason given next. The passive pair needs no such caveat: damping and
+    frictionloss are explicit zeros here, so the physx fold of passive damping
+    into drive damping (kd + damping) adds exactly nothing, and all four
+    controller fields carry identically on all three backends. This is the one
+    set in this tree where the flat form is provably safe rather than merely
+    unchallenged.'
+joints:
+  # Left hand. The values below are identical on both hands and on all
+  # twenty joints of each - see caveats before reading that as symmetry
+  # evidence.
+  hand_l_thumb_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_thumb_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_thumb_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_thumb_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_index_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_index_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_index_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_index_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_middle_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_middle_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_middle_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_middle_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_ring_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_ring_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_ring_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_ring_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_pinky_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_pinky_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_pinky_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_l_pinky_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_thumb_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_thumb_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_thumb_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_thumb_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_index_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_index_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_index_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_index_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_middle_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_middle_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_middle_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_middle_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_ring_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_ring_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_ring_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_ring_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_pinky_joint1:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_pinky_joint2:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_pinky_joint3:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
+  hand_r_pinky_joint4:
+    damping:
+      value: 0.0
+      note: vendor reference value; written explicitly so no class table supplies
+        one
+    frictionloss:
+      value: 0.0
+      note: vendor authors no frictionloss on finger joints; written explicitly
+        to override the generic actuated-joint class value of 0.3, which stalled
+        every finger below ~34 deg of PD error (finger-ramp sweep, 2026-08-11)
+    armature:
+      value: 0.0005
+      note: vendor reference value for the *_joint1 knuckles, carried on all four
+        phalanges; the reference authors 0.0002 on joints 2-4
+    stiffness:
+      value: 0.65
+      note: 'selected, not fitted: top of the vendor per-actuator range (0.19-0.69),
+        accepted by three empty-grasp Real2Sim replays and 24-object regressions;
+        previous frozen value was 0.50'
+    damping_drive:
+      value: 0.05
+      note: raised from the vendor midpoint 0.025 after step-response ringing in
+        mjwarp - the midpoint is ~2x short of critical damping for a ~10 g effective
+        fingertip inertia
