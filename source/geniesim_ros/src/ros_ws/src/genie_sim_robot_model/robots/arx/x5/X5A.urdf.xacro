@@ -29,6 +29,10 @@
 
   <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/arx/x5/meshes" />
 
+  <!-- Select stock or identified drive and passive parameters. -->
+  <xacro:arg name="param_source" default="default" />
+  <xacro:include filename="$(find genie_sim_robot_model)/robots/arx/x5/X5A.params.$(arg param_source).xacro" />
+
   <!-- base_link is intentionally an empty link so it can serve as the KDL
        root: kdl_parser rejects a root link that carries inertia. The
        visual / collision / inertial payload is moved to base_link_inertia,
@@ -90,6 +94,8 @@
     <child link="arm_link1" />
     <axis xyz="0 0 1" />
     <limit lower="-3.14159" upper="3.14159" effort="30" velocity="5.0" />
+    <dynamics damping="${x5a_j1_damping}" friction="${x5a_j1_friction}" />
+    <drive stiffness="${x5a_j1_drive_stiffness}" damping="${x5a_j1_drive_damping}" />
   </joint>
 
   <link name="arm_link2">
@@ -114,6 +120,8 @@
     <child link="arm_link2" />
     <axis xyz="0 1 0" />
     <limit lower="-0.05" upper="3.5" effort="40" velocity="5.0" />
+    <dynamics damping="${x5a_j2_damping}" friction="${x5a_j2_friction}" />
+    <drive stiffness="${x5a_j2_drive_stiffness}" damping="${x5a_j2_drive_damping}" />
   </joint>
 
   <link name="arm_link3">
@@ -138,6 +146,8 @@
     <child link="arm_link3" />
     <axis xyz="0 1 0" />
     <limit lower="0.0" upper="3.2" effort="30" velocity="5.5" />
+    <dynamics damping="${x5a_j3_damping}" friction="${x5a_j3_friction}" />
+    <drive stiffness="${x5a_j3_drive_stiffness}" damping="${x5a_j3_drive_damping}" />
   </joint>
 
   <link name="arm_link4">
@@ -162,6 +172,8 @@
     <child link="arm_link4" />
     <axis xyz="0 1 0" />
     <limit lower="-1.6" upper="1.55" effort="15" velocity="5.5" />
+    <dynamics damping="${x5a_j4_damping}" friction="${x5a_j4_friction}" />
+    <drive stiffness="${x5a_j4_drive_stiffness}" damping="${x5a_j4_drive_damping}" />
   </joint>
 
   <link name="arm_link5">
@@ -186,6 +198,8 @@
     <child link="arm_link5" />
     <axis xyz="0 0 1" />
     <limit lower="-1.57" upper="1.57" effort="10" velocity="5.0" />
+    <dynamics damping="${x5a_j5_damping}" friction="${x5a_j5_friction}" />
+    <drive stiffness="${x5a_j5_drive_stiffness}" damping="${x5a_j5_drive_damping}" />
   </joint>
 
   <link name="arm_link6">
@@ -210,6 +224,8 @@
     <child link="arm_link6" />
     <axis xyz="1 0 0" />
     <limit lower="-2.0" upper="2.0" effort="10" velocity="5.0" />
+    <dynamics damping="${x5a_j6_damping}" friction="${x5a_j6_friction}" />
+    <drive stiffness="${x5a_j6_drive_stiffness}" damping="${x5a_j6_drive_damping}" />
   </joint>
 
   <link name="arm_end_link">

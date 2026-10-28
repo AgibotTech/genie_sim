@@ -24,6 +24,10 @@
 
   <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/arx/acone/meshes" />
 
+  <!-- Select stock or identified drive and passive parameters. -->
+  <xacro:arg name="param_source" default="default" />
+  <xacro:include filename="$(find genie_sim_robot_model)/robots/arx/acone/AC1.params.$(arg param_source).xacro" />
+
   <!-- base_link is intentionally an empty link so it can serve as the KDL
        root: kdl_parser rejects a root link that carries inertia. The
        visual / collision / inertial payload is moved to base_link_inertia,
@@ -85,6 +89,8 @@
     <child link="arm_l_link1" />
     <axis xyz="0 0 1" />
     <limit lower="-3.14159" upper="3.14159" effort="30" velocity="5.0" />
+    <dynamics damping="${acone_l1_damping}" friction="${acone_l1_friction}" />
+    <drive stiffness="${acone_l1_drive_stiffness}" damping="${acone_l1_drive_damping}" />
   </joint>
 
   <link name="arm_l_link2">
@@ -108,6 +114,8 @@
     <child link="arm_l_link2" />
     <axis xyz="0 1 0" />
     <limit lower="-0.05" upper="3.5" effort="40" velocity="5.0" />
+    <dynamics damping="${acone_l2_damping}" friction="${acone_l2_friction}" />
+    <drive stiffness="${acone_l2_drive_stiffness}" damping="${acone_l2_drive_damping}" />
   </joint>
 
   <link name="arm_l_link3">
@@ -131,6 +139,8 @@
     <child link="arm_l_link3" />
     <axis xyz="0 -1 0" />
     <limit lower="0.0" upper="3.2" effort="30" velocity="5.5" />
+    <dynamics damping="${acone_l3_damping}" friction="${acone_l3_friction}" />
+    <drive stiffness="${acone_l3_drive_stiffness}" damping="${acone_l3_drive_damping}" />
   </joint>
 
   <link name="arm_l_link4">
@@ -154,6 +164,8 @@
     <child link="arm_l_link4" />
     <axis xyz="0 -1 0" />
     <limit lower="-1.6" upper="1.55" effort="15" velocity="5.5" />
+    <dynamics damping="${acone_l4_damping}" friction="${acone_l4_friction}" />
+    <drive stiffness="${acone_l4_drive_stiffness}" damping="${acone_l4_drive_damping}" />
   </joint>
 
   <link name="arm_l_link5">
@@ -177,6 +189,8 @@
     <child link="arm_l_link5" />
     <axis xyz="0 0 -1" />
     <limit lower="-1.57" upper="1.57" effort="10" velocity="5.0" />
+    <dynamics damping="${acone_l5_damping}" friction="${acone_l5_friction}" />
+    <drive stiffness="${acone_l5_drive_stiffness}" damping="${acone_l5_drive_damping}" />
   </joint>
 
   <link name="arm_l_link6">
@@ -204,6 +218,8 @@
     <child link="arm_l_link6" />
     <axis xyz="1 0 0" />
     <limit lower="-2.0" upper="2.0" effort="10" velocity="5.0" />
+    <dynamics damping="${acone_l6_damping}" friction="${acone_l6_friction}" />
+    <drive stiffness="${acone_l6_drive_stiffness}" damping="${acone_l6_drive_damping}" />
   </joint>
 
   <link name="arm_l_end_link">
@@ -350,6 +366,8 @@
     <child link="arm_r_link1" />
     <axis xyz="0 0 1" />
     <limit lower="-3.14159" upper="3.14159" effort="30" velocity="5.0" />
+    <dynamics damping="${acone_r1_damping}" friction="${acone_r1_friction}" />
+    <drive stiffness="${acone_r1_drive_stiffness}" damping="${acone_r1_drive_damping}" />
   </joint>
 
   <link name="arm_r_link2">
@@ -373,6 +391,8 @@
     <child link="arm_r_link2" />
     <axis xyz="0 1 0" />
     <limit lower="-0.05" upper="3.5" effort="40" velocity="5.0" />
+    <dynamics damping="${acone_r2_damping}" friction="${acone_r2_friction}" />
+    <drive stiffness="${acone_r2_drive_stiffness}" damping="${acone_r2_drive_damping}" />
   </joint>
 
   <link name="arm_r_link3">
@@ -396,6 +416,8 @@
     <child link="arm_r_link3" />
     <axis xyz="0 -1 0" />
     <limit lower="0.0" upper="3.2" effort="30" velocity="5.5" />
+    <dynamics damping="${acone_r3_damping}" friction="${acone_r3_friction}" />
+    <drive stiffness="${acone_r3_drive_stiffness}" damping="${acone_r3_drive_damping}" />
   </joint>
 
   <link name="arm_r_link4">
@@ -419,6 +441,8 @@
     <child link="arm_r_link4" />
     <axis xyz="0 -1 0" />
     <limit lower="-1.6" upper="1.55" effort="15" velocity="5.5" />
+    <dynamics damping="${acone_r4_damping}" friction="${acone_r4_friction}" />
+    <drive stiffness="${acone_r4_drive_stiffness}" damping="${acone_r4_drive_damping}" />
   </joint>
 
   <link name="arm_r_link5">
@@ -442,6 +466,8 @@
     <child link="arm_r_link5" />
     <axis xyz="0 0 -1" />
     <limit lower="-1.57" upper="1.57" effort="10" velocity="5.0" />
+    <dynamics damping="${acone_r5_damping}" friction="${acone_r5_friction}" />
+    <drive stiffness="${acone_r5_drive_stiffness}" damping="${acone_r5_drive_damping}" />
   </joint>
 
   <link name="arm_r_link6">
@@ -469,6 +495,8 @@
     <child link="arm_r_link6" />
     <axis xyz="1 0 0" />
     <limit lower="-2.0" upper="2.0" effort="10" velocity="5.0" />
+    <dynamics damping="${acone_r6_damping}" friction="${acone_r6_friction}" />
+    <drive stiffness="${acone_r6_drive_stiffness}" damping="${acone_r6_drive_damping}" />
   </joint>
 
   <link name="arm_r_end_link">

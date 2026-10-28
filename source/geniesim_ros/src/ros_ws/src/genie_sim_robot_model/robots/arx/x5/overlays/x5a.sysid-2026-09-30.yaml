@@ -1,0 +1,119 @@
+schema: genie_sim.joint_params/1
+id: x5a.sysid-2026-09-30
+applies_to:
+  robot_model: arx
+  arm: x5
+meta:
+  kind: sysid
+  identified_on: '2026-09-30'
+  identified_on_engine: mujoco_pd
+  source_run: 'offline position-response identification against ARX Real hardware —
+    the AC one LEFT ARM, not an X5A. These are the left-arm values of
+    ac1.sysid-2026-09-30 transplanted onto the single-arm X5A. The run itself carries
+    no timestamp, so the date above is the day its package was published, not a
+    capture date.'
+  not_identified:
+  - mass
+  - com
+  - com_rpy
+  - inertia
+  - effort
+  - max_effort
+  - velocity
+  - torque_constant
+  caveats: 'TRANSPLANTED, NOT IDENTIFIED ON THIS MODEL. No X5A was swept. Every value
+    is the AC one left arm''s, which is the arm the run identified best (14 fit / 9
+    validation episodes, towel task included, strongest excitation).
+
+    The transplant is defensible because the X5A arm and the AC one arm are the same
+    6-DOF arm — same link masses, COMs, inertias and joint origins in this package —
+    so a parameter set fitted on one is the right starting point for the other. X5A
+    uses the opposite sign convention on J3/J4/J5, which does not matter: all five
+    fitted families (armature, damping, frictionloss, stiffness, damping_drive) are
+    even in the axis sign, and command_delay is a time, not a direction.
+
+    Everything the left-arm set carries, this file inherits — read
+    ac1.sysid-2026-09-30''s caveats as if they were written here. In particular:
+    these are effective closed-loop position-response parameters and not rigid-body
+    ground truth; ~90% of the reported tracking gain came from command_delay, which
+    nothing consumes yet; j1 armature, j3 damping and j4 frictionloss sit on their
+    search-box edges. No effort limit is published in either field: the arm''s
+    vendor joint torque limits (30/40/30/15/10/10 N*m) are already in the URDF
+    <limit effort>, and max_effort -- the runtime drive clamp -- was 27 N*m on
+    J1-J3 and 7 N*m on J4-J6 during the run, which is a condition of the fit
+    and not a rating. Read ac1.sysid-2026-09-30''s effort caveat for why those
+    two numbers were never this arm''s rating and for where the harness cap is
+    recorded.
+
+    Gripper joints are deliberately absent: the run''s accepted gripper gains
+    (stiffness 2000, damping_drive 200) already equal the engine''s gripper class
+    defaults.
+
+    command_delay is the left arm''s 0.085 s. The AC one right arm''s independently
+    fitted 0.089 s is the only evidence about how much this varies between two
+    nominally identical arms: 4.7%.
+
+    ENGINE SCOPE: THESE CONTROLLER NUMBERS ARE FLAT. The schema lets
+    stiffness, damping_drive, damping and frictionloss carry one value per
+    engine (mujoco / newton / physx); every one of them in this file is a
+    single flat value, which the schema reads as the same number claimed for
+    all three. They are transplanted from a single offline position-response
+    harness on the AC one left arm, so no engine was compared against another
+    at any point in their history. The plane is transplanted with them: that
+    harness was MuJoCo, so meta.identified_on_engine reads mujoco_pd here for
+    the same reason it does on the source overlay, and on no independent
+    evidence of its own. The physx fold applies unchanged: that
+    backend adds passive damping into drive damping (kd + damping), putting
+    effective drive damping 0.8% to 26.3% above the fitted damping_drive,
+    worst on J3 (6.85319 + 1.79972). Adapter difference, not a measurement; do
+    not pre-compensate here.'
+joints:
+  arm_joint1:
+    damping: 0.02646
+    frictionloss: 0.00102394
+    armature:
+      value: 0.241167
+      note: on its search-box edge; 24x the stock 0.01 and ~2x the heaviest engine
+        class value
+    stiffness: 515.513
+    damping_drive: 1.33108
+    command_delay: 0.085
+  arm_joint2:
+    damping: 0.0238303
+    frictionloss: 0.00102044
+    armature: 0.0453454
+    stiffness: 526.311
+    damping_drive: 2.97626
+    command_delay: 0.085
+  arm_joint3:
+    damping:
+      value: 1.79972
+      note: on its search-box edge
+    frictionloss: 0.0142011
+    armature: 0.0472377
+    stiffness: 507.589
+    damping_drive: 6.85319
+    command_delay: 0.085
+  arm_joint4:
+    damping: 0.0101474
+    frictionloss:
+      value: 0.525452
+      note: on its search-box edge
+    armature: 0.0148545
+    stiffness: 324.788
+    damping_drive: 1.0962
+    command_delay: 0.085
+  arm_joint5:
+    damping: 0.762774
+    frictionloss: 0.292917
+    armature: 0.0979814
+    stiffness: 508.681
+    damping_drive: 4.60003
+    command_delay: 0.085
+  arm_joint6:
+    damping: 0.527118
+    frictionloss: 0.278988
+    armature: 0.00416896
+    stiffness: 57.2908
+    damping_drive: 3.58765
+    command_delay: 0.085

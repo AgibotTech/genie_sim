@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<!--
+  AC one arm drive/passive parameters — DEFAULT set.
+
+  These are the ARX stock values: the driver-side PD gains and the
+  MuJoCo passive-joint tuning that the ARX AC one ships with, and the
+  same numbers the system-identification run used as its starting
+  point.  Keeping them here as "default" makes
+  `diff AC1.params.default.xacro AC1.params.sysid.xacro` read as a
+  pure spreadsheet of number changes, the same way the G2 crsB
+  inertia_source pair does.
+
+  Baseline, per joint:
+    J1-J3   kp 500  kd 5   damping 1.0  frictionloss 0.3  armature 0.01
+    J4-J6   kp 350  kd 2   damping 0.5  frictionloss 0.3  armature 0.01
+  Both arms carry the identical set — the stock config is side-blind.
+
+  What each field reaches, and what it does not:
+    * `damping` / `friction` land in URDF <dynamics> and are readable
+      by the importer chain.
+    * `drive_stiffness` / `drive_damping` land in the custom URDF
+      <drive> tag, the same tag the G2 models use, and become
+      UsdPhysics.DriveAPI stiffness/damping on import.
+    * `armature` has NO URDF representation at all.  It is defined
+      here for completeness and for the YAML sidecar
+      (robots/arx/arx_drive_params.sysid.yaml); nothing in the xacro
+      output carries it.
+
+  IMPORTANT — these values are currently inert at runtime.  The mjwarp
+  adapter (genie_sim_engine_newton/.../adapters/mujoco_warp.py) drives
+  every DOF from the per-class table in
+  genie_sim_engine_core/config/physics_params.yaml, overwriting ke/kd
+  and dof_damping/dof_frictionloss unconditionally, and overwriting
+  armature whenever the class value is > 0.  AC one's twelve arm
+  joints collapse to three side-blind classes there
+  (arm_shoulder J1-J2, arm_mid J3-J5, arm_wrist J6), resolving to
+  kp 4e4/6e4/3.2e4, kd 1.2e3/1200/400, dof_damping 0,
+  dof_frictionloss 0.3, armature 0.05/0.05/0.02.  A per-joint-name
+  override layer in genie_sim_engine_core has to exist before anything
+  in this file changes a simulation.
+
+  Layout: left arm joint1..6 first, then right arm joint1..6.
+
+  Selection: `xacro ... param_source:=default` (the default).
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- joint1 -->
+  <xacro:property name="acone_l1_damping"         value="1.0" />
+  <xacro:property name="acone_l1_friction"        value="0.3" />
+  <xacro:property name="acone_l1_drive_stiffness" value="500" />
+  <xacro:property name="acone_l1_drive_damping"   value="5" />
+  <xacro:property name="acone_l1_armature"        value="0.01" />
+
+  <!-- joint2 -->
+  <xacro:property name="acone_l2_damping"         value="1.0" />
+  <xacro:property name="acone_l2_friction"        value="0.3" />
+  <xacro:property name="acone_l2_drive_stiffness" value="500" />
+  <xacro:property name="acone_l2_drive_damping"   value="5" />
+  <xacro:property name="acone_l2_armature"        value="0.01" />
+
+  <!-- joint3 -->
+  <xacro:property name="acone_l3_damping"         value="1.0" />
+  <xacro:property name="acone_l3_friction"        value="0.3" />
+  <xacro:property name="acone_l3_drive_stiffness" value="500" />
+  <xacro:property name="acone_l3_drive_damping"   value="5" />
+  <xacro:property name="acone_l3_armature"        value="0.01" />
+
+  <!-- joint4 -->
+  <xacro:property name="acone_l4_damping"         value="0.5" />
+  <xacro:property name="acone_l4_friction"        value="0.3" />
+  <xacro:property name="acone_l4_drive_stiffness" value="350" />
+  <xacro:property name="acone_l4_drive_damping"   value="2" />
+  <xacro:property name="acone_l4_armature"        value="0.01" />
+
+  <!-- joint5 -->
+  <xacro:property name="acone_l5_damping"         value="0.5" />
+  <xacro:property name="acone_l5_friction"        value="0.3" />
+  <xacro:property name="acone_l5_drive_stiffness" value="350" />
+  <xacro:property name="acone_l5_drive_damping"   value="2" />
+  <xacro:property name="acone_l5_armature"        value="0.01" />
+
+  <!-- joint6 -->
+  <xacro:property name="acone_l6_damping"         value="0.5" />
+  <xacro:property name="acone_l6_friction"        value="0.3" />
+  <xacro:property name="acone_l6_drive_stiffness" value="350" />
+  <xacro:property name="acone_l6_drive_damping"   value="2" />
+  <xacro:property name="acone_l6_armature"        value="0.01" />
+
+  <!-- joint1 -->
+  <xacro:property name="acone_r1_damping"         value="1.0" />
+  <xacro:property name="acone_r1_friction"        value="0.3" />
+  <xacro:property name="acone_r1_drive_stiffness" value="500" />
+  <xacro:property name="acone_r1_drive_damping"   value="5" />
+  <xacro:property name="acone_r1_armature"        value="0.01" />
+
+  <!-- joint2 -->
+  <xacro:property name="acone_r2_damping"         value="1.0" />
+  <xacro:property name="acone_r2_friction"        value="0.3" />
+  <xacro:property name="acone_r2_drive_stiffness" value="500" />
+  <xacro:property name="acone_r2_drive_damping"   value="5" />
+  <xacro:property name="acone_r2_armature"        value="0.01" />
+
+  <!-- joint3 -->
+  <xacro:property name="acone_r3_damping"         value="1.0" />
+  <xacro:property name="acone_r3_friction"        value="0.3" />
+  <xacro:property name="acone_r3_drive_stiffness" value="500" />
+  <xacro:property name="acone_r3_drive_damping"   value="5" />
+  <xacro:property name="acone_r3_armature"        value="0.01" />
+
+  <!-- joint4 -->
+  <xacro:property name="acone_r4_damping"         value="0.5" />
+  <xacro:property name="acone_r4_friction"        value="0.3" />
+  <xacro:property name="acone_r4_drive_stiffness" value="350" />
+  <xacro:property name="acone_r4_drive_damping"   value="2" />
+  <xacro:property name="acone_r4_armature"        value="0.01" />
+
+  <!-- joint5 -->
+  <xacro:property name="acone_r5_damping"         value="0.5" />
+  <xacro:property name="acone_r5_friction"        value="0.3" />
+  <xacro:property name="acone_r5_drive_stiffness" value="350" />
+  <xacro:property name="acone_r5_drive_damping"   value="2" />
+  <xacro:property name="acone_r5_armature"        value="0.01" />
+
+  <!-- joint6 -->
+  <xacro:property name="acone_r6_damping"         value="0.5" />
+  <xacro:property name="acone_r6_friction"        value="0.3" />
+  <xacro:property name="acone_r6_drive_stiffness" value="350" />
+  <xacro:property name="acone_r6_drive_damping"   value="2" />
+  <xacro:property name="acone_r6_armature"        value="0.01" />
+
+</robot>

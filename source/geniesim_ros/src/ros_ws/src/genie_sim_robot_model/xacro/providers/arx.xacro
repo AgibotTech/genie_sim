@@ -8,6 +8,29 @@
   Usage:
     xacro robot.xacro robot_model:=arx arm:=x5
     xacro robot.xacro robot_model:=arx arm:=acone
+    xacro robot.xacro robot_model:=arx arm:=acone param_source:=sysid
+
+  Both arms accept a `param_source` arg (default | sysid) that selects
+  which <model>.params.<param_source>.xacro file supplies the per-joint
+  drive gains (<drive stiffness= damping=>) and passive parameters
+  (<dynamics damping= friction=>).  `sysid` is the identified set from
+  an offline run against ARX Real hardware.  AC one carries the
+  left-arm set on both arms - the per-side differences the run produced
+  are an artifact of regularization, not of the hardware.  See the
+  headers of ../../robots/arx/acone/AC1.params.sysid.xacro (the
+  evidence and the caveats) and
+  ../../robots/arx/arx_drive_params.sysid.yaml (the armature values,
+  command delay and verbatim per-side run output that URDF cannot
+  express).
+
+  The same numbers also exist as joint-param overlays, which is where
+  new work should read them from:
+  ../../robots/arx/acone/overlays/ac1.sysid-2026-09-30.yaml and
+  ../../robots/arx/x5/overlays/x5a.sysid-2026-09-30.yaml.  Both carry
+  the left-arm fit, with the per-joint notes recording what the right
+  arm's own rejected fit produced.  Nothing in the engine consumes an
+  overlay yet, so `param_source:=sysid` above is still the only switch
+  that has an effect.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 

@@ -1,0 +1,255 @@
+schema: genie_sim.joint_params/1
+id: ac1.sysid-2026-09-30
+applies_to:
+  robot_model: arx
+  arm: acone
+meta:
+  kind: sysid
+  identified_on: '2026-09-30'
+  identified_on_engine: mujoco_pd
+  source_run: offline position-response identification against ARX Real hardware;
+    accepted model of the restart run. The LEFT arm's fitted values are carried on
+    both arms — see caveats. The verbatim per-side run output is preserved in
+    robots/arx/arx_drive_params.sysid.yaml under arx_acone_raw_run_output. The run
+    itself carries no timestamp, so the date above is the day its package was
+    published, not a capture date.
+  not_identified:
+  - mass
+  - com
+  - com_rpy
+  - inertia
+  - effort
+  - max_effort
+  - velocity
+  - torque_constant
+  caveats: 'These are effective closed-loop position-response parameters, not
+    rigid-body ground truth. The run''s own report says so. Delay, stiffness,
+    damping_drive, damping, frictionloss and armature were fitted inside one position
+    loop where they trade against each other, so no individual number is separately
+    identified.
+
+    ~90% of the headline tracking gain (+54% left / +58% right normalized position
+    RMS) came from command_delay alone (+50.5% / +54.0%); stiffness supplies most of
+    the rest. damping + frictionloss + armature + damping_drive together are worth
+    ~1.6% on the left arm and nothing on the right. Nothing consumes command_delay
+    in the engine, so adopting this overlay today adopts the small half.
+
+    ONE ARM''S NUMBERS ON BOTH. Every value on arm_r_* except command_delay is the
+    corresponding left-arm fit, not a right-arm measurement. The two arms were not
+    equally identified and the right side''s own output was not accepted:
+
+    1. The right arm''s fit is weaker by construction, not by accident — 9 fit / 6
+    validation episodes against the left''s 14/9, with the towel task excluded and up
+    to 2x less joint excitation (J1 sweep 0.74 vs 1.31 rad, J5 0.57 vs 0.90 rad). It
+    also validated worse: 39% worse on J5, 52% worse on J6.
+
+    2. Its damping_drive layer collapsed entirely (free fit R1 1.2e-29, R2 5.0e-13),
+    so there was never a fitted right-side damping_drive to prefer, and damping,
+    frictionloss and armature were never swept on that side at all.
+
+    3. Where the two sides WERE fitted comparably they agree: free-stiffness J2 1103
+    vs 940 (15%), J3 406 vs 350 (14%), J5 1291 vs 1220 (5.5%). The disagreements are
+    the joints where one side is unidentified, not where the hardware differs: J1
+    1254 vs 10168 (8.1x) and J4 364 vs 6809 (18.7x) under free fits, while penalized
+    fits agree on J1-J4 and instead blow up J5 (3.6x) and J6 (11.0x). A pair of arms
+    that really differed would not flip which joints disagree when the regularizer
+    changes.
+
+    4. R6 is provably unidentified: the same data and normalization give stiffness
+    26.74 unpenalized and 630.295 penalized, a 23x spread in the direction the
+    penalty cannot produce.
+
+    The two arms are mirror-identical in the URDF — same link masses, inertias and
+    joint origins up to the mirror — so one parameter set on both is the physically
+    consistent reading, and the asymmetry in the run is an asymmetry of evidence
+    rather than of hardware. The right arm''s own per-joint stiffness is kept in the
+    notes below so the choice stays checkable, and the full raw per-side output is in
+    the YAML sidecar. If a future run excites the right arm as hard as the left and
+    still disagrees, that is the point to split these values again.
+
+    command_delay is the one thing NOT symmetrized and must not be. It was the
+    dominant and best-identified effect in the run, the two sides were fitted
+    independently, and they agree to 4.7% (0.085 left / 0.089 right), so that split
+    is a measurement.
+
+    Box-bound hits, annotated per field: j1 armature is 24x the stock 0.01 and ~2x
+    the heaviest engine class value, j3 damping and j4 frictionloss are likewise at
+    the edge of their search boxes. A parameter resting on its box edge is a sign the
+    loop was absorbing something else.
+
+    No effort limit is published, in either field. max_effort is the runtime
+    drive clamp -- a Channel B field with no URDF counterpart -- and the
+    URDF-side effort limit is the arm''s vendor rating; this run identified
+    neither, so both are declared absent above.
+
+    The clamp the gains were fitted under was 27 N*m on J1-J3 and 7 N*m on
+    J4-J6. That is a CONDITION of the fit and is recorded here and verbatim in
+    robots/arx/arx_drive_params.sysid.yaml under arx_acone_raw_run_output,
+    because it is part of the fit''s provenance. It was never this arm''s
+    rating: both numbers are motor-module datasheet PEAK torques for a DM-J4340
+    plus DM-J4310 pairing, which is not the pairing this arm uses -- its J1-J3
+    are EC-A4310 -- so 27 was a conservative stand-in. The arm''s actual vendor
+    joint torque limits, 30/40/30/15/10/10 N*m, are already in the URDF
+    <limit effort> and belong there rather than here.
+
+    The harness cap has never reached a solver and still does not: the adapter
+    only ever raises a cap, never lowers one, so 27/7 could not bind below the
+    URDF limits. A run that wants the fit''s own saturation behaviour has to
+    apply 27/7 itself.
+
+    The harness also padded the joint limits by 0.01 rad. Limits are left alone.
+
+    Gripper joints are deliberately absent: the run''s accepted gripper gains
+    (stiffness 2000, damping_drive 200) already equal the engine''s gripper class
+    defaults.
+
+    The run used the same upstream ARX source model this package was adapted from
+    (see THIRD_PARTY_NOTICES) — link masses, COMs and joint origins match
+    AC1.urdf.xacro exactly — so these parameters belong to this kinematics.
+
+    A later run isolated the right wrist''s damping_drive at 69.57, 34x baseline, for
+    +47.45% on R6 and +16.28% overall validation while moving other joints by
+    <=0.069%. It converged in 49 evaluations and has not been accepted. If it is, J6
+    becomes the one joint with a defensible per-side damping_drive, and this file is
+    where to put it.
+
+    ENGINE SCOPE: THESE CONTROLLER NUMBERS ARE FLAT. The schema lets
+    stiffness, damping_drive, damping and frictionloss carry one value per
+    engine (mujoco / newton / physx); every one of them in this file is a
+    single flat value, which the schema reads as the same number claimed for
+    all three. meta.identified_on_engine records which one of the three is a
+    measurement: the harness was MuJoCo, so these gains are MuJoCo
+    position-actuator gains -- stiffness is the actuator gainprm, damping_drive
+    is -biasprm[2], and the sidecar derives them under exactly those names.
+    Newton solves the same law, so it inherits the pair with no conversion.
+    PhysX does not, and the claim there is inheritance from a single fit
+    rather than a replication result. It
+    is also known to be wrong in one direction: physx folds passive damping
+    into drive damping (kd + damping), so the effective drive damping there
+    runs 0.8% to 26.3% above the fitted damping_drive, worst on J3 (6.85319 +
+    1.79972). That is an adapter difference, not a per-engine measurement. It
+    must be fixed at the adapter; do not pre-compensate by writing a smaller
+    physx branch here.'
+joints:
+  # Left arm — all six families fitted here. This is the source of every
+  # value in this file.
+  arm_l_joint1:
+    damping: 0.02646
+    frictionloss: 0.00102394
+    armature:
+      value: 0.241167
+      note: on its search-box edge; 24x the stock 0.01 and ~2x the heaviest engine
+        class value
+    stiffness: 515.513
+    damping_drive: 1.33108
+    command_delay: 0.085
+  arm_l_joint2:
+    damping: 0.0238303
+    frictionloss: 0.00102044
+    armature: 0.0453454
+    stiffness: 526.311
+    damping_drive: 2.97626
+    command_delay: 0.085
+  arm_l_joint3:
+    damping:
+      value: 1.79972
+      note: on its search-box edge
+    frictionloss: 0.0142011
+    armature: 0.0472377
+    stiffness: 507.589
+    damping_drive: 6.85319
+    command_delay: 0.085
+  arm_l_joint4:
+    damping: 0.0101474
+    frictionloss:
+      value: 0.525452
+      note: on its search-box edge
+    armature: 0.0148545
+    stiffness: 324.788
+    damping_drive: 1.0962
+    command_delay: 0.085
+  arm_l_joint5:
+    damping: 0.762774
+    frictionloss: 0.292917
+    armature: 0.0979814
+    stiffness: 508.681
+    damping_drive: 4.60003
+    command_delay: 0.085
+  arm_l_joint6:
+    damping: 0.527118
+    frictionloss: 0.278988
+    armature: 0.00416896
+    stiffness: 57.2908
+    damping_drive: 3.58765
+    command_delay: 0.085
+  # Right arm — the LEFT arm's values, not a right-arm measurement. Its own
+  # fit was not accepted; see meta.caveats. Only command_delay below is a
+  # right-side measurement. Each stiffness note carries what the right arm's
+  # own fit produced, so the substitution stays checkable.
+  arm_r_joint1:
+    damping: 0.02646
+    frictionloss: 0.00102394
+    armature:
+      value: 0.241167
+      note: left-arm value; on its search-box edge there
+    stiffness:
+      value: 515.513
+      note: left-arm value; the right arm's own fit gave 587.303 on 9/6 episodes vs
+        the left's 14/9, towel excluded, up to 2x less excitation
+    damping_drive: 1.33108
+    command_delay: 0.089
+  arm_r_joint2:
+    damping: 0.0238303
+    frictionloss: 0.00102044
+    armature: 0.0453454
+    stiffness:
+      value: 526.311
+      note: left-arm value; the right arm's own fit gave 560.671 on 9/6 episodes vs
+        the left's 14/9, towel excluded, up to 2x less excitation
+    damping_drive: 2.97626
+    command_delay: 0.089
+  arm_r_joint3:
+    damping:
+      value: 1.79972
+      note: left-arm value; on its search-box edge there
+    frictionloss: 0.0142011
+    armature: 0.0472377
+    stiffness:
+      value: 507.589
+      note: left-arm value; the right arm's own fit gave 488.049 on 9/6 episodes vs
+        the left's 14/9, towel excluded, up to 2x less excitation
+    damping_drive: 6.85319
+    command_delay: 0.089
+  arm_r_joint4:
+    damping: 0.0101474
+    frictionloss:
+      value: 0.525452
+      note: left-arm value; on its search-box edge there
+    armature: 0.0148545
+    stiffness:
+      value: 324.788
+      note: left-arm value; the right arm's own fit gave 339.837 on 9/6 episodes vs
+        the left's 14/9, towel excluded, up to 2x less excitation
+    damping_drive: 1.0962
+    command_delay: 0.089
+  arm_r_joint5:
+    damping: 0.762774
+    frictionloss: 0.292917
+    armature: 0.0979814
+    stiffness:
+      value: 508.681
+      note: left-arm value; the right arm's own fit gave 142.58 and validated 39%
+        worse on this joint
+    damping_drive: 4.60003
+    command_delay: 0.089
+  arm_r_joint6:
+    damping: 0.527118
+    frictionloss: 0.278988
+    armature: 0.00416896
+    stiffness:
+      value: 57.2908
+      note: left-arm value; the right arm's own J6 is provably unidentified — the
+        same data and normalization give 26.74 unpenalized and 630.295 penalized,
+        a 23x spread in the direction the penalty cannot produce
+    damping_drive: 3.58765
+    command_delay: 0.089

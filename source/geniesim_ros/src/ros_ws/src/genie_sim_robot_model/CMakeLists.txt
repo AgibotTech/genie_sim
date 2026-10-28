@@ -59,6 +59,9 @@ genie_sim_xacro_robot(agilex_piper robot_model:=agilex arm:=piper gripper:=with_
 genie_sim_xacro_robot(agilex_piper_no_gripper robot_model:=agilex arm:=piper gripper:=no_gripper)
 genie_sim_xacro_robot(arx_x5 robot_model:=arx arm:=x5)
 genie_sim_xacro_robot(arx_acone robot_model:=arx arm:=acone)
+# Identified drive/passive profiles; the stock descriptions remain selectable.
+genie_sim_xacro_robot(arx_x5_sysid robot_model:=arx arm:=x5 param_source:=sysid)
+genie_sim_xacro_robot(arx_acone_sysid robot_model:=arx arm:=acone param_source:=sysid)
 genie_sim_xacro_robot(agilex_aloha robot_model:=agilex arm:=aloha)
 genie_sim_xacro_robot(franka_fr3 robot_model:=franka arm:=fr3)
 genie_sim_xacro_robot(genie_g2_crs_omnipicker robot_model:=genie body:=g2 arm:=crs gripper:=omnipicker)
