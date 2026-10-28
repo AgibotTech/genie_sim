@@ -78,6 +78,14 @@ ServoNode::ServoNode(const rclcpp::NodeOptions & options)
       "steer_joint_names and drive_joint_names must each have exactly 4 entries");
     throw std::runtime_error("servo_node: bad joint name list size");
   }
+  // Kept in lockstep with the ros2_control plugin path
+  // (chassis_servo_controller.cpp). Empty joint name slots mark passive
+  // corners; OptimalServo skips them in the QP kinematic constraint
+  // and the alpha alignment gate.
+  for (size_t i = 0; i < 4; ++i) {
+    params.common.active_wheels[i] =
+      !steer_joint_names_[i].empty() && !drive_joint_names_[i].empty();
+  }
 
   core_.configure(params);
 

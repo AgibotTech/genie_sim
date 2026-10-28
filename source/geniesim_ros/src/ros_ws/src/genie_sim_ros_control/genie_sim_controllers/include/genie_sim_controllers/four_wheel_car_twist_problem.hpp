@@ -12,6 +12,7 @@ inline void getDirectCmd(
   const Eigen::Vector3d & u_ref, const Eigen::Vector4d & steer_angles,
   const Eigen::Vector4d & drive_speeds, const std::array<double, 4> & rxs,
   const std::array<double, 4> & rys, double max_steer_angle, double max_drive_speed,
+  const std::array<bool, 4> & active_wheels,
   Eigen::Vector<double, 8> & cmd_ref)
 {
   static const auto dir_thresh = std::cos(5e-2 * M_PI / 180.0);
@@ -54,6 +55,15 @@ inline void getDirectCmd(
     cmd_ref(i) = theta;
     cmd_ref(4 + i) = v;
 
+    // Passive-caster corners never contribute to the alpha gate: their
+    // steer feedback (empty joint name -> no /joint_states match) is
+    // pinned at 0, so cos(target - 0) collapses alpha to 0 for pure yaw
+    // and zeroes every drive command. Physically they don't apply
+    // tangential force anyway, so their "alignment" is irrelevant.
+    if (!active_wheels[i]) {
+      continue;
+    }
+
     if (wz_abs < 1e-2 || std::abs(drive_speeds(i)) > 1e-2) {
       continue;
     }
@@ -80,12 +90,14 @@ public:
 
   void setParameters(
     double wheel_distance, double axis_distance, double max_steer_angle,
-    double max_drive_speed)
+    double max_drive_speed,
+    const std::array<bool, 4> & active_wheels = {{true, true, true, true}})
   {
     wheel_distance_ = wheel_distance;
     axis_distance_ = axis_distance;
     max_steer_angle_ = max_steer_angle;
     max_drive_speed_ = max_drive_speed;
+    active_wheels_ = active_wheels;
     const double rx = 0.5 * axis_distance_;
     const double ry = 0.5 * wheel_distance_;
     rxs_ = std::array<double, 4>({rx, rx, -rx, -rx});
@@ -101,7 +113,7 @@ public:
     drive_speeds_ = drive_speeds;
     getDirectCmd(
       u_ref_, steer_angles_, drive_speeds_, rxs_, rys_, max_steer_angle_,
-      max_drive_speed_, cmd_ref_);
+      max_drive_speed_, active_wheels_, cmd_ref_);
   }
 
   [[nodiscard]] std::shared_ptr<FunctionBase> deep_copy() const override
@@ -137,6 +149,7 @@ private:
   std::array<double, 4> rys_{0.0};
   double max_steer_angle_{0.0};
   double max_drive_speed_{0.0};
+  std::array<bool, 4> active_wheels_{{true, true, true, true}};
 };
 
 class FourWheelCarKinematicConstraint : public solvers::EqualityConstraint
@@ -146,10 +159,13 @@ public:
   : EqualityConstraint(11, 8, Eigen::VectorXd::Zero(8)) {}
   ~FourWheelCarKinematicConstraint() override = default;
 
-  void setParameters(double wheel_distance, double axis_distance)
+  void setParameters(
+    double wheel_distance, double axis_distance,
+    const std::array<bool, 4> & active_wheels = {{true, true, true, true}})
   {
     wheel_distance_ = wheel_distance;
     axis_distance_ = axis_distance;
+    active_wheels_ = active_wheels;
     const double rx = 0.5 * axis_distance_;
     const double ry = 0.5 * wheel_distance_;
     rxs_ = std::array<double, 4>({rx, rx, -rx, -rx});
@@ -183,6 +199,16 @@ protected:
     auto & output = output_opt.value();
     output.setZero();
     for (size_t i = 0; i < 4; ++i) {
+      // Passive corners are NOT no-slip contacts — a hard
+      // no-slip equality here forces the QP to satisfy
+      // v*cos(θ) = vx − wz*y AND v*sin(θ) = vy + wz*x at a corner
+      // whose θ is delta-capped near 0. That pins the reachable twist
+      // to a tiny box near 0 (and every drive to near-0), which is
+      // exactly the "linear.x works, crab/yaw collapse" symptom on
+      // a diagonal 2WD chassis. Leave those rows as 0 — the equality
+      // "0 = 0" is trivially satisfied, and (v, θ) at this corner
+      // remain free.
+      if (!active_wheels_[i]) {continue;}
       const size_t row = 2 * i;
       const double x = rxs_[i];
       const double y = rys_[i];
@@ -197,6 +223,7 @@ protected:
     auto & jacobian = jacobian_opt.value();
     jacobian.setZero();
     for (size_t i = 0; i < 4; ++i) {
+      if (!active_wheels_[i]) {continue;}
       const size_t row = 2 * i;
       const double x = rxs_[i];
       const double y = rys_[i];
@@ -221,6 +248,7 @@ private:
   double axis_distance_{0.0};
   std::array<double, 4> rxs_{0.0};
   std::array<double, 4> rys_{0.0};
+  std::array<bool, 4> active_wheels_{{true, true, true, true}};
 };
 
 class FourWheelAngleConstraint : public solvers::InequalityConstraint
@@ -363,7 +391,8 @@ public:
 
   void setParameters(
     double wheel_distance, double axis_distance, double max_drive_speed, double max_delta_speed,
-    double max_steer_angle, double max_delta_angle)
+    double max_steer_angle, double max_delta_angle,
+    const std::array<bool, 4> & active_wheels = {{true, true, true, true}})
   {
     wheel_distance_ = wheel_distance;
     axis_distance_ = axis_distance;
@@ -371,6 +400,7 @@ public:
     max_delta_speed_ = max_delta_speed;
     max_steer_angle_ = max_steer_angle;
     max_delta_angle_ = max_delta_angle;
+    active_wheels_ = active_wheels;
   }
 
   void updateState(
@@ -391,7 +421,8 @@ protected:
     init_guess_.segment<3>(8) = u_ref_;
 
     FourWheelCarCmdCost cmd_cost;
-    cmd_cost.setParameters(wheel_distance_, axis_distance_, max_steer_angle_, max_drive_speed_);
+    cmd_cost.setParameters(
+      wheel_distance_, axis_distance_, max_steer_angle_, max_drive_speed_, active_wheels_);
     cmd_cost.updateState(u_ref_, steer_angles_, drive_speeds_);
     solvers::WeightedSquaredFunction weighted_cmd_cost(cmd_cost, Eigen::Vector<double, 8>::Ones());
     solvers::RelativeFunctionWrapper<solvers::WeightedSquaredFunction> relative_cmd_cost(
@@ -407,7 +438,7 @@ protected:
     addCostFunction(relative_twist_cost);
 
     FourWheelCarKinematicConstraint kinematic_constraint;
-    kinematic_constraint.setParameters(wheel_distance_, axis_distance_);
+    kinematic_constraint.setParameters(wheel_distance_, axis_distance_, active_wheels_);
     kinematic_constraint.updateState(steer_angles_, drive_speeds_);
     solvers::RelativeFunctionWrapper<FourWheelCarKinematicConstraint> relative_kinematic_constraint(
       kinematic_constraint, {std::pair<size_t, size_t>(0, 11)});
@@ -440,6 +471,7 @@ private:
   double max_delta_speed_{0.0};
   double max_steer_angle_{0.0};
   double max_delta_angle_{0.0};
+  std::array<bool, 4> active_wheels_{{true, true, true, true}};
 };
 
 }  // namespace genie_sim_controllers

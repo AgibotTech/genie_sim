@@ -33,6 +33,17 @@ struct CommonParams
   float max_drive_speed{1.0f};
   float max_drive_accel{20.0f};
   float dt{0.005f};
+  // Which of the four (FL, FR, RL, RR) corners are physically
+  // driven+steered. `false` marks a passive corner (e.g. a diagonal
+  // 2WD chassis where the two off-diagonal wheels are frictionless
+  // caster balls); OptimalServo skips those corners in the
+  // FourWheelCarKinematicConstraint (they're not no-slip contacts —
+  // a virtual constraint there forces twist to 0 for anything but pure
+  // linear.x) and in the getDirectCmd alpha alignment gate (their steer
+  // feedback is pinned at 0 because there's no /joint_states entry, so
+  // cos(target-0) collapses alpha to 0 for pure yaw). Default = all
+  // active so the 4WD/4WS path is unchanged.
+  std::array<bool, 4> active_wheels{{true, true, true, true}};
 };
 
 struct TwistCmd

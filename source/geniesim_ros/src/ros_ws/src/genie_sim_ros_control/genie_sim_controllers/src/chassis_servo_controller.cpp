@@ -107,6 +107,15 @@ controller_interface::CallbackReturn ChassisServoController::on_configure(
       "steer_joint_names and drive_joint_names must each have exactly 4 entries");
     return controller_interface::CallbackReturn::ERROR;
   }
+  // Corners whose steer OR drive joint name is empty are passive
+  // (e.g. a diagonal 2WD chassis where the two off-diagonal wheels
+  // are frictionless caster balls). Mark them inactive so OptimalServo
+  // drops the no-slip kinematic equality and the per-wheel alpha gate
+  // at those slots.
+  for (size_t i = 0; i < 4; ++i) {
+    params.common.active_wheels[i] =
+      !steer_joint_names_[i].empty() && !drive_joint_names_[i].empty();
+  }
 
   core_.configure(params);
 

@@ -42,6 +42,13 @@ std::optional<WheelCommand> OptimalServo::update(
 
   if (recover_steer_angles_ && wheel_state_opt.has_value()) {
     for (size_t i = 0; i < 4; ++i) {
+      // Skip passive-caster corners: their /joint_states slot never
+      // matches (empty joint name) so wheel_state_opt->steer_angles[i]
+      // stays pinned at 0. Overwriting with 0 would collapse the
+      // OptimalServo alpha gate for pure yaw. Keep the previous cmd
+      // value (which the QP evolved on its own, unconstrained by a
+      // physical joint).
+      if (!common_params_.active_wheels[i]) {continue;}
       steer_angles(i) = wheel_state_opt->steer_angles[i];
     }
   }
@@ -51,7 +58,8 @@ std::optional<WheelCommand> OptimalServo::update(
     common_params_.wheel_distance, common_params_.axis_distance,
     common_params_.max_drive_speed,
     common_params_.max_drive_accel * common_params_.wheel_radius * common_params_.dt,
-    common_params_.max_steer_angle, common_params_.max_steer_speed * common_params_.dt);
+    common_params_.max_steer_angle, common_params_.max_steer_speed * common_params_.dt,
+    common_params_.active_wheels);
   problem->updateState(u_ref, steer_angles, drive_speeds);
   problem->makeProblem();
 

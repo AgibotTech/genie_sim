@@ -153,6 +153,11 @@ install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_chassis_kinematics test/test_chassis_kinematics.cpp)
+  target_link_libraries(test_chassis_kinematics
+    genie_sim_controllers_servo_plugins Eigen3::Eigen)
+
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
