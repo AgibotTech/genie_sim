@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(genie_sim_robot_model)
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
+find_package(genie_sim_common REQUIRED)
+genie_sim_package()
 
 set(CMAKE_INSTALL_MESSAGE "LAZY")
 
@@ -55,22 +54,48 @@ endmacro()
 # Entries mirror robots/*/robot.yml (add REMAP lines when adding robots).
 # Gripper selector arg name is ``gripper`` consistently across all
 # provider scripts (agilex.xacro, genie.xacro, universal_robots.xacro).
-genie_sim_xacro_robot(agilex_piper robot_model:=agilex arm:=piper gripper:=with_gripper)
+genie_sim_xacro_robot(agilex_piper robot_model:=agilex arm:=piper gripper:=piper)
 genie_sim_xacro_robot(agilex_piper_no_gripper robot_model:=agilex arm:=piper gripper:=no_gripper)
 genie_sim_xacro_robot(arx_x5 robot_model:=arx arm:=x5)
 genie_sim_xacro_robot(arx_acone robot_model:=arx arm:=acone)
-# Identified drive/passive profiles; the stock descriptions remain selectable.
+# Sysid variants: same kinematics, drive gains + passive joint params sourced
+# from an offline identification run against ARX Real hardware, via
+# AC1.params.sysid.xacro / X5A.params.sysid.xacro.  Diff these against
+# their default siblings to see the parameter drift only.  AC one carries the
+# left-arm set on both arms; the per-side differences the run produced are an
+# artifact of regularization, and the raw output is kept as a record in
+# robots/arx/arx_drive_params.sysid.yaml.  Note the values are overwritten per
+# joint class by the mjwarp adapter at runtime until a per-joint override
+# layer exists in genie_sim_engine_core.
 genie_sim_xacro_robot(arx_x5_sysid robot_model:=arx arm:=x5 param_source:=sysid)
 genie_sim_xacro_robot(arx_acone_sysid robot_model:=arx arm:=acone param_source:=sysid)
 genie_sim_xacro_robot(agilex_aloha robot_model:=agilex arm:=aloha)
 genie_sim_xacro_robot(franka_fr3 robot_model:=franka arm:=fr3)
+# Gripper-less variants. Every arm declares a ``gripper`` arg defaulting to
+# its vendored gripper and omits the gripper links on ``no_gripper``, so
+# these are the same xacro with one arg flipped -- no duplicate sources.
+genie_sim_xacro_robot(arx_x5_no_gripper robot_model:=arx arm:=x5 gripper:=no_gripper)
+genie_sim_xacro_robot(arx_acone_no_gripper robot_model:=arx arm:=acone gripper:=no_gripper)
+genie_sim_xacro_robot(agilex_aloha_no_gripper robot_model:=agilex arm:=aloha gripper:=no_gripper)
+genie_sim_xacro_robot(franka_fr3_no_gripper robot_model:=franka arm:=fr3 gripper:=no_gripper)
 genie_sim_xacro_robot(genie_g2_crs_omnipicker robot_model:=genie body:=g2 arm:=crs gripper:=omnipicker)
 genie_sim_xacro_robot(genie_g2_crs_swiftpicker robot_model:=genie body:=g2 arm:=crs gripper:=swiftpicker)
 genie_sim_xacro_robot(genie_g2_crsB_omnipicker robot_model:=genie body:=g2 arm:=crsB gripper:=omnipicker)
 genie_sim_xacro_robot(genie_g2_crsB_swiftpicker robot_model:=genie body:=g2 arm:=crsB gripper:=swiftpicker)
-# Identified link inertials and passive joint parameters; kinematics are shared.
+genie_sim_xacro_robot(genie_g2_crsB_wuji robot_model:=genie body:=g2 arm:=crsB gripper:=wuji)
+genie_sim_xacro_robot(genie_g2_crs_no_gripper robot_model:=genie body:=g2 arm:=crs gripper:=no_gripper)
+genie_sim_xacro_robot(genie_g2_crsB_no_gripper robot_model:=genie body:=g2 arm:=crsB gripper:=no_gripper)
+# Sysid variants: same kinematics, link inertials and joint <dynamics> damping /
+# friction sourced from an offline identification run against the physical G2,
+# via G2.arm.crsB.params.sysid.xacro.  Diff these against their default
+# siblings to see the parameter drift only.  The <drive> gains are unchanged —
+# the run declares no actuator model.  Armature has no URDF slot and lives in
+# robots/genie/g2/g2_crsB_drive_params.sysid.yaml; it and the two
+# <dynamics> families are overwritten per joint class by the mjwarp adapter at
+# runtime until a per-joint override layer exists in genie_sim_engine_core.
 genie_sim_xacro_robot(genie_g2_crsB_omnipicker_sysid robot_model:=genie body:=g2 arm:=crsB gripper:=omnipicker inertia_source:=sysid)
 genie_sim_xacro_robot(genie_g2_crsB_swiftpicker_sysid robot_model:=genie body:=g2 arm:=crsB gripper:=swiftpicker inertia_source:=sysid)
+genie_sim_xacro_robot(genie_g2_crsB_wuji_sysid robot_model:=genie body:=g2 arm:=crsB gripper:=wuji inertia_source:=sysid)
 genie_sim_xacro_robot(ur5_robotiq_85 robot_model:=universal_robots arm:=ur5 gripper:=robotiq_85)
 genie_sim_xacro_robot(ur5_robotiq_140 robot_model:=universal_robots arm:=ur5 gripper:=robotiq_140)
 genie_sim_xacro_robot(ur5_no_gripper robot_model:=universal_robots arm:=ur5 gripper:=no_gripper)

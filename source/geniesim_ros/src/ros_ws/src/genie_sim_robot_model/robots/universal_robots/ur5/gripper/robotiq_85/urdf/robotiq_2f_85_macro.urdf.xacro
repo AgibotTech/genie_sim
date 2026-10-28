@@ -61,9 +61,9 @@ package://genie_sim_robot_model/robots/universal_robots/ur5/gripper/robotiq_85/m
       preserved verbatim (single master DOF; five revolute mimics with
       multipliers +1/-1 matching upstream; two fixed connector joints).
     - The upstream 'robotiq_85_base_link' / 'robotiq_85_base_joint' are
-      dropped: the arm macro already provides 'gripper_base_link' as the
+      dropped: the arm macro already provides 'tool0' as the
       mount point, so the gripper attaches its visual/collision/inertial
-      content directly onto the parent (= gripper_base_link).
+      content directly onto the parent (= tool0).
 
   Upstream license: BSD-3-Clause
 -->
@@ -77,7 +77,7 @@ package://genie_sim_robot_model/robots/universal_robots/ur5/gripper/robotiq_85/m
 
         <!-- Gripper body: visual / collision / inertial of the upstream
              'robotiq_85_base_link' are attached directly to the parent
-             (gripper_base_link from the arm macro) so we do not introduce a
+             (tool0 from the arm macro) so we do not introduce a
              redundant link + identity-fixed joint. -->
         <link name="${parent}_inertia">
             <visual>

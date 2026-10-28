@@ -9,12 +9,18 @@
     xacro robot.xacro robot_model:=arx arm:=x5
     xacro robot.xacro robot_model:=genie arm:=crs  gripper:=omnipicker
     xacro robot.xacro robot_model:=genie arm:=crsB gripper:=swiftpicker
+    xacro robot.xacro robot_model:=genie arm:=crsB gripper:=omnipicker inertia_source:=sysid
     xacro robot.xacro robot_model:=universal_robots arm:=ur5
     xacro robot.xacro robot_model:=urdf   urdf_package:=franka_description urdf_file:=robots/fr3.urdf
 
   Parameters:
     robot_model    - Robot family or model name.
                      Values: arx | agilex | franka | genie | universal_robots | urdf | xacro_file
+
+    inertia_source - crsB arm only. `default` (current sim values) or
+                     `sysid` (the identified set). Selects per-link
+                     inertials plus per-joint <dynamics> damping and
+                     friction. No-op for every other arm.
 
   Model-specific parameters are forwarded as-is; each adapter
   xacro declares its own defaults. See xacro/providers/*.xacro.

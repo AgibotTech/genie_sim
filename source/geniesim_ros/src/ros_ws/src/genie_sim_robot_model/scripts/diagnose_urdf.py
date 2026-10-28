@@ -3,49 +3,20 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Diagnose and auto-fix URDF/xacro authoring problems.
+"""Diagnose URDF/xacro authoring problems without modifying input files.
 
 What it checks
 --------------
 For each ``<link>`` in the input xacro/URDF file(s):
 
-* **Missing ``<inertial>`` on a rigid-body link** (auto-fixable) — when
-  a URDF link becomes a ``RigidBodyAPI`` prim in the converted USD AND
-  lacks ``<inertial>``, PhysX falls back to "small sphere with negative
-  mass" and emits
-
-      [omni.physx.plugin] The rigid body at /<...> has a possibly invalid
-      inertia tensor of {1.0, 1.0, 1.0} and a negative mass, small sphere
-      approximated inertia was used.
-
-  These warnings indicate the link will simulate with bogus dynamics —
-  drive wheels may not push the body, the body may oscillate, contact
-  responses may be wrong. The fix is to author an ``<inertial>`` block.
-
-  The 6.0 converter applies ``RigidBodyAPI`` to **every** non-ghost-root
-  link, so the rule flags any non-root link that has neither
-  ``<inertial>`` nor ``<collision>`` — INCLUDING pure kinematic frames
-  (TF anchors, branching mount frames, sensor frames). They are not
-  exempt: a fixed-joint-connected frame with no mass still warns. Three
-  cases are excluded:
-
-    1. The URDF root link. KDL (used by ``robot_state_publisher`` and
-       MoveIt) requires the root to be massless. Putting ``<inertial>``
-       on the root produces "Root link X has inertial properties..."
-       warnings and breaks downstream KDL consumers. (The root's own
-       massless-rigid-body warning is the documented cost of the
-       massless-root + ``_inertia``-sibling pattern.)
-    2. The ``<X> + <X>_inertia`` sibling pattern (UR / vendor
-       convention). The named link is a kinematic frame; the
-       ``*_inertia`` sibling carries the mass.
-    3. Links with a ``<collision>`` — PhysX auto-computes mass from the
-       collision volume × density, so a missing ``<inertial>`` is fine.
-
-  What's left is the set of non-root links that lack both ``<inertial>``
-  and ``<collision>`` — exactly the real PhysX warnings.
+* **Missing ``<inertial>``** (detect-only) — flags non-root links
+  without inertial or collision, except frame partners with an ``_inertia``
+  sibling. On Isaac Sim 6.2 an empty frame can remain kinematic; it must
+  not receive placeholder mass. A link intended to be dynamic needs real
+  mass and inertia. The author must distinguish these cases.
 
 * **URDF ghost root** (detect-only) — when the root link has no
-  ``<visual>`` / ``<collision>`` / ``<inertial>``, the Isaac Sim 6.0
+  ``<visual>`` / ``<collision>`` / ``<inertial>``, the Isaac Sim 6.x
   URDF→USD converter takes its ``is_ghost_link`` branch and authors
   ``body0 = default_prim`` for every joint, including fixed joints.
   PhysX cannot construct an articulation from such USD. The tool can't
@@ -58,7 +29,7 @@ For each ``<link>`` in the input xacro/URDF file(s):
   from a primitive ``<cylinder>`` collider rather than a triangle-mesh
   collider. Cylinder collision against a ground plane is ~10× faster
   than mesh-vs-mesh and numerically much more stable for sustained
-  contact (the dominant workload on a mobile platform). The 6.0
+  contact (the dominant workload on a mobile platform). The 6.x
   default-collision policy converts authored mesh colliders to convex
   hull, which is a workable but inferior alternative. The
   diagnose tool flags wheel-like links missing a cylinder collider so
@@ -141,77 +112,22 @@ For each ``<link>`` in the input xacro/URDF file(s):
 
 What it does
 ------------
-``--dry-run``: report every problem found, exit non-zero if any. Usable
-as a CI gate.
-
-Default (no ``--dry-run``): rewrite each affected file in place to fix
-**only the auto-fixable problems** (currently: missing ``<inertial>``
-blocks). Detect-only problems (wheel cylinder collision) are still
-reported but not auto-fixed, and the tool exits non-zero so the
-operator notices.
-
-For the auto-fixable inertial check, the tool inserts:
-
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-
-Six orders of magnitude below typical link masses — silences the
-warning on frame-only links without affecting dynamics. **For
-load-bearing links the operator must edit the placeholder to real
-values** (mass + inertia matching the link's geometry); the tool can't
-infer the correct values.
-
-The tool operates on **xacro source** by default — fixing the xacro
-means every regenerated URDF picks up the fix automatically. Plain
-``.urdf`` files are also accepted (treated as static text), but if a
-URDF is regenerated from xacro the fix would be wiped; fix the xacro
-instead.
-
-Self-closing ``<link name="X" />`` is expanded to a full block so the
-``<inertial>`` block can be inserted as a child:
-
-    <link name="X" />
-
-becomes
-
-    <link name="X">
-      <inertial> ... </inertial>
-    </link>
-
-Links that already have ``<inertial>`` are left alone, regardless of
-the values inside.
+Both modes report findings without modifying files. ``--dry-run`` exits 1
+for any finding and can be used as a strict CI gate. The default mode
+exits 1 for root, wheel, tensor, or mesh-unit findings; missing inertials
+alone are advisory because empty kinematic frames may be intentional.
 
 Usage
 -----
 ::
 
-    # Diagnose only — exits 1 if any problem is found.
     python3 diagnose_urdf.py --dry-run [PATH ...]
-
-    # Auto-fix the auto-fixable problems.
     python3 diagnose_urdf.py [PATH ...]
 
-PATH may be a file (``.xacro`` / ``.urdf.xacro`` / ``.urdf``) or a
-directory (recursive scan). Default: current directory (recursive).
-
-Mesh-developer workflow
------------------------
-1. Add or modify a ``<link>`` in the xacro.
-2. Run ``python3 scripts/diagnose_urdf.py --dry-run robots/<vendor>``
-   to see all flagged problems.
-3. Run ``python3 scripts/diagnose_urdf.py robots/<vendor>`` to insert
-   placeholder ``<inertial>`` blocks for the auto-fixable cases.
-4. Edit each placeholder for load-bearing links to reflect real
-   mass/inertia; leave the placeholder as-is for frame-only links.
-5. For each wheel flagged as missing ``<cylinder>`` collision, author
-   the cylinder by hand — measure or estimate radius and length from
-   the wheel mesh. The convention is the cylinder's ``length`` axis
-   aligned with the wheel's rotation axis.
-6. Commit the xacro with the inertial blocks and any wheel-cylinder
-   colliders.
+PATH may name files or directories. Default: current directory recursively.
+Pass ``--mesh-root`` to resolve ``${mesh_dir}`` references in xacro inputs.
+Correct findings in the source xacro, regenerate URDFs, and validate the
+composed model before converting robot assets.
 """
 
 from __future__ import annotations
@@ -223,15 +139,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-_PLACEHOLDER_INERTIAL = (
-    "<inertial>\n"
-    '      <origin xyz="0 0 0" rpy="0 0 0"/>\n'
-    '      <mass value="0.001"/>\n'
-    '      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>\n'
-    "    </inertial>"
-)
-
-# File extensions we treat as fixable.
+# File extensions accepted by the diagnostic scanner.
 _TARGET_SUFFIXES = (".xacro", ".urdf")
 
 # Wheel-link name pattern. Substring match for ``wheel`` / ``tire``,
@@ -275,51 +183,15 @@ def _find_target_files(paths: List[Path]) -> List[Path]:
 
 
 def _links_missing_inertial(text: str) -> Tuple[List[str], List[str]]:
-    """Detect links that need ``<inertial>`` plus links whose absence is a problem.
+    """Return missing-inertial candidates and empty-root warnings.
 
-    Returns ``(needs_injection, ghost_root_warnings)``.
+    Non-root links without inertial or collision are candidates for author
+    review; a frame partner with a named ``_inertia`` sibling is excluded.
+    On Isaac Sim 6.2, an empty link can remain a kinematic frame, so a
+    candidate is not automatically a defect and no mass is injected.
 
-    The detection rule flags any **non-root link that lacks both
-    ``<inertial>`` and ``<collision>``** — that link becomes a massless
-    PhysX rigid body and triggers the "possibly invalid inertia tensor /
-    negative mass" warning. The 6.0 converter applies ``RigidBodyAPI`` to
-    **every** non-ghost-root link, so this includes pure kinematic frames
-    (TF anchors, branching mount frames, sensor frames) that have no
-    visual or collision — they are NOT exempt. Three cases are excluded:
-
-    * **URDF root link** — KDL (used by ``robot_state_publisher`` and
-      MoveIt) requires the root link to be massless. Putting an
-      ``<inertial>`` on the root produces "Root link X has inertial
-      properties..." warnings and breaks downstream KDL consumers.
-      Detected as the unique link that's not the ``<child>`` of any
-      ``<joint>``. (Its PhysX "massless root" warning is the documented
-      cost of the massless-root + ``_inertia``-sibling pattern.)
-
-    * **``<name>`` + ``<name>_inertia`` sibling pattern** — Universal
-      Robots and several other vendors put the actual mass on a separate
-      ``*_inertia`` child link connected by a fixed joint, leaving the
-      named link as a pure kinematic frame. Injecting on the frame
-      partner duplicates mass authored on the inertia partner. Detected
-      by literal name lookup.
-
-    * **Links with a ``<collision>``** — PhysX auto-computes mass from the
-      collision shape's volume × density, so a missing ``<inertial>`` is
-      not a problem for them.
-
-    The remaining "needs injection" list is the set of non-root links
-    that (a) lack ``<inertial>`` and (b) lack ``<collision>`` — exactly
-    the real PhysX "possibly invalid inertia tensor" warnings.
-
-    ``ghost_root_warnings`` is a separate channel for URDF root links
-    that are pure frames (no visual / collision / inertial). The 6.0
-    URDF→USD converter's ``is_ghost_link`` branch produces broken USDs
-    for these (every joint's ``body0`` ends up pointing at the
-    articulation root Xform instead of the parent link, including fixed
-    joints). The tool can't auto-fix this — KDL forbids inertia on the
-    root, and adding a visual/collision changes rendering or contact
-    behavior. The operator must restructure the URDF (typical fix: a
-    non-ghost root such as adding a dummy primitive visual to the root,
-    or starting the kinematic chain at a non-ghost link).
+    Root links stay massless for KDL. A root with no visual or collision is
+    reported separately for review of the converter's ghost-root branch.
     """
     body = re.sub(r"^\s*<\?xml[^?]*\?>\s*", "", text, count=1)
     wrapped = '<__diagnose_root xmlns:xacro="http://ros.org/wiki/xacro">\n' f"{body}\n" "</__diagnose_root>"
@@ -356,7 +228,7 @@ def _links_missing_inertial(text: str) -> Tuple[List[str], List[str]]:
 
         if is_urdf_root:
             # KDL requires the root to be massless. We don't inject.
-            # But warn if it's also ghost — the 6.0 converter breaks on this.
+            # But warn if it's also ghost — the 6.x converter breaks on this.
             if not has_visual and not has_collision:
                 ghost_root_warnings.append(name)
             continue
@@ -371,16 +243,8 @@ def _links_missing_inertial(text: str) -> Tuple[List[str], List[str]]:
             # density, so a missing <inertial> is not a problem here.
             continue
 
-        # Any remaining non-root link without <inertial> and without
-        # <collision> becomes a MASSLESS rigid body. The 6.0 converter
-        # applies RigidBodyAPI to every non-ghost-root link — including
-        # pure kinematic frames (TF anchors, branching mount frames,
-        # sensor frames) that have no visual or collision. PhysX can't
-        # determine mass for such a body and emits the
-        # "possibly invalid inertia tensor / negative mass" warning,
-        # substituting a small-sphere approximation. A token <inertial>
-        # silences it. (Visual presence is irrelevant — it does not affect
-        # whether the link becomes a rigid body.)
+        # An empty frame may be intentional. Report it for author review
+        # without creating a near-massless rigid body via placeholder inertia.
         needs_injection.append(name)
 
     return needs_injection, ghost_root_warnings
@@ -722,63 +586,9 @@ def _resolve_mesh_path(raw: str, *, file_path: Path, mesh_root: Optional[Path]) 
     return cand if cand.exists() else None
 
 
-def _link_uses_self_closing(text: str, link_name: str) -> bool:
-    """True when the source text declares ``<link name="link_name" />``."""
-    # Match ``<link ... name="X" ... />`` accounting for any attribute
-    # order, but NOT matching ``<link name="X">...</link>``.
-    pattern = rf'<link\s+(?:[^>]*\s+)?name=["\']{re.escape(link_name)}["\'](?:[^>]*)?\s*/>'
-    return re.search(pattern, text) is not None
-
-
-def _inject_inertial_for_link(text: str, link_name: str) -> Tuple[str, bool]:
-    """Insert a placeholder ``<inertial>`` for ``link_name``. Returns (new_text, mutated)."""
-    # Case 1 — self-closing: <link name="X"/> → expand to a full block.
-    self_close_pat = re.compile(rf'(<link\s+(?:[^>]*\s+)?name=["\']{re.escape(link_name)}["\'](?:[^>]*)?)\s*/>')
-    m = self_close_pat.search(text)
-    if m:
-        replacement = f"{m.group(1)}>\n    {_PLACEHOLDER_INERTIAL}\n  </link>"
-        return text[: m.start()] + replacement + text[m.end() :], True
-
-    # Case 2 — full block: insert <inertial> right after the opening tag.
-    open_pat = re.compile(rf'(<link\s+(?:[^>]*\s+)?name=["\']{re.escape(link_name)}["\'](?:[^>]*)?>)')
-    m = open_pat.search(text)
-    if not m:
-        return text, False
-    replacement = f"{m.group(1)}\n    {_PLACEHOLDER_INERTIAL}"
-    return text[: m.end()] + "\n    " + _PLACEHOLDER_INERTIAL + text[m.end() :], True
-
-
-def _fix_file(path: Path, missing: List[str]) -> Tuple[int, List[str]]:
-    """Rewrite ``path`` in place. Returns ``(num_fixed, remaining_unfixable)``."""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        print(f"  ERROR    cannot read {path}: {exc}", file=sys.stderr)
-        return 0, list(missing)
-
-    fixed = 0
-    remaining: List[str] = []
-    new_text = text
-    for name in missing:
-        new_text, ok = _inject_inertial_for_link(new_text, name)
-        if ok:
-            fixed += 1
-        else:
-            remaining.append(name)
-
-    if fixed:
-        try:
-            path.write_text(new_text, encoding="utf-8")
-        except OSError as exc:
-            print(f"  ERROR    cannot write {path}: {exc}", file=sys.stderr)
-            return 0, list(missing)
-    return fixed, remaining
-
-
 def main(argv: List[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Detect and (optionally) auto-fix URDF/xacro authoring "
-        "problems that hurt PhysX simulation quality.",
+        description="Report URDF/xacro authoring problems without modifying files.",
         epilog="See module docstring for the why and the developer workflow.",
     )
     parser.add_argument(
@@ -790,7 +600,7 @@ def main(argv: List[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Diagnose only; do not modify any file.",
+        help="Exit non-zero for every finding, including missing inertials on frames.",
     )
     parser.add_argument(
         "--mesh-root",
@@ -811,9 +621,8 @@ def main(argv: List[str] | None = None) -> int:
     print(f"Scanned {len(files)} file(s).")
     print()
 
-    # Pre-scan everything so we can report a clean summary before touching
-    # any file. Three issue categories tracked in parallel:
-    #   * inertial    — auto-fixable
+    # Scan and report without modifying input files.
+    #   * inertial    — advisory in default mode
     #   * ghost_root  — detect-only (URDF root with no visual/collision/inertial)
     #   * wheels      — detect-only
     inertial_per_file: List[Tuple[Path, List[str]]] = []
@@ -873,10 +682,14 @@ def main(argv: List[str] | None = None) -> int:
     if inertial_per_file:
         print(f"[inertial] Links missing <inertial>: {total_inertial}")
         print(
-            "           (non-root links with no <inertial> and no <collision> —\n"
-            "           they become massless PhysX rigid bodies; PhysX emits the\n"
-            "           'negative mass' warning for each. Includes pure kinematic\n"
-            "           frames, which are NOT exempt.)"
+            "           (non-root links with no <inertial> and no <collision>.\n"
+            "           DETECT-ONLY since Isaac Sim 6.2: such a link is left a pure\n"
+            "           kinematic frame rather than promoted to a massless rigid\n"
+            "           body. For a mount\n"
+            "           or sensor frame that is the desired outcome. It is still a\n"
+            "           real defect for a link that must be DYNAMIC -- without an\n"
+            "           <inertial> it silently never becomes a body at all, so give\n"
+            "           those links real mass rather than a placeholder.)"
         )
         for path, names in inertial_per_file:
             print(f"  {path}")
@@ -888,7 +701,7 @@ def main(argv: List[str] | None = None) -> int:
         print(
             f"[ghost-root] URDF root link with no visual/collision/inertial: {total_ghost_root}\n"
             f"             (detect-only — KDL forbids inertia on the root, so the\n"
-            f"             tool can't auto-fix. The 6.0 URDF→USD converter takes\n"
+            f"             tool can't auto-fix. The 6.x URDF→USD converter takes\n"
             f"             its ``is_ghost_link`` branch and authors broken body0\n"
             f"             refs for every joint. Fix by giving the root a visual\n"
             f"             or starting the kinematic chain at a non-ghost link.)"
@@ -969,42 +782,16 @@ def main(argv: List[str] | None = None) -> int:
         return 1
 
     if total_inertial:
-        print(f"Inserting placeholder <inertial> on {total_inertial} link(s)...")
-        print()
-        grand_fixed = 0
-        grand_remaining: List[Tuple[Path, List[str]]] = []
-        for path, names in inertial_per_file:
-            fixed, remaining = _fix_file(path, names)
-            if fixed:
-                print(f"  fixed {fixed} link(s) in {path}")
-            if remaining:
-                grand_remaining.append((path, remaining))
-            grand_fixed += fixed
-
-        print()
-        print(f"Inserted placeholder <inertial> on {grand_fixed} link(s).")
-        if grand_remaining:
-            print()
-            print(
-                "WARNING: the following links could not be patched (likely xacro\n"
-                "expansion-only names like ${prefix}; fix manually or template the\n"
-                "<inertial> in the macro itself):"
-            )
-            for path, names in grand_remaining:
-                print(f"  {path}")
-                for n in names:
-                    print(f"    - {n}")
-            return 2
-
-        print()
+        # No longer auto-fixed. Injecting a 1e-6 placeholder was correct when the
+        # importer promoted every link to a rigid body; on 6.2 it is the thing
+        # that *creates* a near-massless body out of a kinematic frame. Report
+        # and let the author decide: real mass, or leave it a frame.
         print(
-            "NOTE: the placeholder is mass=0.001, inertia=1e-6 — fine for frame-\n"
-            "only links but WRONG for load-bearing bodies (chassis, base shells).\n"
-            "Edit the placeholder to real values for any link whose dynamics\n"
-            "matter (drive wheels pushing the chassis, gravity-loaded shells,\n"
-            "etc.). Frame-only links can keep the placeholder as-is."
+            f"[inertial] {total_inertial} link(s) reported above are NOT auto-fixed.\n"
+            "           Empty kinematic frames need no placeholder mass; dynamic\n"
+            "           bodies need real mass and inertia -- see the note above."
         )
-
+        print()
     if total_wheels or total_ghost_root or total_off_diag or total_degen or total_mesh_units:
         print()
         if total_wheels:
@@ -1047,8 +834,6 @@ def main(argv: List[str] | None = None) -> int:
             )
         print("Exit code is non-zero so these stay visible in CI.")
         return 1
-
-    return 0
 
     return 0
 

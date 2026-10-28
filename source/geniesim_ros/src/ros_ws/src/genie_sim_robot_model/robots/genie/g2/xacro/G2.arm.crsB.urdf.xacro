@@ -69,7 +69,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="108"
+        effort="110"
         velocity="${crsB_j1_vel}" />
       <dynamics damping="${crsB_l1_damping}" friction="${crsB_l1_friction}" />
       <drive stiffness="40000" damping="600" />
@@ -122,7 +122,7 @@
       <limit
         lower="-2.0595"
         upper="2.0595"
-        effort="108"
+        effort="110"
         velocity="${crsB_j2_vel}" />
       <dynamics damping="${crsB_l2_damping}" friction="${crsB_l2_friction}" />
       <drive stiffness="40000" damping="600" />
@@ -174,7 +174,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="70"
         velocity="${crsB_j3_vel}" />
       <dynamics damping="${crsB_l3_damping}" friction="${crsB_l3_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -227,7 +227,7 @@
       <limit
         lower="-2.4959"
         upper="1.0123"
-        effort="35"
+        effort="70"
         velocity="${crsB_j4_vel}" />
       <dynamics damping="${crsB_l4_damping}" friction="${crsB_l4_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -280,7 +280,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="19"
         velocity="${crsB_j5_vel}" />
       <dynamics damping="${crsB_l5_damping}" friction="${crsB_l5_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -333,7 +333,7 @@
       <limit
         lower="-1.0123"
         upper="1.0123"
-        effort="18"
+        effort="19"
         velocity="${crsB_j6_vel}" />
       <dynamics damping="${crsB_l6_damping}" friction="${crsB_l6_friction}" />
       <drive stiffness="8000" damping="100" />
@@ -386,17 +386,12 @@
       <limit
         lower="-1.5359"
         upper="1.5359"
-        effort="18"
+        effort="19"
         velocity="${crsB_j7_vel}" />
       <dynamics damping="${crsB_l7_damping}" friction="${crsB_l7_friction}" />
       <drive stiffness="8000" damping="100" />
     </joint>
     <link name="${end_link}">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.001" />
-        <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
     <joint name='arm_l_end_joint' type='fixed'>
       <origin xyz="0.09 0.0 0.0" rpy="${PI} -${PI_2} 0" />
@@ -459,7 +454,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="108"
+        effort="110"
         velocity="${crsB_j1_vel}" />
       <dynamics damping="${crsB_r1_damping}" friction="${crsB_r1_friction}" />
       <drive stiffness="40000" damping="600" />
@@ -512,7 +507,7 @@
       <limit
         lower="-2.0595"
         upper="2.0595"
-        effort="108"
+        effort="110"
         velocity="${crsB_j2_vel}" />
       <dynamics damping="${crsB_r2_damping}" friction="${crsB_r2_friction}" />
       <drive stiffness="40000" damping="600" />
@@ -565,7 +560,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="70"
         velocity="${crsB_j3_vel}" />
       <dynamics damping="${crsB_r3_damping}" friction="${crsB_r3_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -619,7 +614,7 @@
       <limit
         lower="-2.4959"
         upper="1.0123"
-        effort="35"
+        effort="70"
         velocity="${crsB_j4_vel}" />
       <dynamics damping="${crsB_r4_damping}" friction="${crsB_r4_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -673,7 +668,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="19"
         velocity="${crsB_j5_vel}" />
       <dynamics damping="${crsB_r5_damping}" friction="${crsB_r5_friction}" />
       <drive stiffness="15000" damping="220" />
@@ -727,7 +722,7 @@
       <limit
         lower="-1.0123"
         upper="1.0123"
-        effort="18"
+        effort="19"
         velocity="${crsB_j6_vel}" />
       <dynamics damping="${crsB_r6_damping}" friction="${crsB_r6_friction}" />
       <drive stiffness="8000" damping="100" />
@@ -771,11 +766,6 @@
       </xacro:if>
     </link>
     <link name="${end_link}">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.001" />
-        <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
     <joint name="idx67_arm_r_joint7" type="revolute">
       <origin
@@ -788,7 +778,7 @@
       <limit
         lower="-1.5359"
         upper="1.5359"
-        effort="18"
+        effort="19"
         velocity="${crsB_j7_vel}" />
       <dynamics damping="${crsB_r7_damping}" friction="${crsB_r7_friction}" />
       <drive stiffness="8000" damping="100" />

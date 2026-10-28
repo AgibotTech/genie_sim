@@ -3,11 +3,11 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Normalize OBJ internal object names to defeat 6.0 converter de-duplication.
+"""Normalize OBJ internal object names to defeat 6.x converter de-duplication.
 
 Why this exists
 ---------------
-The Isaac Sim 6.0 URDF→USD converter (``urdf_usd_converter._impl.mesh``)
+The Isaac Sim 6.x URDF→USD converter (``urdf_usd_converter._impl.mesh``)
 authors each mesh prim under ``Geometries/<name>`` where ``<name>`` is the
 .obj file's ``o <name>`` directive. When multiple .obj files share generic
 default object names (3ds Max / Blender / Maya commonly emit
@@ -67,7 +67,7 @@ Mesh-developer workflow
    the rewrite.
 5. Commit the normalized .obj files.
 6. Delete any stale ``assets/scenes/<scene_stem>/`` cache so the next launch
-   re-runs ``assemble_robot.py`` against the fixed meshes.
+   re-runs the urdf_to_usd assemble stage against the fixed meshes.
 """
 
 from __future__ import annotations

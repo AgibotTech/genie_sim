@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot name="g2_crsB_no_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Arm-only G2: the gripper macro is an if-chain on lgripper/rgripper,
+     so 'no_gripper' attaches nothing and arm_[lr]_end_link is the tip. -->
+
+  <xacro:arg name="inertia_source" default="default" />
+
+  <xacro:include
+    filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/common_properties.xacro" />
+  <xacro:include
+    filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/G2.arm.crsB.params.$(arg inertia_source).xacro" />
+  <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/G2.urdf.xacro" />
+
+  <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/genie/g2/meshes" />
+
+  <xacro:G2
+    arm="crsB"
+    lgripper="no_gripper"
+    rgripper="no_gripper"
+    collision_type="coarse"
+    mesh_dir="${mesh_dir}"
+    app="sim" />
+
+</robot>

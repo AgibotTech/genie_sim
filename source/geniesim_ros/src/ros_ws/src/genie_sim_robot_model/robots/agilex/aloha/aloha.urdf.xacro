@@ -2,11 +2,15 @@
 <robot name="agilex_aloha"
   xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <!-- Which gripper this arm carries. Defaults to the vendored
+       gripper; ``no_gripper`` omits its links/joints entirely. -->
+  <xacro:arg name="gripper" default="aloha" />
+
   <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/agilex/aloha/meshes" />
 
   <!-- PBR material tuning.  The visual meshes (.dae) carry their own
        embedded materials (albedo / textures).  DAE roughness/metallic
-       round-trips poorly and the Isaac Sim 6.0 URDF→USD converter doesn't
+       round-trips poorly and the Isaac Sim 6.2 URDF→USD converter doesn't
        read them, so every embedded material lands at the converter default
        (roughness=0.5, metallic=0.0).  Each <visual> below carries an inline
        <material_override> that patches the metallic/roughness of that
@@ -14,9 +18,9 @@
        Authoring it inside the <visual> auto-scopes it to exactly that
        mesh (a link with several visuals just gets one override per visual,
        no attributes needed). urdfdom / robot_state_publisher / MoveIt /
-       Isaac's converter all ignore the element; assemble_robot.py strips it
-       from the URDF it feeds the converter and applies it post-conversion.
-       See genie_sim_engine/AGENTS.md → "<material_override>". -->
+       Isaac's converter all ignore the element; the urdf_to_usd stage strips
+       it from the URDF it feeds the converter and applies it post-conversion.
+       See genie_sim_engine_core/docs/pipeline.md → "<material_override>". -->
 
   <xacro:macro name="aloha_arm"
     params="prefix parent mount_xyz mount_rpy gripper_mesh_subdir gripper7_xyz gripper8_xyz gripper7_rpy:='1.5708 0 1.5708' gripper8_rpy:='-1.5708 0 1.5708'">
@@ -181,11 +185,6 @@
     </joint>
 
     <link name="arm_${prefix}_end_link">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="1e-6" />
-        <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-      </inertial>
     </link>
     <joint name="arm_${prefix}_end_fixed" type="fixed">
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -193,100 +192,98 @@
       <child link="arm_${prefix}_end_link" />
     </joint>
 
-    <link name="gripper_${prefix}_base_link">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="1e-6" />
-        <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-      </inertial>
+    <link name="tool0_${prefix}">
     </link>
-    <joint name="gripper_${prefix}_base_fixed" type="fixed">
+    <joint name="tool0_${prefix}_fixed" type="fixed">
       <origin xyz="0 0 0" rpy="0 0 0" />
       <parent link="arm_${prefix}_end_link" />
-      <child link="gripper_${prefix}_base_link" />
+      <child link="tool0_${prefix}" />
     </joint>
 
-    <xacro:property name="active_mesh" value="link7" />
-    <xacro:property name="passive_mesh" value="link8" />
+    <xacro:unless value="${'$(arg gripper)' == 'no_gripper'}">
 
-    <link name="gripper_${prefix}_active_link">
-      <inertial>
-        <origin xyz="-0.000277778383727112 -0.0467673043650824 -0.00921029491873201" rpy="0 0 0" />
-        <mass value="0.02648229234527" />
-        <inertia ixx="9.99787479924589E-06" ixy="-1.57548495096104E-07" ixz="-2.71342775003487E-08"
-          iyy="6.1795212293655E-06" iyz="-1.58939803580081E-06" izz="1.42102717246564E-05" />
-      </inertial>
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <geometry>
-          <mesh filename="${mesh_dir}/${gripper_mesh_subdir}/${active_mesh}.dae" />
-        </geometry>
-        <material_override><roughness>0.05</roughness><metallic>1.0</metallic></material_override>
-      </visual>
-      <xacro:if value="${gripper_mesh_subdir == 'piper_slave_meshes'}">
-        <collision>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-          <geometry>
-            <mesh filename="${mesh_dir}/piper_slave_meshes/convex/${active_mesh}_collision.STL" />
-          </geometry>
-        </collision>
-      </xacro:if>
-      <xacro:if value="${gripper_mesh_subdir == 'piper_master_meshes'}">
-        <collision>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-          <geometry>
-            <mesh filename="${mesh_dir}/piper_master_meshes/${active_mesh}.dae" />
-          </geometry>
-        </collision>
-      </xacro:if>
-    </link>
-    <joint name="gripper_${prefix}_active_joint" type="prismatic">
-      <origin xyz="${gripper7_xyz}" rpy="${gripper7_rpy}" />
-      <parent link="gripper_${prefix}_base_link" />
-      <child link="gripper_${prefix}_active_link" />
-      <axis xyz="0 0 -1" />
-      <limit lower="0" upper="0.04" effort="10" velocity="1" />
-    </joint>
+      <xacro:property name="active_mesh" value="link7" />
+      <xacro:property name="passive_mesh" value="link8" />
 
-    <link name="gripper_${prefix}_passive_link">
-      <inertial>
-        <origin xyz="0.000277816920932317 0.0467673824063769 -0.00921030054508036" rpy="0 0 0" />
-        <mass value="0.0264822021416248" />
-        <inertia ixx="9.99779119357223E-06" ixy="-1.57542283433504E-07" ixz="2.71367446701359E-08"
-          iyy="6.17952441557932E-06" iyz="1.58939319453383E-06" izz="1.4210192754512E-05" />
-      </inertial>
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <geometry>
-          <mesh filename="${mesh_dir}/${gripper_mesh_subdir}/${passive_mesh}.dae" />
-        </geometry>
-        <material_override><roughness>0.05</roughness><metallic>1.0</metallic></material_override>
-      </visual>
-      <xacro:if value="${gripper_mesh_subdir == 'piper_slave_meshes'}">
-        <collision>
+      <link name="gripper_${prefix}_active_link">
+        <inertial>
+          <origin xyz="-0.000277778383727112 -0.0467673043650824 -0.00921029491873201" rpy="0 0 0" />
+          <mass value="0.02648229234527" />
+          <inertia ixx="9.99787479924589E-06" ixy="-1.57548495096104E-07" ixz="-2.71342775003487E-08"
+            iyy="6.1795212293655E-06" iyz="-1.58939803580081E-06" izz="1.42102717246564E-05" />
+        </inertial>
+        <visual>
           <origin xyz="0 0 0" rpy="0 0 0" />
           <geometry>
-            <mesh filename="${mesh_dir}/piper_slave_meshes/convex/${passive_mesh}_collision.STL" />
+            <mesh filename="${mesh_dir}/${gripper_mesh_subdir}/${active_mesh}.dae" />
           </geometry>
-        </collision>
-      </xacro:if>
-      <xacro:if value="${gripper_mesh_subdir == 'piper_master_meshes'}">
-        <collision>
+          <material_override><roughness>0.05</roughness><metallic>1.0</metallic></material_override>
+        </visual>
+        <xacro:if value="${gripper_mesh_subdir == 'piper_slave_meshes'}">
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+              <mesh filename="${mesh_dir}/piper_slave_meshes/convex/${active_mesh}_collision.STL" />
+            </geometry>
+          </collision>
+        </xacro:if>
+        <xacro:if value="${gripper_mesh_subdir == 'piper_master_meshes'}">
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+              <mesh filename="${mesh_dir}/piper_master_meshes/${active_mesh}.dae" />
+            </geometry>
+          </collision>
+        </xacro:if>
+      </link>
+      <joint name="gripper_${prefix}_active_joint" type="prismatic">
+        <origin xyz="${gripper7_xyz}" rpy="${gripper7_rpy}" />
+        <parent link="tool0_${prefix}" />
+        <child link="gripper_${prefix}_active_link" />
+        <axis xyz="0 0 -1" />
+        <limit lower="0" upper="0.04" effort="10" velocity="1" />
+      </joint>
+
+      <link name="gripper_${prefix}_passive_link">
+        <inertial>
+          <origin xyz="0.000277816920932317 0.0467673824063769 -0.00921030054508036" rpy="0 0 0" />
+          <mass value="0.0264822021416248" />
+          <inertia ixx="9.99779119357223E-06" ixy="-1.57542283433504E-07" ixz="2.71367446701359E-08"
+            iyy="6.17952441557932E-06" iyz="1.58939319453383E-06" izz="1.4210192754512E-05" />
+        </inertial>
+        <visual>
           <origin xyz="0 0 0" rpy="0 0 0" />
           <geometry>
-            <mesh filename="${mesh_dir}/piper_master_meshes/${passive_mesh}.dae" />
+            <mesh filename="${mesh_dir}/${gripper_mesh_subdir}/${passive_mesh}.dae" />
           </geometry>
-        </collision>
-      </xacro:if>
-    </link>
-    <joint name="gripper_${prefix}_passive_joint" type="prismatic">
-      <origin xyz="${gripper8_xyz}" rpy="${gripper8_rpy}" />
-      <parent link="gripper_${prefix}_base_link" />
-      <child link="gripper_${prefix}_passive_link" />
-      <axis xyz="0 0 1" />
-      <limit lower="-0.04" upper="0" effort="10" velocity="1" />
-      <mimic joint="gripper_${prefix}_active_joint" multiplier="-1" offset="0" />
-    </joint>
+          <material_override><roughness>0.05</roughness><metallic>1.0</metallic></material_override>
+        </visual>
+        <xacro:if value="${gripper_mesh_subdir == 'piper_slave_meshes'}">
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+              <mesh filename="${mesh_dir}/piper_slave_meshes/convex/${passive_mesh}_collision.STL" />
+            </geometry>
+          </collision>
+        </xacro:if>
+        <xacro:if value="${gripper_mesh_subdir == 'piper_master_meshes'}">
+          <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+              <mesh filename="${mesh_dir}/piper_master_meshes/${passive_mesh}.dae" />
+            </geometry>
+          </collision>
+        </xacro:if>
+      </link>
+      <joint name="gripper_${prefix}_passive_joint" type="prismatic">
+        <origin xyz="${gripper8_xyz}" rpy="${gripper8_rpy}" />
+        <parent link="tool0_${prefix}" />
+        <child link="gripper_${prefix}_passive_link" />
+        <axis xyz="0 0 1" />
+        <limit lower="-0.04" upper="0" effort="10" velocity="1" />
+        <mimic joint="gripper_${prefix}_active_joint" multiplier="-1" offset="0" />
+      </joint>
+    </xacro:unless>
   </xacro:macro>
 
   <!-- base_link is the URDF root. KDL requires the root to be massless,
@@ -299,7 +296,7 @@
        deflection / floor estimation).
 
        The <visual> below is a 1mm sphere with purpose="guide" — invisible
-       in RViz/Isaac Sim viewports but it flips the Isaac Sim 6.0
+       in RViz/Isaac Sim viewports but it flips the Isaac Sim 6.2
        URDF→USD converter's ``is_ghost_link`` check to False so the
        converter authors body0=parent_link on every joint instead of
        body0=articulation_root (Newton-only convention that breaks PhysX).
@@ -524,11 +521,6 @@
        massless body. Negligible mass; the real arm masses are on the arm
        links. Not the URDF root, so KDL is fine with inertia here. -->
   <link name="arm_base_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="1e-4"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
   </link>
   <joint name="arm_base_joint" type="fixed">
     <origin xyz="0 0 -0.15" rpy="0 0 0" />

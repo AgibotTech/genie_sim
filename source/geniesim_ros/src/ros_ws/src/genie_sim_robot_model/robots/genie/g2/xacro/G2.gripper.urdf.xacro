@@ -5,12 +5,15 @@
   Supported variants:
     - omnipicker  : 6-finger soft picker
     - swiftpicker : 2-finger industrial gripper
+    - wuji        : multi-finger dexterous hand (20 DOF / side)
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <xacro:include ns="omnipicker"
     filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/gripper.omnipicker.urdf.xacro" />
   <xacro:include ns="swiftpicker"
     filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/gripper.swiftpicker.urdf.xacro" />
+  <xacro:include ns="wuji"
+    filename="$(find genie_sim_robot_model)/robots/genie/g2/xacro/gripper.wuji.urdf.xacro" />
 
   <xacro:macro name="gripper"
     params="lgripper rgripper left_arm_end_link right_arm_end_link collision_type mesh_dir app">
@@ -36,6 +39,16 @@
         mesh_dir="${mesh_dir}"
         app="${app}" />
     </xacro:if>
+    <xacro:if value="${'wuji' == lgripper}">
+      <xacro:wuji.gripper
+        side="l"
+        parent_link="${left_arm_end_link}"
+        xyz_offset="0 0 0.0341"
+        rpy_offset="0 0 ${PI_2}"
+        collision_type="${collision_type}"
+        mesh_dir="${mesh_dir}"
+        app="${app}" />
+    </xacro:if>
 
     <!-- right gripper -->
     <xacro:if value="${'omnipicker' == rgripper}">
@@ -55,6 +68,16 @@
         xyz_offset="0 0 0.007"
         rpy_offset="0 0 ${PI_2}"
         collision_type="fine"
+        mesh_dir="${mesh_dir}"
+        app="${app}" />
+    </xacro:if>
+    <xacro:if value="${'wuji' == rgripper}">
+      <xacro:wuji.gripper
+        side="r"
+        parent_link="${right_arm_end_link}"
+        xyz_offset="0 0 0.0341"
+        rpy_offset="0 0 ${-PI_2}"
+        collision_type="${collision_type}"
         mesh_dir="${mesh_dir}"
         app="${app}" />
     </xacro:if>

@@ -18,9 +18,9 @@
       revolute joint, the 'NE' frame in Franka terminology) is renamed
       to arm_end_link, and its parent joint joint8 -> arm_end_fixed.
     - The hand (FR3 'EE' frame, with the upstream Rz(-pi/4) baked in
-      via gripper_base_fixed) is gripper_base_link; the TCP frame is
+      via tool0_fixed) is tool0; the TCP frame is
       gripper_tcp_link (preserved at +0.1034 m along Z from
-      gripper_base_link).
+      tool0).
     - Parallel finger pair: master = gripper_active_link / gripper_active_joint
       (formerly fr3_leftfinger / fr3_finger_joint1); mimic = gripper_passive_link
       / gripper_passive_joint (formerly fr3_rightfinger / fr3_finger_joint2,
@@ -33,10 +33,15 @@
         link0.{dae,stl} -> base_link.{dae,stl}
         link{1..7}.{dae,stl} -> arm_link{1..7}.{dae,stl}
         hand/hand.{dae,stl} -> hand/gripper_base_link.{dae,stl}
+        (asset filenames are independent of the tool0 frame name)
         hand/finger.dae -> hand/gripper_finger_link.dae (shared by both fingers)
 -->
 <robot name="franka_fr3"
   xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Which gripper this arm carries. Defaults to the vendored
+       gripper; ``no_gripper`` omits its links/joints entirely. -->
+  <xacro:arg name="gripper" default="fr3" />
 
   <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/franka/fr3/meshes" />
 
@@ -48,7 +53,7 @@
        accelerometer frames still hang off base_link, so no downstream
        link/joint names change.
 
-       The 1mm guide-sphere <visual> below flips the Isaac Sim 6.0
+       The 1mm guide-sphere <visual> below flips the Isaac Sim 6.2
        URDF→USD converter's is_ghost_link check to False so it authors
        body0=parent_link on every joint. See
        genie_sim_robot_model/AGENTS.md → "Non-ghost root link pattern". -->
@@ -358,13 +363,13 @@
   </joint>
 
   <!-- Hand mount (FR3 'EE' frame: Rz(-pi/4) from arm_end_link). -->
-  <link name="gripper_base_link">
-    <visual name="gripper_base_link_visual">
+  <link name="tool0">
+    <visual name="tool0_visual">
       <geometry>
         <mesh filename="${mesh_dir}/hand/visual/gripper_base_link.dae"/>
       </geometry>
     </visual>
-    <collision name="gripper_base_link_collision">
+    <collision name="tool0_collision">
       <geometry>
         <mesh filename="${mesh_dir}/hand/collision/gripper_base_link.stl"/>
       </geometry>
@@ -375,116 +380,119 @@
       <inertia ixx="0.00186" ixy="0.0" ixz="0.0" iyy="0.0003" iyz="-2e-05" izz="0.00174"/>
     </inertial>
   </link>
-  <joint name="gripper_base_fixed" type="fixed">
+  <joint name="tool0_fixed" type="fixed">
     <parent link="arm_end_link"/>
-    <child link="gripper_base_link"/>
+    <child link="tool0"/>
     <origin rpy="0 0 -0.7853981633974483" xyz="0 0 0"/>
   </joint>
 
-  <!-- Tool centre point (FR3 'TCP' frame: 103.4 mm along Z from gripper_base_link). -->
-  <link name="gripper_tcp_link"/>
-  <joint name="gripper_tcp_fixed" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.1034"/>
-    <parent link="gripper_base_link"/>
-    <child link="gripper_tcp_link"/>
-  </joint>
+  <xacro:unless value="${'$(arg gripper)' == 'no_gripper'}">
 
-  <link name="gripper_active_link">
-    <visual name="gripper_active_link_visual">
-      <geometry>
-        <mesh filename="${mesh_dir}/hand/visual/gripper_finger_link.dae"/>
-      </geometry>
-    </visual>
-    <!-- screw mount -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 18.5e-3 11e-3"/>
-      <geometry>
-        <box size="22e-3 15e-3 20e-3"/>
-      </geometry>
-    </collision>
-    <!-- cartriage sledge -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 6.8e-3 2.2e-3"/>
-      <geometry>
-        <box size="22e-3 8.8e-3 3.8e-3"/>
-      </geometry>
-    </collision>
-    <!-- diagonal finger -->
-    <collision>
-      <origin rpy="0.5235987755982988 0 0" xyz="0 15.9e-3 28.35e-3"/>
-      <geometry>
-        <box size="17.5e-3 7e-3 23.5e-3"/>
-      </geometry>
-    </collision>
-    <!-- rubber tip with which to grasp -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 7.58e-3 45.25e-3"/>
-      <geometry>
-        <box size="17.5e-3 15.2e-3 18.5e-3"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <origin rpy="0 0 0" xyz="0 0.0152850 0.0219675"/>
-      <mass value="0.0291"/>
-      <inertia ixx="8.49e-06" ixy="0.0" ixz="0.0" iyy="8.53e-06" iyz="-1.06e-06" izz="1.77e-06"/>
-    </inertial>
-  </link>
-  <link name="gripper_passive_link">
-    <visual name="gripper_passive_link_visual">
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="${mesh_dir}/hand/visual/gripper_finger_link.dae"/>
-      </geometry>
-    </visual>
-    <!-- screw mount -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 18.5e-3 11e-3"/>
-      <geometry>
-        <box size="22e-3 15e-3 20e-3"/>
-      </geometry>
-    </collision>
-    <!-- cartriage sledge -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 6.8e-3 2.2e-3"/>
-      <geometry>
-        <box size="22e-3 8.8e-3 3.8e-3"/>
-      </geometry>
-    </collision>
-    <!-- diagonal finger (sign-flipped relative to active side) -->
-    <collision>
-      <origin rpy="-0.5235987755982988 0 3.141592653589793" xyz="0 15.9e-3 28.35e-3"/>
-      <geometry>
-        <box size="17.5e-3 7e-3 23.5e-3"/>
-      </geometry>
-    </collision>
-    <!-- rubber tip with which to grasp -->
-    <collision>
-      <origin rpy="0 0 0" xyz="0 7.58e-3 45.25e-3"/>
-      <geometry>
-        <box size="17.5e-3 15.2e-3 18.5e-3"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <origin rpy="0 0 0" xyz="0 0.0152850 0.0219675"/>
-      <mass value="0.0291"/>
-      <inertia ixx="8.49e-06" ixy="0.0" ixz="0.0" iyy="8.53e-06" iyz="-1.06e-06" izz="1.77e-06"/>
-    </inertial>
-  </link>
-  <joint name="gripper_active_joint" type="prismatic">
-    <parent link="gripper_base_link"/>
-    <child link="gripper_active_link"/>
-    <origin rpy="0 0 0" xyz="0 0 0.0584"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="100" lower="0.0" upper="0.04" velocity="0.2"/>
-    <dynamics damping="0.3"/>
-  </joint>
-  <joint name="gripper_passive_joint" type="prismatic">
-    <parent link="gripper_base_link"/>
-    <child link="gripper_passive_link"/>
-    <origin rpy="0 0 3.141592653589793" xyz="0 0 0.0584"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="100" lower="0.0" upper="0.04" velocity="0.2"/>
-    <mimic joint="gripper_active_joint" multiplier="1" offset="0"/>
-    <dynamics damping="0.3"/>
-  </joint>
+    <!-- Tool centre point (FR3 'TCP' frame: 103.4 mm along Z from tool0). -->
+    <link name="gripper_tcp_link"/>
+    <joint name="gripper_tcp_fixed" type="fixed">
+      <origin rpy="0 0 0" xyz="0 0 0.1034"/>
+      <parent link="tool0"/>
+      <child link="gripper_tcp_link"/>
+    </joint>
+
+    <link name="gripper_active_link">
+      <visual name="gripper_active_link_visual">
+        <geometry>
+          <mesh filename="${mesh_dir}/hand/visual/gripper_finger_link.dae"/>
+        </geometry>
+      </visual>
+      <!-- screw mount -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 18.5e-3 11e-3"/>
+        <geometry>
+          <box size="22e-3 15e-3 20e-3"/>
+        </geometry>
+      </collision>
+      <!-- cartriage sledge -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 6.8e-3 2.2e-3"/>
+        <geometry>
+          <box size="22e-3 8.8e-3 3.8e-3"/>
+        </geometry>
+      </collision>
+      <!-- diagonal finger -->
+      <collision>
+        <origin rpy="0.5235987755982988 0 0" xyz="0 15.9e-3 28.35e-3"/>
+        <geometry>
+          <box size="17.5e-3 7e-3 23.5e-3"/>
+        </geometry>
+      </collision>
+      <!-- rubber tip with which to grasp -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 7.58e-3 45.25e-3"/>
+        <geometry>
+          <box size="17.5e-3 15.2e-3 18.5e-3"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0.0152850 0.0219675"/>
+        <mass value="0.0291"/>
+        <inertia ixx="8.49e-06" ixy="0.0" ixz="0.0" iyy="8.53e-06" iyz="-1.06e-06" izz="1.77e-06"/>
+      </inertial>
+    </link>
+    <link name="gripper_passive_link">
+      <visual name="gripper_passive_link_visual">
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="${mesh_dir}/hand/visual/gripper_finger_link.dae"/>
+        </geometry>
+      </visual>
+      <!-- screw mount -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 18.5e-3 11e-3"/>
+        <geometry>
+          <box size="22e-3 15e-3 20e-3"/>
+        </geometry>
+      </collision>
+      <!-- cartriage sledge -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 6.8e-3 2.2e-3"/>
+        <geometry>
+          <box size="22e-3 8.8e-3 3.8e-3"/>
+        </geometry>
+      </collision>
+      <!-- diagonal finger (sign-flipped relative to active side) -->
+      <collision>
+        <origin rpy="-0.5235987755982988 0 3.141592653589793" xyz="0 15.9e-3 28.35e-3"/>
+        <geometry>
+          <box size="17.5e-3 7e-3 23.5e-3"/>
+        </geometry>
+      </collision>
+      <!-- rubber tip with which to grasp -->
+      <collision>
+        <origin rpy="0 0 0" xyz="0 7.58e-3 45.25e-3"/>
+        <geometry>
+          <box size="17.5e-3 15.2e-3 18.5e-3"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin rpy="0 0 0" xyz="0 0.0152850 0.0219675"/>
+        <mass value="0.0291"/>
+        <inertia ixx="8.49e-06" ixy="0.0" ixz="0.0" iyy="8.53e-06" iyz="-1.06e-06" izz="1.77e-06"/>
+      </inertial>
+    </link>
+    <joint name="gripper_active_joint" type="prismatic">
+      <parent link="tool0"/>
+      <child link="gripper_active_link"/>
+      <origin rpy="0 0 0" xyz="0 0 0.0584"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="100" lower="0.0" upper="0.04" velocity="0.2"/>
+      <dynamics damping="0.3"/>
+    </joint>
+    <joint name="gripper_passive_joint" type="prismatic">
+      <parent link="tool0"/>
+      <child link="gripper_passive_link"/>
+      <origin rpy="0 0 3.141592653589793" xyz="0 0 0.0584"/>
+      <axis xyz="0 1 0"/>
+      <limit effort="100" lower="0.0" upper="0.04" velocity="0.2"/>
+      <mimic joint="gripper_active_joint" multiplier="1" offset="0"/>
+      <dynamics damping="0.3"/>
+    </joint>
+  </xacro:unless>
 </robot>

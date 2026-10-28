@@ -87,7 +87,7 @@
         same Z+pi rotation. Both arm_base_link and base_link_inertia are
         siblings under base_link.
 
-        The 1mm guide-sphere <visual> on base_link flips the Isaac Sim 6.0
+        The 1mm guide-sphere <visual> on base_link flips the Isaac Sim 6.2
         URDF→USD converter's is_ghost_link check to False so it authors
         body0=parent_link on every joint. See
         genie_sim_robot_model/AGENTS.md → "Non-ghost root link pattern".
@@ -100,11 +100,6 @@
     </link>
     <link name="${tf_prefix}arm_base_link"/>
     <link name="${tf_prefix}base_link_inertia">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
       <xacro:get_visual_params name="base" type="mesh_offset"/>
       <visual>
         <origin
@@ -426,11 +421,11 @@
     <!-- Canonical end-effector mount point matching arx_x5 / agilex_piper:
          identity-fixed under arm_end_link so external gripper macros can
          attach with a stable parent regardless of tool-frame rotation. -->
-    <link name="${tf_prefix}gripper_base_link"/>
-    <joint name="${tf_prefix}arm_end_link-gripper_base_link" type="fixed">
+    <link name="${tf_prefix}tool0"/>
+    <joint name="${tf_prefix}arm_end_link-tool0" type="fixed">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <parent link="${tf_prefix}arm_end_link"/>
-      <child link="${tf_prefix}gripper_base_link"/>
+      <child link="${tf_prefix}tool0"/>
     </joint>
 
   </xacro:macro>

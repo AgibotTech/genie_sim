@@ -13,6 +13,20 @@
     xacro robot.xacro robot_model:=genie body:=g2 arm:=crs   gripper:=swiftpicker
     xacro robot.xacro robot_model:=genie body:=g2 arm:=crsB  gripper:=omnipicker
     xacro robot.xacro robot_model:=genie body:=g2 arm:=crsB  gripper:=swiftpicker
+    xacro robot.xacro robot_model:=genie body:=g2 arm:=crsB  gripper:=omnipicker inertia_source:=sysid
+
+  crsB accepts an `inertia_source` arg (default | sysid) that selects
+  which G2.arm.crsB.params.<inertia_source>.xacro file supplies the
+  per-link inertials, the per-joint <dynamics> damping and friction,
+  and the per-joint velocity limits.  `sysid` is the identified set
+  from an offline run against the physical G2.  Note the arg name
+  predates the damping/friction values it now also selects; the
+  <drive> gains are NOT part of it - the run publishes no actuator
+  model.  Armature, which URDF cannot express, is in
+  ../../robots/genie/g2/g2_crsB_drive_params.sysid.yaml.  See
+  ../../robots/genie/g2/xacro/G2.arm.crsB.params.sysid.xacro for the
+  caveats and ../../robots/genie/g2/xacro/G2.arm.crsB.urdf.xacro for
+  the wiring.
 
   Naming note: the gripper selector is ``gripper`` (matching the
   convention used by ``agilex.xacro`` and ``universal_robots.xacro``).
@@ -40,6 +54,9 @@
       <xacro:if value="${'swiftpicker' == gripper}">
         <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/g2_crs_swiftpicker.urdf.xacro" />
       </xacro:if>
+      <xacro:if value="${'no_gripper' == gripper}">
+        <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/g2_crs_no_gripper.urdf.xacro" />
+      </xacro:if>
     </xacro:if>
     <xacro:if value="${'crsB' == arm}">
       <xacro:if value="${'omnipicker' == gripper}">
@@ -47,6 +64,12 @@
       </xacro:if>
       <xacro:if value="${'swiftpicker' == gripper}">
         <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/g2_crsB_swiftpicker.urdf.xacro" />
+      </xacro:if>
+      <xacro:if value="${'no_gripper' == gripper}">
+        <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/g2_crsB_no_gripper.urdf.xacro" />
+      </xacro:if>
+      <xacro:if value="${'wuji' == gripper}">
+        <xacro:include filename="$(find genie_sim_robot_model)/robots/genie/g2/g2_crsB_wuji.urdf.xacro" />
       </xacro:if>
     </xacro:if>
   </xacro:if>

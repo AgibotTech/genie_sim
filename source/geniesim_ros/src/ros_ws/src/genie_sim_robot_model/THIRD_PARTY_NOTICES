@@ -38,11 +38,15 @@ xacro/providers/*.xacro) is covered by the package-level license.
                Full T&Cs:
                https://www.universal-robots.com/legal/terms-and-conditions/terms_and_conditions_for_use_of_graphical_documentation.txt
 
-   Robotiq 2F-85 / 2F-140 gripper meshes:
-   Upstream:   https://github.com/ros-industrial/robotiq (ROS 1)
-               https://github.com/ros-industrial/robotiq_ros2 (ROS 2)
+   Robotiq 2F-85 / 2F-140 gripper meshes and xacro:
+   Upstream:   https://github.com/PickNikRobotics/ros2_robotiq_gripper
+               (robotiq_description sub-package)
    License:    BSD-3-Clause
-   Copyright:  Copyright (c) Robotiq Inc.
+   Copyright:  Copyright (c) PickNik Robotics; original Robotiq designs
+               © Robotiq Inc.
+   Notice:     Macros in gripper/robotiq_{85,140}/urdf/ are adapted from
+               robotiq_description; mesh URIs and the ros2_control
+               transmission helper are the only changes.
 
 ---------------------------------------------------------------------------
 3. Agilex Piper
@@ -98,6 +102,8 @@ xacro/providers/*.xacro) is covered by the package-level license.
 ---------------------------------------------------------------------------
 7. AgiBot Genie G2 (Mobile Manipulation Platform)
    Directory:  robots/genie/g2/
+               (excluding robots/genie/g2/meshes/gripper/wuji/ and the
+                wuji xacro adapter — see section 8)
    License:    Proprietary — AgiBot Inc.
    Copyright:  Copyright (c) AgiBot Inc.
    Notice:     The xacro descriptions, mesh files (.STL, .FBX, .DAE),
@@ -111,6 +117,36 @@ xacro/providers/*.xacro) is covered by the package-level license.
                Contact: genie@agibot.com
 
 ---------------------------------------------------------------------------
+8. Wuji Hand (Dexterous 5-Finger Hand)
+   Directory:  robots/genie/g2/meshes/gripper/wuji/  (STL meshes)
+               robots/genie/g2/xacro/gripper.wuji.urdf.xacro
+                 (xacro constants + finger / hand macros ported from
+                  upstream URDF; genie_sim framework adapter macro at
+                  the bottom of the same file is AgiBot-authored and
+                  covered by the package-level license)
+   Upstream:   https://github.com/wuji-technology/wuji-hand-description
+   License:    MIT License
+   Copyright:  Copyright (c) 2025 Wuji Technology
+   Notice:     The URDF kinematic tree, all per-side / per-finger
+               numeric data (masses, inertias, joint origins, rpy,
+               axes, limits), and the STL meshes under this directory
+               are derived from the upstream package (STL binaries may
+               have been re-exported at different mesh density, but the
+               geometry originates from the same Wuji CAD source and
+               remains under Wuji's MIT license).
+               Permission is hereby granted, free of charge, to any
+               person obtaining a copy of this software and associated
+               documentation files (the "Software"), to deal in the
+               Software without restriction, including without
+               limitation the rights to use, copy, modify, merge,
+               publish, distribute, sublicense, and/or sell copies of
+               the Software. The above copyright notice and this
+               permission notice shall be included in all copies or
+               substantial portions of the Software.
+               Vendor site: https://wuji.tech
+               Contact:     support@wuji.tech
+
+---------------------------------------------------------------------------
 
 IMPORTANT
 ---------
@@ -121,7 +157,7 @@ models contained herein, you MUST:
   1. Retain all copyright notices and license texts.
   2. Comply with the specific license terms of each robot model
      (e.g., Apache-2.0 for Franka, BSD-3-Clause for UR/Robotiq,
-     MIT for Agilex Piper, BSD for ARX).
+     MIT for Agilex Piper and Wuji Hand, BSD for ARX).
   3. For UR mesh files, comply with the UR Graphical Documentation
      T&Cs, including the attribution requirement:
      "© 2023 Universal Robots A/S. Use hereof is subject to

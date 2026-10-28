@@ -54,7 +54,7 @@
       connectors; two finger-pad fixed connectors).
     - The upstream 'robotiq_base_link' / 'robotiq_base_joint' shim — which
       applied an Rz(pi/2) to align the 2F-140 with the 2F-85 mount frame —
-      is dropped: the arm macro already provides 'gripper_base_link' as
+      is dropped: the arm macro already provides 'tool0' as
       the canonical mount point, and the Rz(pi/2) is baked into the
       'gripper_base_inertia_fixed' joint origin so that the 2F-140 lines
       up identically to the 2F-85 on the same parent. Likewise the
@@ -80,7 +80,7 @@
 
         <!-- Gripper body: visual / collision / inertial of the upstream
              'robotiq_140_base_link' are attached directly to the parent
-             (gripper_base_link from the arm macro) so we do not introduce
+             (tool0 from the arm macro) so we do not introduce
              a redundant link + identity-fixed joint. The Rz(pi/2) that
              upstream applied via its 'robotiq_base_link' shim is baked
              into this fixed joint's rpy so the 2F-140 mounts at the same
@@ -207,11 +207,6 @@
         </link>
 
         <link name="${prefix}gripper_active_finger_pad_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>
@@ -326,11 +321,6 @@
         </link>
 
         <link name="${prefix}gripper_passive_finger_pad_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
             <visual>
                 <origin xyz="0 0 0" rpy="0 0 0" />
                 <geometry>

@@ -24,8 +24,15 @@
 
   <xacro:property name="mesh_dir" value="package://genie_sim_robot_model/robots/arx/acone/meshes" />
 
-  <!-- Select stock or identified drive and passive parameters. -->
+  <!-- Drive / passive joint parameters. `default` is the ARX stock set;
+       `sysid` is the set identified against ARX Real hardware. Both are pure
+       data files with the same property names - see their headers, and note
+       that the engine currently overwrites these per joint class at
+       runtime. Selection: `xacro ... param_source:=sysid`. -->
   <xacro:arg name="param_source" default="default" />
+  <!-- Which gripper this arm carries. Defaults to the vendored
+       gripper; ``no_gripper`` omits its links/joints entirely. -->
+  <xacro:arg name="gripper" default="acone" />
   <xacro:include filename="$(find genie_sim_robot_model)/robots/arx/acone/AC1.params.$(arg param_source).xacro" />
 
   <!-- base_link is intentionally an empty link so it can serve as the KDL
@@ -35,7 +42,7 @@
        arm chains (arm_l_joint1, arm_r_joint1, ...) still hang off
        base_link, so no downstream link/joint names change.
 
-       The 1mm guide-sphere <visual> below flips the Isaac Sim 6.0
+       The 1mm guide-sphere <visual> below flips the Isaac Sim 6.2
        URDF→USD converter's is_ghost_link check to False so it authors
        body0=parent_link on every joint. See
        genie_sim_robot_model/AGENTS.md → "Non-ghost root link pattern". -->
@@ -88,7 +95,7 @@
     <parent link="base_link" />
     <child link="arm_l_link1" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.14159" upper="3.14159" effort="30" velocity="5.0" />
+    <limit lower="-3.14" upper="2.618" effort="30" velocity="5.0" />
     <dynamics damping="${acone_l1_damping}" friction="${acone_l1_friction}" />
     <drive stiffness="${acone_l1_drive_stiffness}" damping="${acone_l1_drive_damping}" />
   </joint>
@@ -138,7 +145,7 @@
     <parent link="arm_l_link2" />
     <child link="arm_l_link3" />
     <axis xyz="0 -1 0" />
-    <limit lower="0.0" upper="3.2" effort="30" velocity="5.5" />
+    <limit lower="-0.1" upper="3.2" effort="30" velocity="5.5" />
     <dynamics damping="${acone_l3_damping}" friction="${acone_l3_friction}" />
     <drive stiffness="${acone_l3_drive_stiffness}" damping="${acone_l3_drive_damping}" />
   </joint>
@@ -223,11 +230,6 @@
   </joint>
 
   <link name="arm_l_end_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="1e-6" />
-      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-    </inertial>
   </link>
   <joint name="arm_l_end_fixed" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0" />
@@ -235,115 +237,121 @@
     <child link="arm_l_end_link" />
   </joint>
 
-  <link name="gripper_l_base_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="1e-6" />
-      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-    </inertial>
+  <link name="tool0_l">
   </link>
-  <joint name="gripper_l_base_fixed" type="fixed">
+  <joint name="tool0_l_fixed" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0" />
     <parent link="arm_l_end_link" />
-    <child link="gripper_l_base_link" />
+    <child link="tool0_l" />
   </joint>
 
-  <link name="gripper_l_passive_link">
-    <inertial>
-      <origin xyz="-0.0060354 -0.015602 0.013499" rpy="0 0 0" />
-      <mass value="0.08924" />
-      <inertia ixx="0.00010" ixy="0.00000" ixz="0.00001" iyy="0.00009" iyz="0.00001" izz="0.00007" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/gripper_l_passive_link.obj" /></geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_01.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_02.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_03.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_04.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_05.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_06.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_07.STL" /></geometry>
-    </collision>
+  <link name="tool0_r">
   </link>
-  <joint name="gripper_l_passive_joint" type="prismatic">
-    <origin xyz="0.08397 0.02721 -0.0062702" rpy="0 0 0" />
-    <parent link="gripper_l_base_link" />
-    <child link="gripper_l_passive_link" />
-    <axis xyz="0 1 0" />
-    <limit lower="0" upper="0.044" effort="10" velocity="0.5" />
-    <mimic joint="gripper_l_active_joint" multiplier="1" offset="0" />
+  <joint name="tool0_r_fixed" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="arm_r_end_link" />
+    <child link="tool0_r" />
   </joint>
 
-  <link name="gripper_l_active_link">
-    <inertial>
-      <origin xyz="-0.00581 0.015593 -0.012255" rpy="0 0 0" />
-      <mass value="0.089402" />
-      <inertia ixx="0.00007" ixy="0.00000" ixz="-0.00002" iyy="0.00006" iyz="0.00000" izz="0.00007" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/gripper_l_active_link.obj" /></geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_01.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_02.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_03.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_04.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_05.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_06.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_07.STL" /></geometry>
-    </collision>
-  </link>
-  <joint name="gripper_l_active_joint" type="prismatic">
-    <origin xyz="0.08397 -0.023638 -0.0062703" rpy="0 0 0" />
-    <parent link="gripper_l_base_link" />
-    <child link="gripper_l_active_link" />
-    <axis xyz="0 -1 0" />
-    <limit lower="0" upper="0.044" effort="10" velocity="0.5" />
-  </joint>
+  <xacro:unless value="${'$(arg gripper)' == 'no_gripper'}">
 
-  <!-- ============================ RIGHT ARM ============================ -->
+    <link name="gripper_l_passive_link">
+      <inertial>
+        <origin xyz="-0.0060354 -0.015602 0.013499" rpy="0 0 0" />
+        <mass value="0.08924" />
+        <inertia ixx="0.00010" ixy="0.00000" ixz="0.00001" iyy="0.00009" iyz="0.00001" izz="0.00007" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/gripper_l_passive_link.obj" /></geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_01.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_02.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_03.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_04.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_05.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_06.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_passive_link_collider_07.STL" /></geometry>
+      </collision>
+    </link>
+    <joint name="gripper_l_passive_joint" type="prismatic">
+      <origin xyz="0.08397 0.02721 -0.0062702" rpy="0 0 0" />
+      <parent link="tool0_l" />
+      <child link="gripper_l_passive_link" />
+      <axis xyz="0 1 0" />
+      <limit lower="0" upper="0.044" effort="10" velocity="1.5" />
+      <mimic joint="gripper_l_active_joint" multiplier="1" offset="0" />
+    </joint>
+
+    <link name="gripper_l_active_link">
+      <inertial>
+        <origin xyz="-0.00581 0.015593 -0.012255" rpy="0 0 0" />
+        <mass value="0.089402" />
+        <inertia ixx="0.00007" ixy="0.00000" ixz="-0.00002" iyy="0.00006" iyz="0.00000" izz="0.00007" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/gripper_l_active_link.obj" /></geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_01.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_02.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_03.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_04.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_05.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_06.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_l_active_link_collider_07.STL" /></geometry>
+      </collision>
+    </link>
+    <joint name="gripper_l_active_joint" type="prismatic">
+      <origin xyz="0.08397 -0.023638 -0.0062703" rpy="0 0 0" />
+      <parent link="tool0_l" />
+      <child link="gripper_l_active_link" />
+      <axis xyz="0 -1 0" />
+      <limit lower="0" upper="0.044" effort="10" velocity="0.3" />
+    </joint>
+
+    <!-- ============================ RIGHT ARM ============================ -->
+  </xacro:unless>
 
   <link name="arm_r_link1">
     <inertial>
@@ -365,7 +373,7 @@
     <parent link="base_link" />
     <child link="arm_r_link1" />
     <axis xyz="0 0 1" />
-    <limit lower="-3.14159" upper="3.14159" effort="30" velocity="5.0" />
+    <limit lower="-3.14" upper="2.618" effort="30" velocity="5.0" />
     <dynamics damping="${acone_r1_damping}" friction="${acone_r1_friction}" />
     <drive stiffness="${acone_r1_drive_stiffness}" damping="${acone_r1_drive_damping}" />
   </joint>
@@ -415,7 +423,7 @@
     <parent link="arm_r_link2" />
     <child link="arm_r_link3" />
     <axis xyz="0 -1 0" />
-    <limit lower="0.0" upper="3.2" effort="30" velocity="5.5" />
+    <limit lower="-0.1" upper="3.2" effort="30" velocity="5.5" />
     <dynamics damping="${acone_r3_damping}" friction="${acone_r3_friction}" />
     <drive stiffness="${acone_r3_drive_stiffness}" damping="${acone_r3_drive_damping}" />
   </joint>
@@ -500,11 +508,6 @@
   </joint>
 
   <link name="arm_r_end_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="1e-6" />
-      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-    </inertial>
   </link>
   <joint name="arm_r_end_fixed" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0" />
@@ -512,112 +515,102 @@
     <child link="arm_r_end_link" />
   </joint>
 
-  <link name="gripper_r_base_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="1e-6" />
-      <inertia ixx="1e-9" ixy="0" ixz="0" iyy="1e-9" iyz="0" izz="1e-9" />
-    </inertial>
-  </link>
-  <joint name="gripper_r_base_fixed" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
-    <parent link="arm_r_end_link" />
-    <child link="gripper_r_base_link" />
-  </joint>
+  <xacro:unless value="${'$(arg gripper)' == 'no_gripper'}">
 
-  <link name="gripper_r_active_link">
-    <inertial>
-      <origin xyz="-0.0060354 -0.015602 0.013499" rpy="0 0 0" />
-      <mass value="0.08924" />
-      <inertia ixx="0.00010" ixy="0.00000" ixz="0.00001" iyy="0.00009" iyz="0.00001" izz="0.00007" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/gripper_r_active_link.obj" /></geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_01.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_02.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_03.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_04.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_05.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_06.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_07.STL" /></geometry>
-    </collision>
-  </link>
-  <joint name="gripper_r_active_joint" type="prismatic">
-    <origin xyz="0.08397 0.02721 -0.0062702" rpy="0 0 0" />
-    <parent link="gripper_r_base_link" />
-    <child link="gripper_r_active_link" />
-    <axis xyz="0 1 0" />
-    <limit lower="0" upper="0.044" effort="10" velocity="0.5" />
-  </joint>
+    <link name="gripper_r_active_link">
+      <inertial>
+        <origin xyz="-0.0060354 -0.015602 0.013499" rpy="0 0 0" />
+        <mass value="0.08924" />
+        <inertia ixx="0.00010" ixy="0.00000" ixz="0.00001" iyy="0.00009" iyz="0.00001" izz="0.00007" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/gripper_r_active_link.obj" /></geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_01.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_02.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_03.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_04.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_05.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_06.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_active_link_collider_07.STL" /></geometry>
+      </collision>
+    </link>
+    <joint name="gripper_r_active_joint" type="prismatic">
+      <origin xyz="0.08397 0.02721 -0.0062702" rpy="0 0 0" />
+      <parent link="tool0_r" />
+      <child link="gripper_r_active_link" />
+      <axis xyz="0 1 0" />
+      <limit lower="0" upper="0.044" effort="10" velocity="0.3" />
+    </joint>
 
-  <link name="gripper_r_passive_link">
-    <inertial>
-      <origin xyz="-0.00581 0.015593 -0.012255" rpy="0 0 0" />
-      <mass value="0.089402" />
-      <inertia ixx="0.00007" ixy="0.00000" ixz="-0.00002" iyy="0.00006" iyz="0.00000" izz="0.00007" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/gripper_r_passive_link.obj" /></geometry>
-    </visual>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_01.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_02.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_03.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_04.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_05.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_06.STL" /></geometry>
-    </collision>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_07.STL" /></geometry>
-    </collision>
-  </link>
-  <joint name="gripper_r_passive_joint" type="prismatic">
-    <origin xyz="0.08397 -0.023638 -0.0062703" rpy="0 0 0" />
-    <parent link="gripper_r_base_link" />
-    <child link="gripper_r_passive_link" />
-    <axis xyz="0 -1 0" />
-    <limit lower="0" upper="0.044" effort="10" velocity="0.5" />
-    <mimic joint="gripper_r_active_joint" multiplier="1" offset="0" />
-  </joint>
+    <link name="gripper_r_passive_link">
+      <inertial>
+        <origin xyz="-0.00581 0.015593 -0.012255" rpy="0 0 0" />
+        <mass value="0.089402" />
+        <inertia ixx="0.00007" ixy="0.00000" ixz="-0.00002" iyy="0.00006" iyz="0.00000" izz="0.00007" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/gripper_r_passive_link.obj" /></geometry>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_01.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_02.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_03.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_04.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_05.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_06.STL" /></geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry><mesh filename="${mesh_dir}/convex/gripper_r_passive_link_collider_07.STL" /></geometry>
+      </collision>
+    </link>
+    <joint name="gripper_r_passive_joint" type="prismatic">
+      <origin xyz="0.08397 -0.023638 -0.0062703" rpy="0 0 0" />
+      <parent link="tool0_r" />
+      <child link="gripper_r_passive_link" />
+      <axis xyz="0 -1 0" />
+      <limit lower="0" upper="0.044" effort="10" velocity="1.5" />
+      <mimic joint="gripper_r_active_joint" multiplier="1" offset="0" />
+    </joint>
+  </xacro:unless>
 
 </robot>

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- TODO: collision meshes will be replaced with manually converted STL colliders -->
+<!-- Collision geometry uses the full-resolution link STL meshes, not convex decompositions. -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!--
@@ -22,6 +22,17 @@
        body whose only role was to expose a TCP / grasp frame name
        to downstream planners; we now leave TCP frame management to
        the consumer.  See git history for the removal commit.)
+
+    The <dynamics> and <limit effort> values on the six revolute joints
+    per side are the BASELINE, and two of them are known hand fixes rather
+    than measurements (damping 0.5 / friction 0.01, and the master's
+    effort 50).  The identified replacement lives in
+    ../overlays/g2_swiftpicker.sysid-2026-09-18.yaml, which supersedes the
+    damping and friction and records why the 50 N*m limit should come down
+    to the 18 N*m hardware cap.  That limit is deliberately left alone
+    here: it is a baseline change, not an identification result, and the
+    engine only ever raises an effort cap.  Nothing in the engine consumes
+    an overlay yet.
   -->
   <xacro:macro
     name="gripper"
@@ -31,11 +42,6 @@
 
     <!-- Camera Link -->
     <link name="gripper_${side}_camera_link">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.001" />
-        <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0" />
-      </inertial>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
@@ -208,7 +214,7 @@
       <parent link="gripper_${side}_base_link" />
       <child link="gripper_${side}_left_outer_link" />
       <axis xyz="0 0 -1" />
-      <limit lower="-0.91" upper="0" effort="10" velocity="2" />
+      <limit lower="-0.91" upper="0" effort="10" velocity="10" />
       <dynamics damping="0.5" friction="0.01" />
       <mimic joint="idx${_b+1}_gripper_${side}_inner_joint1" multiplier="1" offset="0" />
     </joint>
@@ -254,7 +260,7 @@
       <parent link="gripper_${side}_left_outer_link" />
       <child link="gripper_${side}_left_support_link" />
       <axis xyz="0 0 -1" />
-      <limit lower="0" upper="0.91" effort="10" velocity="2" />
+      <limit lower="0" upper="0.91" effort="10" velocity="10" />
       <dynamics damping="0.5" friction="0.01" />
       <mimic joint="idx${_b+1}_gripper_${side}_inner_joint1" multiplier="-1" offset="0" />
     </joint>
@@ -289,7 +295,7 @@
       <parent link="gripper_${side}_base_link" />
       <child link="gripper_${side}_right_inner_link" />
       <axis xyz="0 0 1" />
-      <limit lower="0" upper="0.91" effort="10" velocity="2" />
+      <limit lower="0" upper="0.91" effort="10" velocity="10" />
       <dynamics damping="0.5" friction="0.01" />
       <mimic joint="idx${_b+1}_gripper_${side}_inner_joint1" multiplier="-1" offset="0" />
     </joint>
@@ -324,7 +330,7 @@
       <parent link="gripper_${side}_base_link" />
       <child link="gripper_${side}_right_outer_link" />
       <axis xyz="0 0 1" />
-      <limit lower="0" upper="0.91" effort="10" velocity="2" />
+      <limit lower="0" upper="0.91" effort="10" velocity="10" />
       <dynamics damping="0.5" friction="0.01" />
       <mimic joint="idx${_b+1}_gripper_${side}_inner_joint1" multiplier="-1" offset="0" />
     </joint>
@@ -361,7 +367,7 @@
       <parent link="gripper_${side}_right_outer_link" />
       <child link="gripper_${side}_right_support_link" />
       <axis xyz="0 0 -1" />
-      <limit lower="0" upper="0.91" effort="10" velocity="2" />
+      <limit lower="0" upper="0.91" effort="10" velocity="10" />
       <dynamics damping="0.5" friction="0.01" />
       <mimic joint="idx${_b+1}_gripper_${side}_inner_joint1" multiplier="-1" offset="0" />
     </joint>

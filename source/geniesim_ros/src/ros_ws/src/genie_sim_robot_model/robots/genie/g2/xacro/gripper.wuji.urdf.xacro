@@ -1,0 +1,709 @@
+<?xml version="1.0"?>
+<!--
+  wuji dexterous hand — genie_sim adapter (self-contained).
+
+  Upstream model: wuji-hand-description
+    https://github.com/wuji-technology/wuji-hand-description
+    Copyright (c) 2025 Wuji Technology — MIT License.
+
+  The kinematic tree (palm + 5 fingers × 4 revolute joints + fingertip
+  pads), all per-side / per-finger numeric data (masses, inertias, joint
+  origins, rpy, axes, limits), and the STL meshes under
+  robots/genie/g2/meshes/gripper/wuji/ are derived from that upstream
+  package and remain under its MIT license. See ../../../../THIRD_PARTY_NOTICES
+  section 8 for the full notice.
+
+  URDF link/joint names follow genie_robot_description's hand naming
+  convention (see docs/naming_convention.hand.md in that repo):
+    - prefix `hand_l` / `hand_r` (not `left` / `right`) on links and joints
+    - fingers named `thumb` / `index` / `middle` / `ring` / `pinky`
+      (not `finger1..finger5`) — mapping is 1:1 with the source fid
+    - fingertip pads use `_pad_link` suffix (contact frame + inertial, no
+      shape of its own; see the pad block in the finger macro for why),
+      the legacy `_tip_link` suffix is retired
+    - hand joints do NOT carry the global `idx{NN}` prefix used by
+      body / arm / chassis / parallel-gripper joints
+
+  Only the framework adapter differs from the upstream source: genie_sim's
+  gripper framework calls every gripper through a `gripper` macro with a
+  uniform signature (side parent_link xyz_offset rpy_offset collision_type
+  mesh_dir app). That adapter macro at the bottom of this file is
+  AgiBot-authored and covered by the package-level license.
+
+  Drive and passive joint parameters for the forty finger joints are NOT
+  authored here.  This file carries the upstream kinematics, inertials and
+  per-joint effort/velocity limits only; the identified set lives in
+  ../overlays/g2_wuji.sysid-2026-09-24.yaml.  That overlay publishes no effort
+  limit in either field — the vendor per-joint torque ratings are the
+  <limit effort> values below, and they are the only ones anywhere in the
+  tree.  Read the caveats there before adopting the set: the two drive gains
+  were selected by grasp replay rather than fitted, and the replay ran with
+  the runtime drive clamp at a uniform 0.5 N*m, which is above the limit below
+  on thirty-two of the forty joints.
+  Nothing in the engine consumes an overlay yet.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== inlined constants (source const.xacro) ===================== -->
+    <!-- ==================================================================== -->
+    <!-- All per-side / per-finger numeric data, kept faithful to the source  -->
+    <!-- urdf (left.urdf / right.urdf). Values are organised as xacro python   -->
+    <!-- dictionaries so the finger macro can look them up by (side, fid).     -->
+    <!--                                                                       -->
+    <!-- NOTE: xacro's ${...} lexer cannot handle literal '{' '}' braces, so   -->
+    <!-- every dict is built with dict([(key, value), ...]) instead of {}.     -->
+    <!-- ==================================================================== -->
+
+    <!-- palm centre-of-mass per side -->
+    <xacro:property name="palm_com" value="${dict(
+        right=[-0.002979471, 0.0004557176, 0.03665409],
+        left=[-0.002978793, -0.0004525509, 0.03665471])}" />
+    <xacro:property name="palm_mass" value="0.16914" />
+    <xacro:property name="palm_inertia" value="${dict(
+        ixx=0.00014, ixy=2.54e-06, ixz=6.91e-06, iyy=9.47e-05, iyz=-6.63e-06, izz=6e-05)}" />
+
+    <!-- ==================================================================== -->
+    <!-- link centre-of-mass: link_com[side][fid][link] = [x, y, z]            -->
+    <!-- ==================================================================== -->
+    <xacro:property name="link_com" value="${dict(
+        right=dict([
+            (1, dict([
+                (1, [-0.002462817, -0.001242813, 0.007780151]),
+                (2, [-0.00116283, 1.22067e-05, 0.01566454]),
+                (3, [-0.001123534, -1.578957e-05, 0.01305615]),
+                (4, [-0.001192304, -0.0002139726, 0.008211456]),
+                (5, [-0.0001585375, 8.133107e-05, -0.007177649])])),
+            (2, dict([
+                (1, [-0.001329148, -3.291059e-08, 0.000319873]),
+                (2, [-4.118201e-07, 0.006157724, 0.02091115]),
+                (3, [-0.001121421, 4.361278e-06, 0.01576281]),
+                (4, [-0.0008943811, 0.0002170428, 0.005351763]),
+                (5, [-0.0002011089, 3.863762e-06, -0.008610984])])),
+            (3, dict([
+                (1, [-0.001329137, 3.498697e-09, 0.0003199368]),
+                (2, [-4.164417e-07, 0.006157583, 0.02091119]),
+                (3, [-0.001121418, 4.330992e-06, 0.01576282]),
+                (4, [-0.0008943605, 0.00021705, 0.005351766]),
+                (5, [-0.0001897161, 1.397167e-06, -0.009137505])])),
+            (4, dict([
+                (1, [-0.001329139, 1.004755e-08, 0.0003199476]),
+                (2, [-4.161973e-07, 0.006157583, 0.02091119]),
+                (3, [-0.001121411, 4.349371e-06, 0.01576282]),
+                (4, [-0.0008943615, 0.0002170593, 0.005351766]),
+                (5, [-0.0002017576, -2.430502e-05, -0.008610591])])),
+            (5, dict([
+                (1, [-0.00132914, 1.723477e-08, 0.0003199686]),
+                (2, [-4.149393e-07, 0.006157585, 0.02091118]),
+                (3, [-0.00112141, 4.370313e-06, 0.01576283]),
+                (4, [-0.0008943728, 0.0002170646, 0.005351761]),
+                (5, [-0.0002033175, 1.487152e-06, -0.008611063])]))]),
+        left=dict([
+            (1, dict([
+                (1, [-0.002466361, 0.001243356, 0.007796453]),
+                (2, [0.001165924, 1.466029e-05, 0.01565596]),
+                (3, [-0.001123197, 1.572991e-05, 0.01305658]),
+                (4, [-0.0011922, 0.00021414, 0.0082113]),
+                (5, [-0.00017019, 1.7524e-05, -0.0071779])])),
+            (2, dict([
+                (1, [-0.0013291, -5.6587e-09, 0.00031994]),
+                (2, [4.378686e-07, 0.006157522, 0.02091104]),
+                (3, [-0.001121873, 3.276186e-05, 0.01571884]),
+                (4, [-0.0008943786, 0.0002170653, 0.005351759]),
+                (5, [-0.0001897323, 3.534942e-06, -0.009137204])])),
+            (3, dict([
+                (1, [-0.0013291, -1.4994e-08, 0.0003199]),
+                (2, [4.38062e-07, 0.006157535, 0.02091104]),
+                (3, [-0.001121872, 3.278072e-05, 0.01571884]),
+                (4, [-0.0008943612, 0.0002170501, 0.005351766]),
+                (5, [-0.0001897293, -6.958438e-07, -0.009137151])])),
+            (4, dict([
+                (1, [-0.0013291, -9.6993e-09, 0.00031986]),
+                (2, [4.368958e-07, 0.006157536, 0.02091104]),
+                (3, [-0.001121877, 3.279418e-05, 0.01571884]),
+                (4, [-0.0008943647, 0.0002170417, 0.005351769]),
+                (5, [-0.00018961, -6.059208e-06, -0.009137119])])),
+            (5, dict([
+                (1, [-0.001329093, -2.352751e-08, 0.0003198447]),
+                (2, [4.367533e-07, 0.006157528, 0.02091104]),
+                (3, [-0.001121876, 3.280675e-05, 0.01571885]),
+                (4, [-0.0008943768, 0.0002170416, 0.005351765]),
+                (5, [-0.000189703, 5.010497e-07, -0.009137113])]))]))}" />
+
+    <!-- ==================================================================== -->
+    <!-- link mass / inertia: identical across sides, keyed by (group, link)   -->
+    <!-- finger1 (thumb) has unique values; finger2..5 share the 'other' set.  -->
+    <!-- ==================================================================== -->
+    <xacro:property name="link_mass" value="${dict(
+        thumb=dict([(1, 0.0075), (2, 0.0248), (3, 0.0165), (4, 0.0165), (5, 0.0041)]),
+        other=dict([(1, 0.0032), (2, 0.033), (3, 0.0165), (4, 0.014), (5, 0.00318)]))}" />
+
+    <xacro:property name="link_inertia" value="${dict(
+        thumb=dict([
+            (1, dict(ixx=3.2e-07, ixy=-2e-08, ixz=0, iyy=3e-07, iyz=4e-08, izz=2.3e-07)),
+            (2, dict(ixx=2.76e-06, ixy=2e-08, ixz=1e-08, iyy=2.81e-06, iyz=2e-08, izz=6.8e-07)),
+            (3, dict(ixx=1.46e-06, ixy=0, ixz=-2e-08, iyy=1.42e-06, iyz=0, izz=4.5e-07)),
+            (4, dict(ixx=1.18e-06, ixy=0, ixz=1.2e-07, iyy=1.25e-06, iyz=0, izz=5.1e-07)),
+            (5, dict(ixx=5.5e-07, ixy=0, ixz=2e-08, iyy=5.2e-07, iyz=0, izz=2.7e-07))]),
+        other=dict([
+            (1, dict(ixx=8e-08, ixy=0, ixz=-3e-08, iyy=7e-08, iyz=0, izz=8e-08)),
+            (2, dict(ixx=6.31e-06, ixy=0, ixz=-1.6e-07, iyy=6.34e-06, iyz=0, izz=8.9e-07)),
+            (3, dict(ixx=1.47e-06, ixy=0, ixz=3e-08, iyy=1.44e-06, iyz=0, izz=4.5e-07)),
+            (4, dict(ixx=9.5e-07, ixy=0, ixz=1.4e-07, iyy=8.6e-07, iyz=-1e-08, izz=3e-07)),
+            (5, dict(ixx=2e-07, ixy=0, ixz=0, iyy=2.1e-07, iyz=0, izz=1.3e-07))]))}" />
+
+    <!-- ==================================================================== -->
+    <!-- joint origins: joint_xyz[side][fid][joint] = [x, y, z]                -->
+    <!-- joint index 1..4 are the revolute joints, index 5 is the tip fixed.   -->
+    <!-- ==================================================================== -->
+    <xacro:property name="joint_xyz" value="${dict(
+        right=dict([
+            (1, dict([
+                (1, [0.0084399, 0.020587, 0.028893]),
+                (2, [-0.0047549, -0.0058191, 0.014132]),
+                (3, [-0.000266705, 0.0009915016, 0.03466562]),
+                (4, [0, 0.0002, 0.0295]),
+                (5, [-0.00105, -0.0002, 0.0313])])),
+            (2, dict([
+                (1, [-0.0058701, 0.029434, 0.091917]),
+                (2, [0.0022, 0, 0.004000006]),
+                (3, [0, 0.004750282, 0.04361766]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.00105, 0.0002, 0.0267])])),
+            (3, dict([
+                (1, [-0.01046, 0.0074615, 0.089544]),
+                (2, [0.0022, 0, 0.004000006]),
+                (3, [0, 0.00475, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.001049087, 0.0002010395, 0.0267])])),
+            (4, dict([
+                (1, [-0.0076649, -0.013712, 0.084429]),
+                (2, [0.002200001, 0, 0.004000005]),
+                (3, [0, 0.004749999, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.00105961, 0.0001904508, 0.0267])])),
+            (5, dict([
+                (1, [-0.002268651, -0.03400111, 0.07428134]),
+                (2, [0.002200001, 0, 0.004000005]),
+                (3, [0, 0.004749999, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.001044639, 0.0002113095, 0.0267])]))]),
+        left=dict([
+            (1, dict([
+                (1, [0.0084399, -0.020587, 0.028893]),
+                (2, [-0.0047549, 0.0058191, 0.014132]),
+                (3, [0.00026671, 0.0009915, 0.034666]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.00105, 0.0002, 0.0313])])),
+            (2, dict([
+                (1, [-0.0058701, -0.029434, 0.091917]),
+                (2, [0.0022, 0, 0.004000006]),
+                (3, [0, 0.004749999, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.0010521, 0.0002108692, 0.0267])])),
+            (3, dict([
+                (1, [-0.01046, -0.0074615, 0.089544]),
+                (2, [0.0022, 0, 0.004000006]),
+                (3, [0, 0.004749999, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.0010504, 0.0002026723, 0.0267])])),
+            (4, dict([
+                (1, [-0.0076649, 0.013712, 0.084429]),
+                (2, [0.0022, 0, 0.004000005]),
+                (3, [0, 0.004749999, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.001049983, 0.0002025572, 0.0267])])),
+            (5, dict([
+                (1, [-0.002268651, 0.03400111, 0.07428134]),
+                (2, [0.002200001, 0, 0.004000005]),
+                (3, [0, 0.00475, 0.04361769]),
+                (4, [0, -0.0002, 0.0295]),
+                (5, [-0.001050407, 0.0002010472, 0.0267])]))]))}" />
+
+    <!-- ==================================================================== -->
+    <!-- joint rpy: joint_rpy[side][fid][joint] = [r, p, y] (joints 1..4 only) -->
+    <!-- ==================================================================== -->
+    <xacro:property name="joint_rpy" value="${dict(
+        right=dict([
+            (1, dict([
+                (1, [-1.328, -0.37161, -0.7307]),
+                (2, [0.57428, 0.23677, -1.3382]),
+                (3, [0.04904945, 0.01731124, 1.233052]),
+                (4, [0, 0, 0])])),
+            (2, dict([
+                (1, [-0.11071, -0.071139, -0.21822]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.571065]),
+                (4, [0, 0, 0])])),
+            (3, dict([
+                (1, [-5.0886e-05, -0.087266, 0.00058387]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.571065]),
+                (4, [0, 0, 0])])),
+            (4, dict([
+                (1, [0.090375, -0.083436, 0.047127]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.571065]),
+                (4, [0, 0, 0])])),
+            (5, dict([
+                (1, [0.1924837, -0.09251723, 0.1576728]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.571065]),
+                (4, [0, 0, 0])]))]),
+        left=dict([
+            (1, dict([
+                (1, [1.328, -0.37161, 0.7307]),
+                (2, [0.57428, -0.23677, -1.8034]),
+                (3, [-0.049049, 0.017311, 1.9085]),
+                (4, [0, 0, 0])])),
+            (2, dict([
+                (1, [0.11071, -0.071139, 0.21822]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.570528]),
+                (4, [0, 0, 0])])),
+            (3, dict([
+                (1, [5.0894e-05, -0.087266, -0.00058387]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.570528]),
+                (4, [0, 0, 0])])),
+            (4, dict([
+                (1, [-0.090375, -0.083436, -0.047127]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.570528]),
+                (4, [0, 0, 0])])),
+            (5, dict([
+                (1, [-0.1924837, -0.09251723, -0.1576728]),
+                (2, [0, 0, 1.570796]),
+                (3, [0, 0, -1.570528]),
+                (4, [0, 0, 0])]))]))}" />
+
+    <!-- ==================================================================== -->
+    <!-- joint rotation axes.                                                  -->
+    <!-- Nearly every revolute joint spins about +Y (0 1 0); the only          -->
+    <!-- exception in the source urdf is left finger1 joint2, which is 0 -1 0. -->
+    <!-- Only the non-default entries are stored here; the finger macro falls   -->
+    <!-- back to [0, 1, 0] for everything else.                                -->
+    <!-- ==================================================================== -->
+    <xacro:property name="joint_axis_default" value="${[0, 1, 0]}" />
+    <xacro:property name="joint_axis" value="${dict(
+        left=dict([
+            (1, dict([
+                (2, [0, -1, 0])]))]))}" />
+
+    <!-- ==================================================================== -->
+    <!-- joint limits: identical across sides, keyed by (fid, joint)           -->
+    <!-- each entry = [lower, upper, effort, velocity]                         -->
+    <!-- ==================================================================== -->
+    <xacro:property name="joint_limit" value="${dict([
+        (1, dict([
+            (1, [0.0475, 1.6033, 0.4452, 8.587]),
+            (2, [-0.1387, 0.9324, 0.4259, 11.1]),
+            (3, [-0.4642, 1.5623, 0.1888, 12.863]),
+            (4, [-0.4699, 1.5568, 0.1468, 13.578])])),
+        (2, dict([
+            (1, [-0.1585, 1.5604, 0.6188, 8.203]),
+            (2, [-0.3700, 0.3700, 0.1822, 8.115]),
+            (3, [-0.4777, 1.5485, 0.2251, 12.863]),
+            (4, [-0.4683, 1.5753, 0.2170, 13.578])])),
+        (3, dict([
+            (1, [-0.1644, 1.5516, 0.6494, 8.203]),
+            (2, [-0.3700, 0.3700, 0.1827, 8.115]),
+            (3, [-0.4739, 1.5512, 0.2078, 12.863]),
+            (4, [-0.4684, 1.5745, 0.2018, 13.578])])),
+        (4, dict([
+            (1, [-0.1554, 1.5585, 0.6389, 8.203]),
+            (2, [-0.3700, 0.3700, 0.1832, 8.115]),
+            (3, [-0.4765, 1.5487, 0.2249, 12.863]),
+            (4, [-0.4777, 1.5634, 0.2044, 13.578])])),
+        (5, dict([
+            (1, [-0.1626, 1.5585, 0.6441, 8.203]),
+            (2, [-0.3700, 0.3700, 0.1798, 8.115]),
+            (3, [-0.4768, 1.5490, 0.2384, 12.863]),
+            (4, [-0.4683, 1.5735, 0.1866, 13.578])]))])}" />
+
+  <!-- ===================== inlined finger macro (source finger.xacro) ===================== -->
+    <!-- ==================================================================== -->
+    <!-- One finger of the wuji hand.                                          -->
+    <!-- Topology: link1 -> link2 -> link3 -> link4 -> pad                     -->
+    <!--           4 revolute joints (joint1..joint4) + 1 fixed pad joint.     -->
+    <!--                                                                       -->
+    <!-- Naming per genie_robot_description/docs/naming_convention.hand.md:    -->
+    <!--   - link/joint prefix is `hand_l` / `hand_r` (not `left` / `right`)   -->
+    <!--   - fingers named thumb / index / middle / ring / pinky (not fid)     -->
+    <!--   - fingertip pad uses `_pad_link` suffix (contact frame +           -->
+    <!--     inertial, no shape); `_tip_link` is NOT used                      -->
+    <!--   - no `idx{NN}` prefix on hand joints                                -->
+    <!--                                                                       -->
+    <!-- Params:                                                               -->
+    <!--   prefix      : URDF link/joint prefix ('hand_l' or 'hand_r')         -->
+    <!--   side        : mesh dir / const dict lookup key ('left' / 'right')   -->
+    <!--   fid         : integer finger id 1..5 (into const dicts)             -->
+    <!--   finger_name : anatomical name (embedded in link/joint names)        -->
+    <!--   mesh_path   : directory holding the STL meshes for this side        -->
+    <!-- ==================================================================== -->
+    <!-- ==================================================================== -->
+    <!-- Why the pad carries no geometry                                       -->
+    <!--                                                                       -->
+    <!-- Upstream gave this link `${side}_finger${fid}_tip_link.STL`, which is -->
+    <!-- not a pad at all: it is `${side}_finger${fid}_link4.STL` copied       -->
+    <!-- vertex-for-vertex and translated a few mm. Right finger1 is the same  -->
+    <!-- solid shifted (-0.264, +0.201, -32.808) mm with a 1.9 nm residual     -->
+    <!-- (float32 round-off), and all ten pads are copies of the link4 they    -->
+    <!-- hang off: order-blind nearest-neighbour deviation runs 0.001 um       -->
+    <!-- (pinky) to 4.07 um (middle). So every fingertip was simulated as two  -->
+    <!-- overlapping solids, and the ten copies were 102456 of the hand pair's -->
+    <!-- 324347 collision triangles (31%). Dropping them took a rigid pick    -->
+    <!-- scene from 6.05x to 8.31x real time and a cloth pinch scene from     -->
+    <!-- 1.10x to 1.55x (mean of the printed per-second windows, not wall     -->
+    <!-- clock), and it retires left_finger1_tip_link.STL, which is the right -->
+    <!-- tip mirrored in y and never rewound (-5300.5 mm^3, inside-out        -->
+    <!-- normals).                                                            -->
+    <!--                                                                      -->
+    <!-- Grasp outcomes are unchanged at both scenarios' shipped drives — a   -->
+    <!-- rigid block still tips over, a cloth fold is still not held — but    -->
+    <!-- that is not the same as free. Pad *origins* close 0.2-0.9 mm further -->
+    <!-- now that the shells no longer interfere as the fingers converge, and -->
+    <!-- the *collision surfaces* move the opposite way, because link4's own  -->
+    <!-- shell is where they now live: at the shipped pinch drive 1.36 the    -->
+    <!-- duplicated shells met 0.21 mm apart where link4 alone stops at       -->
+    <!-- 1.32 mm, and the fabric is 0.5 mm thick. It costs no grasp only      -->
+    <!-- because the fold is extruded before the surfaces arrive — driving    -->
+    <!-- on to 1.40, where they close to 0.10 mm, still scores 0 of 6. One    -->
+    <!-- outcome did move the other way: a re-run sweep holds once at drive   -->
+    <!-- 1.32 where nothing held before, which is one attempt in twelve and 0 -->
+    <!-- of 6 on a second seed, so read it as noise.                          -->
+    <!--                                                                       -->
+    <!-- Kept: the link, its authored <inertial>, and the fixed pad joint. The -->
+    <!-- frame is the TCP grasp code reads (`link_position(                    -->
+    <!-- "hand_r_thumb_pad_link")`), and the mass has to stay somewhere for the -->
+    <!-- 163.3 kg total to hold. Keeping it as its own fixed-joint link is     -->
+    <!-- exact; taking §2.4's merge-into-`_linkN` option would mean recomputing -->
+    <!-- the composite tensor offline, and the solver composes a fixed pair    -->
+    <!-- anyway.                                                               -->
+    <!--                                                                       -->
+    <!-- Lost: link4's own shell ends 2.70 mm short of where the copy's distal -->
+    <!-- face was on index / middle / ring, and 0.70 mm short on the pinky (the -->
+    <!-- thumb copy sat *behind* link4 and added no distal surface). Those     -->
+    <!-- shifts disagree with each other, which reads as a duplication mistake -->
+    <!-- rather than a designed pad thickness. If this hand ever needs a real  -->
+    <!-- contact pad, author a primitive here, per §2.4's collision-only pad.  -->
+    <!-- Do not restore the copy.                                              -->
+    <!--                                                                       -->
+    <!-- OPEN QUESTION, not decided here: is `_pad_link` still the right      -->
+    <!-- suffix now that the pad carries no geometry?                         -->
+    <!--                                                                      -->
+    <!-- naming_convention.hand.md §2.4 defines `_pad_link` as a 实体 (real)  -->
+    <!-- link that takes part in contact, and `_tip` as a 虚拟 (virtual) one  -->
+    <!-- with neither geometry nor inertia. This link is now neither: it has  -->
+    <!-- no geometry, so it never collides, but it does carry <inertial>,     -->
+    <!-- which a `_tip` may not. §2.4's own flowchart routes "does not        -->
+    <!-- collide but is the TCP" to `_tip`, and §2.4 has no category at all   -->
+    <!-- for an inertial-only link.                                           -->
+    <!--                                                                      -->
+    <!-- §2.4 also closes by saying that when a pad mesh already ships as its -->
+    <!-- own STL, an independent `_pad_link` is preferred. That was written   -->
+    <!-- expecting the STL to be a real pad; here it was a copy of link4, so  -->
+    <!-- the premise does not hold for this hand.                             -->
+    <!--                                                                      -->
+    <!-- Left as `_pad_link` for now because the rename is not free: this frame-->
+    <!-- is the TCP the grasp code reads, and five baked USDs plus the upstream-->
+    <!-- wuji-hand-description reference the name. Keeping it also keeps the  -->
+    <!-- slot for the real pad primitive suggested above. The three ways out: -->
+    <!-- keep `_pad_link` and relax §2.4; rename to `_tip` and let `_tip` carry-->
+    <!-- <inertial>; or give §2.4 an inertial-only category. That is a        -->
+    <!-- genie_robot_description decision, so make it there, not here.        -->
+    <!--                                                                     -->
+    <!-- The STL files stay on disk: baked USD assets and the upstream         -->
+    <!-- wuji-hand-description package still reference them.                   -->
+    <!-- ==================================================================== -->
+    <xacro:macro name="wuji_finger" params="prefix side fid finger_name mesh_path">
+
+        <!-- pick the shared (thumb / other) mass+inertia table for this finger -->
+        <xacro:property name="grp" value="${'thumb' if fid == 1 else 'other'}" />
+
+        <!-- per-finger axis lookup: default +Y, overridden only where the urdf differs -->
+        <xacro:property name="axis_fid" value="${joint_axis.get(side, dict()).get(fid, dict())}" />
+
+        <!-- ============================ link1 ============================ -->
+        <link name="${prefix}_${finger_name}_link1">
+            <inertial>
+                <origin rpy="0 0 0"
+                    xyz="${link_com[side][fid][1][0]} ${link_com[side][fid][1][1]} ${link_com[side][fid][1][2]}" />
+                <mass value="${link_mass[grp][1]}" />
+                <inertia ixx="${link_inertia[grp][1]['ixx']}" ixy="${link_inertia[grp][1]['ixy']}"
+                    ixz="${link_inertia[grp][1]['ixz']}" iyy="${link_inertia[grp][1]['iyy']}"
+                    iyz="${link_inertia[grp][1]['iyz']}" izz="${link_inertia[grp][1]['izz']}" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link1.STL" />
+                </geometry>
+                <material name="hand_color" />
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link1.STL" />
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${prefix}_${finger_name}_joint1" type="revolute">
+            <origin
+                xyz="${joint_xyz[side][fid][1][0]} ${joint_xyz[side][fid][1][1]} ${joint_xyz[side][fid][1][2]}"
+                rpy="${joint_rpy[side][fid][1][0]} ${joint_rpy[side][fid][1][1]} ${joint_rpy[side][fid][1][2]}" />
+            <parent link="${prefix}_base_link" />
+            <child link="${prefix}_${finger_name}_link1" />
+            <axis xyz="${axis_fid.get(1, joint_axis_default)[0]} ${axis_fid.get(1, joint_axis_default)[1]} ${axis_fid.get(1, joint_axis_default)[2]}" />
+            <limit lower="${joint_limit[fid][1][0]}" upper="${joint_limit[fid][1][1]}"
+                effort="${joint_limit[fid][1][2]}" velocity="${joint_limit[fid][1][3]}" />
+        </joint>
+
+        <!-- ============================ link2 ============================ -->
+        <link name="${prefix}_${finger_name}_link2">
+            <inertial>
+                <origin rpy="0 0 0"
+                    xyz="${link_com[side][fid][2][0]} ${link_com[side][fid][2][1]} ${link_com[side][fid][2][2]}" />
+                <mass value="${link_mass[grp][2]}" />
+                <inertia ixx="${link_inertia[grp][2]['ixx']}" ixy="${link_inertia[grp][2]['ixy']}"
+                    ixz="${link_inertia[grp][2]['ixz']}" iyy="${link_inertia[grp][2]['iyy']}"
+                    iyz="${link_inertia[grp][2]['iyz']}" izz="${link_inertia[grp][2]['izz']}" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link2.STL" />
+                </geometry>
+                <material name="hand_color" />
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link2.STL" />
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${prefix}_${finger_name}_joint2" type="revolute">
+            <origin
+                xyz="${joint_xyz[side][fid][2][0]} ${joint_xyz[side][fid][2][1]} ${joint_xyz[side][fid][2][2]}"
+                rpy="${joint_rpy[side][fid][2][0]} ${joint_rpy[side][fid][2][1]} ${joint_rpy[side][fid][2][2]}" />
+            <parent link="${prefix}_${finger_name}_link1" />
+            <child link="${prefix}_${finger_name}_link2" />
+            <axis xyz="${axis_fid.get(2, joint_axis_default)[0]} ${axis_fid.get(2, joint_axis_default)[1]} ${axis_fid.get(2, joint_axis_default)[2]}" />
+            <limit lower="${joint_limit[fid][2][0]}" upper="${joint_limit[fid][2][1]}"
+                effort="${joint_limit[fid][2][2]}" velocity="${joint_limit[fid][2][3]}" />
+        </joint>
+
+        <!-- ============================ link3 ============================ -->
+        <link name="${prefix}_${finger_name}_link3">
+            <inertial>
+                <origin rpy="0 0 0"
+                    xyz="${link_com[side][fid][3][0]} ${link_com[side][fid][3][1]} ${link_com[side][fid][3][2]}" />
+                <mass value="${link_mass[grp][3]}" />
+                <inertia ixx="${link_inertia[grp][3]['ixx']}" ixy="${link_inertia[grp][3]['ixy']}"
+                    ixz="${link_inertia[grp][3]['ixz']}" iyy="${link_inertia[grp][3]['iyy']}"
+                    iyz="${link_inertia[grp][3]['iyz']}" izz="${link_inertia[grp][3]['izz']}" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link3.STL" />
+                </geometry>
+                <material name="hand_color" />
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link3.STL" />
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${prefix}_${finger_name}_joint3" type="revolute">
+            <origin
+                xyz="${joint_xyz[side][fid][3][0]} ${joint_xyz[side][fid][3][1]} ${joint_xyz[side][fid][3][2]}"
+                rpy="${joint_rpy[side][fid][3][0]} ${joint_rpy[side][fid][3][1]} ${joint_rpy[side][fid][3][2]}" />
+            <parent link="${prefix}_${finger_name}_link2" />
+            <child link="${prefix}_${finger_name}_link3" />
+            <axis xyz="${axis_fid.get(3, joint_axis_default)[0]} ${axis_fid.get(3, joint_axis_default)[1]} ${axis_fid.get(3, joint_axis_default)[2]}" />
+            <limit lower="${joint_limit[fid][3][0]}" upper="${joint_limit[fid][3][1]}"
+                effort="${joint_limit[fid][3][2]}" velocity="${joint_limit[fid][3][3]}" />
+        </joint>
+
+        <!-- ============================ link4 ============================ -->
+        <link name="${prefix}_${finger_name}_link4">
+            <inertial>
+                <origin rpy="0 0 0"
+                    xyz="${link_com[side][fid][4][0]} ${link_com[side][fid][4][1]} ${link_com[side][fid][4][2]}" />
+                <mass value="${link_mass[grp][4]}" />
+                <inertia ixx="${link_inertia[grp][4]['ixx']}" ixy="${link_inertia[grp][4]['ixy']}"
+                    ixz="${link_inertia[grp][4]['ixz']}" iyy="${link_inertia[grp][4]['iyy']}"
+                    iyz="${link_inertia[grp][4]['iyz']}" izz="${link_inertia[grp][4]['izz']}" />
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link4.STL" />
+                </geometry>
+                <material name="hand_color" />
+            </visual>
+            <collision>
+                <origin xyz="0 0 0" rpy="0 0 0" />
+                <geometry>
+                    <mesh filename="${mesh_path}/${side}_finger${fid}_link4.STL" />
+                </geometry>
+            </collision>
+        </link>
+
+        <joint name="${prefix}_${finger_name}_joint4" type="revolute">
+            <origin
+                xyz="${joint_xyz[side][fid][4][0]} ${joint_xyz[side][fid][4][1]} ${joint_xyz[side][fid][4][2]}"
+                rpy="${joint_rpy[side][fid][4][0]} ${joint_rpy[side][fid][4][1]} ${joint_rpy[side][fid][4][2]}" />
+            <parent link="${prefix}_${finger_name}_link3" />
+            <child link="${prefix}_${finger_name}_link4" />
+            <axis xyz="${axis_fid.get(4, joint_axis_default)[0]} ${axis_fid.get(4, joint_axis_default)[1]} ${axis_fid.get(4, joint_axis_default)[2]}" />
+            <limit lower="${joint_limit[fid][4][0]}" upper="${joint_limit[fid][4][1]}"
+                effort="${joint_limit[fid][4][2]}" velocity="${joint_limit[fid][4][3]}" />
+        </joint>
+
+        <!-- ============================= pad ============================= -->
+        <!-- Fingertip contact frame: inertial only, no shape of its         -->
+        <!-- own. The upstream `_tip_link.STL` was a copy of link4; see      -->
+        <!-- "Why the pad carries no geometry" above the macro.              -->
+        <link name="${prefix}_${finger_name}_pad_link">
+            <inertial>
+                <origin rpy="0 0 0"
+                    xyz="${link_com[side][fid][5][0]} ${link_com[side][fid][5][1]} ${link_com[side][fid][5][2]}" />
+                <mass value="${link_mass[grp][5]}" />
+                <inertia ixx="${link_inertia[grp][5]['ixx']}" ixy="${link_inertia[grp][5]['ixy']}"
+                    ixz="${link_inertia[grp][5]['ixz']}" iyy="${link_inertia[grp][5]['iyy']}"
+                    iyz="${link_inertia[grp][5]['iyz']}" izz="${link_inertia[grp][5]['izz']}" />
+            </inertial>
+        </link>
+
+        <joint name="${prefix}_${finger_name}_pad_joint" type="fixed">
+            <origin
+                xyz="${joint_xyz[side][fid][5][0]} ${joint_xyz[side][fid][5][1]} ${joint_xyz[side][fid][5][2]}"
+                rpy="0 0 0" />
+            <parent link="${prefix}_${finger_name}_link4" />
+            <child link="${prefix}_${finger_name}_pad_link" />
+        </joint>
+
+    </xacro:macro>
+
+  <!-- shade matching the original urdf material colour -->
+  <material name="hand_color">
+    <color rgba="0.8980392 0.9176471 0.9294118 1" />
+  </material>
+
+  <!-- ==================================================================== -->
+  <!-- genie_sim framework adapter.                                          -->
+  <!-- Maps the uniform gripper signature onto the native wuji_hand macro.   -->
+  <!--   side       : 'l' / 'r' (genie_sim convention)                        -->
+  <!--                -> prefix 'hand_l' / 'hand_r' for URDF names            -->
+  <!--                -> wside  'left'   / 'right'  for mesh dir + const dicts -->
+  <!--   mesh_dir   : root mesh dir; meshes live in mesh_dir/gripper/wuji/<wside> -->
+  <!--   collision_type / app : accepted for signature parity, unused here.  -->
+  <!--                                                                        -->
+  <!-- Naming follows genie_robot_description/docs/naming_convention.hand.md: -->
+  <!-- link/joint prefix is `hand_l` / `hand_r`, no `idx{NN}` on hand joints, -->
+  <!-- fingertips use `_pad_link` (real) instead of the legacy `_tip_link`.   -->
+  <!-- ==================================================================== -->
+  <xacro:macro name="gripper"
+    params="side parent_link xyz_offset rpy_offset collision_type mesh_dir app">
+    <xacro:property name="wside" value="${'left' if side == 'l' else 'right'}" />
+    <xacro:wuji_hand
+      prefix="hand_${side}"
+      side="${wside}"
+      mesh_path="${mesh_dir}/gripper/wuji/${wside}"
+      parent_link="${parent_link}"
+      xyz_offset="${xyz_offset}"
+      rpy_offset="${rpy_offset}"
+      attach="true" />
+  </xacro:macro>
+
+  <!-- ==================================================================== -->
+  <!-- Full wuji hand assembly macro.                                        -->
+  <!--   prefix     : URDF link/joint prefix ('hand_l' / 'hand_r')           -->
+  <!--   side       : 'right' or 'left' (selects the parameter set + meshes) -->
+  <!--   mesh_path  : directory holding the STL meshes for this side         -->
+  <!--   parent_link: link the palm is attached to                           -->
+  <!--   xyz_offset / rpy_offset : pose of the palm w.r.t. the parent        -->
+  <!-- Builds: palm (as `_base_link`) + 5 fingers (each 4 revolute + 1 pad). -->
+  <!-- ==================================================================== -->
+  <xacro:macro name="wuji_hand"
+    params="prefix side mesh_path parent_link:='world' xyz_offset:='0 0 0' rpy_offset:='0 0 0' attach:=true">
+
+    <!-- ============================= palm ============================= -->
+    <!-- Wuji has a single palm segment that also serves as the arm-side    -->
+    <!-- mount, so we use `_base_link` (not `_palm_1`) per                  -->
+    <!-- naming_convention.hand.md §2.1.                                    -->
+    <link name="${prefix}_base_link">
+      <inertial>
+        <origin rpy="0 0 0"
+          xyz="${palm_com[side][0]} ${palm_com[side][1]} ${palm_com[side][2]}" />
+        <mass value="${palm_mass}" />
+        <inertia ixx="${palm_inertia['ixx']}" ixy="${palm_inertia['ixy']}"
+          ixz="${palm_inertia['ixz']}" iyy="${palm_inertia['iyy']}"
+          iyz="${palm_inertia['iyz']}" izz="${palm_inertia['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_01.STL" />
+        </geometry>
+        <material name="hand_color" />
+      </visual>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_02.STL" />
+        </geometry>
+        <material name="hand_color" />
+      </visual>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_03.STL" />
+        </geometry>
+        <material name="hand_color" />
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_collision_01.STL" />
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_collision_02.STL" />
+        </geometry>
+      </collision>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}/${side}_palm_link_collision_03.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <xacro:if value="${attach}">
+      <joint name="${prefix}_base_joint" type="fixed">
+        <origin xyz="${xyz_offset}" rpy="${rpy_offset}" />
+        <parent link="${parent_link}" />
+        <child link="${prefix}_base_link" />
+      </joint>
+    </xacro:if>
+
+    <!-- ============================ fingers =========================== -->
+    <!-- fid → finger_name mapping: 1=thumb, 2=index, 3=middle, 4=ring, 5=pinky -->
+    <xacro:wuji_finger prefix="${prefix}" side="${side}" fid="1" finger_name="thumb"  mesh_path="${mesh_path}" />
+    <xacro:wuji_finger prefix="${prefix}" side="${side}" fid="2" finger_name="index"  mesh_path="${mesh_path}" />
+    <xacro:wuji_finger prefix="${prefix}" side="${side}" fid="3" finger_name="middle" mesh_path="${mesh_path}" />
+    <xacro:wuji_finger prefix="${prefix}" side="${side}" fid="4" finger_name="ring"   mesh_path="${mesh_path}" />
+    <xacro:wuji_finger prefix="${prefix}" side="${side}" fid="5" finger_name="pinky"  mesh_path="${mesh_path}" />
+
+  </xacro:macro>
+</robot>

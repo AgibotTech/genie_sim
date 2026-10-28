@@ -63,7 +63,7 @@ re-introduces a known failure mode — keep them all.
   Below 0.1 rad we use the raw link-frame diagonal of ``I_total`` (which
   discards the small off-diagonals) and emit ``rpy="0 0 0"``.
 
-* **Eigenvalue spread to 6%**: Isaac Sim 6.0's URDF→USD converter takes
+* **Eigenvalue spread to 6%**: Isaac Sim 6.x's URDF→USD converter takes
   a shortcut for diagonal ``<inertia>`` with ``rpy=0``. When the
   sorted-ascending order of (ixx, iyy, izz) forms a 3-cycle of link
   axes — eg. ``izz<ixx<iyy`` — Isaac picks a 3-cycle ``principalAxes``

@@ -375,7 +375,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="18"
         velocity="4.7" />
       <dynamics friction="0.5" />
       <drive stiffness="15000" damping="220" />
@@ -508,11 +508,6 @@
       <drive stiffness="8000" damping="100" />
     </joint>
     <link name="${end_link}">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.001" />
-        <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
     <joint name='arm_l_end_joint' type='fixed'>
       <origin xyz="0.095 0.0 0.0" rpy="3.1416 -1.5708 0" />
@@ -881,7 +876,7 @@
       <limit
         lower="-3.0718"
         upper="3.0718"
-        effort="35"
+        effort="18"
         velocity="4.7" />
       <dynamics friction="0.5" />
       <drive stiffness="15000" damping="220" />
@@ -998,11 +993,6 @@
       </xacro:if>
     </link>
     <link name="${end_link}">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <mass value="0.001" />
-        <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0" />
-      </inertial>
     </link>
     <joint name="idx67_arm_r_joint7" type="revolute">
       <origin
