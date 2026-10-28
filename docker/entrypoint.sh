@@ -150,6 +150,9 @@ export ROS_PYTHON_VERSION=3
 export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-1}"
 export ROS_AUTOMATIC_DISCOVERY_RANGE="${ROS_AUTOMATIC_DISCOVERY_RANGE:-LOCALHOST}"
 export GENIESIM_IN_CONTAINER=1
+export WARP_CACHE_PATH="/tmp/geniesim-newton-warp-${HOST_UID}"
+mkdir -p "${WARP_CACHE_PATH}"
+chown "${HOST_UID}:${HOST_GID}" "${WARP_CACHE_PATH}" 2>/dev/null || true
 
 # Write /etc/profile.d/geniesim.sh — sourced by all login shells system-wide.
 # Overwritten on every container start so ROS_DISTRO is always current.
@@ -163,6 +166,7 @@ export PATH="/usr/local/bin:\${HOME}/.local/bin:\${PATH}"
 export XDG_RUNTIME_DIR="/tmp/runtime-\$(id -u)"
 mkdir -p "\${XDG_RUNTIME_DIR}" && chmod 700 "\${XDG_RUNTIME_DIR}" 2>/dev/null || true
 export GENIESIM_IN_CONTAINER=1
+export WARP_CACHE_PATH="/tmp/geniesim-newton-warp-\$(id -u)"
 export ROS_DISTRO=${ROS_DISTRO}
 export ROS_VERSION=2
 export ROS_PYTHON_VERSION=3
@@ -214,8 +218,8 @@ _pip_install() {
 # ``source/geniesim/pyproject.toml``. ``docker/collect_deps.py --peers``
 # reads that pyproject (same parser as ``geniesim_cli._tiers``) and
 # prints the peer names one per line. Tier-2 peers (geniesim_teleop /
-# generator / world) are deliberately NOT installed by the entrypoint —
-# users opt in via ``pip install -e "source/geniesim/[teleop|generator|world|all]"``
+# generator / world) are not installed by default. Users opt in via
+# ``pip install -e "source/geniesim/[teleop|generator|world|all]"``
 # inside the container.
 #
 # Two non-pyproject inputs the script can't derive:

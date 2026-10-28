@@ -5,7 +5,7 @@
 #   geniesim docker4.5 build --china
 #
 # Or manually:
-#   docker build -f docker/Dockerfile.4.5 -t registry.agibot.com/genie-sim/geniesim2.0:latest .
+#   docker build -f docker/Dockerfile.4.5 -t registry.agibot.com/genie-sim/geniesim2:latest .
 #
 # Base: NVIDIA Isaac Sim 4.5.0 image (Ubuntu 22.04). Isaac Sim 4.5 is
 # pip-installable into SYSTEM python3.10 so rclpy and the geniesim stack
@@ -24,6 +24,7 @@ FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 ARG APT_MIRROR=""
 ARG PIP_INDEX_URL=""
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
+ARG ISAACSIM_PIP_VERSION=4.5.0
 
 ENV ACCEPT_EULA=Y
 ENV OMNI_KIT_ACCEPT_EULA=Y
@@ -157,7 +158,7 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     fi && \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 -m pip install --upgrade --ignore-installed \
-        "isaacsim[all,extscache]==4.5.0" \
+        "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}"
 
 RUN mkdir -p /usr/local/lib/python3.10/dist-packages/isaacsim/kit && \
@@ -176,8 +177,8 @@ RUN id isaac-sim >/dev/null 2>&1 || useradd -m -u 1234 -s /bin/bash isaac-sim &&
 # ------------------------------------------------------------
 # GeneSim module dependencies (extracted from **tier-1** pyproject.toml files).
 # NOTE: collect_deps.py is shared across all variants — lives in docker/.
-# Tier-2 peers (`geniesim_teleop`, `geniesim_generator`, `geniesim_world`)
-# are opt-in via the umbrella's `[teleop|generator|world|all]` extras and
+# Tier-2 peers (`geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world`)
+# are opt-in via the umbrella's `[teleop|scene_agent|world|all]` extras and
 # not installed by default — only their pyproject.tomls would need to be
 # COPY'd here if you want them baked in.
 # ------------------------------------------------------------

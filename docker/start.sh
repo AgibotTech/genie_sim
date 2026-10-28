@@ -47,7 +47,7 @@ for arg in "$@"; do
     esac
 done
 
-IMAGE="${GENIESIM_IMAGE:-registry.agibot.com/genie-sim/geniesim4.0:latest}"
+IMAGE="${GENIESIM_IMAGE:-registry.agibot.com/genie-sim/geniesim4:latest}"
 NAME="${GENIESIM_CONTAINER:-geniesim}"
 HOST_WS="${GENIESIM_WORKSPACE:-$(pwd)}"
 CACHE_ROOT="${GENIESIM_CACHE_ROOT:-$HOME/docker/isaac-sim}"
@@ -109,6 +109,14 @@ RUN_ARGS=(
 
 # Named volumes for in-package shader caches — seeded from image on first create,
 # persisted across container restarts. Only mounted when the path is set for the variant.
+# OptiX AI denoiser weights, shipped with the host NVIDIA driver and absent from
+# the Isaac Sim image. Path-traced rendering loads them every frame and logs
+# "Unable to load denoiser weights" on each attempt when the file is missing;
+# raytraced lighting never touches it. Only affects image noise, not physics.
+if [ -f /usr/share/nvidia/nvoptix.bin ]; then
+    RUN_ARGS+=(-v /usr/share/nvidia/nvoptix.bin:/usr/share/nvidia/nvoptix.bin:ro)
+fi
+
 if [ -n "${GENIESIM_ISAACSIM_KIT_CACHE_PATH:-}" ]; then
     RUN_ARGS+=(--mount "source=${NAME}-isaacsim-kit-cache,target=${GENIESIM_ISAACSIM_KIT_CACHE_PATH}")
 fi

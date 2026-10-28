@@ -5,7 +5,7 @@
 #   geniesim docker5.1 build --china
 #
 # Or manually:
-#   docker build -f docker/Dockerfile.5.1 -t registry.agibot.com/genie-sim/geniesim3.5:latest .
+#   docker build -f docker/Dockerfile.5.1 -t registry.agibot.com/genie-sim/geniesim3:latest .
 #
 # Base: NVIDIA Isaac Sim 5.1.0 image (Ubuntu 24.04). Isaac Sim 5.1 is
 # pre-installed at /isaac-sim with its own bundled Python accessible
@@ -30,6 +30,19 @@ ARG APT_MIRROR=""
 ARG PIP_INDEX_URL=""
 ARG ISAACSIM_PIP_VERSION=6.2.0.0
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
+
+# The 6.2 co-install — same value as ISAACSIM_PIP_VERSION in
+# docker/Dockerfile (the 6.2 head, see the note there), and pinned for the
+# same reason: unpinned, this line installs whatever pypi.nvidia.com currently
+# serves, which silently made the *default* image's python3 carry a version
+# nothing in this repo had tested.
+#
+# Note this variant has *two* Isaac runtimes but only one MuJoCo pin:
+# `mujoco~=3.12.0` (source/geniesim_ros/pyproject.toml) is installed into
+# both interpreters, so Isaac 5.1's bundled Newton gets the 6.2-compatible
+# MuJoCo too. Unverified — see docker/GENIESIM4_MIGRATION.md §4 R14 and
+# §9 claim 11.
+ARG ISAACSIM_PIP_VERSION=6.2.0.0
 
 ENV ACCEPT_EULA=Y
 ENV OMNI_KIT_ACCEPT_EULA=Y
@@ -167,8 +180,8 @@ RUN id isaac-sim >/dev/null 2>&1 || useradd -m -u 1234 -s /bin/bash isaac-sim &&
 # GeneSim module dependencies (extracted from **tier-1** pyproject.toml files).
 # Installed into both omni_python (5.1 runtime) and system python3 (6.2 + ROS).
 # NOTE: collect_deps.py is shared across all variants — lives in docker/.
-# Tier-2 peers (`geniesim_teleop`, `geniesim_generator`, `geniesim_world`)
-# are opt-in via the umbrella's `[teleop|generator|world|all]` extras and
+# Tier-2 peers (`geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world`)
+# are opt-in via the umbrella's `[teleop|scene_agent|world|all]` extras and
 # not installed by default — only their pyproject.tomls would need to be
 # COPY'd here if you want them baked in.
 # ------------------------------------------------------------
@@ -177,12 +190,27 @@ COPY source/geniesim_cli/pyproject.toml /tmp/source/geniesim_cli/pyproject.toml
 COPY source/geniesim/pyproject.toml /tmp/source/geniesim/pyproject.toml
 COPY source/geniesim_benchmark/pyproject.toml /tmp/source/geniesim_benchmark/pyproject.toml
 COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
+COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     omni_python -m pip install --upgrade pip && \
     omni_python /tmp/collect_deps.py /tmp/source > /tmp/geniesim_deps.txt && \
     omni_python -m pip install --ignore-installed -r /tmp/geniesim_deps.txt && \
-    python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt && \
-    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt
+    python3 /opt/geniesim/docker/collect_runtime_constraints.py \
+        --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
+    python3 -m pip install -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
+        -c /opt/geniesim/docker/isaac-constraints.txt && \
+    # OVRtx creates this search directory at startup, but its installed parent
+    # is root-owned. Prepare it here for the remapped non-root render process.
+    python3 -c 'from pathlib import Path; import ovrtx; (Path(ovrtx.__file__).parent / "bin/mdl/omniverse_exts").mkdir(parents=True, exist_ok=True)' && \
+    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt
+
+# ------------------------------------------------------------
+# R14 guard: verify Newton's optional sim requirements after the constrained
+# system-Python install. The bundled 5.1 interpreter keeps its legacy install
+# path. See docker/check_newton_pins.py.
+# ------------------------------------------------------------
+COPY docker/check_newton_pins.py /tmp/check_newton_pins.py
+RUN python3 /tmp/check_newton_pins.py && rm -f /tmp/check_newton_pins.py
 
 # Pin numpy/scipy for omni_python — Isaac Sim 5.1 requires specific versions.
 RUN omni_python -m pip install --force-reinstall --no-cache-dir "numpy==1.26.4" "scipy==1.13.1"
@@ -200,6 +228,8 @@ COPY source/geniesim_ros/src/ros_ws/src /tmp/geniesim_ros_src
 RUN apt-get update && \
     rosdep install --from-paths /tmp/geniesim_ros_src --ignore-src -y --rosdistro jazzy && \
     rm -rf /tmp/geniesim_ros_src /var/lib/apt/lists/*
+
+RUN python3 -m pip check
 
 WORKDIR /workspace
 

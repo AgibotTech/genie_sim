@@ -8,7 +8,7 @@
 Outputs a flat list of pip-installable package specs that the docker
 image needs to install at build time. Tier-2 peers are deliberately
 **excluded** — they're opt-in via
-``pip install -e "source/geniesim/[teleop|generator|world|all]"``
+``pip install -e "source/geniesim/[teleop|scene_agent|world|all]"``
 and their heavy stacks (VR / LLM / CUDA-ML) shouldn't be baked into
 the default container.
 
@@ -35,6 +35,7 @@ Skips, per-package:
 - ``isaacsim``, ``cv_bridge``, ``numpy``, ``scipy`` — provided by the
   runtime base image, not by pip
 """
+
 import pathlib
 import re
 import sys
@@ -42,7 +43,9 @@ import sys
 SKIP_PREFIXES = ("geniesim",)
 SKIP_EXACT = {"isaacsim", "cv_bridge", "numpy", "scipy"}
 
-SOURCE_DIR = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "source"
+SOURCE_DIR = (
+    pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "source"
+)
 
 
 def _strip_specifier(req: str) -> str:

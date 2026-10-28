@@ -1,8 +1,8 @@
-# GenieSim Docker image — Isaac Sim 6.2 + ROS 2 Jazzy + system Python 3.12.
+# GenieSim Docker image — Isaac Sim 6.X + ROS 2 Jazzy + system Python 3.12.
 #
 # Build:
 #   geniesim docker6.2 build
-#   geniesim docker6.2 build --china       # use DaoCloud mirrors for nvcr/apt/pip
+#   geniesim docker6.2 build --china      # use DaoCloud mirrors for nvcr/apt/pip
 #
 # Or manually:
 #   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
@@ -13,14 +13,14 @@
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
 #       -t registry.agibot.com/genie-sim/geniesim4:latest .
 #
-# Base: NVIDIA's published Isaac Sim 6.2 image (Ubuntu 24.04).
+# Base: NVIDIA's published Isaac Sim 6.X image (Ubuntu 24.04).
 # The image already ships Isaac Sim under /isaac-sim with
 # /isaac-sim/python.sh wrapping a bundled CPython, plus the omniverse
 # cache dirs owned by the canned "isaac-sim" user (uid:gid = 1234:1234).
 #
 # This image installs:
 #   * ROS 2 Jazzy desktop on top of Ubuntu 24.04 (Noble) — apt-managed.
-#   * Isaac Sim 6.2 PyPI bundle into the system Python 3.12 (NOT a venv,
+#   * Isaac Sim 6.X PyPI bundle into the system Python 3.12 (NOT a venv,
 #     per project policy: jazzy's rclpy lives in system python3.12, and
 #     mujoco_ros_node.py uses sys.executable, so both must coexist in the
 #     same interpreter).
@@ -29,16 +29,32 @@
 # entrypoint.sh — see the comments there. Build-time UID stays at 1234.
 
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
+# Isaac Sim 6.2 is the Genie Sim 4.0 target. Keep the requested base
+# respin paired with the published wheel; a future major needs its own variant.
+#
+# Three strings, one release — they MUST be bumped together:
+#   ISAACSIM_TAG         6.2.0.1   NGC base image respin
+#   ISAACSIM_PIP_VERSION 6.2.0.0   PyPI wheel version (4 components)
+#   mujoco~=3.12.0                 source/geniesim_ros/pyproject.toml
+# Leaving the wheel unpinned silently tracks whatever pypi.nvidia.com
+# serves, which is how this image used to end up with wheels and base
+# image naming different releases. Pin both or they disagree.
+#
+# The third string is outside this directory and is the one most easily
+# forgotten. Isaac owns the Newton that consumes MuJoCo (6.2 ships Newton
+# 1.6.1 with MuJoCo 3.12.0), and the dep layer below installs our pin
+# under Isaac/colcon constraints, with a Newton metadata guard so a stale
+# pin fails the build. See docker/check_newton_pins.py.
 ARG ISAACSIM_TAG=6.2.0.1
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 
 # Build-arg knobs for behind-the-GFW builds. Defaults are upstream;
-# `geniesim docker6.2 build --china` rewires all three to mainland mirrors.
+# `geniesim docker build --china` rewires all three to mainland mirrors.
 ARG APT_MIRROR=""
 ARG PIP_INDEX_URL=""
-ARG ISAACSIM_PIP_VERSION=6.2.0.0
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
+ARG ISAACSIM_PIP_VERSION=6.2.0.0
 
 ENV ACCEPT_EULA=Y
 ENV OMNI_KIT_ACCEPT_EULA=Y
@@ -134,7 +150,7 @@ RUN add-apt-repository universe -y && \
 RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | grep -v "as root is not recommended"
 
 # ------------------------------------------------------------
-# Isaac Sim 6.2 — install into system python3.12.
+# Isaac Sim 6.X — install into system python3.12.
 #
 # Ubuntu 24.04 enforces PEP 668 ("externally-managed environment");
 # PIP_BREAK_SYSTEM_PACKAGES=1 (set above) lifts that for the whole
@@ -151,12 +167,12 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
         "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}"
 
-# Pre-accept EULA for Isaac Sim 6.2 (OMNI_KIT_ACCEPT_EULA path)
+# Pre-accept EULA for Isaac Sim 6.X (OMNI_KIT_ACCEPT_EULA path)
 RUN mkdir -p /usr/local/lib/python3.12/dist-packages/isaacsim/kit && \
     touch /usr/local/lib/python3.12/dist-packages/isaacsim/kit/EULA_ACCEPTED && \
     chmod o+w /usr/local/lib/python3.12/dist-packages/isaacsim/kit
 
-# # isaacsim 6.2's pip prebundle has an old typing_extensions without Sentinel.
+# # isaacsim 6.x's pip prebundle has an old typing_extensions without Sentinel.
 # RUN curl -sSL "https://raw.githubusercontent.com/python/typing_extensions/main/src/typing_extensions.py" \
 #     -o /usr/local/lib/python3.12/dist-packages/isaacsim/extscache/omni.services.pip_archive-0.18.6+109.0.4.lx64.cp312/pip_prebundle/typing_extensions.py
 
@@ -177,8 +193,8 @@ RUN id isaac-sim >/dev/null 2>&1 || useradd -m -u 1234 -s /bin/bash isaac-sim &&
 # ------------------------------------------------------------
 # GeneSim module dependencies (extracted from **tier-1** pyproject.toml files).
 # NOTE: collect_deps.py is shared across all variants — lives in docker/.
-# Tier-2 peers (`geniesim_teleop`, `geniesim_generator`, `geniesim_world`)
-# are opt-in via the umbrella's `[teleop|generator|world|all]` extras and
+# Tier-2 peers (`geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world`)
+# are opt-in via the umbrella's `[teleop|scene_agent|world|all]` extras and
 # not installed by default — only their pyproject.tomls would need to be
 # COPY'd here if you want them baked in.
 # ------------------------------------------------------------
@@ -187,10 +203,23 @@ COPY source/geniesim_cli/pyproject.toml /tmp/source/geniesim_cli/pyproject.toml
 COPY source/geniesim/pyproject.toml /tmp/source/geniesim/pyproject.toml
 COPY source/geniesim_benchmark/pyproject.toml /tmp/source/geniesim_benchmark/pyproject.toml
 COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
+COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python3 /opt/geniesim/docker/collect_runtime_constraints.py \
+        --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
     python3 /tmp/collect_deps.py /tmp/source > /tmp/geniesim_deps.txt && \
-    python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt && \
-    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt
+    python3 -m pip install -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
+        -c /opt/geniesim/docker/isaac-constraints.txt && \
+    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt
+
+# ------------------------------------------------------------
+# R14 guard: verify Newton's optional sim requirements after the constrained
+# dependency install. Isaac Sim 6.X puts Newton's metadata in site-packages;
+# this fails on mismatch and no-ops where Newton is not pip-visible.
+# See docker/check_newton_pins.py.
+# ------------------------------------------------------------
+COPY docker/check_newton_pins.py /tmp/check_newton_pins.py
+RUN python3 /tmp/check_newton_pins.py && rm -f /tmp/check_newton_pins.py
 
 # Place the entrypoint at a stable absolute path so the image is
 # self-sufficient (no requirement to bind-mount the repo just to find
@@ -205,6 +234,8 @@ COPY source/geniesim_ros/src/ros_ws/src /tmp/geniesim_ros_src
 RUN apt-get update && \
     rosdep install --from-paths /tmp/geniesim_ros_src --ignore-src -y --rosdistro jazzy && \
     rm -rf /tmp/geniesim_ros_src /var/lib/apt/lists/*
+
+RUN python3 -m pip check
 
 WORKDIR /workspace
 
