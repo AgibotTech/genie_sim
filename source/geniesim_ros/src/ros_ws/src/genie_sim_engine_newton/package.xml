@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>genie_sim_engine_newton</name>
+  <version>3.2.0</version>
+  <description>Newton standalone physics backend, solver adapters, shared session
+    and Newton assembly stages for genie_sim_engine_core.</description>
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
+  <license file="LICENSE">Mozilla Public License Version 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
+  <depend>genie_sim_engine_core</depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

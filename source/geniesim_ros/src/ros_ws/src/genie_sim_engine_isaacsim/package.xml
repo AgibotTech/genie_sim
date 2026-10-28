@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>genie_sim_engine_isaacsim</name>
+  <version>3.2.0</version>
+  <description>
+    Isaac Sim / Kit backend for the GenieSim engine platform.
+
+    Ships the Kit lifecycle helpers (bootstrap, stage), the
+    PhysicsEngine implementations that run under Isaac Sim
+    (isaac_newton, isaac_physx), the URDF→USD + Isaac scene-assembly
+    stages, and the isaac_newton assemble pipeline factory. The
+    genie_sim_engine_isaacsim_node.py entry point is installed here.
+
+    The paired Newton-standalone (Kit-free) package is
+    genie_sim_engine_newton.
+  </description>
+  <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
+  <license file="LICENSE">Mozilla Public License Version 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>genie_sim_common</depend>
+  <depend>genie_sim_engine_core</depend>
+  <!--
+    Runtime dep on the Newton-standalone package for two symbols:
+    - genie_sim_engine_newton.assemble.newton_extras_stage.NewtonExtrasStage
+      (composed into the isaac_newton pipeline factory here).
+    - genie_sim_engine_newton.common.session (imported lazily by the
+      runtime script under the Isaac path).
+  -->
+  <depend>genie_sim_engine_newton</depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

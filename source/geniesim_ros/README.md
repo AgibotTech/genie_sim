@@ -231,6 +231,8 @@ graph TD
   genie_sim_controllers["<b>genie_sim_controllers</b>"]
   genie_sim_engine["<b>genie_sim_engine</b>"]
   genie_sim_engine_core["<b>genie_sim_engine_core</b>"]
+  genie_sim_engine_isaacsim["<b>genie_sim_engine_isaacsim</b>"]
+  genie_sim_engine_newton["<b>genie_sim_engine_newton</b>"]
   genie_sim_moveit["<b>genie_sim_moveit</b>"]
   genie_sim_moveit_plugins["<b>genie_sim_moveit_plugins</b>"]
   genie_sim_planning["<b>genie_sim_planning</b>"]
@@ -248,6 +250,11 @@ graph TD
   genie_sim_control ==>|exec| genie_sim_common
   genie_sim_controllers ==>|exec| genie_sim_common
   genie_sim_engine_core ==>|exec| genie_sim_common
+  genie_sim_engine_isaacsim ==>|exec| genie_sim_common
+  genie_sim_engine_isaacsim ==>|exec| genie_sim_engine_core
+  genie_sim_engine_isaacsim ==>|exec| genie_sim_engine_newton
+  genie_sim_engine_newton ==>|exec| genie_sim_common
+  genie_sim_engine_newton ==>|exec| genie_sim_engine_core
   genie_sim_moveit ==>|exec| genie_sim_common
   genie_sim_moveit_plugins ==>|exec| genie_sim_common
   genie_sim_planning ==>|exec| genie_sim_common

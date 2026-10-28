@@ -1,6 +1,6 @@
 # geniesim_ros
 
-ROS 2 workspace for the Genie Sim simulation stack. Contains twelve packages that
+ROS 2 workspace for the Genie Sim simulation stack. Contains fourteen packages that
 together form the physics + render + MoveIt + ros2_control + visualization
 layer.
 
@@ -28,6 +28,8 @@ the package is added to this table; the doc-coverage audit
 | `genie_sim_common` | Shared CMake conventions and test wrappers | [README](src/ros_ws/src/genie_sim_common/README.md) | [AGENTS](src/ros_ws/src/genie_sim_common/AGENTS.md) |
 | `genie_sim_engine_core` | Backend-independent engine contracts, assembly pipeline, schemas and ROS bridge | [README](src/ros_ws/src/genie_sim_engine_core/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_core/AGENTS.md) |
 | `genie_sim_engine` | Physics engine (Isaac PhysX / Isaac Newton / Newton-standalone) + ROS 2 bridge — deep-dives in [docs/](src/ros_ws/src/genie_sim_engine/docs/) | [README](src/ros_ws/src/genie_sim_engine/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine/AGENTS.md) |
+| `genie_sim_engine_isaacsim` | Isaac Sim assembly and PhysX / experimental Newton Kit backends | [README](src/ros_ws/src/genie_sim_engine_isaacsim/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_isaacsim/AGENTS.md) |
+| `genie_sim_engine_newton` | Newton standalone backend, solver adapters and shared assembly helpers | [README](src/ros_ws/src/genie_sim_engine_newton/README.md) | [AGENTS](src/ros_ws/src/genie_sim_engine_newton/AGENTS.md) |
 | `genie_sim_render` | OVRtx (C++) and Isaac Sim (Python) render nodes | [README](src/ros_ws/src/genie_sim_render/README.md) | [AGENTS](src/ros_ws/src/genie_sim_render/AGENTS.md) |
 | `genie_sim_robot_model` | Robot xacro / URDF descriptions + pre-baked USDs + mesh tools | [README](src/ros_ws/src/genie_sim_robot_model/README.md) | [AGENTS](src/ros_ws/src/genie_sim_robot_model/AGENTS.md) |
 | `genie_sim_rviz_plugins` | Custom RViz2 display plugins | [README](src/ros_ws/src/genie_sim_rviz_plugins/README.md) | [AGENTS](src/ros_ws/src/genie_sim_rviz_plugins/AGENTS.md) |
