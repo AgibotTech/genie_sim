@@ -1,3 +1,6 @@
+<h2 align="center">🚀 Genie Sim · Next Major Update</h2>
+<p align="center"><strong>COMING NOVEMBER 2, 2026</strong></p>
+
 ![image.png](./docs/image.png)
 
 <div align="center">
