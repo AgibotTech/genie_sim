@@ -1,0 +1,70 @@
+robot:
+  joint_overlays:
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_crsB.sysid-2026-09-22.yaml
+    - package://genie_sim_robot_model/robots/genie/g2/overlays/g2_wuji.sysid-2026-09-24.yaml
+  robot_name: G2_crsB_wuji
+  robot_prefix: genie
+  robot_source:
+    arm: crsB
+    body: g2
+    gripper: "wuji"
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: false   # resolves to mode `free`: root_joint deactivated →
+                               # plain substep, real gravity + contacts
+                               # (init_base_pose.z holds it off the floor).
+                               # `pin_base_mode` is ignored while this is false.
+    convert_joints_to_fixed: []   # [base, head, body] to weld sub-trees; empty = keep all articulated
+    urdf:
+      inertia_source: sysid
+  init_base_pose:
+    x: -0.25
+    y: 0.0
+    z: 0.04
+    theta: 0.0
+  init_joint_pos:
+    idx22_arm_l_joint2: -45
+    idx24_arm_l_joint4: -75
+    idx26_arm_l_joint6: -55
+    idx62_arm_r_joint2: -45
+    idx64_arm_r_joint4: -75
+    idx66_arm_r_joint6: -55
+
+# Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
+# sets the orbit pivot.  Frames the G2 chassis (~1.4 m tall) from
+# front-right, aimed at chest height.
+viewer_camera:
+  pos:    [1.6, -1.6, 1.2]
+  lookat: [0.0,  0.0, 0.8]
+
+cameras:
+- prim_path: head_link3/Head_Front_Camera
+  frame_id: head_link3
+  topic:
+    rgb: /genie_sim/head_front_camera_rgb
+    depth: /genie_sim/head_front_camera_depth
+  sensor:
+    width: 640
+    height: 400
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 318.7979431152
+    cy: 202.4943847656
+    fx: 305.6425170898
+    fy: 305.6007080078
+    k1: 0
+    k2: 0
+    p1: 0
+    p2: 0
+    k3: 0
+  extrinsic:
+    xyz: [0.0, 0.0, 0.0]
+    wxyz: [1.0, 0.0, 0.0, 0.0]
+lidars: []
+scene: scenes/GDK/demo.usda
+
+newton:
+  debug:
+    pub_object_marker: true
