@@ -1,0 +1,29 @@
+# Example launcher, consumed by ClientConfig.from_files with an assembled manifest.
+# Physics/profile values follow the stock launcher_newton_mjwarp configuration.
+# This package does not own or generate scene assets. Tune this launcher, not Python.
+launcher:
+  physics:
+    engine: genie_sim_engine_newton
+    engines:
+      genie_sim_engine_newton:
+        package: genie_sim_engine_newton
+        executable: genie_sim_engine_newton_node.py
+        name: genie_sim_engine
+    industrial_bridge: ""
+  renders: []
+genie_sim_engine:
+  ros__parameters:
+    physics_params_file: physics_params.yaml
+    physics_engine_visualizer: none
+    physics_solver: mujoco-warp
+    physics_solver_substep: 10
+    physics_hz: 100.0
+    dds_hz: 100.0
+    render_hz: 30.0
+    realtime_factor: 1.0
+    num_envs: 1
+    use_tf_render: true
+    step_mode: lockstep
+    # Example 25 Hz control: 4 / 100 = 0.04 s requested per command.
+    # The client never rounds a second control_hz or overrides this value.
+    step_lockstep_ticks: 4
