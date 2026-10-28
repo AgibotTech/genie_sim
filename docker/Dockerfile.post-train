@@ -1,0 +1,61 @@
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+# Runtime for an idle GenieSim post-training server. Mount code at /workspace and assets
+# at /geniesim_assets; the batch launcher builds the selected ROS workspace.
+# The adjacent .dockerignore limits the repository-root build context.
+# Allocate adequate /dev/shm for image buffers.
+ARG BASE_IMAGE=registry.agibot.com/genie-sim/geniesim4:latest
+FROM ${BASE_IMAGE}
+
+USER root
+
+# isaac_fused uses the bundled runtime's TiledCameraSensor API.
+RUN isaac_version="$(cat /isaac-sim/VERSION 2>/dev/null || true)" && \
+    case "$isaac_version" in \
+      6.2.*) ;; \
+      *) echo "post-train requires Isaac Sim 6.2.x at /isaac-sim; found '${isaac_version:-missing}'." >&2; \
+         echo "Set BASE_IMAGE to a GenieSim runtime with bundled Isaac Sim 6.2.x." >&2; exit 1 ;; \
+    esac
+
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ARG APT_MIRROR=
+
+COPY docker/post-train-runtime.txt /opt/geniesim/docker/post-train-runtime.txt
+# Keep the base image's Newton/MuJoCo/Warp versions together.
+RUN pip3 install --no-cache-dir --break-system-packages \
+    -r /opt/geniesim/docker/post-train-runtime.txt
+# The ROS render node uses the OVRTX 0.4 motion-BVH API.
+RUN pip3 install --no-cache-dir --break-system-packages --no-deps \
+    --index-url https://pypi.nvidia.com "ovrtx==0.4.1.364340"
+RUN if [ -n "$APT_MIRROR" ]; then \
+      for file in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do \
+        if [ -f "$file" ]; then \
+          sed -i -E "s|https?://(archive.ubuntu.com/ubuntu\|security.ubuntu.com/ubuntu)|${APT_MIRROR}|g" "$file"; \
+        fi; \
+      done; \
+    fi && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ros-jazzy-gazebo-msgs && \
+    rm -rf /var/lib/apt/lists/*
+RUN /isaac-sim/python.sh -m pip install --no-cache-dir \
+    -c /opt/geniesim/docker/post-train-runtime.txt posix_ipc
+
+COPY docker/entrypoint.sh /usr/local/bin/geniesim-entrypoint
+COPY docker/entrypoint.post-train.sh /usr/local/bin/geniesim-profile-entrypoint
+RUN chmod +x /usr/local/bin/geniesim-entrypoint /usr/local/bin/geniesim-profile-entrypoint
+
+ENV ACCEPT_EULA=Y \
+    OMNI_KIT_ACCEPT_EULA=Y \
+    PRIVACY_CONSENT=Y \
+    GENIESIM_ASSETS_PATH=/geniesim_assets \
+    GENIESIM_PY_CMD=python3 \
+    GENIESIM_BREAK_SYSTEM_PKGS=1 \
+    ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
+    SIM_REPO_ROOT=/workspace \
+    PYTHONPATH=/workspace/source
+
+WORKDIR /workspace
+HEALTHCHECK NONE
+ENTRYPOINT ["/usr/local/bin/geniesim-profile-entrypoint"]
+CMD ["tail", "-f", "/dev/null"]

@@ -1,0 +1,27 @@
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+# Build after the server layer; source and assets are mounted at runtime.
+ARG SERVER_IMAGE=geniesim-post-train:server
+FROM ${SERVER_IMAGE}
+
+USER root
+
+RUN isaac_version="$(cat /isaac-sim/VERSION 2>/dev/null || true)" && \
+    case "$isaac_version" in \
+      6.2.*) ;; \
+      *) echo "post-train-teleop requires Isaac Sim 6.2.x at /isaac-sim; found '${isaac_version:-missing}'." >&2; \
+         echo "Set SERVER_IMAGE to a post-train server image with bundled Isaac Sim 6.2.x." >&2; exit 1 ;; \
+    esac
+
+ARG PIP_INDEX_URL=https://pypi.org/simple
+
+# Keep the base runtime's dependency versions when installing the IK wheel.
+COPY 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl /tmp/
+RUN pip3 install --no-cache-dir --break-system-packages --no-deps \
+        /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl \
+    && rm /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl
+
+RUN pip3 install --no-cache-dir --break-system-packages pynput
+
+ENV PYTHONPATH=/workspace/source:/workspace/source/geniesim_teleop/src

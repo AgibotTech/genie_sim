@@ -85,6 +85,7 @@ _BOOTSTRAP_SKIP_VERBS: frozenset[str] = frozenset(
         "docker4.5",
         "docker5.1",
         "docker6.2",
+        "post-train",
         "tool",
         "deploy",
     }
@@ -198,11 +199,15 @@ def _print_usage() -> None:
         f"  {CYAN}docker{RST} <build|up|down|into|logs>    🐳 Manage the Genie Sim container {DIM}(default → docker5.1){RST}"
     )
     print(
-        f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4) {DIM}— behavior unverified{RST}"
+        f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4) {DIM}— behaviour unverified{RST}"
     )
     print(f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant (geniesim3, default)")
+    print(
+        f"  {CYAN}docker --profile{RST} post-train|post-train-teleop <command>  🐳 Post-training server / teleop image layer{RST}"
+    )
     print(f"  {CYAN}docker4.5{RST} <build|up|down|into|logs>  🐳 Isaac Sim 4.5 variant (geniesim2 E.O.L.)")
-    print(f"  {CYAN}bootstrap{RST}                           🪄 Bootstrap / re-initialize the geniesim stack")
+    print(f"  {CYAN}post-train{RST} <server|teleop> [...]         🧪 Manage post-training simulation services{RST}")
+    print(f"  {CYAN}bootstrap{RST}           🪄 Bootstrap / re-initialize the geniesim stack")
     print(f"  {CYAN}tool{RST} <deps-dag|ros-dag|docs> [--fix]   🛠️  Contributor repo-maintenance utilities")
     print(
         f"  {CYAN}dataset convert{RST} <FROM-to-TO> [...]    🗂️  Dataset format conversion {DIM}(agibot-to-lerobot){RST}"
@@ -280,6 +285,12 @@ def main(argv: list[str] | None = None) -> None:
         from geniesim_cli.commands import docker as _m
 
         _m.run(sub_args, variant="5.1", invoked_as="docker")
+        sys.exit(0)
+
+    if cmd == "post-train":
+        from geniesim_cli.commands import post_train as _m
+
+        _m.run(sub_args)
         sys.exit(0)
 
     if cmd == "docker6.2":

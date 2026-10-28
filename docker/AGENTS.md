@@ -144,6 +144,83 @@ Run them with the existing `python3 -m pytest -q docker/tests` CPU workflow.
 
 ## Variant-specific build notes
 
+### Post-training profiles
+
+`geniesim docker --profile post-train <verb>` uses `Dockerfile.post-train` on top of an
+existing GenieSim base (`BASE_IMAGE`). `--profile post-train-teleop` uses
+`Dockerfile.post-train-teleop` on top of the built server (`SERVER_IMAGE`). These are
+simulation-side layers; the RLinf training/client image remains separate.
+Keep post-training-specific dependency constraints in these derived images.
+Do not change shared base-image Torch or physics pins to satisfy a profile.
+
+The public post-training workflow builds the default base `registry.agibot.com/genie-sim/geniesim4:latest`
+locally with `geniesim docker6.2 build`; `Dockerfile.post-train` uses it as its
+default `BASE_IMAGE` without registry access. The base must include bundled Isaac Sim 6.2.x
+at `/isaac-sim`. Both profile Dockerfiles check `/isaac-sim/VERSION`.
+The default 5.1 variant has a different bundled runtime and is not a compatible
+parent, even when its system Python also has Isaac Sim 6.2.
+
+`PROFILES` in `commands/docker.py` owns their image/container defaults and runtime
+environment. Both use system Python 3.12/Jazzy, 8 GB shared memory, and
+`entrypoint.post-train.sh`, then delegate to the common `entrypoint.sh`. The batch
+server launcher builds ROS as the mapped runtime user; the entrypoint must not
+build ROS as root. The server image installs `posix_ipc` in both system and
+bundled Isaac Python. Keep the base Newton/MuJoCo/Warp versions together.
+`post-train-runtime.txt` pins the added transport/decomposition packages and
+constrains the bundled Python install.
+
+The profile entrypoint creates the bundled Kit's `cache`, `config`, `data`, and
+`logs` directories for the mapped runtime UID/GID. Limit ownership changes to
+these runtime directories. Profiles disable the base image's Kit-log healthcheck:
+the container may be idle or run only a teleop client. Use the runtime CLI to
+inspect simulation server processes.
+
+The image selects its baked `entrypoint.post-train.sh`; rebuild it when that
+wrapper changes. The common `entrypoint.sh` remains bind-mounted from the checkout.
+For post-training profiles, `start.sh` applies `GENIESIM_SHM_SIZE` and labels
+containers with checkout/profile ownership.
+Post-training lifecycle commands require both labels to match. Assets may be passed
+directly through `GENIESIM_ASSETS_SRC`. Entrypoint readiness has a configurable
+`GENIESIM_START_TIMEOUT` (300 seconds); timeout/exit must return failure.
+These checks apply only to post-training profiles; retain the original startup
+and repeated-`up` behavior for the Isaac Sim variants.
+Use `python3 -m pytest docker/tests/test_docker_cli.py` for CLI/startup coverage.
+
+**Dockerfile (6.2)**
+- Includes Pico/Wuji and recording dependencies from the teleop package metadata,
+  with `WUJI_SDK_VERSION=2026.8.17`. ROS controls use apt NumPy/SciPy/OpenCV
+  through `/usr/lib/python3/dist-packages`; the simulator uses system `python3`
+  without this control-only overlay. Preserve the Isaac dependency constraints.
+- The mounted MC runtime and built ROS controller overlay require session preflight.
+- Base `6.2.0.1`, system-Python wheel `6.2.0.0`, ROS 2 Jazzy.
+- `PIP_BREAK_SYSTEM_PACKAGES=1` permits Ubuntu 24.04 system installs.
+- `OMNI_KIT_ACCEPT_EULA=Y` and the Kit EULA marker prepare noninteractive startup.
+- `GENIESIM_EXTRA_CACHE_DIRS="kit pip numba"` creates runtime cache directories.
+- See acceptance for measured coverage; no simulator-wide pass follows from an image build.
+
+**Dockerfile.5.1 (combo: 5.1 + 6.2)**
+- Installs the same Pico/Wuji and recording dependencies as `Dockerfile` into
+  system Python 3.12, including `WUJI_SDK_VERSION=2026.8.17` and the apt
+  NumPy/SciPy/OpenCV control overlay. The bundled Python 3.11 retains its
+  simulator dependency selection; Wuji SDK input runs under system Python.
+- The recorded clean local rebuild qualifies system Python 3.12/Isaac 6.2 with the `isaac` dependency profile. Bundled Python 3.11 has separate open acceptance work in the roadmap.
+- Isaac Sim 5.1 is pre-installed in the NVIDIA base image at `/isaac-sim`.
+- `omni_python` wrapper (`/usr/local/bin/omni_python`) execs `/isaac-sim/python.sh` so `$0` stays correct.
+- `chmod o+rx /isaac-sim` — NVIDIA base ships `/isaac-sim` as `drwxr-x---`; opened for the remapped user.
+- Isaac Sim 6.2 is **also** pip-installed into system python3.12 (same block as `Dockerfile`), pinned `==6.2.0.0` via `ISAACSIM_PIP_VERSION`.
+- Both EULA vars are set: `ACCEPT_EULA=Y` (5.1) and `OMNI_KIT_ACCEPT_EULA=Y` (6.X).
+- `typing_extensions.py` patch applied for the 6.X install.
+- GeneSim deps installed into **both** interpreters at runtime (entrypoint.sh).
+- numpy/scipy pinned for `omni_python`: `numpy==1.26.4`, `scipy==1.13.1`.
+- Runtime default interpreter (`GENIESIM_PY_CMD`) is `omni_python`; use `python3` for 6.X features.
+
+**Dockerfile.4.5**
+- Isaac Sim installed via `pip install "isaacsim[all,extscache]==4.5.0"` into system python3.10.
+- Two pre-conditions must be met before the ROS repo is added (see Dockerfile comments):
+  1. `libbrotli1` must be downgraded to `1.0.9-2build6` — the base image ships `1.1.0` from sury.org which conflicts with `libbrotli-dev` pulled by `ros-humble-desktop`.
+  2. `libfreetype6-dev` / `libfontconfig1-dev` must be installed from Ubuntu repos first to avoid "held broken packages" once the ROS repo is present.
+- `ACCEPT_EULA=Y` is the EULA env var.
+
 ## Env var contract
 
 `start.sh` always passes both `ACCEPT_EULA=Y` and `OMNI_KIT_ACCEPT_EULA=Y` — harmless when not applicable.
@@ -248,3 +325,7 @@ agree with the selected Isaac SDK. Isaac Sim 6.2 supplies Newton 1.6.1 and
 MuJoCo 3.12; a checkout declaring `mujoco<3.9.0` cannot satisfy that SDK
 constraint. Resolve that declaration in the ROS module before building this
 runtime. Do not drop the SDK guard or silently override the project metadata.
+
+Post-training profiles also require their server scripts and ROS packages in
+the mounted checkout. CLI dispatch and Docker process tests do not establish
+that those consumers are available or that simulator acceptance has passed.

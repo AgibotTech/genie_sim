@@ -121,6 +121,9 @@ and the dispatcher in `main()` in sync.
 | `geniesim deploy upload` | `curl -F` upload of `./deploy/*.whl` to file server | Needs `curl` |
 | `geniesim doctor` | Diagnose & repair (status + rosdep + more) | No (probes tools) |
 | `geniesim docker` / `docker4.5` / `docker5.1` / `docker6.2 <build\|up\|down\|into\|logs>` | Manage the GenieSim container across Isaac Sim variants | Needs docker on host |
+| `geniesim docker --profile post-train\|post-train-teleop <build\|up\|down\|into\|logs>` | Manage the post-training simulation server or optional teleop layer | Needs docker on host |
+| `geniesim post-train server <start\|status\|stop\|logs>` | Operate selected post-training simulation server ports | Start: prepared simulation runtime; status/logs: Bash and checkout |
+| `geniesim post-train teleop …` | Connect Pico debugging to an initialized server | Prepared teleop runtime |
 | `geniesim env [--all\|--unset]` | Show `GENIESIM_*` env vars | No |
 | `geniesim completion bash\|zsh` | Generate shell completion script | No |
 | `geniesim teleop run` / `teleop bridge` | Run the VR loop or image bridge | Prepared teleop runtime |
@@ -148,8 +151,8 @@ fallback. `_isaacsim._TAG_WHEEL_PAIRS` owns this image-respin exception;
 other four-component tags must have an equal-version wheel. Verify the
 resolver and Docker build dispatch with
 `PYTHONPATH=src python3 -m pytest tests/test_isaacsim.py` from this package.
-The [Docker guide](../../docker/AGENTS.md) describes the interpreter and
-build-argument contracts. CLI dispatch tests do not qualify simulator behavior.
+See [runtime selection](../../docker/README.md) and the
+platform roadmap for qualification work.
 
 ## 4. Architectural rules (do not violate)
 
@@ -162,6 +165,34 @@ The ROS metadata audit requires one maintainer named `Genie Sim Team` with
 email `yangwendisheng@agibot.com`, one license entry with
 `file="LICENSE"` and text `Mozilla Public License Version 2.0`, and a
 `LICENSE` file beside each source `package.xml`.
+
+Docker profiles reuse the `Variant` value type through `PROFILES` in
+`commands/docker.py`; the public Isaac-version `VARIANTS`, `get_variant`, and
+`variant_env` API stays unchanged. `--profile` precedes the verb and is accepted
+only by `geniesim docker`. Profiles select system Python 3.12/Jazzy, an 8 GB
+shared-memory segment, and the image's post-training entrypoint. Existing containers must
+match checkout/profile ownership labels before any lifecycle command proceeds.
+The host needs only this CLI; `GENIESIM_ASSETS_SRC` can point directly to the
+asset package without installing its dependencies. Docker process-boundary
+tests live in `docker/tests/test_docker_cli.py`.
+
+Profile-specific argument checks, readiness waiting, and path normalization
+must not change the behavior of `docker` without `--profile` or the existing
+Isaac Sim variant commands.
+
+`post-train` skips automatic bootstrap. Its dispatcher executes existing checkout
+scripts without importing simulator packages: lifecycle commands use
+`start_sim_servers.sh`, logs use `start_sim_server.sh --logs`, and teleop uses
+`host_run_teleop.sh`. The shell launcher owns slot paths, process ownership,
+ROS builds, and rollback. Keep argument boundaries, signals, and exit codes.
+Reject lifecycle flags that conflict with the selected CLI action.
+
+The runtime checkout is selected by `GENIESIM_REPO_ROOT`, then
+`GENIESIM_REPO_PATH` / `SIM_REPO_ROOT`, then the current directory's ancestors.
+An invalid explicit path is an error. These commands require a server checkout;
+the standalone client wheel does not include the launchers. Help, status, and
+logs remain usable without simulator imports. Tests live in
+`source/geniesim_cli/tests/test_post_train.py`.
 
 1. **No top-level heavy imports.** `usd-core`, `mujoco`, `trimesh`, `Pillow`,
    `coacd`, anything from `isaacsim.*`, anything from `geniesim.*`,
@@ -342,10 +373,6 @@ links change, update `_DOWNLOAD_SOURCES` in the same diff.
 ---
 
 ## 9. Canonical home
-
-`geniesim tool ros-dag` excludes generated `devel`, `devel_build` and
-`devel_log` trees alongside build/install/external, so generated colcon
-metadata cannot shadow source packages.
 
 This directory is the **canonical home** of `geniesim_cli`. The package
 lives here, gets edited here, and is built from here. Treat this tree as

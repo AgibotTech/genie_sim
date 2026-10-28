@@ -110,7 +110,7 @@ GENIESIM_REPO_ROOT = _register(
         description="Override for the repo root that contains docker/Dockerfile.",
         default="(auto-detected from cwd or geniesim_cli source location)",
         category="workspace",
-        consumers=("geniesim_cli/commands/docker.py",),
+        consumers=("geniesim_cli/commands/docker.py", "geniesim_cli/commands/post_train.py"),
     )
 )
 
@@ -125,6 +125,7 @@ GENIESIM_REPO_PATH = _register(
         category="workspace",
         consumers=(
             "geniesim_benchmark/utils/system_utils.py",
+            "geniesim_cli/commands/post_train.py",
             "geniesim_benchmark/evaluator/generators/auto_score.py",
             "geniesim_benchmark/benchmark/policy/pipolicy.py",
             "rlinf_geniesim/renderer/rl_renderer.py",
@@ -212,6 +213,26 @@ GENIESIM_CACHE_ROOT = _register(
             "geniesim_cli/commands/docker.py",
             "docker/start.sh",
         ),
+    )
+)
+
+GENIESIM_ASSETS_SRC = _register(
+    EnvVar(
+        name="GENIESIM_ASSETS_SRC",
+        description="Host asset package used by the post-training Docker profiles.",
+        default="(auto-detect editable installation)",
+        category="docker",
+        consumers=("geniesim_cli/commands/docker.py", "docker/start.sh"),
+    )
+)
+
+GENIESIM_START_TIMEOUT = _register(
+    EnvVar(
+        name="GENIESIM_START_TIMEOUT",
+        description="Maximum seconds to wait for post-training container readiness, including repeated up calls.",
+        default="300",
+        category="docker",
+        consumers=("docker/start.sh",),
     )
 )
 

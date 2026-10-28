@@ -98,6 +98,98 @@ The runtime contract describes current assembly, physics and render requirements
 
 ## Layer design
 
+### Post-training profiles
+
+The post-training simulation images reuse an existing GenieSim base:
+
+```text
+NVIDIA Isaac Sim 6.2.0.1
+  └─ Dockerfile → registry.agibot.com/genie-sim/geniesim4:latest (ROS 2 Jazzy, Newton/MuJoCo/Warp)
+      └─ Dockerfile.post-train → geniesim-post-train:server
+          └─ Dockerfile.post-train-teleop → geniesim-post-train:teleop (optional Pico/IK)
+```
+
+The RLinf training/client image is separate; it installs the lightweight
+`rlinf-geniesim-client` package and connects over ZMQ. These profiles prepare
+the simulation side and keep source and assets mounted at runtime.
+
+From the repository root on the simulation host, outside containers:
+
+```bash
+python3 -m pip install -e source/geniesim_cli
+geniesim docker6.2 build
+geniesim docker --profile post-train build
+export GENIESIM_ASSETS_SRC=/path/to/geniesim_assets
+geniesim docker --profile post-train up --headless
+geniesim docker --profile post-train into
+```
+
+Inside the server container, from `/workspace`:
+
+```bash
+geniesim post-train server start \
+  --count 1 --base-port 5601 --devices 0
+```
+
+The RLinf client chooses the task and physics/render backends when initializing
+the server. `geniesim post-train server status/stop` operates the selected ports;
+`geniesim post-train server logs --port 5601 --follow` streams a server's log.
+See [the server workflow](../source/rlinf_geniesim/README.md) for
+task initialization and teleoperation
+for the optional image. To inspect or remove the server container, run on the host:
+
+```bash
+geniesim docker --profile post-train logs -f
+geniesim docker --profile post-train down
+```
+
+| Profile | Default image | Default container | Parent build argument |
+|---|---|---|---|
+| `post-train` | `geniesim-post-train:server` | `post_train_server` | `BASE_IMAGE` (default `registry.agibot.com/genie-sim/geniesim4:latest`) |
+| `post-train-teleop` | `geniesim-post-train:teleop` | `post_train_teleop` | `SERVER_IMAGE` (default `geniesim-post-train:server`) |
+
+Append `--build-arg BASE_IMAGE=IMAGE` or `--build-arg SERVER_IMAGE=IMAGE` to
+the corresponding build command to select a local or mirrored parent. The
+server parent must supply system Python 3.12, ROS Jazzy, bundled Isaac Sim 6.2.x
+at `/isaac-sim` including `/isaac-sim/python.sh`, the matched physics libraries,
+and GenieSim's runtime user/tools. Both builds check `/isaac-sim/VERSION` before
+installing dependencies and reject other Isaac Sim versions. A custom teleop
+parent must be a server image built with the `post-train` profile.
+The default `geniesim docker build` produces a 5.1-based image, which is not a
+compatible parent even if its system Python also has a newer Isaac Sim package.
+A stock NVIDIA Isaac image alone is insufficient. `--china` selects
+apt/pip mirrors for the added layers; it does not mirror the parent image or
+the NVIDIA OVRTX wheel index.
+
+The base build uses the paired NGC tag and wheel versions described above
+and retains Isaac Sim's Newton/MuJoCo/Warp versions.
+Build the base locally before the post-training layer; the post-training
+build uses that local image without contacting the registry.
+
+[`post-train-runtime.txt`](post-train-runtime.txt) pins the server layer's added
+Python packages. These pins do not replace the
+base image's dependency inventory.
+
+Both profiles reuse the shared launcher, host UID/GID mapping, seeded shader
+cache volumes, and host networking, with 8 GB shared memory. `GENIESIM_IMAGE`,
+`GENIESIM_CONTAINER`, `GENIESIM_WORKSPACE`, and `GENIESIM_CACHE_ROOT` override
+their respective defaults. Existing containers must have matching checkout
+and profile labels. `up` fails if the entrypoint exits or is not ready within
+`GENIESIM_START_TIMEOUT` seconds (default 300); inspect `logs` before retrying.
+It does not start simulation servers automatically.
+
+The profiles use the entrypoint selected by the image. Changes to
+`entrypoint.post-train.sh` require rebuilding the image; the common
+`entrypoint.sh` and simulation source remain mounted from the checkout.
+The profile entrypoint prepares the bundled Kit's runtime directories for the
+mapped user. These images disable the inherited Kit-log healthcheck because
+idle containers and teleop clients do not require a running Kit process.
+Use `geniesim post-train server status` inside the server container to check
+its simulation processes.
+
+Base-image dependency conflicts and GPU backend acceptance remain in the
+runtime validation TODOs.
+
 ### Base image layers
 
 Each image is built in the same conceptual order:

@@ -241,6 +241,14 @@ if [ -x "${_PEERS_SCRIPT}" ] || [ -f "${_PEERS_SCRIPT}" ]; then
         # that aren't checked out in the mounted workspace.
         [ -z "${peer}" ] && continue
         [ "${peer}" = "geniesim_assets" ] && continue
+        # GENIESIM_SKIP_PEERS: optional space/comma separated skip list. Some
+        # peers' setup.py depend on an external checkout outside the repo (e.g.
+        # geniesim_world needs external/ml-sharp); installing them in a runtime
+        # that does not need them (rlinf sim / teleop) only makes the whole pip
+        # command fail by association. Unset means behaviour is unchanged.
+        case ",${GENIESIM_SKIP_PEERS//[ ]/,}," in
+            *",${peer},"*) echo -e "   ${DIM}- ${peer} (GENIESIM_SKIP_PEERS)${RST}"; continue ;;
+        esac
         pkg_dir="/workspace/source/${peer}"
         if [ -f "${pkg_dir}/pyproject.toml" ]; then
             EDITABLE_ARGS="${EDITABLE_ARGS} -e ${pkg_dir}"

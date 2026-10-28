@@ -15,7 +15,7 @@
 #                               (default: $HOME/docker/isaac-sim)
 #   GENIESIM_VARIANT_LABEL    label used in messages (e.g. "docker5.1")
 #   GENIESIM_EXTRA_CACHE_DIRS space-separated extra subdirs under cache/main
-#                               (e.g. "kit pip numba" for Isaac Sim 6.0)
+#                               (e.g. "kit pip numba" for Isaac Sim 6.x)
 #
 #   Passed through into the container for entrypoint.sh:
 #   ROS_DISTRO                jazzy or humble
@@ -40,9 +40,17 @@ CYAN='\033[36m'
 MAGENTA='\033[35m'
 
 HEADLESS=0
+WAIT_ONLY=0
+PROFILE="${GENIESIM_DOCKER_PROFILE:-}"
 for arg in "$@"; do
     case "$arg" in
         --headless) HEADLESS=1 ;;
+        --wait-only)
+            if [ -z "$PROFILE" ]; then
+                echo -e "${RED}❌ [geniesim docker] unknown arg: $arg${RST}" >&2
+                exit 2
+            fi
+            WAIT_ONLY=1 ;;
         *) echo -e "${RED}❌ [geniesim docker] unknown arg: $arg${RST}" >&2; exit 2 ;;
     esac
 done
@@ -52,6 +60,51 @@ NAME="${GENIESIM_CONTAINER:-geniesim}"
 HOST_WS="${GENIESIM_WORKSPACE:-$(pwd)}"
 CACHE_ROOT="${GENIESIM_CACHE_ROOT:-$HOME/docker/isaac-sim}"
 VARIANT_LABEL="${GENIESIM_VARIANT_LABEL:-docker}"
+if [ -n "$PROFILE" ]; then
+    START_TIMEOUT="${GENIESIM_START_TIMEOUT:-300}"
+    if [[ ! "$START_TIMEOUT" =~ ^[1-9][0-9]*$ ]]; then
+        echo 'GENIESIM_START_TIMEOUT must be a positive integer.' >&2
+        exit 2
+    fi
+fi
+wait_until_ready() {
+    local started_at
+    started_at="$(docker inspect -f '{{.State.StartedAt}}' "$NAME")"
+    # Only readiness markers from the current container start are valid.
+    docker logs --since "$started_at" -f "${NAME}" 2>&1 &
+    LOGS_PID=$!
+    trap 'kill "$LOGS_PID" 2>/dev/null || true; wait "$LOGS_PID" 2>/dev/null || true' EXIT
+    READY=0
+    DEADLINE=$((SECONDS + START_TIMEOUT))
+    while (( SECONDS < DEADLINE )); do
+        if docker logs --since "$started_at" "${NAME}" 2>&1 | grep "GENIESIM_READY" >/dev/null; then
+            READY=1
+        fi
+        if [ "$(docker inspect -f '{{.State.Status}}' "$NAME")" != running ]; then
+            READY=0
+            break
+        fi
+        [ "$READY" -eq 1 ] && break
+        sleep 0.5
+    done
+    kill "${LOGS_PID}" 2>/dev/null || true
+    wait "${LOGS_PID}" 2>/dev/null || true
+    trap - EXIT
+    if [ "$READY" -ne 1 ]; then
+        echo -e "${RED}❌ Container '${NAME}' did not become ready. Inspect it with: geniesim ${VARIANT_LABEL} logs${RST}"
+        exit 1
+    fi
+}
+
+if [ "$WAIT_ONLY" -eq 1 ]; then
+    wait_until_ready
+    echo -e "${GREEN}✅ container '${NAME}' is ready${RST}"
+    exit 0
+fi
+
+if [ -n "$PROFILE" ]; then
+    HOST_WS="$(cd "$HOST_WS" && pwd -P)"
+fi
 
 mkdir -p "${CACHE_ROOT}/cache/main/ov" \
          "${CACHE_ROOT}/cache/main/warp" \
@@ -70,9 +123,16 @@ done
 ASSETS_SRC="${GENIESIM_ASSETS_SRC:-}"
 
 if [ -z "${ASSETS_SRC}" ] || [ ! -f "${ASSETS_SRC}/pyproject.toml" ]; then
-    echo -e "${RED}❌ geniesim_assets is not pip-installed (editable) on the host.${RST}"
-    echo -e "   ${DIM}Install it first:${RST}  ${CYAN}pip install -e /path/to/geniesim_assets${RST}"
+    if [ -n "$PROFILE" ]; then
+        echo -e "${RED}❌ Asset package not found. Set GENIESIM_ASSETS_SRC to a directory containing pyproject.toml.${RST}"
+    else
+        echo -e "${RED}❌ geniesim_assets is not pip-installed (editable) on the host.${RST}"
+        echo -e "   ${DIM}Install it first:${RST}  ${CYAN}pip install -e /path/to/geniesim_assets${RST}"
+    fi
     exit 1
+fi
+if [ -n "$PROFILE" ]; then
+    ASSETS_SRC="$(cd "$ASSETS_SRC" && pwd -P)"
 fi
 echo -e "   ${DIM}Assets:${RST}    ${CYAN}${ASSETS_SRC}${RST}"
 
@@ -107,6 +167,16 @@ RUN_ARGS=(
     -w /workspace
 )
 
+if [ -n "$PROFILE" ]; then
+    RUN_ARGS+=(
+        --label "org.geniesim.repo=${HOST_WS}"
+        --label "org.geniesim.profile=${PROFILE}"
+    )
+    if [ -n "${GENIESIM_SHM_SIZE:-}" ]; then
+        RUN_ARGS+=(--shm-size "$GENIESIM_SHM_SIZE")
+    fi
+fi
+
 # Named volumes for in-package shader caches — seeded from image on first create,
 # persisted across container restarts. Only mounted when the path is set for the variant.
 # OptiX AI denoiser weights, shipped with the host NVIDIA driver and absent from
@@ -137,17 +207,21 @@ fi
 
 docker run "${RUN_ARGS[@]}" "${IMAGE}" tail -f /dev/null >/dev/null
 
-# Stream entrypoint logs until "ready" appears.
-docker logs -f "${NAME}" 2>&1 &
-LOGS_PID=$!
-for _ in $(seq 1 60); do
-    if docker logs "${NAME}" 2>&1 | grep -q "GENIESIM_READY"; then
-        break
-    fi
-    sleep 0.5
-done
-kill "${LOGS_PID}" 2>/dev/null || true
-wait "${LOGS_PID}" 2>/dev/null || true
+if [ -n "$PROFILE" ]; then
+    wait_until_ready
+else
+    # Stream entrypoint logs until "ready" appears.
+    docker logs -f "${NAME}" 2>&1 &
+    LOGS_PID=$!
+    for _ in $(seq 1 60); do
+        if docker logs "${NAME}" 2>&1 | grep -q "GENIESIM_READY"; then
+            break
+        fi
+        sleep 0.5
+    done
+    kill "${LOGS_PID}" 2>/dev/null || true
+    wait "${LOGS_PID}" 2>/dev/null || true
+fi
 
 echo ""
 MODE_LABEL="gui"; [ "${HEADLESS}" -eq 1 ] && MODE_LABEL="headless"

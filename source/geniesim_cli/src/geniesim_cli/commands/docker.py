@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Manage GenieSim Docker containers across Isaac Sim variants.
+"""Manage GenieSim Docker containers across Isaac Sim variants and post-training profiles.
 
 Dispatched by four CLI commands:
 
@@ -10,6 +10,8 @@ Dispatched by four CLI commands:
 * ``geniesim docker6.2`` — Isaac Sim 6.2 variant (geniesim4).
 * ``geniesim docker5.1`` — Isaac Sim 5.1 variant (geniesim3).
 * ``geniesim docker4.5`` — Isaac Sim 4.5 variant (geniesim2 E.O.L.).
+* ``geniesim docker --profile post-train`` — post-training simulation server layer.
+* ``geniesim docker --profile post-train-teleop`` — optional teleoperation layer.
 
 The verbs map onto the shell scripts that live next to the Dockerfile in
 ``<repo_root>/docker/`` (resolved at runtime via :func:`_docker_dir`).
@@ -82,10 +84,18 @@ class Variant:
                  ``__hash__`` because mappings aren't hashable — kept in
                  ``__eq__`` so two Variants with different env still
                  compare unequal (hash collisions are permitted).
-    implemented: ``False`` enables an acknowledgement prompt before dispatch.
+    implemented: ``False`` for variants that are not ready for general use
+                 (Dockerfile incomplete, image not published). ``run()``
+                 prints a banner and waits on ENTER before dispatching --
+                 it is an acknowledgement gate, **not** a refusal.
     dir        : docker subdir (currently always ``"docker"``; kept as a
                  field for future flexibility, e.g. per-variant subdir).
-    isaacsim_series : optional base-image spec resolved with its matching wheel.
+    isaacsim_series : Isaac Sim **series spec** (e.g. ``"6.X"``) resolved to
+                 concrete ``ISAACSIM_TAG`` / ``ISAACSIM_PIP_VERSION`` build
+                 args by ``geniesim_cli._isaacsim`` at build time. ``None``
+                 means "don't resolve" — the Dockerfile's literal ``ARG``
+                 defaults stand. Appended last and optional, so downstream
+                 positional construction keeps working.
     """
 
     dockerfile: str
@@ -111,6 +121,9 @@ VARIANTS: Mapping[str, Variant] = MappingProxyType(
             image="registry.agibot.com/genie-sim/geniesim4:latest",
             container="geniesim4",
             implemented=True,
+            # Pin the requested base respin. The resolver explicitly pairs
+            # tag ``6.2.0.1`` with the published cp312 wheel ``6.2.0.0``;
+            # the Dockerfile carries the same pair for offline builds.
             isaacsim_series="6.2.0.1",
             env=MappingProxyType(
                 {
@@ -185,6 +198,30 @@ def variant_env(name: str) -> Mapping[str, str]:
     return get_variant(name).env
 
 
+PROFILES: Mapping[str, Variant] = MappingProxyType(
+    {
+        "post-train": Variant(
+            dockerfile="Dockerfile.post-train",
+            image="geniesim-post-train:server",
+            container="post_train_server",
+            env={
+                **variant_env(""),
+                "GENIESIM_SHM_SIZE": "8g",
+            },
+        ),
+        "post-train-teleop": Variant(
+            dockerfile="Dockerfile.post-train-teleop",
+            image="geniesim-post-train:teleop",
+            container="post_train_teleop",
+            env={
+                **variant_env(""),
+                "GENIESIM_SHM_SIZE": "8g",
+            },
+        ),
+    }
+)
+
+
 # Legacy dict-of-dicts alias — kept for one deprecation cycle so
 # out-of-tree callers that still poke at ``_VARIANTS`` don't break
 # silently. New code should use :data:`VARIANTS` / :func:`get_variant`
@@ -206,6 +243,7 @@ _VARIANTS: Mapping[str, Mapping[str, object]] = MappingProxyType(
 )
 
 _active_variant: str = ""
+_active_profile: str = ""
 # Command word the user typed at the CLI ("docker", "docker5.1", ...).
 # Status/help banners echo this so the user sees the form they invoked,
 # not the resolved variant alias.
@@ -216,13 +254,21 @@ def _cmd_label() -> str:
     return _invoked_as
 
 
+def _selected_variant() -> Variant:
+    return PROFILES[_active_profile] if _active_profile else get_variant(_active_variant)
+
+
+def _workspace() -> Path:
+    return Path(os.environ.get("GENIESIM_WORKSPACE", str(_repo_root()))).expanduser().resolve()
+
+
 def _image() -> str:
-    v = get_variant(_active_variant)
+    v = _selected_variant()
     return os.environ.get("GENIESIM_IMAGE", v.image)
 
 
 def _container() -> str:
-    v = get_variant(_active_variant)
+    v = _selected_variant()
     return os.environ.get("GENIESIM_CONTAINER", v.container)
 
 
@@ -248,7 +294,7 @@ def _repo_root() -> Path:
 
 
 def _docker_dir() -> Path:
-    v = get_variant(_active_variant)
+    v = _selected_variant()
     return _repo_root() / v.dir
 
 
@@ -288,39 +334,73 @@ def _container_state() -> str | None:
     )
     if result.returncode != 0:
         return None
+    if _active_profile:
+        owner = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "-f",
+                '{{index .Config.Labels "org.geniesim.repo"}}|{{index .Config.Labels "org.geniesim.profile"}}',
+                _container(),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if owner.returncode != 0 or owner.stdout.strip() != f"{_workspace()}|{_active_profile}":
+            print(f"{RED}❌ Container {_container()} has different checkout/profile ownership.{RST}")
+            print(f"   {DIM}Choose another GENIESIM_CONTAINER or use the original checkout/profile.{RST}")
+            sys.exit(1)
     return result.stdout.strip() or None
 
 
 def _print_usage() -> None:
     label = _cmd_label()
+    v = _selected_variant()
     print(f"{BOLD}{MAGENTA}🐳 geniesim {label}{RST}")
     print()
     print(f"{BOLD}Usage:{RST} geniesim {label} {CYAN}<subcommand>{RST} [args...]")
     print()
     print(f"{BOLD}Subcommands:{RST}")
-    print(f"  {CYAN}build{RST} [--china] [docker-build args...]  🔨 Build the image from {BOLD}docker/Dockerfile{RST}")
+    dockerfile = f"{v.dir}/{v.dockerfile}" if _active_profile else "docker/Dockerfile"
+    print(f"  {CYAN}build{RST} [--china] [docker-build args...]  🔨 Build the image from {BOLD}{dockerfile}{RST}")
     print(f"  {CYAN}up{RST} [--headless]                  🚀 Start the container (GUI by default)")
     print(f"  {CYAN}down{RST}                              🛑 Stop and remove the container")
     print(f"  {CYAN}into{RST}                              📖 Drop into a shell in the running container")
     print(f"  {CYAN}logs{RST} [-f]                         📋 Show container logs ({DIM}-f to follow{RST})")
     print()
     print(f"{BOLD}Flags:{RST}")
+    if _active_profile or label == "docker":
+        print(
+            f"  {WHITE}--profile post-train|post-train-teleop{RST}  {DIM}place before the subcommand of 'geniesim docker'{RST}"
+        )
     print(f"  {WHITE}--china{RST}  {DIM}use daocloud (nvcr) + tuna (apt/pip) mirrors during build{RST}")
-    v_series = get_variant(_active_variant).isaacsim_series
+    v_series = _selected_variant().isaacsim_series
     if v_series:
-        print(f"  {WHITE}--isaacsim{RST} {DIM}<spec>{RST}  {DIM}resolve Isaac Sim pins (default: {v_series}){RST}")
-        print(f"  {WHITE}--no-resolve{RST}       {DIM}use Dockerfile ARG defaults{RST}")
+        print(
+            f"  {WHITE}--isaacsim{RST} {DIM}<spec>{RST}  "
+            f"{DIM}Isaac Sim series to resolve the pins from (default: {v_series}){RST}"
+        )
+        print(f"  {WHITE}--no-resolve{RST}       {DIM}skip version resolution; use the Dockerfile ARG defaults{RST}")
     print()
     print(f"{BOLD}Environment overrides:{RST}")
-    v = get_variant(_active_variant)
     print(f"  {WHITE}GENIESIM_IMAGE{RST}      {DIM}image tag (default: {v.image}){RST}")
     print(f"  {WHITE}GENIESIM_CONTAINER{RST}  {DIM}container name (default: {v.container}){RST}")
-    print(f"  {WHITE}GENIESIM_WORKSPACE{RST}  {DIM}host path bind-mounted at /workspace (default: cwd){RST}")
+    workspace_default = "repo root" if _active_profile else "cwd"
+    print(
+        f"  {WHITE}GENIESIM_WORKSPACE{RST}  {DIM}host path bind-mounted at /workspace (default: {workspace_default}){RST}"
+    )
+    if _active_profile:
+        print(f"  {WHITE}GENIESIM_ASSETS_SRC{RST} {DIM}host asset package path (default: editable installation){RST}")
     print(f"  {WHITE}GENIESIM_CACHE_ROOT{RST} {DIM}host path for Isaac Sim cache (default: ~/docker/isaac-sim){RST}")
-    print(f"  {WHITE}GENIESIM_ISAACSIM_TAG{RST}         {DIM}pin the NGC base tag, skipping resolution{RST}")
-    print(f"  {WHITE}GENIESIM_ISAACSIM_PIP_VERSION{RST} {DIM}pin the PyPI wheel (set both or neither){RST}")
+    if _active_profile:
+        print(f"  {WHITE}GENIESIM_START_TIMEOUT{RST} {DIM}entrypoint readiness timeout in seconds (default: 300){RST}")
+    if _selected_variant().isaacsim_series:
+        print(f"  {WHITE}GENIESIM_ISAACSIM_TAG{RST}         {DIM}pin the NGC base tag, skipping resolution{RST}")
+        print(f"  {WHITE}GENIESIM_ISAACSIM_PIP_VERSION{RST} {DIM}pin the PyPI wheel (set both or neither){RST}")
 
 
+# The Dockerfiles install Isaac Sim into the distro's system python3, so the
+# wheel's Python tag is a property of the base image, not of the host.
 _VARIANT_PYTHON_TAG = {"": "cp312", "5.1": "cp312", "4.5": "cp310"}
 
 
@@ -365,7 +445,7 @@ def _isaacsim_build_args(spec: str | None) -> list[str]:
 
 def _do_build(extra: list[str]) -> None:
     repo_root = _repo_root()
-    v = get_variant(_active_variant)
+    v = _selected_variant()
     dockerfile = _docker_dir() / v.dockerfile
     image = _image()
 
@@ -398,7 +478,8 @@ def _do_build(extra: list[str]) -> None:
     print(f"   {DIM}Dockerfile:{RST} {CYAN}{dockerfile}{RST}")
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
     if china:
-        print(f"   {DIM}Mirrors:{RST}    {YELLOW}🇨🇳 china (daocloud + tuna){RST}")
+        mirrors = "tuna (apt/pip)" if _active_profile else "daocloud + tuna"
+        print(f"   {DIM}Mirrors:{RST}    {YELLOW}🇨🇳 china ({mirrors}){RST}")
 
     # Resolved inside the banner block: the "Isaac Sim:" line it prints
     # belongs with Repo root / Dockerfile / Tag, above the blank separator.
@@ -406,7 +487,8 @@ def _do_build(extra: list[str]) -> None:
     print()
 
     if china:
-        build_args += ["--build-arg", f"ISAACSIM_REGISTRY={_CHINA_NVCR_REGISTRY}"]
+        if not _active_profile:
+            build_args += ["--build-arg", f"ISAACSIM_REGISTRY={_CHINA_NVCR_REGISTRY}"]
         build_args += [
             "--build-arg",
             f"APT_MIRROR={_CHINA_APT_MIRROR}",
@@ -439,12 +521,14 @@ def _do_build(extra: list[str]) -> None:
 def _do_up(headless: bool) -> None:
     state = _container_state()
     if state == "running":
-        print(f"{YELLOW}⚠️  Container {BOLD}{_container()}{RST}{YELLOW} is already running.{RST}")
-        print(
-            f"   {DIM}Use{RST} {CYAN}geniesim {_cmd_label()} into{RST} {DIM}to enter it, or{RST} {CYAN}geniesim {_cmd_label()} down{RST} {DIM}to recreate.{RST}"
-        )
-        return
-    if state is not None:
+        if not _active_profile:
+            print(f"{YELLOW}⚠️  Container {BOLD}{_container()}{RST}{YELLOW} is already running.{RST}")
+            print(
+                f"   {DIM}Use{RST} {CYAN}geniesim {_cmd_label()} into{RST} {DIM}to enter it, or{RST} {CYAN}geniesim {_cmd_label()} down{RST} {DIM}to recreate.{RST}"
+            )
+            return
+        print(f"{YELLOW}⚠️  Container {_container()} is already running; waiting for entrypoint readiness.{RST}")
+    elif state is not None:
         print(f"{YELLOW}⚠️  Container {BOLD}{_container()}{RST}{YELLOW} exists (state: {state}).{RST}")
         print(f"   {DIM}Run{RST} {CYAN}geniesim {_cmd_label()} down{RST} {DIM}first.{RST}")
         sys.exit(1)
@@ -462,15 +546,23 @@ def _do_up(headless: bool) -> None:
     env = os.environ.copy()
     env.setdefault(_env.GENIESIM_IMAGE.name, _image())
     env.setdefault(_env.GENIESIM_CONTAINER.name, _container())
-    env.setdefault(_env.GENIESIM_WORKSPACE.name, str(_repo_root()))
-    env.setdefault("GENIESIM_ASSETS_SRC", _find_assets_src())
+    if _active_profile:
+        env[_env.GENIESIM_WORKSPACE.name] = str(_workspace())
+        if not env.get(_env.GENIESIM_ASSETS_SRC.name):
+            env[_env.GENIESIM_ASSETS_SRC.name] = _find_assets_src()
+    else:
+        env.setdefault(_env.GENIESIM_WORKSPACE.name, str(_repo_root()))
+        env.setdefault("GENIESIM_ASSETS_SRC", _find_assets_src())
+    env["GENIESIM_DOCKER_PROFILE"] = _active_profile
     # Inject variant-specific values for start.sh and entrypoint.sh.
     # Use direct assignment (not setdefault) so the variant always wins over
     # any same-named vars the user may have exported on the host (e.g. ROS_DISTRO).
     env.setdefault("GENIESIM_VARIANT_LABEL", _cmd_label())
-    for key, val in variant_env(_active_variant).items():
+    for key, val in _selected_variant().env.items():
         env[key] = val
     cmd = ["bash", str(script)]
+    if state == "running":
+        cmd.append("--wait-only")
     if headless:
         cmd.append("--headless")
     result = subprocess.run(cmd, env=env)
@@ -535,22 +627,45 @@ def _do_logs(follow: bool) -> None:
 
 
 def run(args: list[str], variant: str = "", invoked_as: str = "docker") -> None:
-    global _active_variant, _invoked_as
+    global _active_variant, _active_profile, _invoked_as
     _active_variant = variant
+    _active_profile = ""
     _invoked_as = invoked_as
+    if invoked_as == "docker" and args[:1] == ["--profile"]:
+        if len(args) < 2 or args[1] not in PROFILES:
+            print(f"{RED}❌ Use 'geniesim docker --profile post-train|post-train-teleop <subcommand>'.{RST}")
+            sys.exit(2)
+        _active_profile = args[1]
+        _invoked_as = f"docker --profile {_active_profile}"
+        args = args[2:]
+
+    if _active_profile:
+        if not args or args[0] in ("-h", "--help", "help"):
+            _print_usage()
+            return
+        sub, *rest = args
+        allowed = {"up": {"--headless"}, "down": set(), "into": set(), "logs": {"-f", "--follow"}}
+        if sub in allowed and any(arg not in allowed[sub] for arg in rest):
+            print(f"{RED}❌ Unsupported arguments for {sub}: {' '.join(rest)}{RST}")
+            sys.exit(2)
     _ensure_docker_cli()
 
     # ---- experimental variant warning -----------------------------------
-    v = get_variant(_active_variant)
-    if not v.implemented:
+    # Generic gate for any variant marked ``implemented=False``: let
+    # developers who explicitly want to try it through, but make them
+    # acknowledge first so failures aren't mistaken for bugs in setup.
+    # Profile-aware via ``_selected_variant()`` so an unimplemented
+    # post-train profile gates like an Isaac variant does.
+    if not _selected_variant().implemented:
+        v = _selected_variant()
         print(
             f"\n{YELLOW}"
             f"╔════════════════════════════════════════════════════════════════╗\n"
-            f"║  🚧  UNVERIFIED variant: {invoked_as + ' (' + v.container + ')':<40}║\n"
+            f"║  🚧  UNVERIFIED variant: {invoked_as + ' (' + v.container + ')':<38}║\n"
             f"╠════════════════════════════════════════════════════════════════╣\n"
-            f"║  This variant is not fully implemented. Build and validate    ║\n"
-            f"║  its image before use.                                       ║\n"
-            f"║                                                              ║\n"
+            f"║  This variant is not fully implemented yet. Its image is not   ║\n"
+            f"║  published and its runtime is unverified — build it yourself   ║\n"
+            f"║  and expect rough edges. See docker/README.md.                 ║\n"
             f"║                                                                ║\n"
             f"║  For a stable container use geniesim docker (→ docker5.1).     ║\n"
             f"╚════════════════════════════════════════════════════════════════╝"
