@@ -22,6 +22,9 @@ class TeleopJoyNode(Node):
         self.max_linear_x = 1.0
         self.max_linear_y = 1.0
         self.max_angular_z = 0.5
+        # Axes smaller than this are treated as zero after trigger
+        # normalization so small controller noise at startup doesn't creep.
+        self.axis_deadband = 0.05
 
         self.twist_cmd = Twist()
 
@@ -52,12 +55,24 @@ class TeleopJoyNode(Node):
     def subscribe_servo_mode(self, msg: String):
         self.current_servo_mode = msg.data
 
+    def _trigger_value(self, idx: int) -> float:
+        # Negative-going trigger convention: idle sits at 0 (or +1 on some
+        # controllers whose released state is +1), full press drives the axis
+        # to -1. So the actionable magnitude is ``-raw`` clipped to [0, 1] --
+        # released=0 -> 0, released=+1 -> 0, pressed=-1 -> 1, half-press -> 0.5.
+        # Deadband filters low-magnitude noise at idle.
+        if self.joy_msg is None or idx >= len(self.joy_msg.axes):
+            return 0.0
+        raw = float(self.joy_msg.axes[idx])
+        value = max(0.0, min(1.0, -raw))
+        return 0.0 if value < self.axis_deadband else value
+
     def timer_callback(self):
         if not self.joy_msg:
             return
 
-        forward = max(0.0, -self.joy_msg.axes[5])
-        backward = max(0.0, -self.joy_msg.axes[4])
+        forward = self._trigger_value(5)
+        backward = self._trigger_value(4)
         trigger_x = forward - backward
         button_yaw = self.joy_msg.buttons[9] - self.joy_msg.buttons[10]
 
@@ -67,10 +82,7 @@ class TeleopJoyNode(Node):
             self.twist_cmd.angular.z = self.max_angular_z * (self.joy_msg.axes[2] + button_yaw)
         else:
             self.twist_cmd.linear.x = self.max_linear_x * (
-                abs(self.joy_msg.axes[5])
-                - abs(self.joy_msg.axes[4])
-                + abs(self.joy_msg.buttons[0])
-                - abs(self.joy_msg.buttons[1])
+                trigger_x + abs(self.joy_msg.buttons[0]) - abs(self.joy_msg.buttons[1])
             )
             self.twist_cmd.linear.y = 0.0
             self.twist_cmd.angular.z = self.max_angular_z * (self.joy_msg.axes[2] + self.joy_msg.axes[0])
@@ -134,4 +146,5 @@ def main():
                 pass
 
 
-main()
+if __name__ == '__main__':
+    main()

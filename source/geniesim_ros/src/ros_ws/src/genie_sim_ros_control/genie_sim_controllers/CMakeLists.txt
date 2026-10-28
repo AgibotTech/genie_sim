@@ -153,6 +153,8 @@ install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 
 if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_teleop_joy test/test_teleop_joy.py)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_chassis_kinematics test/test_chassis_kinematics.cpp)
   target_link_libraries(test_chassis_kinematics
