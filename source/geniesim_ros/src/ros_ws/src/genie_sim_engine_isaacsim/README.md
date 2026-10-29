@@ -31,4 +31,5 @@ modified. The live startup banner reports the resulting solver and options.
 Spherical-joint axes retain their imported gains and force limits; the scalar
 robot-joint tuning profiles do not apply to them.
 
-See [AGENTS.md](AGENTS.md) for implementation and verification.
+See [AGENTS.md](AGENTS.md) for implementation and verification, and the
+[platform roadmap](../../../../../../docs/ROADMAP.md) for remaining release gates.

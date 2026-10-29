@@ -45,7 +45,7 @@ acceptance. The combo keeps bundled Isaac 5.1 and system-Python Isaac 6.2.
 
 ### Isaac Sim 6.X — the GenieSim 4.0 target
 
-The dedicated variant selects base `6.2.0.1` and wheel `6.2.0.0`. Runtime qualification is recorded per image and backend in runtime acceptance; a built image alone does not establish scene coverage.
+The dedicated variant selects base `6.2.0.1` and wheel `6.2.0.0`. Runtime qualification is recorded per image and backend in [runtime acceptance](../source/geniesim_ros/docs/ISAACSIM_ACCEPTANCE.md); a built image alone does not establish scene coverage.
 
 Every variant pins its Isaac Sim version in two places that must agree:
 
@@ -92,7 +92,7 @@ installs it *over* Isaac's copy, so it must name the same release as the two
 above.
 `source/geniesim_ros/AGENTS.md` carries the full Isaac-owned version table.
 
-The runtime contract describes current assembly, physics and render requirements. Open release gates are in the Docker roadmap.
+The [runtime guide](../source/geniesim_ros/AGENTS.md) describes current assembly, physics and render requirements. Open release gates are in the [platform roadmap](../docs/ROADMAP.md).
 
 `check_newton_pins.py` runs after dependency installation and fails the build when installed MuJoCo/MuJoCo-Warp versions violate Newton's requirements. SDK/colcon constraints govern transitive resolution; omitting a direct requirement from `SKIP_EXACT` does not protect its installed version.
 
@@ -326,8 +326,12 @@ source /workspace/devel/setup.bash
 ```
 
 `docker5.1 up` selects bundled `omni_python`; overriding its image alone does
-not select the system runtime. See runtime acceptance
+not select the system runtime. See [runtime acceptance](../source/geniesim_ros/docs/ISAACSIM_ACCEPTANCE.md)
 for the measured image and GPU/ROS checks.
+
+The [recorded geniesim3 system-Python qualification](../source/geniesim_ros/docs/ISAACSIM_ACCEPTANCE.md#geniesim3-system-python-2026-10-25)
+identifies the measured clean rebuild, SDK provenance and scene coverage limits.
+Those measurements apply to that image identity rather than every `latest` tag.
 
 #### Bundled Isaac 5.1 runtime status
 
