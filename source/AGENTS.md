@@ -20,24 +20,18 @@ installs in topological order.
 |---|---|---|---|---|
 | `geniesim/` | umbrella (`geniesim`) | [README](geniesim/README.md) | — | — |
 | `geniesim_cli/` | `geniesim_cli` — owns the `geniesim` console script | [README](geniesim_cli/README.md) | [AGENTS](geniesim_cli/AGENTS.md) | — |
-| `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (**legacy stack — Isaac Sim direct; refactor planned onto `geniesim_ros`**) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
+| `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (direct Isaac Sim evaluation) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
 | `geniesim_generator/` | `geniesim_generator` — LLM-driven scene generation (gated) | [README](geniesim_generator/README.md) | [AGENTS](geniesim_generator/AGENTS.md) | [skills/](geniesim_generator/skills/) |
 | `geniesim_ros/` | `geniesim_ros` — Genie Sim RT Engine (ROS 2 workspace) | [README](geniesim_ros/README.md) | [AGENTS](geniesim_ros/AGENTS.md) | [skills/](geniesim_ros/skills/) |
 | `geniesim_teleop/` | `geniesim_teleop` — VR / Pico teleop bridge | [README](geniesim_teleop/README.md) | [AGENTS](geniesim_teleop/AGENTS.md) | [skills/](geniesim_teleop/skills/) |
 | `geniesim_world/` | `geniesim_world` — multimodal spatial world model (pano → 3D) | [README](geniesim_world/README.md) | [AGENTS](geniesim_world/AGENTS.md) | [skills/](geniesim_world/skills/) |
 
-> `geniesim_world` was previously listed as "legacy"; it is now first-class
-> with its own README + skill, and is installed out-of-band (heavy CUDA +
-> ML deps in its own conda env, not via `geniesim bootstrap`). See its
-> README for the install path.
+> `geniesim_world` is installed separately because its CUDA and ML dependencies
+> use a dedicated environment. See its README for installation instructions.
 
-> ⚠️ **`geniesim_benchmark` and `geniesim_ros` are independent parallel
-> stacks today.** The benchmark package drives Isaac Sim directly; the RT
-> Engine is the ROS 2 native engine. Don't unify their scene formats /
-> configs / launch graphs prematurely — the roadmap is to refactor the
-> benchmark runtime into a benchmark **layer on top of** `geniesim_ros`.
-> See [`.agent/geniesim_benchmark.md`](../.agent/geniesim_benchmark.md)
-> § "Architectural status".
+> Benchmark configurations and ROS scene configurations have separate schemas.
+> Benchmark evaluation uses its direct Isaac runtime. The shared `genie_sim_client`
+> remains an independent ROS client; see each package's README for its contract.
 
 ---
 
@@ -84,8 +78,7 @@ To surface a relationship that isn't in pyproject metadata (e.g. a runtime ROS t
 These directories live under `source/` but are **not** part of the
 `geniesim_*` peer set: they have their own build / run conventions,
 their own release cadence, and they are not pulled in by `geniesim
-bootstrap`. Some predate the `geniesim_*` reorganisation; others are
-active out-of-band collaborations. Don't extend without a plan, and
+bootstrap`. They have independent integration and dependency contracts. Don't extend without a plan, and
 don't cross-reference them as if they were peer distributions.
 
 | Directory | Description |
@@ -141,7 +134,7 @@ When you author a new `source/<pkg>/AGENTS.md`, follow this heading skeleton so 
 9. Do not (bullet list of foot-guns)
 ```
 
-Existing AGENTS.md files predate this skeleton and don't all match exactly; treat the skeleton as the **target** for new files and incremental refactors, not a forced migration.
+Use this skeleton for new guides and incremental documentation updates.
 
 ### Canonical SKILL.md frontmatter
 
@@ -149,7 +142,7 @@ Existing AGENTS.md files predate this skeleton and don't all match exactly; trea
 ---
 name: <skill-name>
 description: >
-  One paragraph + trigger phrases (en + 中文).
+  One paragraph and English trigger phrases.
 license: MPL-2.0
 metadata:
   author: genie-sim
