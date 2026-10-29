@@ -348,16 +348,17 @@ Four rules bind anything editing this package:
   included. An unknown name is a hard load error by design; do not
   "fix" a validator failure by renaming the key to something that
   resolves.
-- **A `*_sysid.urdf` under `urdf/` is built, not in effect.** Several
-  families (`armature`, the `<dynamics>` pair, drive gains) are
-  overwritten per joint class downstream, and `armature` has no URDF
-  slot at all. Do not infer runtime behaviour from a generated URDF.
+- **A `*_sysid.urdf` under `urdf/` alone does not select runtime overlays.**
+  Compatible scenes also select `robot.joint_overlays`; Isaac PhysX 6.2 and
+  Newton MuJoCo-Warp apply those joint values after class defaults. Armature
+  has no standard URDF slot. Inspect initialized solver values to verify delivery.
 
 Link inertials are selected through xacro `inertia_source` / `param_source`
-arguments. The current launch path uses `genie_sim_engine` class-level tuning;
-the core resolver is independently usable for validating and inspecting overlays.
-Schema validation does not configure a solver. Inspect initialized solver values
-rather than inferring runtime application from a generated URDF.
+arguments. For a complete baseline comparison, select xacro `default` and
+`robot.joint_overlays: []`. The core schema CLI validates and inspects overlays
+without configuring a solver. See the [runtime reference](../../../../docs/JOINT_PARAMS.md)
+and [backend matrix](robots/SYSID_PARAMS.md#2-selection-and-runtime-application)
+for supported fields, precedence and remaining gaps.
 
 ---
 

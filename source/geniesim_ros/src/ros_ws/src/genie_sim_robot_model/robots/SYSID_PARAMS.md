@@ -4,8 +4,8 @@ The five shipped sysid overlays contain 610 fields. Their YAML is the source of
 truth for numeric values and measurement caveats. This reference describes the
 current selection and the limits on interpreting those values.
 
-See [overlay conventions](OVERLAYS.md), the [schema and CLI](../../genie_sim_engine_core/genie_sim_engine_core/schema/joint_params.py)
-and [bringup guide](../../genie_sim_bringup/README.md).
+See [overlay conventions](OVERLAYS.md), the [schema/runtime reference](../../../../../docs/JOINT_PARAMS.md)
+and [bringup defaults](../../genie_sim_bringup/README.md#sysid-parameters-are-the-assembly-default).
 Paths in the table are relative to this `robots/` directory.
 
 ## 1. The five sets
@@ -25,21 +25,30 @@ For the ARX sets, the date identifies publication rather than a recorded capture
 
 ## 2. Selection and runtime application
 
-| Input | Selection | What it establishes |
-| --- | --- | --- |
-| G2 crsB link inertials, passive damping and friction | Xacro `inertia_source:=sysid` | Values authored in the generated URDF |
-| ARX drive gains and passive parameters | Xacro `param_source:=sysid` | Values authored in the generated URDF |
-| Sparse joint/link overlays | Core schema CLI or `JointParamResolver` | Validated records and resolved values, independent of any solver |
+Compatible scenes select ordered `robot.joint_overlays` package URIs. Last value
+wins per field, including explicit zero, after class defaults. Runtime validates
+robot selectors and solver joint names. Mimic followers remain undriven.
 
-The active `genie_sim_engine` launcher does not consume `robot.joint_overlays`.
-Its class tuning can overwrite imported URDF joint parameters. A generated
-`*_sysid.urdf`, successful schema validation, or a resolver result therefore does
-not prove runtime application. Armature has no standard URDF slot. Command
-delay and torque constant remain unconsumed.
+| Field | Newton MuJoCo-Warp | Isaac Newton wrapper (experimental) | Isaac PhysX 6.2 |
+| --- | --- | --- | --- |
+| Passive damping | SI `joint_damping` | SI model value after class writes | Native axis viscosity |
+| Coulomb friction | `joint_friction` | Model value after class writes | Native static/dynamic friction efforts |
+| Armature | `joint_armature` | Model value after class writes | Native axis armature plus USD attribute |
+| Drive gains | Final model values before compilation | USD seeds, SI tensor gains and final model overrides | USD seeds and SI tensor gains |
+| Link inertials | Selected sysid xacro | Selected sysid xacro | Selected sysid xacro |
+| Delay / torque constant | Unconsumed, logged | Unconsumed, logged | Unconsumed, logged |
 
-For a baseline comparison, select xacro `default`. Preserve the original
-identification records and inspect initialized solver values before drawing
-conclusions about the selected parameters.
+No general overlay-to-URDF patch is implemented. Keep xacro `inertia_source:=sysid`
+for G2 crsB or `param_source:=sysid` for ARX alongside the runtime stack for link
+inertials. For a complete baseline comparison, select xacro `default` and
+`robot.joint_overlays: []`. Featherstone/AVBD reject nonempty runtime stacks.
+Older PhysX lacks the native axis API and rejects selected passive overlays;
+PhysX overlay velocity limits are also rejected.
+
+Angular USD drive gains and viscosity are per degree (`SI * pi/180`); live
+model/tensor values are SI. Native PhysX 6.2 preserves separate passive damping,
+Coulomb effort and drive damping. The read-only `convert --to physx` report
+analyzes a drive-only target and is not a recipe for this native path.
 
 ## 3. Units and provenance
 
@@ -55,8 +64,9 @@ conclusions about the selected parameters.
 
 Link fields use kg, m, rad and kg·m². Joint/link keys are exact URDF names,
 including `idxNN_` prefixes. Only four fields can branch by schema engine key:
-`stiffness`, `damping_drive`, `damping`, `frictionloss`. The schema CLI accepts an engine key to inspect engine-specific values;
-that selection does not configure a simulation runtime.
+`stiffness`, `damping_drive`, `damping`, `frictionloss`. Runtime helpers select
+`mujoco` for both MuJoCo-Warp paths and `physx` for PhysX. Selecting an engine
+in the read-only schema CLI does not configure a simulation runtime.
 
 ## 4. Measurement caveats
 
@@ -91,6 +101,6 @@ python3 -m "$M" resolve \
 Repeat validation against each matching generated URDF. Inspect the reported
 source, then the initialized solver readback. Schema validation alone does not
 establish runtime application or hardware matching. Use the
-[bringup guide](../../genie_sim_bringup/README.md) for
+[bringup pass criteria](../../genie_sim_bringup/README.md#pass-criteria-matrix) for
 fresh/cached assembly, commands, state, cameras and stability. Record overlay IDs,
 image/source identity, initial pose, clamp and measured tolerance with each run.

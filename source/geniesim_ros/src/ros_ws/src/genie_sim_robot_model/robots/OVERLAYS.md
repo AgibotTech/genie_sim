@@ -12,7 +12,8 @@ This file documents the **data**: where overlays live here, the
 conventions they follow, and what ships today. The schema, the
 validator, the application channels and the invariants are the
 **method**, and they live in `genie_sim_engine_core`. The [schema and CLI](../../genie_sim_engine_core/genie_sim_engine_core/schema/joint_params.py)
-define the supported fields and read-only inspection commands.
+define the supported fields and read-only inspection commands. See the
+[joint parameter reference](../../../../../docs/JOINT_PARAMS.md) for runtime application.
 
 ## Where they live
 
@@ -42,17 +43,19 @@ should be used.
 
 ## Selection
 
-Select link inertials and URDF joint parameters with `inertia_source:=sysid`
-for G2 crsB or `param_source:=sysid` for ARX. Select `default` for the stock
-parameter files. The generated `*_sysid.urdf` files are explicit alternatives;
-generating them does not select them in a running simulation.
+Compatible bringup scenes select ordered `robot.joint_overlays` with
+`package://genie_sim_robot_model/robots/.../overlays/<id>.yaml` URIs. Core's
+`JointParamResolver` resolves sparse values with last-wins precedence, including
+explicit zeros. Isaac PhysX 6.2 and Newton MuJoCo-Warp apply selected joint
+values after class defaults; mimic followers remain undriven.
 
-Core's `JointParamResolver` validates ordered overlay paths and resolves sparse
-values with last-wins precedence, including explicit zeros. The active
-`genie_sim_engine` launch path does not consume `robot.joint_overlays`.
-Consequently, validation or resolution does not establish runtime application,
-and class tuning can overwrite values authored in the URDF. Armature has no
-standard URDF field; command delay and torque constant have no runtime consumer.
+Link inertials still use xacro `inertia_source:=sysid` for G2 crsB or
+`param_source:=sysid` for ARX. For a complete baseline comparison, select xacro
+`default` and `robot.joint_overlays: []`. Generating a `*_sysid.urdf` alone does
+not select the runtime stack. Command delay and torque constant remain unconsumed.
+See [SYSID_PARAMS.md §2](SYSID_PARAMS.md#2-selection-and-runtime-application)
+for backend support and remaining gaps. Runtime application does not change
+measurement provenance or caveats.
 
 ## Conventions these files follow
 
@@ -142,8 +145,9 @@ Keys are `mujoco`, `newton` and `physx`. Each branch takes an ordinary
 scalar, terse or annotated, and **must** carry a `note` saying what
 identified it — a split with no provenance is indistinguishable from a
 workaround for a backend bug, and the two call for opposite fixes.
-The caller selects the schema engine key when resolving values. A schema
-engine key does not establish runtime solver support. Three things to know before using an engine map:
+Runtime helpers select `mujoco` for MuJoCo-Warp (including the experimental
+Isaac Newton wrapper) and `physx` for Isaac PhysX. The schema key `newton` does
+not establish Featherstone/AVBD support. Three things to know before using an engine map:
 
 - **A split is a measurement, not a fix.** If a backend consumes the
   number wrongly, that is a bug in the engine adapter and belongs there.
@@ -165,8 +169,13 @@ hand-carrying numbers between files.
 
 ## Runtime consumers
 
-The current launch path uses `genie_sim_engine` and its class-level tuning.
-Core provides the overlay schema and resolver, but validation does not configure
-a solver. Inspect initialized values to establish which parameters a runtime
-actually applies. The YAML files remain authoritative for measurement values
-and fit conditions; see [SYSID_PARAMS.md](SYSID_PARAMS.md) for their caveats.
+Isaac PhysX 6.2 and Newton MuJoCo-Warp consume selected joint fields through
+`JointParamResolver` and backend helpers, after class tuning. Link inertials
+use the selected sysid xacro. Command delay and torque constant have no runtime
+consumer. Full field/backend support is documented in
+[SYSID_PARAMS.md](SYSID_PARAMS.md#2-selection-and-runtime-application).
+
+The schema CLI is read-only: validation and resolution do not modify a URDF,
+configure a solver or establish physical correctness. Inspect initialized runtime
+values after selecting a stack. The YAML files remain authoritative for exact
+numbers and fit conditions.
