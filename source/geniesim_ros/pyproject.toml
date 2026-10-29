@@ -2,7 +2,7 @@
 requires = [
     "setuptools>=68.0",
     "wheel",
-    "ovrtx>=0.3.0,<0.4.0",
+    "ovrtx>=0.4.0,<0.5.0",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -23,11 +23,12 @@ classifiers = [
 dependencies = [
     "geniesim_cli",
     "isaacsim",
-    # ovrtx 0.3.x: required by both genie_sim_render (cross-process) and
-    # genie_sim_engine's inline OVRTX visualizer
+    # ovrtx 0.4.x: required by both genie_sim_render (cross-process) and
+    # genie_sim_engine_newton's inline OVRTX visualizer
     # (physics_engine_visualizer:=ovrtx).  See
-    # genie_sim_engine/docs/ovrtx_sync.md.
-    "ovrtx>=0.3.0,<0.4.0",
+    # genie_sim_engine_newton/docs/ovrtx_sync.md. The inline visualizer
+    # requires 0.4; the render node handles its motion-BVH and sensor-graph APIs.
+    "ovrtx>=0.4.0,<0.5.0",
     "pyglet>=2.0",
     # Pins to keep Isaac Sim's bundled extensions importable. The
     # omni.services.pip_archive ships an older typing_extensions that
@@ -40,7 +41,11 @@ dependencies = [
     "Pillow<=12.1.1",
     "typing_extensions<=4.12.2",
     "trimesh<=4.11.1",
-    "mujoco<3.9.0",
+    # Isaac Sim 6.2 bundles Newton 1.6.1, whose sim extra requires this
+    # MuJoCo line. Keep it aligned with ISAACSIM_TAG / ISAACSIM_PIP_VERSION
+    # in docker/; system installs validate the SDK constraints and Newton
+    # metadata. See docker/README.md and docker/check_newton_pins.py.
+    "mujoco~=3.12.0",
 ]
 
 [project.urls]
