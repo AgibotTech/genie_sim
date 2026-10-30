@@ -19,10 +19,9 @@ ARG ISAACSIM_TAG=4.5.0
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 
-# Build-arg knobs for behind-the-GFW builds. Defaults are upstream;
-# `geniesim docker build --china` rewires all three to mainland mirrors.
-ARG APT_MIRROR=""
-ARG PIP_INDEX_URL=""
+# Image-wide repository defaults; the CLI selects presets from docker/mirrors.toml.
+ARG APT_MIRROR=upstream
+ARG PIP_INDEX_URL=https://pypi.org/simple
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
 ARG ISAACSIM_PIP_VERSION=4.5.0
 
@@ -31,6 +30,7 @@ ENV OMNI_KIT_ACCEPT_EULA=Y
 ENV PRIVACY_CONSENT=Y
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_CONFIG_FILE=/etc/pip.conf
 
 USER root
 
@@ -40,21 +40,9 @@ RUN printf '#!/bin/bash\nexec /isaac-sim/python.sh "$@"\n' > /usr/local/bin/omni
     chmod +x /usr/local/bin/omni_python && \
     chmod o+rx /isaac-sim
 
-# ------------------------------------------------------------
-# Optional apt mirror rewrite (used when --china is passed).
-# Only touches the jammy main sources file; leaves NVIDIA / ROS lists
-# alone (they're added later with their own URLs).
-# ------------------------------------------------------------
-RUN if [ -n "${APT_MIRROR}" ]; then \
-        echo "[build] rewriting apt sources -> ${APT_MIRROR}"; \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*ports.ubuntu.com/ubuntu-ports|${APT_MIRROR}|g" \
-            /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true; \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g" \
-            /etc/apt/sources.list 2>/dev/null || true; \
-    fi
+COPY docker/configure_mirrors.py /usr/local/bin/geniesim-configure-mirrors
+RUN chmod +x /usr/local/bin/geniesim-configure-mirrors && \
+    omni_python /usr/local/bin/geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
 
 # ------------------------------------------------------------
 # System dependencies + locale
@@ -118,13 +106,8 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 #    the Ubuntu jammy version before the ROS repo is added lets apt
 #    satisfy the constraint without conflict.
 # ------------------------------------------------------------
-ARG APT_MIRROR
 RUN add-apt-repository universe -y && \
-    if [ -n "${APT_MIRROR}" ]; then \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g" \
-            /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list 2>/dev/null || true; \
-    fi && \
+    geniesim-configure-mirrors --apt "${APT_MIRROR}" && \
     apt-get update && \
     apt-get install -y --no-install-recommends --allow-downgrades \
         "libbrotli1=1.0.9-2build6" \
@@ -153,9 +136,6 @@ RUN rosdep init && rosdep update --rosdistro humble --include-eol-distros 2>&1 |
 # Isaac Sim 4.5 — install into SYSTEM python3.10 (not a venv).
 # ------------------------------------------------------------
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    if [ -n "${PIP_INDEX_URL}" ]; then \
-        python3 -m pip config set global.index-url "${PIP_INDEX_URL}"; \
-    fi && \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 -m pip install --upgrade --ignore-installed \
         "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \

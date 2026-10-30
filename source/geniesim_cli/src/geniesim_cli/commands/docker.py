@@ -44,19 +44,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Mapping
 
-from geniesim_cli import _env
+from geniesim_cli import _env, _mirrors
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
-
-# DaoCloud's nvcr.io mirror — prefix-replacement form. The image path
-# becomes nvcr.m.daocloud.io/nvidia/isaac-sim:<tag>, so the registry
-# build-arg in Dockerfile is "nvcr.m.daocloud.io/nvidia".
-#
-# Tsinghua TUNA serves the apt + pip mirrors. These three together
-# are what `--china` activates.
-_CHINA_NVCR_REGISTRY = "nvcr.m.daocloud.io/nvidia"
-_CHINA_APT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/ubuntu"
-_CHINA_PIP_INDEX = "https://pypi.tuna.tsinghua.edu.cn/simple"
-
 
 # ---------------------------------------------------------------------------
 # Public variant registry
@@ -362,7 +351,7 @@ def _print_usage() -> None:
     print()
     print(f"{BOLD}Subcommands:{RST}")
     dockerfile = f"{v.dir}/{v.dockerfile}" if _active_profile else "docker/Dockerfile"
-    print(f"  {CYAN}build{RST} [--china] [docker-build args...]  🔨 Build the image from {BOLD}{dockerfile}{RST}")
+    print(f"  {CYAN}build{RST} [--mirrors NAME | --china] [docker-build args...]  🔨 Build {BOLD}{dockerfile}{RST}")
     print(f"  {CYAN}up{RST} [--headless]                  🚀 Start the container (GUI by default)")
     print(f"  {CYAN}down{RST}                              🛑 Stop and remove the container")
     print(f"  {CYAN}into{RST}                              📖 Drop into a shell in the running container")
@@ -373,7 +362,10 @@ def _print_usage() -> None:
         print(
             f"  {WHITE}--profile post-train|post-train-teleop{RST}  {DIM}place before the subcommand of 'geniesim docker'{RST}"
         )
-    print(f"  {WHITE}--china{RST}  {DIM}use daocloud (nvcr) + tuna (apt/pip) mirrors during build{RST}")
+    print(f"  {WHITE}--mirrors NAME{RST}  {DIM}select a preset from docker/mirrors.toml{RST}")
+    print(f"  {WHITE}--china{RST}         {DIM}alias for --mirrors china{RST}")
+    mirror_default = "inherit parent image" if _active_profile else "upstream"
+    print(f"  {DIM}Mirror default: {mirror_default}; explicit --build-arg values take precedence.{RST}")
     v_series = _selected_variant().isaacsim_series
     if v_series:
         print(
@@ -451,16 +443,28 @@ def _do_build(extra: list[str]) -> None:
 
     # Pull our own flags out of the user-supplied extras. Anything else is
     # forwarded verbatim to `docker build` (e.g. --no-cache, --progress).
-    china = False
+    preset = None
     resolve_pins = True
     series = v.isaacsim_series
     forwarded: list[str] = []
     expect_series = False
-    for tok in extra:
+    tokens = iter(extra)
+    for tok in tokens:
         if expect_series:
             series, expect_series = tok, False
-        elif tok == "--china":
-            china = True
+        elif tok == "--china" or tok == "--mirrors" or tok.startswith("--mirrors="):
+            if tok == "--china":
+                selected = "china"
+            elif tok == "--mirrors":
+                selected = next(tokens, "")
+            else:
+                selected = tok.partition("=")[2]
+            if not selected or selected.startswith("--") or (preset is not None and selected != preset):
+                print(f"{RED}❌ Select one mirror preset with --mirrors NAME or --china.{RST}")
+                sys.exit(2)
+            preset = selected
+        elif tok == "--build-arg":
+            forwarded.extend([tok, next(tokens, "")])
         elif tok == "--no-resolve":
             resolve_pins = False
         elif tok == "--isaacsim":
@@ -473,28 +477,34 @@ def _do_build(extra: list[str]) -> None:
         print(f"{RED}❌ Error: --isaacsim needs a series spec (e.g. --isaacsim 6.X){RST}")
         sys.exit(2)
 
+    preset = preset or (None if _active_profile else "upstream")
+    try:
+        supported = _mirrors.declared_args(dockerfile)
+        settings = _mirrors.load_preset(repo_root / "docker/mirrors.toml", preset) if preset else {}
+        defaults = {name: value for name, value in settings.items() if name in supported}
+        values, forwarded, explicit = _mirrors.merge_build_args(defaults, forwarded)
+    except (OSError, ValueError) as exc:
+        print(f"{RED}❌ {exc}{RST}")
+        sys.exit(2)
+
     print(f"{BOLD}{MAGENTA}🔨 geniesim {_cmd_label()} build{RST}")
     print(f"   {DIM}Repo root:{RST}  {CYAN}{repo_root}{RST}")
     print(f"   {DIM}Dockerfile:{RST} {CYAN}{dockerfile}{RST}")
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
-    if china:
-        mirrors = "tuna (apt/pip)" if _active_profile else "daocloud + tuna"
-        print(f"   {DIM}Mirrors:{RST}    {YELLOW}🇨🇳 china ({mirrors}){RST}")
+    print(f"   {DIM}Mirrors:{RST}    {CYAN}{preset or 'inherit parent image'}{RST}")
+    for name in sorted(_mirrors.MIRROR_ARGS & values.keys()):
+        source = "--build-arg" if name in explicit else f"preset {preset}"
+        print(
+            f"   {DIM}{name}:{RST} {CYAN}{values[name] if values[name] is not None else '(from environment)'}{RST} {DIM}({source}){RST}"
+        )
 
     # Resolved inside the banner block: the "Isaac Sim:" line it prints
     # belongs with Repo root / Dockerfile / Tag, above the blank separator.
-    build_args: list[str] = _isaacsim_build_args(series if resolve_pins else None)
+    resolved = _isaacsim_build_args(series if resolve_pins else None)
+    resolved_values, _, _ = _mirrors.merge_build_args({}, resolved)
+    values = {**resolved_values, **values}
+    build_args = _mirrors.as_flags(values)
     print()
-
-    if china:
-        if not _active_profile:
-            build_args += ["--build-arg", f"ISAACSIM_REGISTRY={_CHINA_NVCR_REGISTRY}"]
-        build_args += [
-            "--build-arg",
-            f"APT_MIRROR={_CHINA_APT_MIRROR}",
-            "--build-arg",
-            f"PIP_INDEX_URL={_CHINA_PIP_INDEX}",
-        ]
 
     cmd = [
         "docker",

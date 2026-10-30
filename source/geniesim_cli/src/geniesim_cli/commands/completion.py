@@ -46,13 +46,17 @@ _geniesim_completions() {
                 COMPREPLY=($(compgen -W "list geniesim geniesim_cli geniesim_benchmark geniesim_scene_agent geniesim_ros geniesim_teleop" -- "${cur}"))
             fi ;;
         docker6.2|docker|docker4.5|docker5.1)
+            if [[ "${prev}" == --mirrors ]]; then
+                COMPREPLY=($(compgen -W "upstream china" -- "${cur}"))
+                return
+            fi
             if [[ "${words[1]}" == docker && "${words[2]}" == --profile ]]; then
                 case "$COMP_CWORD" in
                     3) COMPREPLY=($(compgen -W "post-train post-train-teleop" -- "${cur}")) ;;
                     4) COMPREPLY=($(compgen -W "build up down into logs" -- "${cur}")) ;;
-                    5)
+                    *)
                         case "${words[4]}" in
-                            build) COMPREPLY=($(compgen -W "--china --build-arg --no-cache --progress" -- "${cur}")) ;;
+                            build) COMPREPLY=($(compgen -W "--china --mirrors --build-arg --no-cache --progress" -- "${cur}")) ;;
                             up) COMPREPLY=($(compgen -W "--headless" -- "${cur}")) ;;
                             logs) COMPREPLY=($(compgen -W "--follow" -- "${cur}")) ;;
                         esac ;;
@@ -61,6 +65,8 @@ _geniesim_completions() {
                 local actions="build up down into logs"
                 [[ "${words[1]}" == docker ]] && actions+=" --profile"
                 COMPREPLY=($(compgen -W "${actions}" -- "${cur}"))
+            elif [[ "${words[2]}" == build ]]; then
+                COMPREPLY=($(compgen -W "--china --mirrors --build-arg --no-cache --progress --no-resolve --isaacsim" -- "${cur}"))
             fi ;;
         post-train)
             if (( COMP_CWORD == 2 )); then
@@ -162,13 +168,17 @@ _geniesim() {
                 _values 'target' ${deploy_targets[@]}
             fi ;;
         docker6.2|docker|docker4.5|docker5.1)
+            if [[ "${words[CURRENT-1]}" == --mirrors ]]; then
+                _values 'mirror preset' upstream china
+                return
+            fi
             if [[ "${words[2]}" == docker && "${words[3]}" == --profile ]]; then
                 case "$CURRENT" in
                     4) _values 'profile' post-train post-train-teleop ;;
                     5) _values 'action' ${docker_cmds[@]} ;;
-                    6)
+                    *)
                         case "${words[5]}" in
-                            build) _values 'option' --china --build-arg --no-cache --progress ;;
+                            build) _values 'option' --china --mirrors --build-arg --no-cache --progress ;;
                             up) _values 'option' --headless ;;
                             logs) _values 'option' --follow ;;
                         esac ;;
@@ -179,6 +189,8 @@ _geniesim() {
                 else
                     _values 'action' ${docker_cmds[@]}
                 fi
+            elif [[ "${words[3]}" == build ]]; then
+                _values 'option' --china --mirrors --build-arg --no-cache --progress --no-resolve --isaacsim
             fi ;;
         post-train)
             if (( CURRENT == 3 )); then

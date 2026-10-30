@@ -18,8 +18,9 @@ RUN isaac_version="$(cat /isaac-sim/VERSION 2>/dev/null || true)" && \
          echo "Set BASE_IMAGE to a GenieSim runtime with bundled Isaac Sim 6.2.x." >&2; exit 1 ;; \
     esac
 
-ARG PIP_INDEX_URL=https://pypi.org/simple
-ARG APT_MIRROR=
+ARG PIP_INDEX_URL
+ARG APT_MIRROR
+RUN geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
 
 COPY docker/post-train-runtime.txt /opt/geniesim/docker/post-train-runtime.txt
 # Keep the base image's Newton/MuJoCo/Warp versions together.
@@ -28,14 +29,7 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 # The ROS render node uses the OVRTX 0.4 motion-BVH API.
 RUN pip3 install --no-cache-dir --break-system-packages --no-deps \
     --index-url https://pypi.nvidia.com "ovrtx==0.4.1.364340"
-RUN if [ -n "$APT_MIRROR" ]; then \
-      for file in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do \
-        if [ -f "$file" ]; then \
-          sed -i -E "s|https?://(archive.ubuntu.com/ubuntu\|security.ubuntu.com/ubuntu)|${APT_MIRROR}|g" "$file"; \
-        fi; \
-      done; \
-    fi && \
-    apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-jazzy-gazebo-msgs && \
     rm -rf /var/lib/apt/lists/*
 RUN /isaac-sim/python.sh -m pip install --no-cache-dir \

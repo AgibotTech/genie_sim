@@ -90,6 +90,7 @@ source/geniesim_cli/
     ├── _status_spec.py   ← derived health probe specifications
     ├── _workspace.py     ← ROS workspace discovery
     ├── _isaacsim.py      ← base-image / wheel resolution
+    ├── _mirrors.py       ← Docker mirror presets and build-argument merging
     ├── commands/         ← per-command implementations
     └── cli.py            ← public dispatcher and bootstrap gate
 ```
@@ -179,6 +180,20 @@ tests live in `docker/tests/test_docker_cli.py`.
 Profile-specific argument checks, readiness waiting, and path normalization
 must not change the behavior of `docker` without `--profile` or the existing
 Isaac Sim variant commands.
+
+Docker build mirrors come from `docker/mirrors.toml`. Base builds select
+`upstream` by default; derived profiles inherit their parent unless a preset is
+explicitly selected. `--china` aliases `--mirrors china`; `--mirrors upstream`
+resets inherited APT/pip defaults. `_mirrors.py` filters preset settings to
+declared Dockerfile arguments and merges explicit `--build-arg` values last,
+emitting each argument once. Keep provider URLs out of the dispatcher. Bare
+build arguments retain Docker's environment forwarding. Isaac metadata
+resolution remains upstream and independent of mirror selection.
+
+The base image installs `geniesim-configure-mirrors` and sets
+`PIP_CONFIG_FILE=/etc/pip.conf`; derived recipes reuse that helper before
+installing dependencies. Empty helper values preserve inherited settings.
+See [Docker build arguments](../../docker/README.md#build-arguments).
 
 `post-train` skips automatic bootstrap. Its dispatcher executes existing checkout
 scripts without importing simulator packages: lifecycle commands use

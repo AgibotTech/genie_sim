@@ -514,7 +514,8 @@ For downstream images, keep these conventions unless you have a specific reason 
 
 | Flag | Purpose |
 |---|---|
-| `--china` | Use daocloud (nvcr) + tuna (apt/pip) mirrors during the build |
+| `--mirrors NAME` | Select a preset from [`mirrors.toml`](mirrors.toml) |
+| `--china` | Alias for `--mirrors china` |
 | `--isaacsim <spec>` | Override the variant's series spec for this build (`--isaacsim 6.2.X`, or the exact base `--isaacsim 6.2.0.1`) |
 | `--no-resolve` | Skip version resolution entirely; use the Dockerfile `ARG` defaults |
 
@@ -527,22 +528,50 @@ neither:
 | `GENIESIM_ISAACSIM_TAG` | NGC base image tag to build against |
 | `GENIESIM_ISAACSIM_PIP_VERSION` | PyPI wheel version to install |
 
-All Dockerfiles support these build arguments:
+Base Dockerfiles support these build arguments. Derived profiles accept
+`APT_MIRROR` and `PIP_INDEX_URL` without defaults and inherit their parent:
 
 | Build arg | Default | Purpose |
 |---|---|---|
 | `ISAACSIM_REGISTRY` | `nvcr.io/nvidia` | Registry/path prefix for the NVIDIA Isaac Sim base image |
 | `ISAACSIM_TAG` | variant-specific | Isaac Sim **base image** tag (`6.2.0.1` / `5.1.0` / `4.5.0`). Passed explicitly by `geniesim docker6.2 build` from the resolved series spec; the `ARG` default is the offline fallback |
 | `ISAACSIM_PIP_VERSION` | variant-specific | Isaac Sim **PyPI wheel** version (`6.2.0.0` / `4.5.0`) — must name the same release as `ISAACSIM_TAG`; resolved alongside it |
-| `APT_MIRROR` | empty | Optional Ubuntu apt mirror rewrite |
-| `PIP_INDEX_URL` | empty | Optional primary pip index |
+| `APT_MIRROR` | `upstream` | Official Ubuntu archive/security sources, or a mirror URL; empty inherits |
+| `PIP_INDEX_URL` | `https://pypi.org/simple` | Image-wide primary pip index; empty inherits |
 | `ISAACSIM_PYPI_INDEX` | `https://pypi.nvidia.com` | NVIDIA pip index for Isaac Sim wheels |
 
-`geniesim docker build --china` sets:
+Base builds default to `upstream`. The `china` preset selects DaoCloud for the
+NVIDIA base image and TUNA for Ubuntu and ordinary Python packages. Add custom
+tables to [`mirrors.toml`](mirrors.toml) using the same build-argument names.
+Only arguments declared by the selected Dockerfile are passed. Explicit
+`--build-arg NAME=VALUE` values take precedence over the preset; the CLI prints
+the selected settings and their source. Bare `--build-arg NAME` retains Docker's
+environment forwarding.
 
-- `ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia`
-- `APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu`
-- `PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple`
+| Build | No mirror flag | Explicit `--mirrors NAME` |
+|---|---|---|
+| Base (`docker4.5`, `docker5.1`, `docker6.2`) | Upstream | Apply the selected preset |
+| Derived (`--profile post-train`, `--profile post-train-teleop`) | Inherit parent | Override inherited defaults |
+
+```bash
+geniesim docker6.2 build
+geniesim docker6.2 build --china
+geniesim docker --profile post-train build
+geniesim docker --profile post-train build --mirrors upstream
+```
+
+The selected APT/pip settings persist in the image. The shared
+`geniesim-configure-mirrors` helper updates Ubuntu sources and `/etc/pip.conf`;
+the image's `PIP_CONFIG_FILE=/etc/pip.conf` makes the same pip defaults apply to
+root and runtime users. Runtime environment `PIP_INDEX_URL` or pip's explicit
+`--index-url` can override them. Empty helper values preserve inherited settings.
+Unrelated APT repositories and global pip options are preserved. Rebuild the
+base image before building derived profiles that use this helper.
+
+Mirror selection leaves Isaac metadata discovery and the NVIDIA package index
+upstream. Use `--no-resolve` or the explicit version pins above when metadata
+discovery is unavailable. A mirror selection does not change the Isaac release.
+
 
 Manual build example:
 

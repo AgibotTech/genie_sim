@@ -221,6 +221,33 @@ Use `python3 -m pytest docker/tests/test_docker_cli.py` for CLI/startup coverage
   2. `libfreetype6-dev` / `libfontconfig1-dev` must be installed from Ubuntu repos first to avoid "held broken packages" once the ROS repo is present.
 - `ACCEPT_EULA=Y` is the EULA env var.
 
+## Build mirror contract
+
+`mirrors.toml` is the provider-preset source. The CLI defaults base builds to
+`upstream`; `--china` aliases `--mirrors china`. Derived images inherit by
+default and can explicitly select `--mirrors upstream` or another preset.
+Explicit `--build-arg` values override the preset and are emitted once.
+
+All base recipes install `configure_mirrors.py` as
+`/usr/local/bin/geniesim-configure-mirrors`. It runs with bundled Python before
+the first apt install, then with system Python after `add-apt-repository`.
+It updates Ubuntu sources, preserves third-party repositories, and remembers
+the selected Ubuntu mirror in `/etc/geniesim/apt-mirror` for later switching.
+`APT_MIRROR=upstream` restores the official archive/security sources; a URL
+selects a mirror; an empty value inherits. A requested APT change fails if no
+managed Ubuntu sources can be identified.
+
+Pip defaults are written to `/etc/pip.conf`, with `PIP_CONFIG_FILE` selecting
+that file for root, runtime users and derived images. Other global pip options
+are preserved. CLI `--index-url` and environment `PIP_INDEX_URL` remain explicit
+overrides. Derived Dockerfiles declare `ARG APT_MIRROR` and `ARG PIP_INDEX_URL`
+without defaults and run the inherited helper before dependency installation.
+Do not force a regional primary index in individual install commands. Keep
+package-specific NVIDIA/PyTorch indexes explicit.
+
+CPU coverage: `python3 -m pytest docker/tests/test_configure_mirrors.py` plus
+the CLI variant/process tests.
+
 ## Env var contract
 
 `start.sh` always passes both `ACCEPT_EULA=Y` and `OMNI_KIT_ACCEPT_EULA=Y` — harmless when not applicable.

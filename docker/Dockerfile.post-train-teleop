@@ -14,7 +14,9 @@ RUN isaac_version="$(cat /isaac-sim/VERSION 2>/dev/null || true)" && \
          echo "Set SERVER_IMAGE to a post-train server image with bundled Isaac Sim 6.2.x." >&2; exit 1 ;; \
     esac
 
-ARG PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_INDEX_URL
+ARG APT_MIRROR
+RUN geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
 
 # Keep the base runtime's dependency versions when installing the IK wheel.
 COPY 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl /tmp/

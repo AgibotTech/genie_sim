@@ -2,7 +2,7 @@
 #
 # Build:
 #   geniesim docker6.2 build
-#   geniesim docker6.2 build --china      # use DaoCloud mirrors for nvcr/apt/pip
+#   geniesim docker6.2 build --china      # select the China mirror preset
 #
 # Or manually:
 #   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
@@ -49,10 +49,9 @@ ARG ISAACSIM_TAG=6.2.0.1
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 
-# Build-arg knobs for behind-the-GFW builds. Defaults are upstream;
-# `geniesim docker build --china` rewires all three to mainland mirrors.
-ARG APT_MIRROR=""
-ARG PIP_INDEX_URL=""
+# Image-wide repository defaults; the CLI selects presets from docker/mirrors.toml.
+ARG APT_MIRROR=upstream
+ARG PIP_INDEX_URL=https://pypi.org/simple
 ARG ISAACSIM_PYPI_INDEX=https://pypi.nvidia.com
 ARG ISAACSIM_PIP_VERSION=6.2.0.0
 
@@ -61,6 +60,7 @@ ENV OMNI_KIT_ACCEPT_EULA=Y
 ENV PRIVACY_CONSENT=Y
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_CONFIG_FILE=/etc/pip.conf
 
 USER root
 
@@ -70,19 +70,9 @@ RUN printf '#!/bin/bash\nexec /isaac-sim/python.sh "$@"\n' > /usr/local/bin/omni
     chmod +x /usr/local/bin/omni_python && \
     chmod o+rx /isaac-sim
 
-# ------------------------------------------------------------
-# Optional apt mirror rewrite (used when --china is passed).
-# ------------------------------------------------------------
-RUN if [ -n "${APT_MIRROR}" ]; then \
-        echo "[build] rewriting apt sources -> ${APT_MIRROR}"; \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*ports.ubuntu.com/ubuntu-ports|${APT_MIRROR}|g" \
-            /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true; \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g" \
-            /etc/apt/sources.list 2>/dev/null || true; \
-    fi
+COPY docker/configure_mirrors.py /usr/local/bin/geniesim-configure-mirrors
+RUN chmod +x /usr/local/bin/geniesim-configure-mirrors && \
+    omni_python /usr/local/bin/geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
 
 # ------------------------------------------------------------
 # System dependencies + locale
@@ -130,13 +120,8 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 # ROS 2 Jazzy
 # https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html
 # ------------------------------------------------------------
-ARG APT_MIRROR
 RUN add-apt-repository universe -y && \
-    if [ -n "${APT_MIRROR}" ]; then \
-        sed -i -E "s|https?://[^ ]*archive.ubuntu.com/ubuntu|${APT_MIRROR}|g; \
-                   s|https?://[^ ]*security.ubuntu.com/ubuntu|${APT_MIRROR}|g" \
-            /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list 2>/dev/null || true; \
-    fi && \
+    geniesim-configure-mirrors --apt "${APT_MIRROR}" && \
     curl -fsSL -o /tmp/ros2-apt-source.deb \
         "https://github.com/ros-infrastructure/ros-apt-source/releases/download/1.1.0/ros2-apt-source_1.1.0.noble_all.deb" && \
     dpkg -i /tmp/ros2-apt-source.deb && \
@@ -162,9 +147,6 @@ RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | 
 # --extra-index-url because the isaacsim wheels live only there.
 # ------------------------------------------------------------
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    if [ -n "${PIP_INDEX_URL}" ]; then \
-        python3 -m pip config set global.index-url "${PIP_INDEX_URL}"; \
-    fi && \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 -m pip install --upgrade --ignore-installed \
         "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
