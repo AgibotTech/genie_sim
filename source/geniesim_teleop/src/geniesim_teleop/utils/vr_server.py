@@ -2,6 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+
 import json
 import socket
 import threading
@@ -17,13 +18,17 @@ class VRServer:
         self._sample = (None, 0.0)
         self._lock = threading.Lock()
         self._closed = threading.Event()
+        self._error = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind((host or "", port))
-        self.sock.settimeout(0.1)
-        logger.info(f"[VRServer] listening on {host or '0.0.0.0'}:{self.sock.getsockname()[1]}")
-        self.listener_thread = threading.Thread(target=self.udp_listener, daemon=True)
-        self.listener_thread.start()
+        try:
+            self.sock.bind((host or "", port))
+            self.sock.settimeout(0.1)
+            logger.info(f"[VRServer] listening on {host or '0.0.0.0'}:{self.sock.getsockname()[1]}")
+            self.listener_thread = threading.Thread(target=self.udp_listener, daemon=True)
+            self.listener_thread.start()
+        except BaseException:
+            self.sock.close()
+            raise
 
     def udp_listener(self):
         while not self._closed.is_set():
@@ -36,12 +41,14 @@ class VRServer:
                 continue
             except (UnicodeDecodeError, json.JSONDecodeError):
                 continue
-            except OSError:
+            except OSError as exc:
                 if not self._closed.is_set():
-                    logger.warning("Pico UDP socket closed unexpectedly")
+                    self._error = exc
                 return
 
     def on_update(self):
+        if self._error is not None:
+            raise RuntimeError("Pico UDP listener failed") from self._error
         with self._lock:
             content, received_at = self._sample
         return content if time.monotonic() - received_at < self.input_timeout_s else None
@@ -50,3 +57,5 @@ class VRServer:
         self._closed.set()
         self.sock.close()
         self.listener_thread.join(timeout=0.5)
+        if self.listener_thread.is_alive():
+            raise RuntimeError("Pico UDP listener did not stop")

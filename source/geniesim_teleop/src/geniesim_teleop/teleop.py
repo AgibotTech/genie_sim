@@ -3,59 +3,64 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-import rclpy
-import numpy as np
-
-# from geniesim_teleop.utils.ik_utils import IKSolver
-from geniesim_teleop.utils.logger import Logger
-from geniesim_teleop.utils.ros_utils import RosUtils
-from geniesim_teleop.utils.name_utils import *
-from geniesim_teleop.devices.pico_device import PicoDevice
-from geometry_msgs.msg import Pose
-
-import os, sys, argparse, math
+import argparse
+import math
+import os
+import threading
+import time
 from copy import deepcopy
-import json
-import time, subprocess, shutil, signal
-import yaml
 
-from geniesim_teleop.config.robot_interface import *
+import numpy as np
+import rclpy
+from sensor_msgs.msg import JointState
+
+from geniesim_teleop.config.chassis import ChassisControl
+from geniesim_teleop.config.gripper import gripper_control
+from geniesim_teleop.config.robot_interface import (
+    BODY_JOINT_NAMES,
+    HEAD_JOINT_NAMES,
+    LEFT_ARM_JOINT_NAMES,
+    RIGHT_ARM_JOINT_NAMES,
+)
+from geniesim_teleop.config.task_config import load_teleop_task, robot_family
+from geniesim_teleop.devices.pico_device import ControllerPoseClutch, PicoDevice
+from geniesim_teleop.utils.logger import Logger
+from geniesim_teleop.utils.network import add_network_arguments, select_host_ip
+from geniesim_teleop.utils.ros_nodes import QOS_PROFILE_SENSOR
+from geniesim_teleop.utils.ros_utils import RosUtils
 
 logger = Logger()
 
 
 class TeleOp(object):
-    def __init__(self, args, ik_version="0.4.3"):
+    def __init__(self, args):
         self.args = args
         self.port = args.port
         self.reset_flg = False
-        self.switch_flg = False
-        self.robot_cfg = args.robot_cfg
+        self.task_context = load_teleop_task(args.config, args.robot_cfg)
+        self.chassis_control = ChassisControl.from_task(self.task_context.config_path)
+        self.initial_states = self.task_context.mc_initial_states()
+        self.robot_cfg = self.task_context.robot_cfg
+        logger.info(f"Task {self.task_context.task_name}/{self.task_context.sub_task_name}: {self.robot_cfg}")
         self.last_eef_pub = [None, None]
         self.last_on = [False, False]
+        self.controller_clutch = [ControllerPoseClutch(), ControllerPoseClutch()]
+        self.waist_clutch = ControllerPoseClutch()
+        self.waist_anchor = None
         self.last_eef_control_on = [0.0, 0.0]
         self.ee_pub = [None, None]
         self.waist_pub = None
         self.waist_update = False
-        self.update_wait_num = [0, 0]
-        self.iskeyboard = False
-        self.keyboard_pos = [None, None]
-        self.ik_version = ik_version
         self.current_mode = "realtime"
         self.is_recording = False
-        self.host_ip = self.get_local_ip()
-        self.test_num = 0
-        self.process_pid = []
-        self.waist_angle = 0
-        if self.host_ip == None:
-            print("======>Can't get host_ip!!!! Please enter the ip address manually !!!")
-            self.host_ip = args.host_ip
+        self.host_ip = select_host_ip(args.interface, args.host_ip)
+        logger.info(f"Pico network address: {self.host_ip}:{self.port}")
         self.setup_robot()
         self.count = 0
         self.pub_mc_count = 0
         self.waist_control_count = 0
 
-        self.ros_utils = RosUtils(self.robot_name)
+        self.ros_utils = RosUtils(self.robot_name, arm_only=args.arm_only)
         self.device_type = args.device_type
         self.setup_device()
 
@@ -64,16 +69,6 @@ class TeleOp(object):
         self.robot_init_arm = None
         self.robot_init_hand = None
 
-    def get_local_ip(self):
-        try:
-            # same as bash command
-            result = subprocess.run(["hostname", "-I"], capture_output=True, text=True, check=True)
-            # get first IP (same as awk '{print $1}')
-            ip = result.stdout.strip().split()[0]
-            return ip
-        except (subprocess.CalledProcessError, IndexError, FileNotFoundError) as e:
-            return None
-
     def _extract_pose_from_joint_state(self, state):
         names = list(state.name)
         positions = list(state.position)
@@ -81,7 +76,7 @@ class TeleOp(object):
         def get_positions(joint_names):
             out = []
             for n in joint_names:
-                if n in names:
+                if n in names and names.index(n) < len(positions):
                     out.append(positions[names.index(n)])
                 else:
                     return None
@@ -95,18 +90,13 @@ class TeleOp(object):
         )
 
     def setup_robot(self):
-        self.robot_eef = "omnipicker"
-        self.robot_name = self.robot_cfg.split(".")[0]
-        if "omnipicker" in self.robot_cfg:
-            self.robot_eef = "omnipicker"
-        elif "120s" in self.robot_cfg:
-            self.robot_eef = "120s"
-        else:
-            raise ValueError(f"Invalid robot_cfg {self.robot_cfg}")
+        self.robot_name = self.robot_cfg.removesuffix(".json")
+        self.robot_eef = robot_family(self.robot_cfg)
+        self.gripper_control = None if self.args.arm_only else gripper_control(self.robot_cfg)
 
     def setup_device(self):
         if self.device_type == "pico":
-            self.device = PicoDevice(self.host_ip, self.port, self.robot_cfg)
+            self.device = PicoDevice(self.host_ip, self.port, self.robot_cfg, self.chassis_control.input_timeout_s)
         else:
             raise ValueError(f"Unsupported device_type {self.device_type}")
 
@@ -119,12 +109,14 @@ class TeleOp(object):
         self.head_command = np.array([0.0, 0.0])
 
     def initialize(self):
-        # To be optimized
         init_marker = False
-        while not init_marker:
+        while rclpy.ok() and not init_marker:
+            self.ros_utils.check_health()
             init_marker = self.ros_utils.sim_ros_node.initialize()
             time.sleep(0.1)
             print("waiting for initialize")
+        if not init_marker:
+            return False
         print("initialize success")
 
         self.reset_command()
@@ -135,188 +127,173 @@ class TeleOp(object):
         self.joint_cmd = {}
 
         self._load_robot_init_states()
-
-    def _find_benchmark_root(self):
-        """Locate the geniesim_benchmark package dir by path, WITHOUT importing it.
-
-        teleop runs under the system python3 where geniesim_benchmark (which
-        depends on isaacsim) is NOT importable, so find_spec("geniesim_benchmark")
-        returns None here. teleop.yaml / robot_init_states.py are plain data
-        files, so we resolve them on disk instead.
-
-        Order: $SIM_REPO_ROOT/source/geniesim_benchmark/...  →  sibling of the
-        installed geniesim_teleop package.
-        """
-        candidates = []
-        repo_root = os.environ.get("SIM_REPO_ROOT")
-        if repo_root:
-            candidates.append(
-                os.path.join(repo_root, "source", "geniesim_benchmark", "src", "geniesim_benchmark")
-            )
-        # Sibling layout: .../source/geniesim_teleop/src/geniesim_teleop
-        import importlib.util
-
-        spec = importlib.util.find_spec("geniesim_teleop")
-        if spec and spec.submodule_search_locations:
-            src_root = os.path.normpath(os.path.join(spec.submodule_search_locations[0], "..", "..", ".."))
-            candidates.append(os.path.join(src_root, "geniesim_benchmark", "src", "geniesim_benchmark"))
-        for c in candidates:
-            if os.path.isdir(c):
-                return c
-        return None
+        return self._initialize_mc()
 
     def _load_robot_init_states(self):
-        # teleop.yaml and TASK_INFO_DICT live in the geniesim_benchmark package,
-        # but that package isn't importable from the teleop python (no isaacsim),
-        # so load both as data files off disk.
-        import importlib.util
+        robot_state = self.initial_states
+        self.robot_init_body_state = deepcopy(robot_state.get("body_state"))
+        self.robot_init_head_state = deepcopy(robot_state.get("head_state"))
+        self.robot_init_arm = deepcopy(robot_state.get("init_arm"))
+        self.robot_init_hand = deepcopy(robot_state.get("init_hand"))
+        logger.info(f"Loaded task initial states for {self.robot_cfg}")
 
-        benchmark_root = self._find_benchmark_root()
-        if not benchmark_root:
-            logger.warning("geniesim_benchmark dir not found, skip loading robot init states")
-            return
-        teleop_yaml_path = os.path.join(benchmark_root, "config", "teleop.yaml")
-        if not os.path.isfile(teleop_yaml_path):
-            logger.warning(f"teleop.yaml not found: {teleop_yaml_path}, skip loading robot init states")
-            return
-        with open(teleop_yaml_path, "r", encoding="utf-8") as f:
-            teleop_cfg = yaml.safe_load(f)
-        sub_task_name = (teleop_cfg or {}).get("benchmark", {}).get("sub_task_name")
-        if not sub_task_name:
-            logger.warning("benchmark.sub_task_name not found in teleop.yaml, skip loading robot init states")
-            return
-        # robot_init_states.py is a dependency-free data module — load it by path.
-        states_path = os.path.join(benchmark_root, "benchmark", "config", "robot_init_states.py")
-        if not os.path.isfile(states_path):
-            logger.warning(f"robot_init_states.py not found: {states_path}, skip loading robot init states")
-            return
+    def _publish_initial_pose(self):
+        left = list(self.robot_init_arm[:7])
+        right = list(self.robot_init_arm[7:])
+        body = deepcopy(self.robot_init_body_state) if not self.args.arm_only else None
+        head = deepcopy(self.robot_init_head_state) if not self.args.arm_only else None
+        self.ros_utils.sim_ros_node.pub_robot_pose(body, head, left, right)
+
+    def _initialize_mc(self):
+        """Send the task reset before accepting tracking input, including Wuji."""
+        node = self.ros_utils.sim_ros_node
+        ready = threading.Event()
+        arm_names = LEFT_ARM_JOINT_NAMES + RIGHT_ARM_JOINT_NAMES
+        target = dict(zip(arm_names, self.robot_init_arm))
+
+        def on_command(msg):
+            if len(msg.position) != len(msg.name):
+                return
+            positions = dict(zip(msg.name, msg.position))
+            if all(
+                name in positions and math.isfinite(positions[name]) and abs(positions[name] - target[name]) <= 0.02
+                for name in arm_names
+            ):
+                ready.set()
+
+        subscription = node.create_subscription(JointState, "/joint_command", on_command, QOS_PROFILE_SENSOR)
+        deadline = time.monotonic() + 15.0
+        sent = False
         try:
-            _spec = importlib.util.spec_from_file_location("_geniesim_robot_init_states", states_path)
-            _mod = importlib.util.module_from_spec(_spec)
-            _spec.loader.exec_module(_mod)
-            TASK_INFO_DICT = _mod.TASK_INFO_DICT
-        except Exception as e:
-            logger.warning(f"failed to load TASK_INFO_DICT: {e}, skip loading robot init states")
-            return
-        task_states = TASK_INFO_DICT.get(sub_task_name)
-        if not task_states:
-            logger.warning(f"sub_task_name '{sub_task_name}' not in TASK_INFO_DICT, skip loading robot init states")
-            return
-        robot_state = task_states.get("G2_omnipicker")
-        if not robot_state:
-            logger.warning(
-                f"G2_omnipicker not found for sub_task_name '{sub_task_name}', skip loading robot init states"
+            while rclpy.ok() and time.monotonic() < deadline:
+                self.ros_utils.check_health()
+                _, _, left, right = self._extract_pose_from_joint_state(node.get_joint_state())
+                if left is not None and right is not None and all(math.isfinite(q) for q in left + right):
+                    if (
+                        sent
+                        and ready.is_set()
+                        and all(
+                            abs(actual - expected) <= 0.02
+                            for actual, expected in zip(left + right, self.robot_init_arm)
+                        )
+                    ):
+                        logger.info("Task initial arm pose reached; Pico tracking enabled")
+                        return True
+                    # MC needs feedback and its first joint target before it
+                    # publishes. Use exactly the same task pose as Pico X.
+                    self._publish_initial_pose()
+                    sent = True
+                time.sleep(0.2)
+            if not rclpy.ok():
+                return False
+            missing = (
+                "complete arm feedback" if not sent else "task arm targets on /joint_command and matching arm feedback"
             )
-            return
-        self.robot_init_body_state = deepcopy(robot_state.get("body_state"))
-        self.robot_init_head_state = deepcopy(robot_state.get("head_state"))
-        self.robot_init_arm = deepcopy(robot_state.get("init_arm"))
-        self.robot_init_hand = deepcopy(robot_state.get("init_hand"))
-        self.waist_yaw = self.robot_init_body_state[0]
-        self.waist_pitch = self.robot_init_body_state[2]
-        logger.info(f"loaded robot init states for sub_task_name='{sub_task_name}' (G2_omnipicker)")
-        if not task_states:
-            logger.warning(f"sub_task_name '{sub_task_name}' not in TASK_INFO_DICT, skip loading robot init states")
-            return
-        robot_state = task_states.get("G2_omnipicker")
-        if not robot_state:
-            logger.warning(
-                f"G2_omnipicker not found for sub_task_name '{sub_task_name}', skip loading robot init states"
-            )
-            return
-        self.robot_init_body_state = deepcopy(robot_state.get("body_state"))
-        self.robot_init_head_state = deepcopy(robot_state.get("head_state"))
-        self.robot_init_arm = deepcopy(robot_state.get("init_arm"))
-        self.robot_init_hand = deepcopy(robot_state.get("init_hand"))
-        self.waist_yaw = self.robot_init_body_state[0]
-        self.waist_pitch = self.robot_init_body_state[2]
-        logger.info(f"loaded robot init states for sub_task_name='{sub_task_name}' (G2_omnipicker)")
+            raise RuntimeError(f"Teleop startup timed out waiting for {missing}; inspect MC and bridge output")
+        finally:
+            node.destroy_subscription(subscription)
 
     def parse_arm_control(self):
         if self.current_mode == "playback":
             return
-        if self.iskeyboard:
-            self.ee_pub = self.ros_utils.sim_ros_node.parse_keyboard_pose(self.keyboard_pos)
-            self.iskeyboard = False
-        else:
-            xyzxyzw_l = self.input.get("left")
-            xyzxyzw_r = self.input.get("right")
-            on_l = self.input.get("l_on")
-            on_r = self.input.get("r_on")
-            extra_r = self.input.get("r_b")
+        xyzxyzw_l = self.input.get("left")
+        xyzxyzw_r = self.input.get("right")
+        on_l = bool(self.input.get("l_on"))
+        # A takes ownership of the right controller until released. The
+        # arm clutch disengages too, so resuming the arm starts at zero delta.
+        waist_on = bool(self.input.get("r_a")) and not self.args.arm_only
+        on_r = bool(self.input.get("r_on")) and not waist_on
 
-            if self.last_on[0] == False and on_l == True:
-                self.ros_utils.sim_ros_node.update_without_judge()
-            if self.last_on[1] == False and on_r == True:
-                self.ros_utils.sim_ros_node.update_without_judge()
-            self.last_on = [on_l, on_r]
-            if xyzxyzw_l and on_l:
-                pose = self.ros_utils.sim_ros_node.parse_delta_pose(xyzxyzw_l, "left")
-                if pose != None:
-                    self.ee_pub[0] = pose
-            if xyzxyzw_r and on_r and (not extra_r):
-                pose = self.ros_utils.sim_ros_node.parse_delta_pose(xyzxyzw_r, "right")
-                if pose != None:
-                    self.ee_pub[1] = pose
+        rising_l = not self.last_on[0] and on_l
+        rising_r = not self.last_on[1] and on_r
+        if rising_l or rising_r:
+            if self.ros_utils.sim_ros_node.update_without_judge(self.last_eef_pub) is False:
+                return
+
+        # Re-anchor the controllers against the held MC targets, not
+        # lagging measured wrists. Both active hands must use the refreshed
+        # arm-base frame without changing either arm's commanded pose.
+        reanchor = rising_l or rising_r
+        delta_l = self.controller_clutch[0].update(
+            xyzxyzw_l,
+            on_l,
+            reanchor=reanchor and on_l,
+        )
+        delta_r = self.controller_clutch[1].update(
+            xyzxyzw_r,
+            on_r,
+            reanchor=reanchor and on_r,
+        )
+        self.last_on = [on_l, on_r]
+        if delta_l is not None:
+            pose = self.ros_utils.sim_ros_node.parse_delta_pose(delta_l, "left")
+            if pose != None:
+                self.ee_pub[0] = pose
+        if delta_r is not None:
+            pose = self.ros_utils.sim_ros_node.parse_delta_pose(delta_r, "right")
+            if pose != None:
+                self.ee_pub[1] = pose
 
     def parse_eef_control(self):
         cmd_l, cmd_r = self.input.get("l_eef"), self.input.get("r_eef")
         if cmd_l is None or cmd_r is None:
             return
-        output_l = 0.65 * cmd_l
-        output_r = 0.65 * cmd_r
-        self.ros_utils.set_joint_state(
-            ["idx41_gripper_l_outer_joint1", "idx81_gripper_r_outer_joint1"],
-            [output_l, output_r],
-        )
-        self.last_eef_control_on = [output_l, output_r]
+        if self.gripper_control is None:
+            return
+        targets = self.gripper_control.targets(cmd_l, cmd_r)
+        names = list(self.gripper_control.joint_names)
+        if self.gripper_control.mode == "velocity":
+            self.ros_utils.set_joint_velocity(names, targets)
+        else:
+            self.ros_utils.set_joint_state(names, targets)
+        self.last_eef_control_on = targets
 
     def parse_waist_control(self):
-        if not (self.input.get("r_axisX") or self.input.get("r_axisY")):
+        active = bool(self.input.get("r_a"))
+        if not active:
+            self.waist_clutch.update(None, False)
+            self.waist_anchor = None
             return
-        print(f"waist control: {self.input.get('r_axisX')} {self.input.get('r_axisY')}")
-        self.waist_control_count += 1
-        if self.waist_control_count < 10:
+        controller_pose = self.input.get("right")
+        if controller_pose is None:
             return
-        self.waist_control_count = 0
-        waist_angle_limit = 1.67
-        self.waist_yaw -= self.input.get("r_axisX") * 0.1
-        self.waist_pitch += self.input.get("r_axisY") * 0.1
-        print(f"=====>waist control: {self.waist_yaw} {self.waist_pitch}")
-        self.waist_yaw = max(-waist_angle_limit, min(waist_angle_limit, self.waist_yaw))
-        self.waist_pitch = max(-waist_angle_limit, min(waist_angle_limit, self.waist_pitch))
-        self.ros_utils.sim_ros_node.pub_waist_pose(self.robot_init_body_state, self.waist_yaw, self.waist_pitch)
+        node = self.ros_utils.sim_ros_node
+        if self.waist_anchor is None:
+            # Keep a separate anchor: engaging either arm refreshes node.parts.
+            self.waist_anchor = node.get_link_transform_from_base_link("arm_base_link")
+            if self.waist_anchor is None:
+                return
+        delta = self.waist_clutch.update(controller_pose, True)
+        self.waist_pub = node.parse_waist_delta_pose(delta, self.waist_anchor)
 
     def parse_body_control(self):
-        if not (self.input.get("l_axisX") or self.input.get("l_axisY")):
+        # Publish neutral too: wheel velocity commands persist until replaced.
+        self.ros_utils.sim_ros_node.pub_chassis_twist(*self.chassis_control.velocity(self.input))
+
+    def stop_motion(self):
+        if self.args.arm_only:
             return
-        name = [
-            "idx111_chassis_lwheel_front_joint1",
-            "idx112_chassis_lwheel_front_joint2",
-            "idx131_chassis_rwheel_front_joint1",
-            "idx132_chassis_rwheel_front_joint2",
-            "idx121_chassis_lwheel_rear_joint1",
-            "idx122_chassis_lwheel_rear_joint2",
-            "idx141_chassis_rwheel_rear_joint1",
-            "idx142_chassis_rwheel_rear_joint2",
-        ]
-        position = [0.0] * 8
-        velocity = [0.0] * 8
-        wheel_yaw = self.input.get("l_axisX")
-        wheel_velocity = self.input.get("l_axisY")
-        position[0] = -wheel_yaw
-        position[2] = -wheel_yaw
-        position[4] = -wheel_yaw
-        position[6] = -wheel_yaw
-        velocity[1] = 2.0 * math.pi * wheel_velocity
-        velocity[3] = 2.0 * math.pi * wheel_velocity
-        velocity[5] = 2.0 * math.pi * wheel_velocity
-        velocity[7] = 2.0 * math.pi * wheel_velocity
-        self.ros_utils.set_joint_position_and_velocity(name, position, velocity)
+        self.ros_utils.sim_ros_node.pub_chassis_twist(0.0, 0.0, 0.0)
+        if self.gripper_control is not None and self.gripper_control.mode == "velocity":
+            self.ros_utils.set_joint_velocity(list(self.gripper_control.joint_names), [0.0, 0.0])
 
     def send_command(self):
-        if self.ee_pub[0] != None or self.ee_pub[1] != None:
-            self.ros_utils.sim_ros_node.pub_mc(self.ee_pub)
+        if any(pose is not None for pose in self.ee_pub) or self.waist_pub is not None:
+            self.ros_utils.sim_ros_node.pub_mc(self.ee_pub, self.waist_pub)
+            for i, pose in enumerate(self.ee_pub):
+                if pose is not None:
+                    # MC keeps this arm-base-relative target after grip release.
+                    self.last_eef_pub[i] = deepcopy(pose)
+
+    def reset_tracking(self):
+        self.last_eef_pub = [None, None]
+        for clutch in self.controller_clutch:
+            clutch.update(None, False)
+        self.last_on = [False, False]
+        self.waist_clutch.update(None, False)
+        self.waist_anchor = None
+        self.waist_pub = None
+        self.ee_pub = [None, None]
 
     def on_playback(self):
         if self.device.extra_l():
@@ -342,115 +319,97 @@ class TeleOp(object):
             self.ros_utils.sim_ros_node.pub_recording(True)
             self.is_recording = True
 
-    def sub_keyboard_event(self):
-        # Imported lazily: pynput opens an X connection at import time and raises
-        # ImportError when no display is available, which is the normal case for a
-        # headless container. Keyboard control is optional (the call site below is
-        # commented out), so importing it at module level would break teleop for
-        # everyone who does not need it.
-        from pynput import keyboard
-
-        self.pressed_keys = set()
-
-        def on_press(key):
-            try:
-                if key.char == "d":
-                    self.waist_angle -= 0.01
-                    self.iskeyboard = True
-                elif key.char == "a":
-                    self.waist_angle += 0.01
-                    self.iskeyboard = True
-            except AttributeError:
-                pass
-
-        def on_release(key):
-            self.pressed_keys.discard(key)
-
-        listener = keyboard.Listener(on_press=on_press, on_release=on_release)
-        listener.start()
-
     def reset_whole_robot(self):
-        left_reset = self.input.get("l_x")
-        right_reset = False
-        body_reset = self.input.get("r_a")
+        if not self.input.get("l_x"):
+            return False
+        self.reset_tracking()
+        self.current_mode = "realtime"
+        if not self.args.arm_only:
+            self.ros_utils.sim_ros_node.pub_playback(False)
+        self._publish_initial_pose()
+        return True
 
-        left_arm_position = None
-        right_arm_position = None
-        body_position = None
-        head_position = None
-
-        if left_reset and self.robot_init_arm:
-            left_arm_position = list(self.robot_init_arm[:7])
-            right_arm_position = list(self.robot_init_arm[7:])
-        # if right_reset and self.robot_init_arm:
-        #     right_arm_position = list(self.robot_init_arm[7:])
-        if body_reset:
-            if self.robot_init_body_state is not None:
-                body_position = list(reversed(self.robot_init_body_state))
-            if self.robot_init_head_state is not None:
-                head_position = list(self.robot_init_head_state)
-
-        self.ros_utils.sim_ros_node.pub_robot_pose(body_position, head_position, left_arm_position, right_arm_position)
+    def process_input(self):
+        if not self.input:
+            self.stop_motion()
+            self.reset_tracking()
+            return
+        self.is_start_recording()
+        self.ee_pub = [None, None]
+        # Reset has priority over A and arm grips; no pose target can overwrite it.
+        if self.reset_whole_robot():
+            self.stop_motion()
+            return
+        if not self.args.arm_only:
+            self.on_playback()
+            if self.current_mode == "playback":
+                self.stop_motion()
+                self.reset_tracking()
+                return
+        self.parse_arm_control()
+        if not self.args.arm_only:
+            self.parse_waist_control()
+            self.parse_eef_control()
+            self.parse_body_control()
+        self.send_command()
 
     def run(self):
-        self.ros_utils.start_ros_node()
-        self.initialize()
-        # self.sub_keyboard_event()
+        try:
+            self.ros_utils.start_ros_node()
+            self._run_loop()
+        finally:
+            try:
+                if rclpy.ok() and self.ros_utils.sim_ros_node is not None:
+                    self.stop_motion()
+            finally:
+                try:
+                    self.device.close()
+                finally:
+                    self.ros_utils.stop_ros_node()
+
+    def _run_loop(self):
+        if not self.initialize():
+            return
 
         target_hz = 30.0
         target_period = 1.0 / target_hz
         while rclpy.ok():
+            self.ros_utils.check_health()
             loop_start = time.time()
 
             self.input = self.device.update()
-            # logger.info(f"Input {self.input}")
-
-            # Multi-episode recording: autoteleop.sh broadcasts an end-of-episode
-            # signal on /sim/stop_episode after the operator confirms with y/n.
-            # Reset the one-shot is_recording latch so the controller's record
-            # button can start the next episode. Kept outside the `if self.input`
-            # guard so the signal is handled even while the controller is asleep
-            # and not sending data.
-            if self.ros_utils.sim_ros_node.get_and_clear_stop_episode():
-                self.is_recording = False
-                self.ros_utils.sim_ros_node.pub_recording(False)
-                logger.info("Episode finished; press the record button to start the next one")
-
-            if self.input:
-                self.is_start_recording()
-                self.ee_pub = [None, None]
-                self.parse_arm_control()
-                self.parse_waist_control()
-                self.send_command()
-                self.parse_eef_control()
-                self.parse_body_control()
-                self.reset_whole_robot()
-                self.on_playback()
+            self.process_input()
 
             elapsed = time.time() - loop_start
             sleep_time = target_period - elapsed
             if sleep_time > 0:
                 time.sleep(sleep_time)
-        for process_pid in self.process_pid:
-            os.kill(process_pid, signal.SIGTERM)
 
 
 def main():
     parser = argparse.ArgumentParser()
     # fmt: off
     parser.add_argument("--client_host", type=str, default="localhost:50051", help="The client")
-    parser.add_argument("--host_ip", type=str, default="", help="Set vr host ip")
+    add_network_arguments(parser)
     parser.add_argument("--port", type=int, default=8080, help="Set vr port")
-    parser.add_argument("--robot_cfg", type=str, default="G2_omnipicker.json", help="Set robot config")
+    parser.add_argument("--config", default=os.environ.get("GENIESIM_TELEOP_CONFIG"), help="Task YAML (default: benchmark config/teleop.yaml)")
+    parser.add_argument("--robot_cfg", default=None, help="Optional assertion: must match the robot selected by the task")
     parser.add_argument("--device_type", type=str, default="pico", help="Set device type")
+    parser.add_argument(
+        "--arm_only",
+        action="store_true",
+        help="Only publish arm commands; leave hand and whole-body joints to external controllers",
+    )
     # fmt: on
     args = parser.parse_args()
 
-    teleop = TeleOp(args)
+    try:
+        teleop = TeleOp(args)
+    except (ValueError, OSError, KeyError) as exc:
+        parser.error(str(exc))
     try:
         teleop.run()
     except KeyboardInterrupt:
-        teleop.ros_utils.stop_ros_node()
         pass
 
 

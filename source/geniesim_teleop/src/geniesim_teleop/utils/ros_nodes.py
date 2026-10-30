@@ -2,37 +2,26 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-from rclpy.qos import (
-    QoSProfile,
-    QoSHistoryPolicy,
-    QoSReliabilityPolicy,
-    QoSDurabilityPolicy,
-)
+import threading
+from datetime import datetime
+
+import numpy as np
 import rclpy
+import scipy.spatial.transform as tf
+from geniesim_msg.msg import GeniesimReactiveControl, GeniesimRetargetGroup
+from geometry_msgs.msg import Pose, Twist
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-
-from builtin_interfaces.msg import Time
-from sensor_msgs.msg import Image, CompressedImage
-from sensor_msgs.msg import JointState
-from tf2_msgs.msg import TFMessage
-
-from collections import deque
-import threading, time
-import os, sys, math, random
-from std_msgs.msg import Bool
-from .name_utils import *
-from datetime import datetime
-from std_msgs.msg import Header
-from geniesim_msg.msg import GeniesimReactiveControl, GeniesimRetargetGroup
-from geniesim_teleop.config.robot_interface import RobotType, robot_desc_map
-import scipy.spatial.transform as tf
-
-from cv_bridge import CvBridge
-import numpy as np
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from scipy.spatial.transform import Rotation as R
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Bool, Header
+from tf2_msgs.msg import TFMessage
 from tf2_ros import Buffer, TransformListener
-from geometry_msgs.msg import Pose
+
+from geniesim_teleop.config.gripper import gripper_control
+from geniesim_teleop.config.robot_interface import RobotType, robot_desc_map
+from geniesim_teleop.utils.name_utils import G1_JOINT_NAMES, G2_JOINT_NAMES
 
 QOS_PROFILE_LATEST = QoSProfile(
     history=QoSHistoryPolicy.KEEP_LAST,
@@ -48,59 +37,45 @@ QOS_PROFILE_VOLATILE = QoSProfile(
     durability=QoSDurabilityPolicy.VOLATILE,
 )
 
-
-def distance_error(xyz1, xyz2):
-    return math.sqrt((xyz1[0] - xyz2[0]) ** 2 + (xyz1[1] - xyz2[1]) ** 2 + (xyz1[2] - xyz2[2]) ** 2)
-
-
-def print_rotation_info(quat, label=""):
-    """Print rotation details (quaternion and euler angles)."""
-    rot = R.from_quat(quat)
-    euler_angles = rot.as_euler("xyz", degrees=True)
-    print(f"{label}:")
-    print(f"  ====> quaternion: {quat}")
-    print(f"  ====> euler (deg): {euler_angles}")
-    print()
+# BEST_EFFORT accepts the engine's SensorDataQoS joint-state publisher.
+QOS_PROFILE_SENSOR = QoSProfile(
+    history=QoSHistoryPolicy.KEEP_LAST,
+    depth=30,
+    reliability=QoSReliabilityPolicy.BEST_EFFORT,
+    durability=QoSDurabilityPolicy.VOLATILE,
+)
 
 
 class SimNode(Node):
-    def __init__(self, robot_name="G2", node_name="sim_ros_node"):
+    def __init__(self, robot_name="G2", node_name="sim_ros_node", arm_only=False):
         super().__init__(
             node_name,
             parameter_overrides=[Parameter("use_sim_time", Parameter.Type.BOOL, True)],
         )
         self.init_pose = None
         self.robot_name = robot_name
+        self.arm_only = arm_only
         self.config_robot()
-        self.bridge = CvBridge()
         self.pub_joint_command = self.create_publisher(
             JointState,
-            "/joint_command",
+            "/teleop/gripper_command",
             QOS_PROFILE_VOLATILE,
         )
         self.sub_js = self.create_subscription(
             JointState,
             "/joint_states",
             self.callback_joint_state,
-            QOS_PROFILE_VOLATILE,
+            QOS_PROFILE_SENSOR,
         )
         self.publisher_playback = self.create_publisher(Bool, "/sim/playback_flag", 1)
         self.publisher_recording = self.create_publisher(Bool, "/sim/is_recording", 1)
-        # Multi-episode recording: listen for the end-of-episode signal (the same
-        # topic the simulator listens on) so the one-shot is_recording latch can be
-        # re-armed and the controller's record button can start the next episode.
-        self.subscriber_stop_episode = self.create_subscription(
-            Bool, "/sim/stop_episode", self.callback_stop_episode, 1
-        )
-        self.stop_episode_flag = False
         self.publisher_mc = self.create_publisher(GeniesimReactiveControl, "/wbc/retarget", 10)
-        self.publisher_mc_debug = self.create_publisher(Pose, "/debug/retarget", 10)
+        self.publisher_chassis = self.create_publisher(Twist, "/cmd_twist", 1)
         self.lock_js = threading.Lock()
         self.lock_tf = threading.Lock()
         self.js_msg = JointState()
         self.tf_msg = TFMessage()
         self.mc_tf_init = False
-        # init for mc
         self.robot_type = RobotType.G2
         robot_desc = robot_desc_map[self.robot_type]
         self.parts = [
@@ -127,7 +102,7 @@ class SimNode(Node):
             {
                 "id": "arm_base",
                 "frame_id": "base_link",
-                "control_type": 1,
+                "control_type": 0,
                 "group_id": GeniesimRetargetGroup.GROUP_WAIST,
                 "reference_frame_name": "",
                 "target_frame_name": "arm_base_link",
@@ -141,6 +116,11 @@ class SimNode(Node):
         self.loop_rate = self.create_rate(30.0)
         self.dubug_num = 0
 
+    def pub_chassis_twist(self, vx, vy, wz):
+        msg = Twist()
+        msg.linear.x, msg.linear.y, msg.angular.z = float(vx), float(vy), float(wz)
+        self.publisher_chassis.publish(msg)
+
     def config_robot(self):
         if "G1" in self.robot_name:
             self.robot_id = "G1"
@@ -150,14 +130,24 @@ class SimNode(Node):
             raise Exception(f"Invalid robot name {self.robot_name}")
 
         if self.robot_id == "G1":
-            self.joint_names = G1_JOINT_NAMES
+            self.joint_names = list(G1_JOINT_NAMES)
         elif self.robot_id == "G2":
-            self.joint_names = G2_JOINT_NAMES
+            self.joint_names = list(G2_JOINT_NAMES)
         self.config_eef()
 
     def config_eef(self):
-        if "omnipicker" in self.robot_name:
-            self.joint_names += OMNIPICKER_AJ_NAMES
+        if self.arm_only:
+            # Arm-only teleop leaves all hand DOFs to the external Wuji bridge.
+            return
+        if "omnipicker" in self.robot_name or "90d" in self.robot_name:
+            self.joint_names += list(gripper_control(self.robot_name).joint_names)
+        elif "wuji" in self.robot_name:
+            self.joint_names += [
+                f"hand_{side}_{finger}_joint{joint}"
+                for side in ("l", "r")
+                for finger in ("thumb", "index", "middle", "ring", "pinky")
+                for joint in range(1, 5)
+            ]
         else:
             raise Exception(f"Invalid eef {self.robot_name}")
 
@@ -176,10 +166,9 @@ class SimNode(Node):
         cmd_msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_joint_command.publish(cmd_msg)
 
-    def set_joint_position_and_velocity(self, name, position, velocity):
+    def set_joint_velocity(self, name, velocity):
         cmd_msg = JointState()
         cmd_msg.name = name
-        cmd_msg.position = position
         cmd_msg.velocity = velocity
         cmd_msg.header.stamp = self.get_clock().now().to_msg()
         self.pub_joint_command.publish(cmd_msg)
@@ -194,86 +183,38 @@ class SimNode(Node):
         msg.data = val
         self.publisher_recording.publish(msg)
 
-    def callback_stop_episode(self, msg):
-        if msg.data:
-            self.stop_episode_flag = True
-
-    def get_and_clear_stop_episode(self):
-        # One-shot event: reading clears the flag so the main loop handles each
-        # end-of-episode signal exactly once.
-        flag = self.stop_episode_flag
-        self.stop_episode_flag = False
-        return flag
-
-    def pub_debug_pos(self, xyz, xyzw):
-        pose = Pose()
-        pose.position.x = xyz[0]
-        pose.position.y = xyz[1]
-        pose.position.z = xyz[2]
-        pose.orientation.x = xyzw[0]
-        pose.orientation.y = xyzw[1]
-        pose.orientation.z = xyzw[2]
-        pose.orientation.w = xyzw[3]
-        self.publisher_mc_debug.publish(pose)
-
-    def pub_mc(self, poses, body_lift_pose=None):
+    def pub_mc(self, poses, waist_pose=None):
         retarget_msg = GeniesimReactiveControl()
         retarget_msg.header = self.create_header()
         retarget_msg.retarget_groups = []
         for part in self.parts:
-            if (
-                (part.get("id") == "left" and poses[0] == None)
-                or (part.get("id") == "right" and poses[1] == None)
-                or (part.get("id") == "body" and body_lift_pose == None)
-            ):
+            pose = {"left": poses[0], "right": poses[1], "arm_base": waist_pose}.get(part["id"])
+            if pose is None or (self.arm_only and part["id"] == "arm_base"):
                 continue
             retarget_group = GeniesimRetargetGroup()
             retarget_group.group_id = part["group_id"]
-            retarget_group.control_type = part["control_type"]
-            if part["control_type"] == 0:
-                retarget_group.frame_id = "arm_base_link"
-                ee_names = part.get("target_frame_name", "")
-                retarget_group.target_frame_names = [ee_names]
-                retarget_group.target_frame_poses = [poses[0] if part.get("id") == "left" else poses[1]]
-            elif part["control_type"] == 1:
-                continue
-            elif part["control_type"] == 3:
-                if isinstance(body_lift_pose, Pose):
-                    retarget_group.control_type = 0
-                    retarget_group.frame_id = "base_link"
-                    ee_names = part.get("target_frame_name", "")
-                    retarget_group.target_frame_names = [ee_names]
-                    retarget_group.target_frame_poses = [body_lift_pose]
-                else:
-                    retarget_group.target_joint_positions = body_lift_pose
+            retarget_group.control_type = 0
+            retarget_group.frame_id = "base_link" if part["id"] == "arm_base" else "arm_base_link"
+            retarget_group.target_frame_names = [part["target_frame_name"]]
+            retarget_group.target_frame_poses = [pose]
             retarget_msg.retarget_groups.append(retarget_group)
 
-        right_tool = GeniesimRetargetGroup()
-        right_tool.group_id = GeniesimRetargetGroup.GROUP_RIGHT_TOOL
-        right_tool.control_type = 3
-        right_tool.target_joint_positions = [0.0]
-        retarget_msg.retarget_groups.append(right_tool)
-        print(f"pub_mc: {retarget_msg}")
-        self.publisher_mc.publish(retarget_msg)
+        # Grippers publish /teleop/gripper_command for the bridge to merge, never through MC.
+        if retarget_msg.retarget_groups:
+            self.publisher_mc.publish(retarget_msg)
 
-    def pub_waist_pose(self, init_waist_angle, waist_yaw, waist_pitch):
-        retarget_msg = GeniesimReactiveControl()
-        retarget_msg.header = self.create_header()
-        retarget_msg.retarget_groups = []
-
-        waist_lift_group = GeniesimRetargetGroup()
-        waist_lift_group.group_id = GeniesimRetargetGroup.GROUP_WAIST_LIFT
-        waist_lift_group.control_type = 3  # absolute joint angle
-        waist_lift_group.target_joint_positions = [
-            init_waist_angle[4],
-            init_waist_angle[3],
-            waist_pitch,
-            init_waist_angle[1],
-            waist_yaw,
-        ]
-        retarget_msg.retarget_groups.append(waist_lift_group)
-
-        self.publisher_mc.publish(retarget_msg)
+    def parse_waist_delta_pose(self, delta_xyzxyzw, anchor):
+        # Half-scale relative motion, expressed in base_link. Scale the
+        # rotation delta, never the absolute controller orientation.
+        delta = np.asarray(delta_xyzxyzw, dtype=float)
+        pose = Pose()
+        pose.position.x = float(anchor.position.x + 0.5 * delta[0])
+        pose.position.y = float(anchor.position.y + 0.5 * delta[1])
+        pose.position.z = float(anchor.position.z + 0.5 * delta[2])
+        initial = R.from_quat([anchor.orientation.x, anchor.orientation.y, anchor.orientation.z, anchor.orientation.w])
+        rotation = R.from_rotvec(0.5 * R.from_quat(delta[3:]).as_rotvec()) * initial
+        pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = map(float, rotation.as_quat())
+        return pose
 
     def pub_robot_pose(self, body_position, head_position, left_arm_position, right_arm_position):
         if body_position is None and head_position is None and left_arm_position is None and right_arm_position is None:
@@ -299,7 +240,7 @@ class SimNode(Node):
 
         if body_position != None:
             waist_lift_group = GeniesimRetargetGroup()
-            waist_lift_group.group_id = GeniesimRetargetGroup.GROUP_WAIST_LIFT
+            waist_lift_group.group_id = GeniesimRetargetGroup.GROUP_WAIST
             waist_lift_group.control_type = 3  # absolute joint angle
             waist_lift_group.target_joint_positions = body_position
             retarget_msg.retarget_groups.append(waist_lift_group)
@@ -355,94 +296,60 @@ class SimNode(Node):
         else:
             return False
 
-    def update_ee_pos(self, id="left"):
-        if id == "left":
-            self.parts[0]["init"] = False
-            update_flag = False
-            while not update_flag:
-                try:
-                    transform = self.tf_buffer.lookup_transform(
-                        self.parts[0]["frame_id"],
-                        self.parts[0]["target_frame_name"],
-                        rclpy.time.Time(),
-                    )
-                    self.parts[0]["pose"] = self.transform_to_pose_ros(transform)
-                    self.parts[0]["init"] = True
-                    update_flag = True
-                    pose = self.parts[0]["pose"]
-                    R = [
-                        pose.position.x,
-                        pose.position.y,
-                        pose.position.z,
-                        pose.orientation.x,
-                        pose.orientation.y,
-                        pose.orientation.z,
-                        pose.orientation.w,
-                    ]
+    def update_without_judge(self, held_targets=None):
+        """Refresh the clutch frame, preserving any arm targets MC still holds."""
+        try:
+            latest = [
+                self.tf_buffer.lookup_transform(part["frame_id"], part["target_frame_name"], rclpy.time.Time())
+                for part in self.parts
+            ]
+            stamps = [rclpy.time.Time.from_msg(item.header.stamp) for item in latest]
+            # Time zero denotes a static transform/latest lookup, not a dated
+            # sample. Choose a time available to every dynamic chain.
+            dated = [stamp for stamp in stamps if stamp.nanoseconds > 0]
+            stamp = min(dated, key=lambda value: value.nanoseconds) if dated else rclpy.time.Time()
+            poses = [
+                self.transform_to_pose_ros(
+                    self.tf_buffer.lookup_transform(part["frame_id"], part["target_frame_name"], stamp)
+                )
+                for part in self.parts
+            ]
+        except Exception as exc:
+            # Do not partially replace anchors or block input processing. The
+            # next Pico frame retries the rising edge with a fresh controller pose.
+            self.get_logger().warning(f"Waiting for a coherent arm TF snapshot: {exc}", throttle_duration_sec=2.0)
+            return False
 
-                    print(f"==========>[pico] left update pos:{R}")
-                except Exception as e:
-                    print(f"##############{e}\n")
-        else:
-            self.parts[1]["init"] = False
-            update_flag = False
-            while not update_flag:
-                try:
-                    transform = self.tf_buffer.lookup_transform(
-                        self.parts[1]["frame_id"],
-                        self.parts[1]["target_frame_name"],
-                        rclpy.time.Time(),
-                    )
-                    self.parts[1]["pose"] = self.transform_to_pose_ros(transform)
-                    self.parts[1]["init"] = True
-                    update_flag = True
-                    pose = self.parts[1]["pose"]
-                    R = [
-                        pose.position.x,
-                        pose.position.y,
-                        pose.position.z,
-                        pose.orientation.x,
-                        pose.orientation.y,
-                        pose.orientation.z,
-                        pose.orientation.w,
-                    ]
-                    print(f"==========>[pico] right update pos:{R}")
-                except Exception as e:
-                    print(f"##############{e}\n")
-
-    def update_without_judge(self):
-        for i in range(len(self.parts)):
-            self.parts[i]["init"] = False
-            print(f"self.parts[{i}]['pose']:{self.parts[i]['pose']}")
-        update_flag = False
-        while not update_flag:
-            for i in range(len(self.parts)):
-                if self.parts[i]["init"]:
+        if held_targets is not None:
+            base = next(pose for part, pose in zip(self.parts, poses) if part["id"] == "arm_base")
+            base_pos = np.array([base.position.x, base.position.y, base.position.z])
+            base_rot = R.from_quat([base.orientation.x, base.orientation.y, base.orientation.z, base.orientation.w])
+            held_by_side = dict(zip(("left", "right"), held_targets))
+            for i, part in enumerate(self.parts):
+                held = held_by_side.get(part["id"])
+                if held is None:
                     continue
-                try:
-                    transform = self.tf_buffer.lookup_transform(
-                        self.parts[i]["frame_id"],
-                        self.parts[i]["target_frame_name"],
-                        rclpy.time.Time(),
-                    )
-                    self.get_logger().info("Transform received. Initializing marker.")
-                    self.parts[i]["pose"] = self.transform_to_pose_ros(transform)
-                    self.parts[i]["init"] = True
-                    pose = self.parts[i]["pose"]
-                    R = tf.Rotation.from_quat(
-                        [
-                            pose.orientation.x,
-                            pose.orientation.y,
-                            pose.orientation.z,
-                            pose.orientation.w,
-                        ]
-                    ).as_matrix()
-                    print(f"{self.parts[i]}: \n{R} \n{pose}")
-                    # self.get_logger().info(f"{self.parts[i]}: \n{R} \n{pose}")
-                except Exception as e:
-                    print(f"##############{e}\n")
-            if all(self.parts[i]["init"] for i in range(len(self.parts))):
-                update_flag = True
+                # Preserve held targets to avoid injecting wrist tracking error on re-grip.
+                position = base_pos + base_rot.apply([held.position.x, held.position.y, held.position.z])
+                rotation = base_rot * R.from_quat(
+                    [held.orientation.x, held.orientation.y, held.orientation.z, held.orientation.w]
+                )
+                measured = poses[i].position
+                gap_mm = 1000 * np.linalg.norm(position - [measured.x, measured.y, measured.z])
+                pose = Pose()
+                pose.position.x, pose.position.y, pose.position.z = map(float, position)
+                pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w = map(
+                    float, rotation.as_quat()
+                )
+                poses[i] = pose
+                self.get_logger().info(f"Arm clutch {part['id']}: preserving held target; measured gap={gap_mm:.2f} mm")
+
+        # Mixing a wrist at t1 with arm_base at t2 turns torso motion into an
+        # arm target jump even when the controller's relative delta is zero.
+        for part, pose in zip(self.parts, poses):
+            part["pose"] = pose
+            part["init"] = True
+        return True
 
     def parse_delta_pose(self, delta_xyzxyzw, id="left"):
         delta_pos = delta_xyzxyzw[0:3]
@@ -478,15 +385,9 @@ class SimNode(Node):
 
         ee_rot = R.from_quat(ee_xyzw)  # end-effector current orientation
         delta_rot = R.from_quat(delta_xyzw)  # orientation delta
-        # print(f"id:{id}")
-        # print_rotation_info(ee_xyzw, "ee_xyzw")
-        # print(f"ee_pos:{ee_pos}")
         delta_in_ee_frame = ee_rot.inv() * delta_rot * ee_rot  # transform delta from base to EE frame
-        # delta_in_ee_frame = ee_rot.inv() * delta_rot  # apply delta in EE frame
         new_ee_rot = ee_rot * delta_in_ee_frame
         new_ee_xyzw = new_ee_rot.as_quat()
-        # print_rotation_info(new_ee_xyzw, "new_ee_xyzw")
-        # self.pub_debug_pos(ee_pos, new_ee_xyzw)
         new_ee_pos = [ee_pos[0] + delta_pos[0], ee_pos[1] + delta_pos[1], ee_pos[2] + delta_pos[2]]
 
         # base_link → arm_base_link
@@ -514,74 +415,6 @@ class SimNode(Node):
         pose.orientation.z = new_quat[2]
         pose.orientation.w = new_quat[3]
         return pose
-
-    def parse_keyboard_pose(self, keyborad_poses):
-        if (keyborad_poses[0] == None) and (keyborad_poses[1] == None):
-            return [None, None]
-        arm_base_pos, arm_base_xyzw, left_pose, right_pose = None, None, None, None
-        for part in self.parts:
-            if part["id"] == "arm_base":
-                arm_base_pos = [
-                    part["pose"].position.x,
-                    part["pose"].position.y,
-                    part["pose"].position.z,
-                ]
-                arm_base_xyzw = [
-                    part["pose"].orientation.x,
-                    part["pose"].orientation.y,
-                    part["pose"].orientation.z,
-                    part["pose"].orientation.w,
-                ]
-        if keyborad_poses[0] != None:
-            left_xyz = keyborad_poses[0][0:3]
-            left_xyzw = keyborad_poses[0][3:7]
-            # base_link → ee
-            T_base_ee = np.eye(4)
-            T_base_ee[:3, 3] = left_xyz
-            T_base_ee[:3, :3] = R.from_quat(left_xyzw).as_matrix()
-            # base_link → arm_base_link
-            T_base_arm = np.eye(4)
-            T_base_arm[:3, 3] = arm_base_pos
-            T_base_arm[:3, :3] = R.from_quat(arm_base_xyzw).as_matrix()
-            T_arm_base = np.linalg.inv(T_base_arm)
-            T_arm_ee_new = T_arm_base @ T_base_ee
-
-            new_pos = T_arm_ee_new[:3, 3]
-            new_quat = R.from_matrix(T_arm_ee_new[:3, :3]).as_quat()  # [x,y,z,w]
-            left_pose = Pose()
-            left_pose.position.x = new_pos[0]
-            left_pose.position.y = new_pos[1]
-            left_pose.position.z = new_pos[2]
-            left_pose.orientation.x = new_quat[0]
-            left_pose.orientation.y = new_quat[1]
-            left_pose.orientation.z = new_quat[2]
-            left_pose.orientation.w = new_quat[3]
-        if keyborad_poses[1] != None:
-            right_xyz = keyborad_poses[1][0:3]
-            right_xyzw = keyborad_poses[1][3:7]
-            # base_link → ee
-            T_base_ee = np.eye(4)
-            T_base_ee[:3, 3] = right_xyz
-            T_base_ee[:3, :3] = R.from_quat(right_xyzw).as_matrix()
-            # base_link → arm_base_link
-            T_base_arm = np.eye(4)
-            T_base_arm[:3, 3] = arm_base_pos
-            T_base_arm[:3, :3] = R.from_quat(arm_base_xyzw).as_matrix()
-            T_arm_base = np.linalg.inv(T_base_arm)
-            T_arm_ee_new = T_arm_base @ T_base_ee
-
-            new_pos = T_arm_ee_new[:3, 3]
-            new_quat = R.from_matrix(T_arm_ee_new[:3, :3]).as_quat()  # [x,y,z,w]
-            right_pose = Pose()
-            right_pose.position.x = new_pos[0]
-            right_pose.position.y = new_pos[1]
-            right_pose.position.z = new_pos[2]
-            right_pose.orientation.x = new_quat[0]
-            right_pose.orientation.y = new_quat[1]
-            right_pose.orientation.z = new_quat[2]
-            right_pose.orientation.w = new_quat[3]
-
-        return [left_pose, right_pose]
 
     def get_link_transform_from_base_link(self, link_name: str):
         try:

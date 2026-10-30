@@ -130,6 +130,11 @@ repair requirements for missing or incompatible installed packages.
 Both `Dockerfile` and `Dockerfile.5.1` apply these constraints to the system-Python
 GenieSim dependency layer without `--ignore-installed`. This preserves compatible
 SDK packages and replaces incompatible versions with normal pip uninstall/install.
+
+Before that install, both recipes overlay only `blinker` with
+`--ignore-installed --no-deps` under the same constraints. Ubuntu's packaged
+`blinker` lacks pip uninstall metadata; this targeted overlay avoids attempting
+to uninstall the apt-owned copy when teleop dependencies require a newer version.
 The generated file remains at `/opt/geniesim/docker/isaac-constraints.txt` for
 later deliberate installs with `-c`; it is not a global `PIP_CONSTRAINT`, because
 derived profiles can declare their own constraints. `collect_deps.py` continues to

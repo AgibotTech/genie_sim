@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Check if ROS environment is already sourced
 setup_env() {
 
   SCRIPT_NAME=$(basename "${BASH_SOURCE[0]}")
@@ -9,9 +8,7 @@ setup_env() {
 
   export ROS_LOCALHOST_ONLY=1
   local DEFAULT_ROS_DISTRO="humble"
-  # Check if ROS_DISTRO environment variable exists
   if [ -z "${ROS_DISTRO}" ]; then
-    # ROS environment not sourced, check if setup.bash exists
     if [ -f "/opt/ros/${DEFAULT_ROS_DISTRO}/setup.bash" ]; then
       echo "Sourcing ROS environment..."
       source /opt/ros/${DEFAULT_ROS_DISTRO}/setup.bash
@@ -27,17 +24,11 @@ setup_env() {
 }
 
 check_running() {
-  # check if the binary is already running
   local binary_name=${1:-$SCRIPT_NAME}
   local other_pid=($(pgrep -f "/${binary_name}( |$)" | grep -v "$$" | head -n 1))
   if [[ -n "$other_pid" ]]; then
-    # prompt user to stop the binary
-    read -p "Another instance of '$binary_name' is already running [PID: $other_pid]. Do you want to stop it? (y/n): " answer
-    if [[ "$answer" == "y" ]]; then
-      kill -9 "$other_pid"
-    else
-      exit 1
-    fi
+    echo "Another '$binary_name' is running [PID: $other_pid]; stop its owning session first." >&2
+    exit 1
   fi
 }
 
@@ -62,7 +53,6 @@ launch_binary() {
     local robot_name_cache_file="${SCRIPT_DIR}/.cache/robot_name"
     local configuration_directory_cache_file="${SCRIPT_DIR}/.cache/mc_configuration_directory"
 
-    # Detect system architecture and set default sim_mode
     local sim_mode=false
     system_arch=$(uname -m)
     if [ "$system_arch" = "x86_64" ]; then
@@ -71,7 +61,6 @@ launch_binary() {
       sim_mode=true
     fi
 
-    # Parse cache-related command line arguments
     while [[ $# -gt 0 ]]; do
       case "$1" in
       -C)
@@ -106,11 +95,11 @@ launch_binary() {
       esac
     done
 
-    if [ -f "$robot_name_cache_file" ]; then
+    if [ -z "$robot_name" ] && [ -f "$robot_name_cache_file" ]; then
       robot_name=$(cat "$robot_name_cache_file")
     fi
 
-    if [ -f "$configuration_directory_cache_file" ]; then
+    if [ -z "$configuration_directory" ] && [ -f "$configuration_directory_cache_file" ]; then
       configuration_directory=$(cat "$configuration_directory_cache_file")
     fi
 
@@ -153,7 +142,6 @@ launch_binary() {
         echo "Selected robot: $robot_name"
       fi
 
-      # Save robot name to cache
       echo "$robot_name" >"$robot_name_cache_file"
     fi
 
@@ -165,7 +153,6 @@ launch_binary() {
   }
 
   start_binary() {
-    # Parse launch-related command line arguments (no debug helpers)
     local bypass_args=()
 
     while [[ $# -gt 0 ]]; do
@@ -173,7 +160,6 @@ launch_binary() {
       shift
     done
 
-    # Run binary
     bypass_args+=("--robot=$ROBOT_NAME")
     if [ -n "$DEFAULT_STATE" ]; then
       bypass_args+=("--state=$DEFAULT_STATE")
@@ -181,13 +167,11 @@ launch_binary() {
     bypass_args+=("--configuration=$CONFIGURATION_DIRECTORY")
 
 
-    # set environment variables
     source "${INSTALL_DIR}/share/geniesim_msg/local_setup.bash"
     export DYLOG_log_dir="${INSTALL_DIR}/bin/logs/dylog"
     export LD_LIBRARY_PATH=${INSTALL_DIR}/bin:${INSTALL_DIR}/lib:${INSTALL_DIR}/vendors/lib:${INSTALL_DIR}/conan/lib:$LD_LIBRARY_PATH
     mkdir -p ${DYLOG_log_dir}
 
-    # Launch binary directly (no gdb / valgrind wrapper)
     "$binary_path" "${bypass_args[@]}"
     echo -e "\n\x1b[32m$binary_name exited, you can launch it again by running:\x1b[0m"
     echo "source ${INSTALL_DIR}/share/geniesim_msg/local_setup.bash"
@@ -195,7 +179,6 @@ launch_binary() {
     echo "$binary_path ${bypass_args[@]}"
   }
 
-  # Load options and select robot
   load_options "$@"
   start_binary "${launch_args[@]}"
 }

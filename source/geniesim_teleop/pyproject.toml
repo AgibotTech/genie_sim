@@ -56,6 +56,22 @@ where = ["src"]
 # cfg, vendored site-packages) shipped verbatim with the package.
 "geniesim_teleop" = [
     "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "THIRD_PARTY_LICENSES/*",
     "config/*.json",
+    "config/*.yaml",
     "app/**/*",
+    "data_recording/config/robot_cfg/*.json",
+    "data_recording/config/robot_cfg/*/*.urdf",
+]
+
+[tool.setuptools.exclude-package-data]
+"geniesim_teleop" = [
+    "app/bin/logs/*",
+    "app/bin/logs/**/*",
+    "app/bin/.cache/*",
+    "app/bin/.cache/**/*",
+    "app/**/__pycache__/*",
+    "app/**/*.pyc",
+    "app/**/*.pyo",
 ]

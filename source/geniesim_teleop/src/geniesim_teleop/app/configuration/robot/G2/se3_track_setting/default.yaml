@@ -15,7 +15,10 @@ relexed_ik_setting:
   use_groove_wrapper: false
   position_cost: 60
   pose_cost: 6
-  ref_pose_cost: 0.05
+  # A nonzero reference-pose objective moves the redundant 7-DOF arm on the
+  # first Cartesian activation even when the end-effector target is stationary.
+  # Keep the current joint posture as the null-space reference instead.
+  ref_pose_cost: 0.0
   discontinuous_level: 10
   damp_v_cost: 2.0
   damp_a_cost: 1.0

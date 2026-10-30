@@ -1,59 +1,63 @@
 #!/bin/bash
-# Launch GenieSim teleoperation from OUTSIDE the container.
+# Launch GenieSim teleoperation from the host.
+# Requires the container to be running. Opens the bridge, MC,
+# chassis servo (except arm-only), and Pico terminals using the same task.
+# Isaac Sim is launched only in 5.1 mode.
 #
-# Same behaviour as the legacy scripts/autoteleop.sh, but with all paths
-# updated for the new package layout:
-#   - teleop code now lives in source/geniesim_teleop/src/geniesim_teleop/
-#   - the simulator app + teleop.yaml now live in the geniesim_benchmark package
-#   - teleop.py is launched as a module (python3 -m geniesim_teleop.teleop)
-#     because its imports are now absolute (geniesim_teleop.*)
-#
-# It ensures the GUI container is running (starting it via start_gui.sh if
-# needed), then opens four terminals that bring up, in order:
-#   1. the Isaac Sim simulator (teleop.yaml scene)
-#   2. the image pub/sub bridge
-#   3. the motion-control binary (genie_motion_control)
-#   4. the teleop loop (opens the VR server, waits for the Pico headset)
-#
-# Finally it enters a multi-episode loop: press the controller's record button
-# to start an episode, then y/n here to keep/discard it and re-arm for the next
-# episode, and q to stop everything.
+# Finally it waits for y/N to decide whether the recorded episode is kept.
 
-# Container name + repo mount point. The new geniesim CLI container is
-# named "geniesim3" and mounts the repo at /workspace (the legacy
-# autoteleop.sh used "genie_sim_benchmark" + /geniesim/main). Override via
-# env if your container differs.
-CONTAINER_NAME="${GENIESIM_CONTAINER:-geniesim3}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/teleop_runtime.sh"
+teleop_select_runtime "$@" || exit $?
+set -- "${TELEOP_RUNTIME_ARGS[@]}"
+CONTAINER_NAME="${GENIESIM_CONTAINER:-$TELEOP_DEFAULT_CONTAINER}"
 TERMINAL_ENV="autorun"
-PROCESS_CLIENT="teleop|ros|geniesim_teleop"
+EXTERNAL_SIMULATOR="$TELEOP_SKIP_SIMULATOR"
+for arg in "$@"; do
+    case "$arg" in
+        --external-simulator) EXTERNAL_SIMULATOR=1 ;;
+        --help|-h)
+            echo "Usage: $0 [--isaac-version 5.1|6.2] [--external-simulator]"
+            echo "5.1 starts Isaac Sim and collection; 6.2 (default) starts only control processes."
+            echo "GENIESIM_TELEOP_CONFIG selects the shared container-side task YAML."
+            echo "GENIESIM_TELEOP_SIM_PY overrides the 5.1 simulator interpreter (default: omni_python)."
+            exit 0 ;;
+        *) echo "Unknown argument: $arg" >&2; exit 2 ;;
+    esac
+done
+if ((EXTERNAL_SIMULATOR)); then
+    echo "Info: Isaac $TELEOP_ISAAC_VERSION control-only session; the simulator must provide joint states and TF separately."
+fi
 
-# --- Paths (container-side, repo mounted at /workspace) --------------------
+# GENIESIM_TELEOP_ARM_ONLY=1 disables gripper and chassis control.
+# For combined Pico/glove collection, use autoteleop_wuji.sh.
+TELEOP_ARM_ONLY_ARGS=""
+if [[ "${GENIESIM_TELEOP_ARM_ONLY:-0}" == "1" ]]; then
+    TELEOP_ARM_ONLY_ARGS=" --arm_only"
+    echo "Info: Pico teleop arm-only mode enabled"
+fi
+
 REPO_IN_CONTAINER="${GENIESIM_WORKSPACE:-/workspace}"
-# teleop package: source tree root that holds the importable package dir
 TELEOP_SRC="${REPO_IN_CONTAINER}/source/geniesim_teleop/src"
 TELEOP_PKG="${TELEOP_SRC}/geniesim_teleop"
 TELEOP_APP="${TELEOP_PKG}/app"
-# simulator app + teleop config (now inside the geniesim_benchmark package)
 BENCHMARK_PKG="${REPO_IN_CONTAINER}/source/geniesim_benchmark/src/geniesim_benchmark"
-SIM_APP="${BENCHMARK_PKG}/app/app.py"
-TELEOP_YAML="${BENCHMARK_PKG}/config/teleop.yaml"
+TELEOP_YAML="${GENIESIM_TELEOP_CONFIG:-${BENCHMARK_PKG}/config/teleop.yaml}"
 
-# --- Host-side paths (for the pinocchio unpack step) -----------------------
-HOST_TELEOP_APP="$PWD/source/geniesim_teleop/src/geniesim_teleop/app"
+HOST_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
+HOST_TELEOP_APP="${HOST_REPO}/source/geniesim_teleop/src/geniesim_teleop/app"
 PINOCCHIO_LIB="${HOST_TELEOP_APP}/vendors/lib/libpinocchio_casadi.so.3.7.0"
 PINOCCHIO_TAR="${HOST_TELEOP_APP}/vendors/lib/libpinocchio.tar.gz"
 
-# If the pinocchio library does not exist in vendors/lib, extract it
 if [ ! -f "$PINOCCHIO_LIB" ] && [ -f "$PINOCCHIO_TAR" ]; then
     echo "Extracting libpinocchio.tar.gz to vendors/lib ..."
     tar -xzvf "$PINOCCHIO_TAR" -C "${HOST_TELEOP_APP}/vendors/lib"
 fi
 
-# --- Ensure the container is running ---------------------------------------
 if ! docker inspect --format='{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q "true"; then
     echo "Error: Container '$CONTAINER_NAME' is not running."
     echo "Start it first, then re-run this script. For the new CLI image:"
-    echo "    geniesim docker5.1 up      # or: geniesim docker up"
+    echo "    geniesim docker${TELEOP_ISAAC_VERSION} up"
     echo "Or set GENIESIM_CONTAINER=<name> if your container has a different name:"
     echo "    docker ps --format '{{.Names}}'"
     exit 1
@@ -61,56 +65,92 @@ else
     echo "Info: Container $CONTAINER_NAME already running"
 fi
 
-# --- Ensure geniesim_teleop is importable in the container -----------------
-# teleop.py is launched as `python3 -m geniesim_teleop.teleop`, so the package
-# must be pip-installed (editable) for the system python3 inside the container.
-# A fresh checkout / rebuilt container won't have it yet, which fails with
-# `No module named 'geniesim_teleop'`. Install it once, idempotently, here.
-#
-# --no-deps is REQUIRED: geniesim_teleop's pyproject pins `numpy<2.0`, but the
-# image deliberately keeps NumPy 2.x global (Isaac/torch need it) and shims
-# NumPy 1.x onto PYTHONPATH for just the teleop/bridge processes (see below).
-# A deps-resolving install would downgrade the global NumPy and break Isaac.
+# Resolve the Pico network before installing dependencies or launching processes.
+# Multiple interfaces require GENIESIM_TELEOP_INTERFACE or GENIESIM_TELEOP_HOST_IP.
+if ! TELEOP_HOST_IP=$(docker exec \
+    -e GENIESIM_TELEOP_INTERFACE -e GENIESIM_TELEOP_HOST_IP \
+    -e PYTHONPATH="$TELEOP_SRC" "$CONTAINER_NAME" \
+    python3 -m geniesim_teleop.utils.network); then
+    exit 1
+fi
+echo "Info: Pico network address: $TELEOP_HOST_IP"
+
+if ! docker exec -e PYTHONPATH="$TELEOP_SRC" -e SIM_REPO_ROOT="$REPO_IN_CONTAINER" \
+    -e GENIESIM_TELEOP_CONFIG="$TELEOP_YAML" "$CONTAINER_NAME" \
+    python3 -m geniesim_teleop.config.task_config; then
+    exit 1
+fi
+
+# Install the package into system Python when needed. --no-deps preserves
+# the image's NumPy 2.x; teleop/bridge use the apt NumPy 1.x overlay below.
 if ! docker exec "$CONTAINER_NAME" python3 -c 'import geniesim_teleop' 2>/dev/null; then
     echo "Info: installing geniesim_teleop (editable, --no-deps) into $CONTAINER_NAME ..."
-    docker exec "$CONTAINER_NAME" python3 -m pip install -e "${REPO_IN_CONTAINER}/source/geniesim_teleop" --no-deps
+    docker exec "$CONTAINER_NAME" python3 -m pip install -e "${REPO_IN_CONTAINER}/source/geniesim_teleop" --no-deps || exit 1
 fi
-# pynput is the one live-loop dependency not baked into the image; install it
-# on its own (it pulls only evdev / python-xlib, never NumPy) so the teleop
-# loop's `from pynput import keyboard` resolves. The heavier data_recording
-# deps (open3d/h5py/rosbags) are only needed by post-processing, not here.
-if ! docker exec "$CONTAINER_NAME" python3 -c 'import pynput' 2>/dev/null; then
-    echo "Info: installing pynput into $CONTAINER_NAME ..."
-    docker exec "$CONTAINER_NAME" python3 -m pip install pynput
+# The bridge and Pico use apt NumPy 1.x for cv_bridge compatibility.
+# Source the canonical dev overlay (or the installed wheel's ROS overlay).
+ROS_SETUP="${REPO_IN_CONTAINER}/devel/setup.bash"
+if [[ "${GENIESIM_TELEOP_ARM_ONLY:-0}" != "1" ]]; then
+    if ! docker exec "$CONTAINER_NAME" test -f "$ROS_SETUP"; then
+        ROS_SETUP=$(docker exec "$CONTAINER_NAME" python3 -c 'from geniesim_ros import setup_bash_path; print(setup_bash_path() or "")')
+    fi
+    if [[ -z "$ROS_SETUP" ]] || ! docker exec "$CONTAINER_NAME" bash -c \
+        'source /opt/ros/jazzy/setup.bash && source "$1" && ros2 pkg prefix genie_sim_controllers >/dev/null' _ "$ROS_SETUP"; then
+        echo "Error: chassis servo is not built. Run geniesim ros build dev in the container at $REPO_IN_CONTAINER."
+        exit 1
+    fi
 fi
 
-# --- The four teleop processes ---------------------------------------------
-# Note: geniesim_teleop is pip-installed (editable) in the container, so
-# teleop.py runs as a module under the system python3 (which has rclpy from
-# ROS jazzy). No teleop_env venv is needed on the new image.
-#
-# Process 1 (simulator) prepends the Isaac Sim ROS 2 bridge lib dir to
-# LD_LIBRARY_PATH. omni_python loads Isaac's own rclpy, but the login-shell
-# profile sources /opt/ros/jazzy first, leaving the system rosidl typesupport
-# libs ahead of Isaac's on LD_LIBRARY_PATH — that mismatch crashes the bridge
-# with a `convert_from_py` assertion. Prepending Isaac's lib dir fixes the
-# resolution order.
-ISAAC_BRIDGE_LIB="/isaac-sim/exts/isaacsim.ros2.bridge/jazzy/lib"
-# Processes 2 & 4 (bridge.py / teleop.py) import cv_bridge, whose C extension
-# was built against NumPy 1.x and crashes under the pip-installed NumPy 2.x in
-# /usr/local. Prepend the apt-installed NumPy 1.26 (/usr/lib/python3/dist-
-# packages) on PYTHONPATH for just these two processes — the global NumPy 2.x
-# stays untouched (Isaac Sim / mujoco / torch depend on it).
-NUMPY1_PATH="/usr/lib/python3/dist-packages"
-declare -a COMMANDS=(
-    "docker exec -it $CONTAINER_NAME bash -ic 'export LD_LIBRARY_PATH=${ISAAC_BRIDGE_LIB}:\$LD_LIBRARY_PATH && omni_python ${SIM_APP} --config ${TELEOP_YAML}'"
-    "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && export PYTHONPATH=${NUMPY1_PATH}:\$PYTHONPATH && python3 ${TELEOP_PKG}/bridge.py'"
-    "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && ${TELEOP_APP}/bin/start_mc.sh --no-tool'"
-    "docker exec -it $CONTAINER_NAME bash -ic 'source /opt/ros/jazzy/setup.bash && source ${TELEOP_APP}/bin/env.sh && export SIM_REPO_ROOT=${REPO_IN_CONTAINER} && export PYTHONPATH=${NUMPY1_PATH}:\$PYTHONPATH && python3 -m geniesim_teleop.teleop'"
-)
+PROCESS_HELPER="${REPO_IN_CONTAINER}/source/geniesim_teleop/scripts/teleop_process.sh"
+SIM_PID_FILE=""
+declare -a CONTROL_PID_FILES=()
+declare -a COMMANDS=()
+stop_simulator() {
+    [[ -n "$SIM_PID_FILE" ]] || return 0
+    trap '' INT TERM HUP
+    echo "Waiting for recording files to finish writing and Isaac Sim to exit..."
+    docker exec "$CONTAINER_NAME" bash "$PROCESS_HELPER" stop-wait "$SIM_PID_FILE" || return 1
+    SIM_PID_FILE=""
+}
+stop_controls() {
+    local failed=0
+    for pid_file in "${CONTROL_PID_FILES[@]}"; do
+        docker exec "$CONTAINER_NAME" bash "$PROCESS_HELPER" stop "$pid_file" || failed=1
+    done
+    ((failed == 0))
+}
+cleanup_session() {
+    local failed=0
+    stop_simulator || failed=1
+    stop_controls || failed=1
+    return "$failed"
+}
+trap 'status=$?; cleanup_session || status=1; exit "$status"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+
+add_control_command() {
+    local pid_file command
+    pid_file=$(docker exec "$CONTAINER_NAME" mktemp /tmp/geniesim-teleop-control.XXXXXX) || exit 1
+    CONTROL_PID_FILES+=("$pid_file")
+    printf -v command '%q ' docker exec -it \
+        -e "GENIESIM_TELEOP_CONFIG=$TELEOP_YAML" \
+        -e "SIM_REPO_ROOT=$REPO_IN_CONTAINER" \
+        -e GENIESIM_TELEOP_INTERFACE= -e "GENIESIM_TELEOP_HOST_IP=$TELEOP_HOST_IP" \
+        "$CONTAINER_NAME" bash "$PROCESS_HELPER" start "$pid_file" bash -ic "$1"
+    COMMANDS+=("$command")
+}
+printf -v CONTROL_SETUP 'source /opt/ros/jazzy/setup.bash && source %q && ' "${TELEOP_APP}/bin/env.sh"
+NUMPY_SETUP='export PYTHONPATH=/usr/lib/python3/dist-packages:$PYTHONPATH && '
+add_control_command "${CONTROL_SETUP}${NUMPY_SETUP}exec python3 -m geniesim_teleop.bridge"
+add_control_command "${CONTROL_SETUP}exec python3 -m geniesim_teleop.start_mc"
+if [[ "${GENIESIM_TELEOP_ARM_ONLY:-0}" != "1" ]]; then
+    printf -v CHASSIS_SETUP 'source %q && ' "$ROS_SETUP"
+    add_control_command "${CONTROL_SETUP}${CHASSIS_SETUP}exec python3 -m geniesim_teleop.start_chassis"
+fi
+add_control_command "${CONTROL_SETUP}${NUMPY_SETUP}exec python3 -m geniesim_teleop.teleop${TELEOP_ARM_ONLY_ARGS}"
 declare -a DELAYS=(1 15 3 5 5)
 
-# --- Pick a terminal emulator ----------------------------------------------
 TERMINAL_CMD=""
 for term in gnome-terminal konsole xterm terminator; do
     if command -v "$term" &>/dev/null; then
@@ -129,7 +169,37 @@ if [ -z "$TERMINAL_CMD" ]; then
     exit 1
 fi
 
-# --- Launch each process in its own terminal -------------------------------
+if ((EXTERNAL_SIMULATOR == 0)); then
+    EXISTING_RECORDINGS=$(docker exec "$CONTAINER_NAME" python3 "${TELEOP_PKG}/data_recording/patch_recording_info.py" \
+        --config "$TELEOP_YAML" --base "${REPO_IN_CONTAINER}/output/recording_data" --snapshot) || exit 1
+    SIM_PID_FILE=$(docker exec "$CONTAINER_NAME" mktemp /tmp/geniesim-teleop-sim.XXXXXX) || exit 1
+    # Keep Isaac on its SDK Python/NumPy; app/env.sh is for control processes.
+    SIM_SCRIPT='
+        set -e
+        cd "$SIM_REPO_ROOT"
+        export GENIESIM_SKIP_AUTOBOOT=1
+        source /opt/ros/${ROS_DISTRO:-jazzy}/setup.bash
+        export PYTHONPATH="$SIM_REPO_ROOT/source/geniesim_cli/src:$SIM_REPO_ROOT/source/geniesim_benchmark/src:$SIM_REPO_ROOT/source/geniesim_teleop/src"
+        # Match the ordinary control processes domain when env.sh uses container mode.
+        if [[ -n "${USE_CONTAINER:-}" ]]; then export ROS_DOMAIN_ID=1; fi
+        export ROS_LOCALHOST_ONLY="${USE_CONTAINER:+0}"
+        export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-1}"
+        exec bash "$GENIESIM_TELEOP_PROCESS_HELPER" start "$GENIESIM_TELEOP_SIM_PID_FILE" \
+            python3 -m geniesim_cli benchmark run "$GENIESIM_TELEOP_CONFIG"
+    '
+    printf -v SIM_COMMAND '%q ' docker exec -it \
+        -e "SIM_REPO_ROOT=$REPO_IN_CONTAINER" \
+        -e "GENIESIM_TELEOP_CONFIG=$TELEOP_YAML" \
+        -e "GENIESIM_TELEOP_SIM_PID_FILE=$SIM_PID_FILE" \
+        -e "GENIESIM_TELEOP_PROCESS_HELPER=$PROCESS_HELPER" \
+        -e "GENIESIM_PY_CMD=${GENIESIM_TELEOP_SIM_PY:-$TELEOP_DEFAULT_SIM_PY}" \
+        "$CONTAINER_NAME" bash -lc "$SIM_SCRIPT"
+    COMMANDS=("$SIM_COMMAND" "${COMMANDS[@]}")
+    DELAYS=(1 1 15 3 5)
+    echo "Info: starting Isaac Sim and collection with $TELEOP_YAML"
+    echo "Info: Pico waits for simulator TF initialization before tracking."
+fi
+
 for i in "${!COMMANDS[@]}"; do
     sleep "${DELAYS[$i]}"
     if [[ "$TERMINAL_CMD" == "gnome-terminal"* ]]; then
@@ -137,84 +207,47 @@ for i in "${!COMMANDS[@]}"; do
     else
         $TERMINAL_CMD "${COMMANDS[$i]}" &
     fi
+    if ((EXTERNAL_SIMULATOR == 0 && i == 0)); then
+        simulator_started=0
+        for ((attempt=0; attempt<30; attempt++)); do
+            if docker exec "$CONTAINER_NAME" test -s "$SIM_PID_FILE"; then
+                simulator_started=1
+                break
+            fi
+            sleep 1
+        done
+        if ((simulator_started == 0)); then
+            echo "Error: simulator terminal did not start; inspect its output." >&2
+            exit 1
+        fi
+    fi
 done
 
-# --- Multi-episode keep/discard loop ---------------------------------------
-# Legacy behaviour: a single y/N press killed every teleop process (simulator
-# included) and the script exited, so collecting N episodes meant restarting
-# all four terminals N times. Now y/n only ends the *current* episode: the
-# simulator finalizes the ros2 bag gracefully (metadata.yaml intact) and
-# re-arms, so the next record-button press starts the next episode. Press q
-# to stop everything and close the terminals.
-
-RECORDING_BASE="${REPO_IN_CONTAINER}/output/recording_data"
-
-# End the current episode: broadcast on /sim/stop_episode (both the simulator
-# and the teleop loop subscribe to it).
-stop_current_episode() {
-    echo "  -> asking the simulator to finalize the current episode..."
-    docker exec "$CONTAINER_NAME" bash -c \
-        "source /opt/ros/jazzy/setup.bash && timeout 15 ros2 topic pub --times 3 /sim/stop_episode std_msgs/msg/Bool '{data: true}' >/dev/null 2>&1" \
-        || echo "  warning: failed to send stop signal (container or ROS not ready?)"
-    sleep 2 # give ros2 bag a moment to write metadata.yaml
-}
-
-# Show whether the latest episode looks complete (.mcap = data recorded,
-# metadata.yaml = bag finalized, recording_info.json = post-processing input).
-show_latest_episode_status() {
-    docker exec "$CONTAINER_NAME" bash -c "
-        latest=\$(find $RECORDING_BASE -mindepth 2 -maxdepth 2 -type d -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
-        if [ -z \"\$latest\" ]; then
-            echo '  status: no recording data yet (did you forget the record button?)'
-            exit 0
-        fi
-        echo \"  latest episode dir: \$latest\"
-        if ls \"\$latest\"/*.mcap >/dev/null 2>&1; then mcap=ok; else mcap=MISSING; fi
-        if [ -f \"\$latest/metadata.yaml\" ]; then meta=ok; else meta=MISSING; fi
-        if [ -f \"\$latest/recording_info.json\" ]; then info=ok; else info=MISSING; fi
-        echo \"  .mcap: \$mcap | metadata.yaml: \$meta | recording_info.json: \$info\"
-    " 2>/dev/null || echo "  status check failed (container not running?)"
-}
-
-echo ""
-echo "=================================================================="
-echo "All terminals started. Controls:"
-echo "  1. press the controller's record button to start an episode"
-echo "  2. when the episode is done, come back here and press:"
-echo "     y = success: keep the data, then record the next episode"
-echo "     n = failure: mark the data discarded, then record the next episode"
-echo "     q = quit: stop everything and close the terminals"
-echo "=================================================================="
+echo -e "\nAll terminals started. Press 'y' or 'Y' = teleoperation succeeded, keep data; 'n' or 'N' = failed, do not keep data ..."
 while read -n 1 -s input; do
     if [[ "$input" == "Y" || "$input" == "y" ]]; then
-        echo ""
-        echo "[y] keeping this episode..."
-        stop_current_episode
+        echo "Keeping the recording after session shutdown."
+        stop_simulator || exit 1
+        stop_controls || exit 1
+        echo "Patching recording_info.json: add teleop_result"
         docker exec "$CONTAINER_NAME" python3 ${TELEOP_PKG}/data_recording/patch_recording_info.py \
-            --config ${TELEOP_YAML} \
-            --base ${RECORDING_BASE} \
-            || true
-        show_latest_episode_status
-        echo "  done. Press the record button for the next episode, or y/n/q here."
+            --config "$TELEOP_YAML" \
+            --base ${REPO_IN_CONTAINER}/output/recording_data \
+            --existing "${EXISTING_RECORDINGS:-[]}" \
+            || exit 1
+        echo "Recording saved."
+
+        break
     elif [[ "$input" == "N" || "$input" == "n" ]]; then
-        echo ""
-        echo "[n] discarding this episode (teleop_result=false; post-processing drops it)..."
-        stop_current_episode
+        stop_simulator || exit 1
+        stop_controls || exit 1
+        echo "Patching recording_info.json: add teleop_result=false"
         docker exec "$CONTAINER_NAME" python3 ${TELEOP_PKG}/data_recording/patch_recording_info.py \
-            --config ${TELEOP_YAML} \
-            --base ${RECORDING_BASE} \
+            --config "$TELEOP_YAML" \
+            --base ${REPO_IN_CONTAINER}/output/recording_data \
+            --existing "${EXISTING_RECORDINGS:-[]}" \
             --teleop-result false \
-            || true
-        show_latest_episode_status
-        echo "  done. Press the record button for the next episode, or y/n/q here."
-    elif [[ "$input" == "Q" || "$input" == "q" ]]; then
-        echo ""
-        echo "[q] stopping all teleop processes..."
-        # Finalize any episode still recording first (avoids a corrupt bag),
-        # then kill the processes.
-        stop_current_episode
-        docker exec "$CONTAINER_NAME" bash -c "pkill -SIGTERM -f '$PROCESS_CLIENT' 2>/dev/null || true"
-        sleep 1
+            || exit 1
         break
     fi
 done

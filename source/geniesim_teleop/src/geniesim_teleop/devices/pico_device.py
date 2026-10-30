@@ -10,22 +10,6 @@ from scipy.spatial.transform import Rotation as R
 import math
 
 
-def scale_quat_to_euler(q, s):
-    rotation = R.from_quat(q)
-    rpy = rotation.as_euler("xzy", degrees=False)
-    r, p, y = rpy
-    if r >= 0:
-        r_trans = math.pi - r
-    else:
-        r_trans = -math.pi - r
-    p_trans = p
-    y_trans = y
-    rpy_trans = np.array([-r_trans, p_trans, y_trans])
-    rpy_scaled = rpy_trans * s
-
-    return rpy_scaled
-
-
 def scale_quat(q, s):
     return q * s
 
@@ -35,28 +19,59 @@ def round_v(val):
     return [round(v, PRECISION) for v in val]
 
 
+def relative_controller_pose(current_pose, anchor_pose):
+    """Return the controller motion since the clutch was engaged."""
+    current = np.asarray(current_pose, dtype=float)
+    anchor = np.asarray(anchor_pose, dtype=float)
+    if current.shape != (7,) or anchor.shape != (7,):
+        raise ValueError("controller poses must contain xyz + xyzw")
+
+    delta_pos = current[:3] - anchor[:3]
+    delta_rot = R.from_quat(current[3:]) * R.from_quat(anchor[3:]).inv()
+    return np.concatenate((delta_pos, delta_rot.as_quat()))
+
+
+class ControllerPoseClutch:
+    def __init__(self):
+        self._anchor = None
+
+    def update(self, current_pose, active, reanchor=False):
+        if not active:
+            self._anchor = None
+            return None
+        if current_pose is None:
+            return None
+        if reanchor or self._anchor is None:
+            self._anchor = np.asarray(current_pose, dtype=float).copy()
+        return relative_controller_pose(current_pose, self._anchor)
+
+
 class PicoDevice(TeleopDevice):
-    def __init__(self, host_ip=None, port=8080, robot_cfg="G2_omnipicker"):
+    def __init__(self, host_ip=None, port=8080, robot_cfg="G2_omnipicker", input_timeout_s=0.25):
         self.host_ip = host_ip
         self.port = port
         self.robot_cfg = robot_cfg
+        self.input_timeout_s = input_timeout_s
         self.output = {"left": None, "right": None}
         self.coef_pos = 1.0
         self.coef_rot = 1.0
 
     def initialize(self):
-        self.vr_server = VRServer(host=self.host_ip, port=self.port)
+        self.vr_server = VRServer(host=self.host_ip, port=self.port, input_timeout_s=self.input_timeout_s)
 
     def update(self, debug=False):
         self.content = self.vr_server.on_update()
         if self.content:
-            self.pico_command = self.parse_pico_command(robot_type=self.robot_cfg)
+            try:
+                self.validate_packet(self.content)
+                self.pico_command = self.parse_pico_command(robot_type=self.robot_cfg)
+            except (KeyError, TypeError, ValueError):
+                return {}
             dpos_l = self.coef_pos * self.pico_command["l"]["position"]
             dpos_r = self.coef_pos * self.pico_command["r"]["position"]
             drot_l = scale_quat(self.pico_command["l"]["quaternion"], self.coef_rot)
             drot_r = scale_quat(self.pico_command["r"]["quaternion"], self.coef_rot)
 
-            # Organize Output
             self.output["left"] = list(round_v(dpos_l)) + list(round_v(drot_l))
             self.output["right"] = list(round_v(dpos_r)) + list(round_v(drot_r))
             self.output["l_eef"] = self.pico_command["l"]["gripper"]
@@ -77,8 +92,27 @@ class PicoDevice(TeleopDevice):
                 logger.debug(f"[PICO]\n {self.output['left']},\n, {self.output['right']}")
             return self.output
         else:
-            # logger.warning("[PICO] no command")
             return {}
+
+    def close(self):
+        if hasattr(self, "vr_server"):
+            self.vr_server.close()
+
+    @staticmethod
+    def validate_packet(content):
+        if not isinstance(content, list) or len(content) != 2:
+            raise ValueError("Pico packet must contain two controllers")
+        for hand in content:
+            values = [hand["position"][axis] for axis in "xyz"]
+            quat = [hand["rotation"][axis] for axis in "xyzw"]
+            values += quat + [hand[key] for key in ("axisX", "axisY", "indexTrig", "handTrig")]
+            if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in values):
+                raise ValueError("Pico pose and axes must be finite numbers")
+            if np.linalg.norm(quat) < 1e-6:
+                raise ValueError("Pico quaternion must be nonzero")
+            for key in ("axisClick", "keyOne", "keyTwo"):
+                if hand[key] not in (True, False, "true", "false"):
+                    raise ValueError("Invalid Pico button")
 
     def reset(self):
         self.output = {"left": None, "right": None}
@@ -89,7 +123,6 @@ class PicoDevice(TeleopDevice):
             content (list(dict)): parse pico control command to local frame
         """
         [l_sig, r_sig] = self.content
-        # print(f"r_sig:{r_sig['position']}")
         ret = {"l": {}, "r": {}}
         ret["l"]["position"] = np.array([l_sig["position"]["z"], -l_sig["position"]["x"], l_sig["position"]["y"]])
         l_original_quat = np.array(
@@ -108,84 +141,42 @@ class PicoDevice(TeleopDevice):
         l_new_rot = R.from_matrix(l_new_matrix)
         ret["l"]["quaternion"] = l_new_rot.as_quat()
 
-        ret["l"]["axisMode"] = "reset" if l_sig["axisClick"] == "true" else "move"
+        ret["l"]["axisMode"] = "reset" if l_sig["axisClick"] in (True, "true") else "move"
         ret["l"]["axisX"] = l_sig["axisX"]
         ret["l"]["axisY"] = l_sig["axisY"]
         ret["l"]["gripper"] = 1 - l_sig["indexTrig"]
         ret["l"]["On"] = l_sig["handTrig"] > 0.8
-        ret["l"]["reset"] = l_sig["keyOne"] == "true"
-        ret["l"]["against"] = l_sig["keyTwo"] == "true"
+        ret["l"]["reset"] = l_sig["keyOne"] in (True, "true")
+        ret["l"]["against"] = l_sig["keyTwo"] in (True, "true")
 
-        # right-side control: keyTwo switches between arm and waist control
-        if r_sig["keyTwo"] == "true":
-            # waist control
-            ret["r"]["position"] = np.array([r_sig["position"]["z"], -r_sig["position"]["x"], r_sig["position"]["y"]])
-            r_original_quat = np.array(
-                [
-                    r_sig["rotation"]["x"],
-                    r_sig["rotation"]["y"],
-                    r_sig["rotation"]["z"],
-                    r_sig["rotation"]["w"],
-                ]
-            )
-            r_original_rot = R.from_quat(r_original_quat)
-            r_original_matrix = r_original_rot.as_matrix()
-            r_transform_matrix = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]])
-            r_transform_inv = r_transform_matrix.T
-            r_new_matrix = r_transform_matrix @ r_original_matrix @ r_transform_inv
-            r_new_rot = R.from_matrix(r_new_matrix)
-            ret["r"]["quaternion"] = r_new_rot.as_quat()
-
-            euler = r_new_rot.as_euler("xyz", degrees=False)  # [roll, pitch, yaw]
-            euler = euler * 0.5
-            eps = np.deg2rad(10.0)  # 0.3 deg ≈ 0.0052 rad
-            step = np.deg2rad(5.0)  # 5 deg per step
-            roll = 0.0 if abs(euler[0]) < eps else np.round(euler[0] / step) * step
-            pitch = 0.0 if abs(euler[1]) < eps else euler[1]
-            yaw = 0.0 if abs(euler[2]) < eps else euler[2]
-            clamped_rot = R.from_euler("xyz", [roll, pitch, yaw])
-            ret["r"]["quaternion"] = clamped_rot.as_quat()
-
-            ret["r"]["position"] = ret["r"]["position"] * 0.5
-        else:
-            ret["r"]["position"] = np.array([r_sig["position"]["z"], -r_sig["position"]["x"], r_sig["position"]["y"]])
-            r_original_quat = np.array(
-                [
-                    r_sig["rotation"]["x"],
-                    r_sig["rotation"]["y"],
-                    r_sig["rotation"]["z"],
-                    r_sig["rotation"]["w"],
-                ]
-            )
-            r_original_rot = R.from_quat(r_original_quat)
-            r_original_matrix = r_original_rot.as_matrix()
-            r_transform_matrix = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]])
-            r_transform_inv = r_transform_matrix.T
-            r_new_matrix = r_transform_matrix @ r_original_matrix @ r_transform_inv
-            r_new_rot = R.from_matrix(r_new_matrix)
-            ret["r"]["quaternion"] = r_new_rot.as_quat()
+        # Pose coordinates are independent of buttons; A routes this pose
+        # to the waist in TeleOp, while B only starts recording.
+        ret["r"]["position"] = np.array([r_sig["position"]["z"], -r_sig["position"]["x"], r_sig["position"]["y"]])
+        r_original_quat = np.array(
+            [
+                r_sig["rotation"]["x"],
+                r_sig["rotation"]["y"],
+                r_sig["rotation"]["z"],
+                r_sig["rotation"]["w"],
+            ]
+        )
+        r_original_rot = R.from_quat(r_original_quat)
+        r_original_matrix = r_original_rot.as_matrix()
+        r_transform_matrix = np.array([[0, 0, 1], [-1, 0, 0], [0, 1, 0]])
+        r_transform_inv = r_transform_matrix.T
+        r_new_matrix = r_transform_matrix @ r_original_matrix @ r_transform_inv
+        r_new_rot = R.from_matrix(r_new_matrix)
+        ret["r"]["quaternion"] = r_new_rot.as_quat()
 
         ret["r"]["axisX"] = r_sig["axisX"]
         ret["r"]["axisY"] = r_sig["axisY"]
-        ret["r"]["axisMode"] = "head" if r_sig["axisClick"] == "true" else "waist"
+        ret["r"]["axisMode"] = "head" if r_sig["axisClick"] in (True, "true") else "waist"
         ret["r"]["gripper"] = 1 - r_sig["indexTrig"]
         ret["r"]["On"] = r_sig["handTrig"] > 0.8
-        ret["r"]["reset"] = r_sig["keyOne"] == "true"
-        ret["r"]["resetbh"] = r_sig["keyTwo"] == "true"
+        ret["r"]["reset"] = r_sig["keyOne"] in (True, "true")
+        ret["r"]["resetbh"] = r_sig["keyTwo"] in (True, "true")
 
         return ret
-
-    def is_on_l(self):
-        return self.pico_command["l"]["On"]
-
-    def is_on_r(self):
-        return self.pico_command["r"]["On"]
-
-    def reset_l(self):
-        return self.pico_command["l"]["reset"]
-
-    def reset_r(self):
-        return self.pico_command["r"]["reset"]
 
     def extra_l(self):
         if hasattr(self, "pico_command"):

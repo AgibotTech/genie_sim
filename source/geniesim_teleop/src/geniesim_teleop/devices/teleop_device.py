@@ -5,11 +5,7 @@
 
 
 class TeleopDevice(object):
-    """
-    Teleop device
-    Input: device input
-    Output: xyz, rpy in body center
-    """
+    """Device interface returning xyz and rpy in the body frame."""
 
     def __init__(self):
         self.output = {"left": [0, 0, 0, 0, 0, 0], "right": [0, 0, 0, 0, 0, 0]}

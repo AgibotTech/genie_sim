@@ -265,7 +265,7 @@ class USDBase:
                         "SubscriberJointState.inputs:context",
                     ),
                     (
-                        "OnPlaybackTick.outputs:tick",
+                        "SubscriberJointState.outputs:execOut",
                         "ArticulationController.inputs:execIn",
                     ),
                     (

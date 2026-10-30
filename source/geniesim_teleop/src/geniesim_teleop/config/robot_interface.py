@@ -9,12 +9,9 @@ class RobotType(Enum):
     G2 = "G2"
 
 
-# cfg
-# G2
 g2_arm_joints0 = [0.0, -0.66, 0.0, -1.6, 0.0, -0.8, 0.0]
 g2_waist_joints0 = [0.0, 0.0, 0.0, 0.0, 0.0]
 G2 = {
-    #  limits is tmp
     "lb": [],
     "ub": [],
     "tol": [],

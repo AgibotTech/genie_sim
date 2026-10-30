@@ -191,17 +191,24 @@ class TaskBenchmark(object):
                 sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
                 scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
 
-            num_instances = getattr(self.args, "num_instances", 0) or 0
-            if num_instances > 0 and num_instances < len(scene_instance_ids):
-                # Deterministic sub-sample based on the run's seed so the same
-                # config picks the same instances across machines / re-runs.
-                total = len(scene_instance_ids)
-                rng = np.random.RandomState(getattr(self.args, "seed", 0))
-                scene_instance_ids = sorted(rng.choice(scene_instance_ids, size=num_instances, replace=False).tolist())
-                logger.info(
-                    f"Sampled {num_instances} of {total} scene instances "
-                    f"(seed={getattr(self.args, 'seed', 0)}): {scene_instance_ids}"
-                )
+            instance_ids_arg = (getattr(self.args, "instance_ids", "") or "").strip()
+            if instance_ids_arg:
+                scene_instance_ids = [int(x) for x in instance_ids_arg.split(",") if x.strip() != ""]
+                logger.info(f"Explicit --benchmark.instance_ids override: {scene_instance_ids}")
+            else:
+                num_instances = getattr(self.args, "num_instances", 0) or 0
+                if num_instances > 0 and num_instances < len(scene_instance_ids):
+                    # Deterministic sub-sample based on the run's seed so the same
+                    # config picks the same instances across machines / re-runs.
+                    total = len(scene_instance_ids)
+                    rng = np.random.RandomState(getattr(self.args, "seed", 0))
+                    scene_instance_ids = sorted(
+                        rng.choice(scene_instance_ids, size=num_instances, replace=False).tolist()
+                    )
+                    logger.info(
+                        f"Sampled {num_instances} of {total} scene instances "
+                        f"(seed={getattr(self.args, 'seed', 0)}): {scene_instance_ids}"
+                    )
 
             self.evaluate_summary = EvaluationSummary(
                 os.path.join(system_utils.benchmark_output_path()),

@@ -12,10 +12,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 INSTALL_DIR=$(dirname "$SCRIPT_DIR")
 
-# echo "Script dir: $SCRIPT_DIR"
-# echo "Install dir: $INSTALL_DIR"
 
-# ============================ utils ================================
 is_in_container() {
     # common container indicators
     [ -f /.dockerenv ] && return 0
@@ -24,12 +21,9 @@ is_in_container() {
     [ "${container:-}" = "docker" ] && return 0
     return 1
 }
-# ============================ ros ===============================
 setup_ros_env() {
     local DEFAULT_ROS_DISTRO="humble"
-    # Check if ROS_DISTRO environment variable exists
     if [ -z "${ROS_DISTRO}" ]; then
-        # ROS environment not sourced, check if setup.bash exists
         if [ -f "/opt/ros/${DEFAULT_ROS_DISTRO}/setup.bash" ]; then
             source /opt/ros/${DEFAULT_ROS_DISTRO}/setup.${SHELL_NAME}
             echo "source /opt/ros/${DEFAULT_ROS_DISTRO}/setup.${SHELL_NAME}"
@@ -64,7 +58,6 @@ setup_ros_env() {
         echo "export ROS_LOCALHOST_ONLY=0"
     else
         export ROS_LOCALHOST_ONLY=1
-        # export ROS_DOMAIN_ID=0
         echo "export ROS_LOCALHOST_ONLY=1"
     fi
 }

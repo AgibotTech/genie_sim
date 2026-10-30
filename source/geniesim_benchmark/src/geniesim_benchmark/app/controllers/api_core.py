@@ -807,23 +807,30 @@ class APICore:
         return pose
 
     def get_obj_world_pose(self, prim_path):
-        prim_path = self._env_path(prim_path) if prim_path != "robot" else prim_path
+        # "robot" is a registry alias, not a USD prim path. Resolve it before
+        # validating paths, otherwise it silently returns the world origin.
+        if prim_path == "robot":
+            # A mobile robot's authored root Xform stays at its spawn pose.
+            # Read the simulated articulation root so this follows the chassis.
+            articulation = self._get_articulation()
+            if articulation is not None:
+                return articulation.get_world_pose()
+            return self.usd_objects["robot"].get_world_pose()
+
+        prim_path = self._env_path(prim_path)
         stage = get_current_stage()
         root_prim = stage.GetPrimAtPath(prim_path)
         if not root_prim.IsValid():
             return (0, 0, 0), (0, 0, 0, 0)
 
-        if prim_path == "robot":
-            position, rotation = self.usd_objects["robot"].get_world_pose()
+        # Check if there's an 'entity' child prim
+        entity_path = prim_path + "/entity"
+        entity_prim = stage.GetPrimAtPath(entity_path)
+        if entity_prim.IsValid():
+            # Use entity layer for position and rotation
+            position, rotation = get_world_pose(entity_path)
         else:
-            # Check if there's an 'entity' child prim
-            entity_path = prim_path + "/entity"
-            entity_prim = stage.GetPrimAtPath(entity_path)
-            if entity_prim.IsValid():
-                # Use entity layer for position and rotation
-                position, rotation = get_world_pose(entity_path)
-            else:
-                position, rotation = get_world_pose(prim_path)
+            position, rotation = get_world_pose(prim_path)
         return position, rotation
 
     def get_obj_aabb(self, prim_path):
@@ -1203,6 +1210,166 @@ class APICore:
     def change_material(self, mesh_path: str, material_path):
         return self.run_on_render_loop(self._change_material, mesh_path, material_path)
 
+    def set_robot_base_anchored(self, anchored: bool):
+        return self.run_on_render_loop(self._set_robot_base_anchored, anchored)
+
+    def prepare_teleop_chassis(self):
+        """Prepare a G2 velocity-driven chassis while its base is anchored."""
+        return self.run_on_render_loop(self._prepare_teleop_chassis)
+
+    def _prepare_teleop_chassis(self):
+        articulation = self._get_articulation()
+        drive_names = [
+            "idx112_chassis_lwheel_front_joint2",
+            "idx132_chassis_rwheel_front_joint2",
+            "idx122_chassis_lwheel_rear_joint2",
+            "idx142_chassis_rwheel_rear_joint2",
+        ]
+        indices = [articulation.get_dof_index(name) for name in drive_names]
+        controller = articulation.get_articulation_controller()
+        stiffness, damping = (np.asarray(values).copy() for values in controller.get_gains())
+        # A zero position target is a real servo target. Drive wheels use only
+        # velocity, with the asset's damping/effort/velocity limits preserved.
+        stiffness[indices] = 0.0
+        controller.set_gains(kps=stiffness, kds=damping)
+        root = get_current_stage().GetPrimAtPath(articulation.prim_path)
+        for name in drive_names:
+            joint = UsdPhysics.Joint(self._find_joint_prim_for_dof_name(root, name))
+            # Only author these drives: saving the entire gain array to USD
+            # would add DriveAPI to passive/mimic joints as well.
+            UsdPhysics.DriveAPI(joint.GetPrim(), "angular").GetStiffnessAttr().Set(0.0)
+            wheel = get_current_stage().GetPrimAtPath(joint.GetBody1Rel().GetTargets()[0])
+            # The fixed-base omnipicker asset disables wheel collisions. A
+            # released chassis needs its authored wheel cylinders for contact.
+            for prim in Usd.PrimRange(wheel):
+                if prim.HasAPI(UsdPhysics.CollisionAPI):
+                    UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr().Set(True)
+        articulation.set_joint_velocities(np.zeros(len(indices)), joint_indices=indices)
+        self.sync_drive_targets_to_current(articulation, log_label="teleop chassis reset")
+
+    def prepare_teleop_grippers(self):
+        return self.run_on_render_loop(self._prepare_teleop_grippers)
+
+    def _prepare_teleop_grippers(self):
+        if self.robot_name != "G2_crsB_90d":
+            return
+        articulation = self._get_articulation()
+        controller = articulation.get_articulation_controller()
+        stiffness, damping = (np.asarray(values).copy() for values in controller.get_gains())
+        for path in self.gripper_control_joint.values():
+            joint = get_current_stage().GetPrimAtPath(path)
+            index = articulation.get_dof_index(joint.GetName())
+            stiffness[index] = 0.0
+            # Pico sends velocity only; an authored position drive would oppose
+            # it. Keep the asset's damping, force limit and joint limits.
+            UsdPhysics.DriveAPI(joint, "angular").GetStiffnessAttr().Set(0.0)
+        controller.set_gains(kps=stiffness, kds=damping)
+
+    def release_teleop_chassis(self, positions, indices):
+        return self.run_on_render_loop(self._release_teleop_chassis, positions, indices)
+
+    def _release_teleop_chassis(self, positions, indices):
+        self._set_teleop_initial_pose(positions, indices)
+        self._set_robot_base_anchored(False)
+
+    def set_teleop_initial_pose(self, positions, indices):
+        return self.run_on_render_loop(self._set_teleop_initial_pose, positions, indices)
+
+    def _set_teleop_initial_pose(self, positions, indices):
+        articulation = self._get_articulation()
+        # Snap all task joints and their drive targets in the same render-loop
+        # transaction; physics must not restore old targets between groups.
+        articulation.set_joint_positions(np.asarray(positions), joint_indices=np.asarray(indices))
+        articulation.set_joint_velocities(np.zeros(articulation.num_dof))
+        self.sync_drive_targets_to_current(log_label="teleop initial pose")
+
+    @staticmethod
+    def _pose_matrix(pos, quat_wxyz) -> "Gf.Matrix4d":
+        rot = Gf.Rotation(
+            Gf.Quatd(
+                float(quat_wxyz[0]),
+                Gf.Vec3d(float(quat_wxyz[1]), float(quat_wxyz[2]), float(quat_wxyz[3])),
+            )
+        )
+        m = Gf.Matrix4d().SetRotate(rot)
+        m.SetTranslateOnly(Gf.Vec3d(float(pos[0]), float(pos[1]), float(pos[2])))
+        return m
+
+    def _robot_base_anchored(self):
+        """True/False if the robot carries a world weld, None if it has none."""
+        stage = get_current_stage()
+        root_path = getattr(self, "robot_prim_path", None)
+        root = stage.GetPrimAtPath(root_path) if root_path else None
+        if root is None or not root.IsValid():
+            return None
+        for prim in Usd.PrimRange(root):
+            if not prim.IsA(UsdPhysics.FixedJoint):
+                continue
+            joint = UsdPhysics.Joint(prim)
+            if joint.GetBody0Rel().GetTargets():
+                continue
+            attr = joint.GetJointEnabledAttr()
+            # Unauthored jointEnabled defaults to on.
+            return bool(attr.Get()) if attr and attr.HasAuthoredValue() else True
+        return None
+
+    def _set_robot_base_anchored(self, anchored: bool) -> int:
+        stage = get_current_stage()
+        root_path = getattr(self, "robot_prim_path", None)
+        root = stage.GetPrimAtPath(root_path) if root_path else None
+        if root is None or not root.IsValid():
+            logger.warning(f"robot prim {root_path} invalid; cannot toggle base anchor")
+            return 0
+        count = 0
+        for prim in Usd.PrimRange(root):
+            if not prim.IsA(UsdPhysics.FixedJoint):
+                continue
+            joint = UsdPhysics.Joint(prim)
+            # body0 unset => welded to the world; anything else joins two links.
+            if joint.GetBody0Rel().GetTargets():
+                continue
+            if anchored:
+                self._realign_world_anchor(joint)
+            joint.CreateJointEnabledAttr().Set(anchored)
+            count += 1
+        logger.info(f"robot base {'anchored' if anchored else 'released'} ({count} world fixed joint(s))")
+        return count
+
+    def _realign_world_anchor(self, joint: "UsdPhysics.Joint"):
+        """Re-anchor at the current body pose instead of the authored spawn pose."""
+        targets = joint.GetBody1Rel().GetTargets()
+        if not targets:
+            return
+        try:
+            pos, quat = get_world_pose(str(targets[0]))
+        except Exception as e:
+            logger.warning(f"cannot read {targets[0]} pose; leaving base anchor as authored: {e}")
+            return
+        if not np.all(np.isfinite(np.asarray(pos, dtype=np.float64))):
+            logger.warning(f"{targets[0]} world pose is not finite; leaving base anchor as authored")
+            return
+        rot1 = joint.GetLocalRot1Attr().Get() or Gf.Quatf(1, 0, 0, 0)
+        imag1 = rot1.GetImaginary()
+        local1 = self._pose_matrix(
+            joint.GetLocalPos1Attr().Get() or Gf.Vec3f(0, 0, 0),
+            (rot1.GetReal(), imag1[0], imag1[1], imag1[2]),
+        )
+        anchor = local1 * self._pose_matrix(pos, quat)
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(anchor.ExtractTranslation()))
+        joint.CreateLocalRot0Attr().Set(Gf.Quatf(anchor.ExtractRotationQuat()))
+
+    def sync_drive_targets_to_current(self, articulation=None, log_label=""):
+        art = articulation if articulation is not None else self._get_articulation()
+        if art is None:
+            raise RuntimeError("Robot articulation is unavailable for drive target synchronization")
+        from isaacsim.core.utils.types import ArticulationAction
+
+        positions = np.asarray(art.get_joint_positions(), dtype=float)
+        if positions.ndim != 1 or positions.size == 0 or not np.all(np.isfinite(positions)):
+            raise RuntimeError("Robot joint positions are unavailable or non-finite")
+        art.apply_action(ArticulationAction(joint_positions=positions, joint_velocities=np.zeros_like(positions)))
+        logger.debug(f"Synced drive targets to current joint positions: {log_label}")
+
     def update_robot_base(self, pos, quat, with_physics=False):
         self.run_on_render_loop(self._update_robot_base, pos, quat)
 
@@ -1516,6 +1683,9 @@ class APICore:
             )
             logger.info(f"Added new Workspace from: {sub_usd_path}")
         if workspace_replaced:
+            release_after_reload = self._robot_base_anchored() is False
+            if release_after_reload:
+                self._set_robot_base_anchored(True)
             if hasattr(self.ui_builder, "my_world") and self.ui_builder.my_world:
 
                 world = self.ui_builder.my_world
@@ -1549,6 +1719,9 @@ class APICore:
                     logger.error(f"Failed to register joint state: {e}")
             else:
                 logger.warning("Failed to get robot articulation after Workspace replacement")
+            if release_after_reload:
+                self.sync_drive_targets_to_current(robot_articulation, log_label="Workspace reload")
+                self._set_robot_base_anchored(False)
 
     def _initialize_all_scene_articulations(self):
         stage = get_current_stage()
@@ -1612,7 +1785,8 @@ class APICore:
     ):
         scene_usd = str(np.random.choice(scene_usd)) if type(scene_usd) == list else scene_usd
         scene_usd_path = str(system_utils.assets_path()) + "/" + str(scene_usd)
-        scene_key = (robot_cfg, scene_usd_path)
+        free_base = bool(self.task_config.get("robot", {}).get("free_base", False))
+        scene_key = (robot_cfg, scene_usd_path, free_base)
 
         # Robot + /World background are loaded once per scene and reused across
         # instances; only /Workspace is swapped. Re-adding the full scene every
@@ -1635,6 +1809,10 @@ class APICore:
             if self._stage.GetPrimAtPath(stale_path).IsValid():
                 delete_prim(stale_path)
         add_reference_to_stage(robot_usd_path, self.robot_cfg.robot_prim_path)
+        if free_base:
+            init_position = list(init_position)
+            authored_position, _ = get_world_pose(self.robot_cfg.robot_prim_path)
+            init_position[2] = float(authored_position[2])
         add_reference_to_stage(scene_usd_path, "/World")
         self._filter_objects(scene_usd_path)
         self.usd_objects["robot"] = SingleXFormPrim(
@@ -1670,7 +1848,15 @@ class APICore:
         # Set camera based on robot type
         viewport.set_active_camera("/G1/head_link2/Head_Camera")
         if "G2" in self.robot_name:
-            viewport.set_active_camera("/genie/head_link3/head_front_Camera")
+            head_camera = next(
+                (path for path in self.robot_cfg.cameras if path.rsplit("/", 1)[-1].lower() == "head_front_camera"),
+                "/genie/head_link3/head_front_Camera",
+            )
+            viewport.set_active_camera(head_camera)
+            resolution = self.robot_cfg.cameras.get(head_camera)
+            if resolution is not None:
+                viewport.fill_frame = False
+                viewport.resolution = tuple(resolution[:2])
         time.sleep(1)
         self._play()
         time.sleep(1)
@@ -2199,22 +2385,26 @@ class APICore:
         # Teleop rosbag path: SIGINT the ros2 bag record process group(s).
         logger.info("Stop recording (rosbag)")
         self.recording_started = False
+        if not self.record_process:
+            return
         for process in self.record_process:
+            if process.poll() is not None:
+                continue
             try:
                 os.killpg(os.getpgid(process.pid), signal.SIGINT)
-                process.wait(timeout=10)
+            except ProcessLookupError:
+                pass
+        failures = []
+        for process in self.record_process:
+            returncode = process.wait()
+            if returncode != 0:
+                failures.append(f"{process.pid} (exit code {returncode})")
+            else:
                 logger.info(f"Recording process {process.pid} stopped gracefully")
-            except subprocess.TimeoutExpired:
-                logger.warning(f"Process {process.pid} did not stop in time, killing...")
-                try:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                    process.wait()
-                except (ProcessLookupError, OSError) as e:
-                    logger.warning(f"Failed to kill process {process.pid}: {e}")
-            except (ProcessLookupError, OSError) as e:
-                logger.warning(f"Failed to stop process {process.pid}: {e}")
-            time.sleep(0.5)
         self.record_process = []
+        if failures:
+            raise RuntimeError(f"Recording processes failed to finalize: {', '.join(failures)}")
+        self._dump_recording_info()
 
     def _stop_local_recording(self, episode_idx=None, discard=False):
         # Eval path: stop the in-process LocalRecorder.
@@ -2226,23 +2416,12 @@ class APICore:
         """Synchronous stop used during shutdown — handles both paths."""
         logger.info("Graceful recording stop (sync)")
         self.recording_started = False
-        if self.record_process:
-            for process in self.record_process:
-                try:
-                    os.killpg(os.getpgid(process.pid), signal.SIGINT)
-                except (ProcessLookupError, OSError):
-                    pass
-            time.sleep(0.5)
-            for process in self.record_process:
-                try:
-                    if process.poll() is None:
-                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                        process.wait()
-                except (ProcessLookupError, OSError) as e:
-                    logger.warning(f"Failed to cleanup process: {e}")
-            self.record_process = []
-        if self.local_recorder.is_recording:
-            self.local_recorder.stop()
+        try:
+            if self.record_process:
+                self._stop_recording()
+        finally:
+            if self.local_recorder.is_recording:
+                self.local_recorder.stop()
 
     def _dump_recording_info(self):
         if not self.path_to_save_record:
@@ -2633,28 +2812,23 @@ class APICore:
         self.path_to_save_record = recording_path
 
     def get_camera_intrinsic_info(self):
-        camera_info = [
-            "omni:lensdistortion:model",
-            "omni:lensdistortion:opencvPinhole:cx",
-            "omni:lensdistortion:opencvPinhole:cy",
-            "omni:lensdistortion:opencvPinhole:fx",
-            "omni:lensdistortion:opencvPinhole:fy",
-            "omni:lensdistortion:opencvPinhole:imageSize",
-            "omni:lensdistortion:opencvPinhole:k1",
-            "omni:lensdistortion:opencvPinhole:k2",
-            "omni:lensdistortion:opencvPinhole:k3",
-            "omni:lensdistortion:opencvPinhole:p1",
-            "omni:lensdistortion:opencvPinhole:p2",
-        ]
         stage = omni.usd.get_context().get_stage()
         camera_intrinsic_info = {}
         for prim in self.camera_prim_list:
-            camera_intrinsic_info[prim] = {}
-            camera_prim = stage.GetPrimAtPath(prim)
-            for info in camera_info:
-                value = camera_prim.GetAttribute(info).Get()
-                info = info.split(":")[-1]
-                camera_intrinsic_info[prim][info] = str(value)
+            camera = stage.GetPrimAtPath(prim)
+            model = camera.GetAttribute("omni:lensdistortion:model").Get()
+            # Older pinhole assets may omit the model token but author fx.
+            if model is None and camera.GetAttribute("omni:lensdistortion:opencvPinhole:fx").Get() is not None:
+                model = "opencvPinhole"
+            model = str(model) if model is not None else None
+            fields = ["cx", "cy", "fx", "fy", "imageSize", "k1", "k2", "k3"]
+            fields += ["k4"] if model == "opencvFisheye" else ["p1", "p2"]
+            values = {"model": model}
+            for field in fields:
+                value = camera.GetAttribute(f"omni:lensdistortion:{model}:{field}").Get() if model else None
+                # JSON null preserves missing calibration; never serialize "None".
+                values[field] = (str(value) if field == "imageSize" else float(value)) if value is not None else None
+            camera_intrinsic_info[prim] = values
         return camera_intrinsic_info
 
     def process_camera_info_list(self):
@@ -2680,16 +2854,16 @@ class APICore:
                 elif "top" in prim_name:
                     prim_name = "head_front_fisheye"
             if "G2" in self.robot_name:
-                if "Right_Camera" in prim_name:
-                    prim_name = "hand_right_color"
-                elif "Left_Camera" in prim_name:
-                    prim_name = "hand_left_color"
-                elif "head_front" in prim_name:
+                if "head_front" in prim_name.lower():
                     prim_name = "head_color"
-                elif "head_left" in prim_name:
+                elif "head_left" in prim_name.lower():
                     prim_name = "head_stereo_left_color"
-                elif "head_right" in prim_name:
+                elif "head_right" in prim_name.lower():
                     prim_name = "head_stereo_right_color"
+                elif "right_camera" in prim_name.lower():
+                    prim_name = "hand_right_color"
+                elif "left_camera" in prim_name.lower():
+                    prim_name = "hand_left_color"
             self.camera_info_list[prim_name] = {
                 "intrinsic": camera_intrinsic_info[prim],
                 "output": {
@@ -2719,7 +2893,7 @@ class APICore:
             unset PYTHONPATH
             unset LD_LIBRARY_PATH
             source /opt/ros/{ros_distro}/setup.bash
-            ros2 bag record -o {self.path_to_save_record} {' '.join(self.record_topic_list)}
+            exec ros2 bag record -o {self.path_to_save_record} {' '.join(self.record_topic_list)}
             """
             process = subprocess.Popen(
                 command_str,
@@ -2874,12 +3048,14 @@ class APICore:
                 "/genie_sim/left_camera_rgb",
                 "/genie_sim/right_camera_rgb",
                 "/genie_sim/static_info",
-                "/genie_sim/head_front_Camera_depth",
-                "/genie_sim/Left_Camera_depth",
-                "/genie_sim/Right_Camera_depth",
                 "/genie_sim/head_left_camera_rgb",
                 "/genie_sim/head_right_camera_rgb",
             ]
+            # publish_depth uses the exact USD camera basename (case-sensitive).
+            for camera in self.task_config["recording_setting"]["camera_list"]:
+                topic = "/genie_sim/" + camera.rsplit("/", 1)[-1] + "_depth"
+                if topic not in self.record_topic_list:
+                    self.record_topic_list.append(topic)
         elif "G1" in self.task_config["robot"]["robot_cfg"]:
             self.record_topic_list = [
                 "/tf",

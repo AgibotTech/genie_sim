@@ -90,6 +90,13 @@ class BaseEnv(AderEnv):
         # says it doesn't need depth anymore.
         self.need_depth = True
 
+    def init_gripper_target(self):
+        cfgs = self.cfg.get("gripper_joints") or []
+        task_hand = getattr(self, "init_gripper", None)
+        if task_hand and len(task_hand) == len(cfgs) and len(cfgs) > 2:
+            return list(task_hand)
+        return list(self.cfg.get("init_gripper_open", [0.0, 0.0]))
+
     def set_rand_init_arm(self, rand_init_arm):
         """Set the random initialization arm offsets for joint generalization.
 

@@ -193,21 +193,23 @@ See [`source/geniesim_ros/README.md`](source/geniesim_ros/README.md) for the eng
 
 ```mermaid
 flowchart LR
-  up(["🐳 docker5.1 up"]) ==> collect(["🎮 autoteleop.sh<br/>VR collection"]) ==> keep(["💾 keep / discard<br/>(y / n)"]) ==> post(["📦 post-process<br/>→ HDF5 episodes"])
+  up(["🐳 docker5.1 up"]) ==> collect(["🎮 autoteleop.sh --isaac-version 5.1<br/>VR collection"]) ==> keep(["💾 keep / discard<br/>(y / n)"]) ==> post(["📦 post-process<br/>→ HDF5 episodes"])
   classDef step fill:#fce7f3,stroke:#be185d,color:#831843,font-weight:bold
   class up,collect,keep,post step
   linkStyle 0,1,2 stroke:#be185d,stroke-width:2px
 ```
 
-Collect demonstration data by teleoperating the robot with a Pico VR headset, then turn the recorded rosbags into HDF5 episodes. Once the image is built and the GUI container is up (`geniesim docker5.1 up` succeeds), the whole flow is two host-side scripts:
+Collect demonstration data by teleoperating the robot with a Pico VR headset, then turn the recorded rosbags into HDF5 episodes. For automatic simulator startup, build with `geniesim docker5.1 build`. Once the GUI container is up (`geniesim docker5.1 up` succeeds), the whole flow is two host-side scripts:
 
 ```bash
 # 1. VR collection — press y (keep) / n (discard) when the collection is done:
-./source/geniesim_teleop/scripts/autoteleop.sh
+./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 5.1
 
 # 2. Post-process the recording into HDF5 episodes:
-./source/geniesim_teleop/scripts/autoteleop_post_process.sh <task_name>
+./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 5.1 <task_name>
 ```
+
+Isaac 6.2 mode (`--isaac-version 6.2`, the default) uses `geniesim4` and starts only control processes; provide the simulator separately.
 
 See [`source/geniesim_teleop/README.md`](source/geniesim_teleop/README.md) for the controller button map, Pico setup, and task configuration.
 
@@ -477,3 +479,4 @@ Please consider citing our work either way below if it helps your research.
 13. LIBODE [Source code]. https://github.com/markmbaum/libode
 14. LIBURING [Source code]. https://github.com/axboe/liburing
 15. MuJoCo [Source code]. https://github.com/google-deepmind/mujoco
+16. Wuji SDK [Source code]. https://github.com/wuji-technology/wuji-sdk — [MIT license](THIRD_PARTY_LICENSES/LICENSE.WUJI_SDK)

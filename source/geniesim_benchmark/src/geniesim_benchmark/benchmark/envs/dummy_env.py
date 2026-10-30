@@ -27,6 +27,26 @@ class DummyEnv(BaseEnv):
             need_setup,
             ader_instance,
         )
+        self._load_teleop_initial_states()
+
+    def _load_teleop_initial_states(self):
+        import os
+
+        config = os.environ.get("GENIESIM_TELEOP_CONFIG")
+        self.teleop_initial_states = type(self) is DummyEnv and bool(config)
+        if not self.teleop_initial_states:
+            return
+        from geniesim_teleop.config.task_config import load_teleop_task, robot_family
+
+        task = load_teleop_task(config)
+        if robot_family(task.robot_cfg) != self.robot_cfg or task.sub_task_name != self.sub_task_name:
+            raise ValueError("Simulator and Pico must use the same teleop robot and sub-task")
+        state = task.mc_initial_states()
+        self.init_arm = state["init_arm"]
+        self.init_waist = state["body_state"]
+        self.init_head = state["head_state"]
+        self.init_gripper = state["init_hand"]
+        logger.info("Using shared IK-compatible task pose for teleop startup and reset")
 
     def load_task_setup(self):
         if "task_name" not in self.task_info:
@@ -73,8 +93,27 @@ class DummyEnv(BaseEnv):
     def reset(self):
         self._followed_objects = set()
         self._picked_objects = set()
-        init_gripper = list(self.cfg.get("init_gripper_open", [0.0, 0.0]))
+        init_gripper = self.init_gripper_target()
+        if self.api_core.robot_name == "G2_crsB_90d":
+            init_gripper = [0.0] * len(self.cfg["gripper_joints"])
         self.robot_joint_indices = self.api_core.get_robot_joint_indices()
+        self.api_core.prepare_teleop_grippers()
+
+        free_base = bool(self.init_task_config.get("robot", {}).get("free_base", False))
+        if free_base or self.teleop_initial_states:
+            if free_base:
+                self.api_core.set_robot_base_anchored(True)
+                self.api_core.prepare_teleop_chassis()
+            positions = list(self.init_arm) + list(self.init_waist) + list(self.init_head) + list(init_gripper)
+            names = (
+                self.cfg["arm_joints"] + self.cfg["waist_joints"] + self.cfg["head_joints"] + self.cfg["gripper_joints"]
+            )
+            indices = [self.robot_joint_indices[name] for name in names]
+            if free_base:
+                self.api_core.release_teleop_chassis(positions, indices)
+            else:
+                self.api_core.set_teleop_initial_pose(positions, indices)
+            return
 
         # fmt: off
         self.api_core.set_joint_positions(self.init_arm, joint_indices=[self.robot_joint_indices[v] for v in self.cfg["arm_joints"]], is_trajectory=False)

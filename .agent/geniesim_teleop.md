@@ -8,7 +8,7 @@ This file is a 30-second pointer. Do not duplicate content here that lives at th
 
 ## What it is
 
-VR / Pico teleoperation: streams device poses into the simulator over ROS 2 via the `geniesim teleop` CLI verb (owned by [`geniesim_cli`](geniesim_cli.md)). The teleop loop publishes `/joint_command` directly to the running RT Engine scene; per-episode recording artifacts land under `--record-dir`.
+VR / Pico teleoperation and Wuji glove collection for Isaac Sim. The host launchers coordinate the simulator and controls; the bridge merges motion-controller and input commands into `/joint_command`. The `geniesim teleop` CLI verb (owned by [`geniesim_cli`](geniesim_cli.md)) exposes individual control processes. Follow the package skill for complete collection and post-processing.
 
 ## Where to look
 
@@ -19,9 +19,10 @@ VR / Pico teleoperation: streams device poses into the simulator over ROS 2 via 
 | Agent skill (run-teleop) | [`source/geniesim_teleop/skills/run-teleop/SKILL.md`](../source/geniesim_teleop/skills/run-teleop/SKILL.md) |
 | Bridging into the RT Engine | [`source/geniesim_ros/skills/teleop-bridge/SKILL.md`](../source/geniesim_ros/skills/teleop-bridge/SKILL.md) |
 
-## Invariants the rest of the repo relies on
+## Workflow boundaries
 
-- **One publisher on `/joint_command`.** When teleop is driving, MoveIt must launch with `use_ros2_control:=false` so move_group only serves `/compute_ik` / `/compute_fk` — never spawn the ros2_control controllers in this mode, or they fight the teleop publisher at the CM update rate (arm jitters, payloads fly). See the [`teleop-bridge`](../source/geniesim_ros/skills/teleop-bridge/SKILL.md) skill.
-- **Robot config ↔ scene gripper must match.** `--robot_config=G2_omnipicker.json` requires the scene to be built with the omnipicker gripper (e.g. `scene_pnp_g2_op`). Mismatched grippers produce a robot MoveIt can plan against but the engine refuses to drive.
-- **Default VR port is 8080.** The teleop loop opens a VR server and waits for the Pico headset. Changing the default port means updating downstream firewall / docker port-publish rules.
-- **Runs inside the container.** Needs ROS 2 + Isaac Sim — i.e. `geniesim docker into`. Outside the container, source the overlay first.
+Use [run-teleop](../source/geniesim_teleop/skills/run-teleop/SKILL.md) for Isaac
+Sim 5.1 startup, ordinary Pico versus Wuji selection, network configuration and
+recording post-processing. Runtime and data contracts live in the canonical
+package guide above. The separate RT Engine bridge skill describes its own
+MoveIt workflow; it is not a prerequisite for Isaac Sim + MC collection.

@@ -1,0 +1,104 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+# take_the_scissors instance 7.
+# Deterministic layout: seed 1, target benchmark_scissors_002.
+# This workspace scene owns ALL task physics: the table (kinematic), the two
+# support blocks (kinematic stand) and the selected scissors laid across the
+# stand. The background scene (scenes/take_the_scissors_benchmark/background
+# .usda) is environment-only, so no physics body is duplicated across layers.
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def Xform "table_7643d40d" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+
+                over "body"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-6.372680161348399e-14, -0.15402231329445076, -0.0000013969071077646333)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                over "part_00"
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-9.9253938401489e-14, -0.12992846746868975, -0.0000012878646975193059)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_building_blocks_006_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (0.91826774, 0.00000000, 0.00000000, -0.39596004)
+            float3 xformOp:scale = (1.50000000, 1.50000000, 1)
+            double3 xformOp:translate = (1.0677615938222349, -0.0735901038366022, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_building_blocks_006_01" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (0.91826774, 0.00000000, 0.00000000, -0.39596004)
+            float3 xformOp:scale = (1.50000000, 1.50000000, 1)
+            double3 xformOp:translate = (0.9342031140346672, -0.1996618744688829, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_scissors_002" (
+            prepend payload = @/geniesim_assets/objects/benchmark/scissors/benchmark_scissors_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.92929938, 0.00000000, 0.00000000, 0.36932732)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0256701582024275, -0.1284713449101272, 0.8072893097321094)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["PhysxSDFMeshCollisionAPI", "PhysxConvexDecompositionCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "sdf"
+                        int physxConvexDecompositionCollision:maxConvexHulls = 32
+                    }
+                }
+
+                over "part_00"
+                {
+                }
+            }
+        }
+    }
+}

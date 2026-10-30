@@ -3,6 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 import os, sys
+import signal
 from pathlib import Path
 
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -117,8 +118,18 @@ def main():
     task_manager.start()
 
     step = 0
+    shutdown_requested = False
+    signal_handlers = {}
+
+    def request_shutdown(signum, _frame):
+        nonlocal shutdown_requested
+        shutdown_requested = True
+
+    if cfg.app.enable_ros:
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            signal_handlers[signum] = signal.signal(signum, request_shutdown)
     try:
-        while simulation_app.is_running():
+        while not shutdown_requested and simulation_app.is_running():
             ui_builder.my_world.step(render=task_manager.api_core.frame_render_enabled)
             task_manager.api_core.render_step()
 
@@ -136,10 +147,22 @@ def main():
         print("main loop: KeyboardInterrupt received")
     finally:
         print("Shutting down...")
-        task_manager.join(timeout=10)
-        task_manager.api_core.stop_all_recording()
-        task_manager.api_core.shutdown_ros()
-        simulation_app.close()
+        try:
+            task_manager.join(timeout=10)
+            try:
+                if cfg.app.enable_ros:
+                    ui_builder.my_world.stop()
+            finally:
+                task_manager.api_core.stop_all_recording()
+        finally:
+            try:
+                task_manager.api_core.shutdown_ros()
+            finally:
+                try:
+                    simulation_app.close()
+                finally:
+                    for signum, handler in signal_handlers.items():
+                        signal.signal(signum, handler)
         print("Shutdown complete")
 
 

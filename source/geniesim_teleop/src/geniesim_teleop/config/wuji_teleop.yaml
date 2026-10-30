@@ -1,0 +1,29 @@
+app:
+  physics_step: 120
+  rendering_step: 60
+  enable_curobo: false
+  reset_fallen: false
+  enable_ros: true
+  record_img: true
+  record_video: true
+  render_mode: RaytracedLighting
+  disable_physics: false
+  data_convert: false
+  enable_gpu_dynamics: false
+  enable_rate_limit: false
+  enable_playback: true
+  enable_pub_depth_camera: true
+benchmark:
+  model_arc: pi
+  interactive: true
+  send_depth: false
+  num_episode: 1
+  policy_class: DemoPolicy
+  env_class: DummyEnv
+  task_name: table_task_g2_crsB_wuji_take_the_scissors
+  sub_task_name: take_the_scissors
+  output_dir: output/wuji_teleop
+  fps: 30
+  enable_ros: true
+layout:
+  seed: 0

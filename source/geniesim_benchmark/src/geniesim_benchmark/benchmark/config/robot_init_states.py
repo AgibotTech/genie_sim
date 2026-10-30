@@ -243,12 +243,68 @@ G1_STATES_1 = {
     "init_hand": [0.0, 0.0],
 }
 
+G2_WUJI_DEFAULT_STATES = {
+    "body_state": [-0.83423, 1.2172, 0.10025, 0.0, 0.0],
+    "head_state": [0.0, 0.0, 0.11464],
+    "init_arm": [
+        0.739033,
+        -0.717023,
+        -1.524419,
+        -1.537612,
+        0.27811,
+        -0.92,
+        -0.834,
+        -0.739033,
+        -0.717023,
+        1.524419,
+        -1.537612,
+        -0.27811,
+        -0.92,
+        0.834,
+    ],
+    "init_hand": [0.0] * 40,
+}
+
+G2_WUJI_TAKE_THE_SCISSORS_STATES = {
+    "body_state": [
+        -0.83423,
+        1.2172,
+        0.10025,
+        0.0,
+        0.0,
+    ],
+    "head_state": [
+        0.0,
+        0.0,
+        0.11464,
+    ],
+    "init_arm": [
+        0.739033,
+        -0.717023,
+        -1.524419,
+        -1.537612,
+        0.27811,
+        -0.920,
+        -0.834,
+        -0.739033,
+        -0.717023,
+        1.524419,
+        -1.537612,
+        -0.27811,
+        -0.920,
+        0.834,
+    ],
+    "init_hand": [0.0] * 40,
+    "end_effector": "g2a_wuji_dex",
+}
+
 TASK_INFO_DICT = {
     "pick_billiards_color": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_block_color": {
         "G1_omnipicker": G1_DEFAULT_STATES,
@@ -257,42 +313,50 @@ TASK_INFO_DICT = {
         "G2_90d_gp": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
         "G2_crsB_omnipicker": G2_CRSB_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_wuji": G2_WUJI_DEFAULT_STATES,
     },
     "pick_block_shape": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_block_size": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_block_number": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_object_type": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_specific_object": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pick_follow_logic_or": {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "place_block_into_box": {
         "G1_omnipicker": G1_DEFAULT_STATES,
@@ -309,6 +373,7 @@ TASK_INFO_DICT = {
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "sort_fruit": {
         "G1_omnipicker": G1_DEFAULT_STATES,
@@ -323,6 +388,7 @@ TASK_INFO_DICT = {
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
         "G2_90d": G2_90D_DEFAULT_STATES,
+        "G2_crsB_90d": G2_90D_DEFAULT_STATES,
     },
     "pour_workpiece": {"G2_omnipicker": G2_STATES_1},
     "scoop_popcorn": {"G2_omnipicker": G2_STATES_6},
@@ -352,6 +418,7 @@ TASK_INFO_DICT = {
         "G1_omnipicker": G1_DEFAULT_STATES,
         "G1_120s": G1_DEFAULT_STATES,
         "G2_omnipicker": G2_DEFAULT_STATES,
+        "G2_crsB_wuji": G2_WUJI_DEFAULT_STATES,
     },
     "stack_three_building_blocks": {
         "G2_omnipicker": G2_DEFAULT_STATES,
@@ -379,4 +446,6 @@ TASK_INFO_DICT = {
     "place_beverage_to_anothers_position": {
         "G2_omnipicker": G2_DEFAULT_STATES,
     },
+    "take_the_scissors": {"G2_crsB_wuji": G2_WUJI_TAKE_THE_SCISSORS_STATES},
+    "phone_packaging": {"G2_crsB_90d": G2_90D_DEFAULT_STATES},
 }

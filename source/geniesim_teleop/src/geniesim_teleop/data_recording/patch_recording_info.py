@@ -3,31 +3,20 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""
-Patch recording_info.json under recording_data/<sub_task_name>/: add "teleop_result": true
-if the field is missing. sub_task_name is read from geniesim config (e.g. teleop.yaml). Use --teleop-result true|false.
-"""
+"""Set teleop_result on unmarked recordings in the configured sub-task."""
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
+import yaml
+
 
 def get_sub_task_name_from_yaml(config_path: Path) -> str | None:
-    """Read benchmark.sub_task_name from YAML config. Fallback to regex if yaml not available."""
-    text = config_path.read_text(encoding="utf-8")
-    try:
-        import yaml
-
-        data = yaml.safe_load(text)
-        return (data or {}).get("benchmark", {}).get("sub_task_name")
-    except Exception:
-        pass
-    # Fallback: match "sub_task_name: value" (with optional quotes)
-    m = re.search(r"sub_task_name\s*:\s*['\"]?([^'\"]+)['\"]?\s*$", text, re.MULTILINE)
-    return m.group(1).strip() if m else None
+    """Read the selected sub-task; malformed YAML must fail before marking data."""
+    data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    return (data or {}).get("benchmark", {}).get("sub_task_name")
 
 
 def patch_recording_info(
@@ -35,32 +24,32 @@ def patch_recording_info(
     sub_task_name: str,
     teleop_result: bool = True,
     dry_run: bool = False,
+    existing: list[str] | None = None,
 ) -> int:
-    """
-    For each numeric subdir under base_dir/sub_task_name, if recording_info.json exists
-    and has no "teleop_result", add "teleop_result" with the given value. Returns number of patched files.
-    """
+    """Mark unlabelled numeric episodes and return the number of updated files."""
     task_dir = base_dir / sub_task_name
     if not task_dir.is_dir():
         print(f"Info: directory does not exist: {task_dir}")
         return 0
 
     patched = 0
-    # List numeric subdirs and sort numerically (1, 2, 10, ...)
+    unfinished = []
+    existing = set(existing or [])
     subdirs = sorted(
         [d for d in task_dir.iterdir() if d.is_dir() and d.name.isdigit()],
         key=lambda d: int(d.name),
     )
     for subdir in subdirs:
+        if subdir.name in existing:
+            continue
         json_path = subdir / "recording_info.json"
         if not json_path.is_file():
             continue
-        try:
-            data = json.loads(json_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError) as e:
-            print(f"Warning: skip {json_path}: {e}", file=sys.stderr)
-            continue
+        data = json.loads(json_path.read_text(encoding="utf-8"))
         if "teleop_result" in data:
+            continue
+        if not (subdir / "metadata.yaml").is_file():
+            unfinished.append(str(subdir))
             continue
         data["teleop_result"] = teleop_result
         if not dry_run:
@@ -70,6 +59,8 @@ def patch_recording_info(
             )
         print(f"Patched: {json_path}")
         patched += 1
+    if unfinished:
+        raise RuntimeError(f"Recordings did not finalize; leaving them unmarked: {', '.join(unfinished)}")
     return patched
 
 
@@ -97,13 +88,24 @@ def main():
         help="Value for teleop_result when missing (default: true).",
     )
     parser.add_argument("--dry-run", action="store_true", help="Only print what would be patched.")
+    parser.add_argument("--snapshot", action="store_true", help="Print existing episode directory names as JSON.")
+    parser.add_argument(
+        "--existing", type=json.loads, default=[], help="JSON list of episode directories to leave unchanged."
+    )
     args = parser.parse_args()
 
     sub_task_name = get_sub_task_name_from_yaml(args.config)
     if not sub_task_name:
-        print(f"Warning: could not read sub_task_name from {args.config}", file=sys.stderr)
+        print(f"Error: could not read sub_task_name from {args.config}", file=sys.stderr)
+        return 1
+    if args.snapshot:
+        print(
+            json.dumps(sorted(p.name for p in (args.base / sub_task_name).glob("*") if p.is_dir() and p.name.isdigit()))
+        )
         return 0
-    n = patch_recording_info(args.base, sub_task_name, teleop_result=args.teleop_result, dry_run=args.dry_run)
+    n = patch_recording_info(
+        args.base, sub_task_name, teleop_result=args.teleop_result, dry_run=args.dry_run, existing=args.existing
+    )
     if n:
         print(f"Patched {n} file(s).")
     return 0

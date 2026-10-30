@@ -107,7 +107,7 @@
     <parent link="base_link"/>
     <child link="body_link1"/>
     <axis xyz="0 1 0"/>
-    <limit effort="0" lower="0" upper="1.18" velocity="1"/>
+    <limit effort="0" lower="-1.05999989919" upper="0" velocity="1"/>
   </joint>
   <link name="body_link2">
     <inertial>
@@ -136,11 +136,11 @@
     </collision>
   </link>
   <joint name="idx02_body_joint2" type="revolute">
-    <origin rpy="0 0 0" xyz="-0.32627 0 0.15214"/>
+    <origin rpy="0 0 0" xyz="0 0 0.36"/>
     <parent link="body_link1"/>
     <child link="body_link2"/>
     <axis xyz="0 1 0"/>
-    <limit effort="0" lower="-3.2" upper="3.2" velocity="1"/>
+    <limit effort="0" lower="0" upper="2.65000001429" velocity="1"/>
   </joint>
   <link name="body_link3">
     <inertial>
@@ -169,11 +169,11 @@
     </collision>
   </link>
   <joint name="idx03_body_joint3" type="revolute">
-    <origin rpy="0 0 0" xyz="0.23 0 0"/>
+    <origin rpy="0 0 0" xyz="0 0 0.38"/>
     <parent link="body_link2"/>
     <child link="body_link3"/>
-    <axis xyz="-1 0 0"/>
-    <limit effort="0" lower="-0.52" upper="0.52" velocity="1"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="0" lower="-1.90999982589" upper="1.56999990847" velocity="1"/>
   </joint>
   <link name="body_link4">
     <inertial>
@@ -196,11 +196,11 @@
     </collision>
   </link>
   <joint name="idx04_body_joint4" type="revolute">
-    <origin rpy="0 0 0" xyz="0.175 0 0"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="body_link3"/>
     <child link="body_link4"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0" lower="-0.39" upper="3.19" velocity="1"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="0" lower="-0.429999981717" upper="0.429999981717" velocity="1"/>
   </joint>
   <link name="body_link5">
     <inertial>
@@ -241,11 +241,11 @@
     </collision>
   </link>
   <joint name="idx05_body_joint5" type="revolute">
-    <origin rpy="0 0 0" xyz="0.00017436 0 0.14676"/>
+    <origin rpy="0 0 0" xyz="0 0 0.149"/>
     <parent link="body_link4"/>
     <child link="body_link5"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="0" lower="-3.2" upper="3.2" velocity="1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="0" lower="-3.0499998858" upper="3.0499998858" velocity="1"/>
   </joint>
   <!-- Arm -->
   <link name="arm_base_link"/>

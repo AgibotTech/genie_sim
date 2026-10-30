@@ -193,6 +193,8 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 /opt/geniesim/docker/collect_runtime_constraints.py \
         --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
     python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
+    python3 -m pip install --ignore-installed --no-deps blinker \
+        -c /opt/geniesim/docker/isaac-constraints.txt && \
     python3 -m pip install -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
         "wuji-sdk==${WUJI_SDK_VERSION}" \
         -c /opt/geniesim/docker/isaac-constraints.txt && \

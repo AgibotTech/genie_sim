@@ -2,12 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Resolve the package version from the repo-root ``VERSION`` file.
-
-See ``geniesim/src/geniesim/_version.py`` for the full design note;
-this file is the same logic duplicated for the ``geniesim_teleop``
-distribution (each peer must be self-contained, no cross-imports).
-"""
+"""Resolve this distribution's version from the repository VERSION file."""
 
 from __future__ import annotations
 

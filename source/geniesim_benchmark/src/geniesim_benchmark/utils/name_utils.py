@@ -125,6 +125,11 @@ GP_90D_AJ_NAMES = [
     "idx72_gripper_r_outer_joint1",
 ]
 
+WUJI_FINGERS = ["thumb", "index", "middle", "ring", "pinky"]
+WUJI_LEFT_GRIPPER_JOINT_NAMES = [f"hand_l_{f}_joint{j}" for f in WUJI_FINGERS for j in range(1, 5)]
+WUJI_RIGHT_GRIPPER_JOINT_NAMES = [f"hand_r_{f}_joint{j}" for f in WUJI_FINGERS for j in range(1, 5)]
+WUJI_AJ_NAMES = WUJI_LEFT_GRIPPER_JOINT_NAMES + WUJI_RIGHT_GRIPPER_JOINT_NAMES
+
 G1_CHASSIS = [
     "base_linear_joint_x",
     "base_linear_joint_y",
@@ -218,6 +223,37 @@ ROBOT_CONFIGS = {
         "obs_extra_joints": [],
         "init_gripper_open": [1.0, 1.0],
     },
+    "G2_crsB_wuji": {
+        "robot_type": "g2a_sim",
+        "eef_type": "wuji",
+        "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
+        "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
+        "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
+        "gripper_joints": WUJI_AJ_NAMES,
+        "waist_joints": G2_WAIST_JOINT_NAMES,
+        "head_joints": G2_HEAD_JOINT_NAMES,
+        "gripper_offset": 0.0,
+        "limit_val": 0.78,
+        "label_state": label_state_passthrough,
+        "process_gripper_action": process_gripper_action_passthrough,
+        "init_gripper_open": [0.0] * len(WUJI_AJ_NAMES),
+    },
+    "G2_crsB_90d": {
+        "robot_type": "g2a_sim",
+        "eef_type": "zhiyuan_gripper_ctek90d",
+        "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
+        "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
+        "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
+        "gripper_joints": GP_90D_AJ_NAMES,
+        "waist_joints": G2_WAIST_JOINT_NAMES,
+        "head_joints": G2_HEAD_JOINT_NAMES,
+        "gripper_offset": 0.0,
+        "limit_val": 0.78,
+        "label_state": label_state_passthrough,
+        "process_gripper_action": process_gripper_action_passthrough,
+        "obs_extra_joints": [],
+        "init_gripper_open": [1.0, 1.0],
+    },
 }
 
 DEFAULT_ROBOT_CONFIG = {
@@ -242,5 +278,9 @@ def robot_type_mapping(robot_type):
         return "G2_90d"
     elif "G2_crsB_omnipicker" in robot_type:
         return "G2_crsB_omnipicker"
+    elif "G2_crsB_90d" in robot_type:
+        return "G2_crsB_90d"
+    elif "G2_crsB_wuji" in robot_type:
+        return "G2_crsB_wuji"
     else:
         raise ValueError(f"Invalid robot type: {robot_type}")

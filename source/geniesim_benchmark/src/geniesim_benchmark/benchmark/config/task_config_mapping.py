@@ -302,4 +302,12 @@ TASK_MAPPING = {
         "eval_dims": {"manip": "place", "cognition": "semantic"},
         "mjcf": "mujoco/place_workpiece.xml",
     },
+    "phone_packaging": {
+        "background": {"G2_crsB_90d": "phone_packaging_g2_crsb90d"},
+        "eval_dims": {"manip": "pick_place", "cognition": "semantic"},
+    },
+    "take_the_scissors": {
+        "background": {"G2_crsB_wuji": "table_task_g2_crsB_wuji_take_the_scissors"},
+        "eval_dims": {"manip": "pick", "cognition": "semantic"},
+    },
 }

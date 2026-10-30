@@ -1,0 +1,115 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+# take_the_scissors instance 0.
+# Deterministic target selection: candidates benchmark_scissors_001..006,
+# RandomState(seed + instance_id) with seed=1, instance_id=0 -> benchmark_scissors_006.
+# This workspace scene owns ALL task physics: the table (kinematic), the two
+# display blocks (kinematic stand, widened in XY for a stable 5 cm support
+# footprint), and the selected scissors laid across the stand with a 1 mm
+# initial support gap to prevent bounce/slide (quat 90deg about Z). The background scene
+# (scenes/take_the_scissors_benchmark/background.usda) is environment-only and
+# deliberately defines NO scissors, NO table and NO blocks, so no physics body
+# is ever duplicated across the two layers.
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def Xform "table_7643d40d" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+
+                over "body"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-6.372680161348399e-14, -0.15402231329445076, -0.0000013969071077646333)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                over "part_00"
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-9.9253938401489e-14, -0.12992846746868975, -0.0000012878646975193059)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        # Display stand: two light-blue building blocks, same asset/pose as the
+        # original take_the_scissors scene (benchmark_building_blocks_006_00/_01).
+        # Kinematic and widened in XY so the scissors cannot push or miss them.
+        def Xform "benchmark_building_blocks_006_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1.5, 1.5, 1)
+            double3 xformOp:translate = (0.8873198950218019, 0.07614704469356724, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_building_blocks_006_01" (
+            prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1.5, 1.5, 1)
+            double3 xformOp:translate = (0.8873198950218019, -0.0943635464979138, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        # Selected scissors presented on the stand: same pose family as the
+        # original benchmark_scissors_001 display (90deg about X, long axis
+        # along Y, spanning both blocks) + SDF collision approximation that
+        # only the original display scissors carried.
+        def Xform "benchmark_scissors_006" (
+            prepend payload = @/geniesim_assets/objects/benchmark/scissors/benchmark_scissors_006/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0, 0.70710677)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.885187037445649, 0, 0.8077334674688579)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["PhysxSDFMeshCollisionAPI", "PhysxConvexDecompositionCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "sdf"
+                        int physxConvexDecompositionCollision:maxConvexHulls = 32
+                    }
+                }
+
+                over "part_00"
+                {
+                }
+            }
+        }
+    }
+}

@@ -24,6 +24,15 @@ Pulled in automatically by `geniesim bootstrap`. Heavy runtime deps
 
 ## 🛠️ What you can do
 
+### Collect with Pico or Wuji
+
+Use the [teleop collection workflow](../geniesim_teleop/skills/run-teleop/SKILL.md)
+for Isaac Sim 5.1 startup, network selection and recording post-processing.
+The simulator and motion controller use the same task-defined initial pose.
+Y/N closes the collection session after recording files finish writing.
+The `phone_packaging` and `take_the_scissors` instances provide manual
+collection scenes; they do not define automated evaluation scores.
+
 ### Run a task against an inference server
 
 ```bash
