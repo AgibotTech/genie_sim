@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent2act"
+version = "0.1.0"
+description = "Extensible LLM-to-action runtime for CoRobot-compatible simulators"
+readme = "README.md"
+license = "MPL-2.0"
+license-files = ["LICENSE", "LICENSES/*.txt", "THIRD_PARTY_NOTICES.md"]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "msgpack>=1.0,<2",
+    "Pillow>=10",
+    "websockets>=15,<16",
+    "pydantic>=2.10,<3",
+    "tomli>=2,<3; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+vision = ["numpy>=1.24", "opencv-python-headless>=4.8,<4.12"]
+pi05 = ["numpy>=1.24", "Pillow>=10", "openpi-client"]
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "pytest-cov>=6,<8", "ruff>=0.9,<1", "mypy>=1.15,<2", "numpy>=1.24", "Pillow>=10", "openpi-client", "opencv-python-headless>=4.8,<4.12"]
+
+[project.scripts]
+agent2act = "agent2act.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+agent2act = [
+    "py.typed",
+    "service/observer/assets/*",
+    "adapters/embodiments/data/*.json",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-config --strict-markers"
+markers = ["integration: local transport and cross-layer tests (no external services)"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+files = ["src/agent2act"]
+python_version = "3.10"
+check_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["msgpack", "openpi_client.*"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["agent2act"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.uv]
+required-version = ">=0.6"
+
+[tool.uv.sources]
+openpi-client = { git = "https://github.com/Physical-Intelligence/openpi.git", rev = "215abfb217dbac7d5f1273282331b9b1866c0479", subdirectory = "packages/openpi-client" }
+
+[[tool.mypy.overrides]]
+module = ["agent2act.domain.*", "agent2act.application.*", "agent2act.execution.*", "agent2act.configuration", "agent2act.bootstrap", "agent2act.registry", "agent2act.service.*", "agent2act.cli"]
+disallow_untyped_defs = true

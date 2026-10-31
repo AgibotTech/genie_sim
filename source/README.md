@@ -54,6 +54,7 @@ Side branches:
 - **Author a new scene from a panorama** → `geniesim_world`
 - **Synthesise scenes / search assets via LLM** → `geniesim_generator`
 - **Train an RL policy in the loop** → `rlinf_geniesim`
+- **Connect LLM planning to robot actions** → [`agent2act`](agent2act/README.md)
 
 ---
 
@@ -115,6 +116,7 @@ others are active out-of-band collaborations.
 
 | Directory | Description |
 |---|---|
+| [`agent2act/`](agent2act/README.md) | LLM-to-action runtime with motion/policy/auto execution, CoRobot WebSocket service, and a separate uv environment |
 | [`data_collection/`](data_collection/) | Data collection client/server, ROS nodes, aimdk protocol |
 | 🎓 [`rlinf_geniesim/`](rlinf_geniesim/) | RL training (RLinf, human-in-the-loop, distributed) |
 | [`scene_reconstruction/`](scene_reconstruction/) | 3D reconstruction pipeline (Dockerfile, third-party deps) |

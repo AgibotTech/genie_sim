@@ -69,6 +69,7 @@ Full surface: [`source/geniesim_cli/AGENTS.md`](./source/geniesim_cli/AGENTS.md)
 | `geniesim_ros` | [`.agent/geniesim_ros.md`](./.agent/geniesim_ros.md) |
 | `geniesim_teleop` | [`.agent/geniesim_teleop.md`](./.agent/geniesim_teleop.md) |
 | `geniesim_world` | [`source/geniesim_world/AGENTS.md`](./source/geniesim_world/AGENTS.md) |
+| `agent2act` | [`source/agent2act/AGENTS.md`](./source/agent2act/AGENTS.md) |
 | `data_collection` | [`source/data_collection/AGENTS.md`](./source/data_collection/AGENTS.md) |
 | `rlinf_geniesim` | [`source/rlinf_geniesim/README.md`](./source/rlinf_geniesim/README.md) |
 | `scene_reconstruction` | [`source/scene_reconstruction/README.md`](./source/scene_reconstruction/README.md) |
@@ -88,6 +89,7 @@ source/
 ├── geniesim_world/       multimodal spatial world model (pano → 3D)
 │
 │   ── separately-maintained (not `geniesim_*` peers) ──
+├── agent2act/            LLM-to-action runtime and CoRobot service (own uv env)
 ├── data_collection/      data collection client/server
 ├── rlinf_geniesim/       RL training (RLinf, human-in-the-loop)
 ├── scene_reconstruction/ 3D reconstruction pipeline

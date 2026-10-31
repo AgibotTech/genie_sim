@@ -241,6 +241,15 @@ cat source/data_collection/skills/run-data-collection/SKILL.md
 
 Episodes land in `source/data_collection/recording_data/`. See [`source/data_collection/README.md`](source/data_collection/README.md) (and its [AGENTS.md](source/data_collection/AGENTS.md) / [skill](source/data_collection/skills/run-data-collection/SKILL.md)) for flags, task configs, and the two-process server/client layout.
 
+### 3.9 Agent2Act — LLM-to-action runtime
+
+Agent2Act is a closed-loop framework that connects multimodal LLMs to robot actions in
+Genie Sim. It supports motion generation, policy backends such as π0.5 / OpenPI, and automatic
+routing between execution modes, using visual observations and robot feedback to guide each step.
+
+See [`source/agent2act/README.md`](source/agent2act/README.md) for installation, configuration,
+and usage instructions.
+
 # 4. 📜 Roadmap & Updates
 
 The arc of the platform — what shipped when, and what's coming next.

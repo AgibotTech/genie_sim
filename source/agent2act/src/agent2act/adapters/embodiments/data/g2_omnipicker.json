@@ -1,0 +1,53 @@
+{
+  "grasp_geometry_calibration": {
+    "fingertip_beyond_tcp_m": 0.0103,
+    "frame": "tcp_approach_axis",
+    "geometry_basis": "Visual mesh vertex bounds of gripper inner/outer link4 relative to the nominal gripper center_link (wrist-local +z is the TCP approach axis; open/close axis is wrist-local x; wrist-local y is the pad width axis). Values are the mesh axis-aligned extents in the author static pose of robot_fix.usda, NOT the PhysX convex-decomposition collision bodies, NOT measured contact surfaces, and passive finger joints (joint3 +/-10 deg, joint4 +/-2 deg) are NOT modeled. Left/right sides differ by less than 5 micrometres; nominal values are rounded. fingertip_beyond_tcp_m is the farthest mesh point beyond the TCP along the approach axis (about 10.3 mm); pad_contact_zone_m spans the finger-pad mesh from about 42.7 mm behind the TCP to 10.3 mm beyond it; pad_width_m is the larger (outer finger) mesh span along the width axis; pad_thickness_m is the per-finger mesh span along the open/close axis in the author pose, which is not the runtime aperture. pad_widths_per_finger_m (added 2026-09-22) is the per-finger pad span along the width axis from the same wrist-frame mesh extraction: the two fingers have EQUAL extent along the approach axis (inner/outer link4 spans 53.2/52.8 mm), so the only significant finger asymmetry is pad WIDTH (outer 60.4 mm vs inner 26 mm); under open/close-axis roll the wider finger's far edge (about 30 mm from the TCP midplane) reaches a surface before the narrower finger's edge (about 13 mm). These bounds do not certify collision-free motion, contact, or grasp success, and vary with gripper orientation and state.",
+    "pad_contact_zone_m": {
+      "behind_tcp_m": 0.0427,
+      "beyond_tcp_m": 0.0103
+    },
+    "pad_thickness_m": 0.0279,
+    "pad_width_m": 0.0604,
+    "pad_widths_per_finger_m": {
+      "inner": 0.026,
+      "outer": 0.0604
+    },
+    "source": "Offline usd-core extraction from assets/robot/G2_omnipicker/robot_fix.usda (SHA256 7751a265b02b1c4f6d290a1555d5bb8f2750b7280e66cb6a94042954dc032132); cross-checked values (inner_link4 z 105.765-158.718 mm, outer_link4 z 105.765-158.684 mm, center_link 148.450 mm). Valid for this robot asset only; see docs/configuration-reference.md for the TCP definition.",
+    "tcp_axes": {
+      "approach": "+z",
+      "open_close": "x",
+      "pad_width": "y"
+    }
+  },
+  "gripper_open_closed": {
+    "left": [
+      -0.785,
+      0.0
+    ],
+    "right": [
+      -0.785,
+      0.0
+    ]
+  },
+  "name": "G2_omnipicker",
+  "revision": "1",
+  "robot_type": "G2_omnipicker",
+  "schema_version": 2,
+  "source": "Offline usd-core extraction from assets/robot/G2_omnipicker/robot_fix.usda (SHA256 7751a265b02b1c4f6d290a1555d5bb8f2750b7280e66cb6a94042954dc032132); cross-checked values (inner_link4 z 105.765-158.718 mm, outer_link4 z 105.765-158.684 mm, center_link 148.450 mm). Valid for this robot asset only; see docs/configuration-reference.md for the TCP definition.",
+  "tcp": {
+    "axes": "wrist_parallel",
+    "offset_m": {
+      "left": [
+        0,
+        0,
+        0.14845
+      ],
+      "right": [
+        0,
+        0,
+        0.14845
+      ]
+    }
+  }
+}

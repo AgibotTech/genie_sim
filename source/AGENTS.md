@@ -54,7 +54,7 @@ geniesim tool deps-dag --fix       # regenerate the block in place
 
 Source of truth, in evaluation order:
 
-1. **`source/geniesim_*/pyproject.toml`** — every peer with a `[project]` table is enumerated by globbing `source/geniesim*/pyproject.toml`. Sibling modules that don't match the `geniesim_*` glob (`rlinf_geniesim`, `data_collection`, `scene_reconstruction`, `external`) are deliberately out of scope.
+1. **`source/geniesim_*/pyproject.toml`** — every peer with a `[project]` table is enumerated by globbing `source/geniesim*/pyproject.toml`. Sibling modules that don't match the `geniesim_*` glob (`agent2act`, `rlinf_geniesim`, `data_collection`, `scene_reconstruction`, `external`) are deliberately out of scope.
 2. **`[build-system].requires`** → emitted as **build edges** (`-->|build|`). External-only requirements (`setuptools`, `wheel`) produce no edges; the edge fires when a peer needs *another peer* at build time.
 3. **`[project].dependencies`** → emitted as **runtime/exec edges** (`==>|exec|`), with one special case: when the source peer carries `role: umbrella` in `_ANNOTATIONS`, its `[project].dependencies` are reclassified as **build edges** (`-->|build|`). The umbrella ships no code beyond `__version__`, so those deps are packaging declarations ("install these alongside me"), not runtime imports.
 4. **`[project.optional-dependencies]`** → emitted as **extra edges** (`-.->|[X] extra|`). Edges with the same `(src, dst)` collapse — `geniesim[generator,full]` becomes one labelled edge.
@@ -90,6 +90,7 @@ don't cross-reference them as if they were peer distributions.
 
 | Directory | Description |
 |---|---|
+| `agent2act/` | LLM-to-action runtime and CoRobot WebSocket service; own uv environment — see [README.md](./agent2act/README.md) and [AGENTS.md](./agent2act/AGENTS.md) |
 | `data_collection/` | Data collection client/server, ROS nodes, aimdk protocol — see [AGENTS.md](./data_collection/AGENTS.md) |
 | `rlinf_geniesim/` | RL training pipeline (RLinf, human-in-the-loop, distributed) — see [README.md](./rlinf_geniesim/README.md) |
 | `scene_reconstruction/` | 3D reconstruction pipeline (Dockerfile, third-party deps) |

@@ -1,0 +1,313 @@
+{
+  "embodiment": {
+    "preset": "g2_omnipicker"
+  },
+  "execution": {
+    "allowed_modes": [
+      "motion"
+    ],
+    "body_execute_steps": 50,
+    "complete_hold_steps": 1000,
+    "execute_steps": 10,
+    "history": {
+      "interval": 1,
+      "last_n": 1,
+      "resolution": {
+        "hand_left": [
+          640,
+          528
+        ],
+        "head": [
+          640,
+          400
+        ]
+      }
+    },
+    "max_motion_continuations": 0,
+    "max_replans": 2,
+    "memory_size": 12,
+    "mode": "motion",
+    "motion_frame": "base_link",
+    "motion_frame_axes": [
+      "forward",
+      "left",
+      "up"
+    ],
+    "need_depth": true,
+    "retry_ik_exhaustion": true,
+    "terminal_on_planning_exhaustion": true
+  },
+  "logging": {
+    "format": "text"
+  },
+  "motion": {
+    "min_duration_s": 0.0,
+    "min_gripper_duration_s": 0.0,
+    "speed_fraction": 1.0,
+    "target_hold_s": 0.0
+  },
+  "motion_backend": {
+    "accept_rotation_rad": 0.02,
+    "accept_translation_m": 0.01,
+    "frame": "base_link",
+    "left_link": "arm_l_end_link",
+    "path": "examples/urdf/G2_omnipicker_fixed_dual.urdf",
+    "right_link": "arm_r_end_link",
+    "subtree_path": "examples/urdf/G2_NO_GRIPPER.urdf",
+    "subtree_root": "arm_base_link",
+    "type": "urdf_joint",
+    "waist_settle_s": 1.5,
+    "waist_yaw_joint": "idx05_body_joint5"
+  },
+  "planner": {
+    "api_key_env": "AGENT2ACT_LIVE_LLM_KEY",
+    "compact_motion_context": true,
+    "concise_tracking_feedback": true,
+    "current_observation_only": true,
+    "decision_history_turns": 6,
+    "diagnostic_mode": true,
+    "enable_depth_measurement": false,
+    "enable_raw_depth_query": true,
+    "endpoint": "https://api.openai.com/v1/responses",
+    "history_frames": 0,
+    "image_max_side": 640,
+    "image_quality": 85,
+    "json_mode": true,
+    "max_output_tokens": 16384,
+    "max_retries": 20,
+    "model": "gpt-6-astra",
+    "reasoning_effort": "high",
+    "reasoning_summary": "auto",
+    "retry_backoff_s": 1,
+    "retry_max_delay_s": 60,
+    "rgb_camera_calibration": {
+      "hand_left": {
+        "camera_to_mount": [
+          [
+            0.999999999999999,
+            -3.5794919957418315e-08,
+            -3.6088310184794754e-08,
+            0.0011588229536821093
+          ],
+          [
+            -5.077169302806953e-08,
+            -0.7372772586667229,
+            -0.6755902928942067,
+            -0.08979649353692887
+          ],
+          [
+            -2.4243895875584265e-09,
+            0.6755902928942075,
+            -0.7372772586667239,
+            0.06607714467589243
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "intrinsics": {
+          "cx": 614.3196411132812,
+          "cy": 529.999755859375,
+          "fx": 486.1373291015625,
+          "fy": 485.9415283203125,
+          "height": 1056,
+          "k1": -0.04644061625003815,
+          "k2": -0.011465538293123245,
+          "k3": 0.002211029641330242,
+          "k4": 0.0,
+          "k5": 0.0,
+          "k6": 0.0,
+          "p1": 0.00033718859776854515,
+          "p2": -0.00019672630878631026,
+          "width": 1280
+        },
+        "mount_frame": "arm_l_end_link"
+      },
+      "hand_right": {
+        "camera_to_mount": [
+          [
+            -0.9999999999999878,
+            1.0738207104771729e-07,
+            -1.1718706735717326e-07,
+            -0.0011599903508707349
+          ],
+          [
+            1.1251436327258067e-13,
+            0.7372781046533563,
+            0.6755893696608576,
+            0.08980007280011093
+          ],
+          [
+            1.5894564464598494e-07,
+            0.675589369660849,
+            -0.7372781046533471,
+            0.06607457724572896
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "intrinsics": {
+          "cx": 630.6480102539062,
+          "cy": 527.8828125,
+          "fx": 465.1792907714844,
+          "fy": 465.0162048339844,
+          "height": 1056,
+          "k1": -0.036002930253744125,
+          "k2": -0.014382577501237392,
+          "k3": 0.0026454415637999773,
+          "k4": 0.0,
+          "k5": 0.0,
+          "k6": 0.0,
+          "p1": -0.00022836736752651632,
+          "p2": -0.00030626903753727674,
+          "width": 1280
+        },
+        "mount_frame": "arm_r_end_link"
+      },
+      "head": {
+        "camera_to_mount": [
+          [
+            0.00616270535643515,
+            0.413916670380296,
+            -0.9102939146473407,
+            0.10237000000000002
+          ],
+          [
+            -0.9999343483659263,
+            -0.006243205597576296,
+            -0.009608399548178215,
+            0.02375
+          ],
+          [
+            -0.009660228812031213,
+            0.9102933660997188,
+            0.41385102103793714,
+            0.10255999999999998
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "intrinsics": {
+          "cx": 319.90093994140625,
+          "cy": 201.29141235351562,
+          "fx": 306.69110107421875,
+          "fy": 306.5507507324219,
+          "height": 400,
+          "k1": -0.031128238886594772,
+          "k2": 0.03271407261490822,
+          "k3": -0.011283845640718937,
+          "k4": 0.0,
+          "k5": 0.0,
+          "k6": 0.0,
+          "p1": 0.0002466687001287937,
+          "p2": 3.2653999824105995e-06,
+          "width": 640
+        },
+        "kinematics_urdf": "examples/urdf/G2_omnipicker_fixed_dual.urdf",
+        "mount_frame": "head_link3"
+      }
+    },
+    "send_raw_depth_image": false,
+    "timeout_s": 300,
+    "type": "embodied",
+    "use_depth": true,
+    "use_grasp_geometry": true,
+    "use_gripper_center": true,
+    "use_height_prior": false
+  },
+  "ranked_motion_candidate_count": 5,
+  "ranked_motion_candidates": true,
+  "robot": {
+    "body_joints": [
+      "idx01_body_joint1",
+      "idx02_body_joint2",
+      "idx03_body_joint3",
+      "idx04_body_joint4",
+      "idx05_body_joint5"
+    ],
+    "body_limits": [
+      [
+        -1.06,
+        0.0
+      ],
+      [
+        0.0,
+        2.65
+      ],
+      [
+        -1.91,
+        1.57
+      ],
+      [
+        -0.43,
+        0.43
+      ],
+      [
+        -3.05,
+        3.05
+      ]
+    ],
+    "body_speed_limits": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1000.0
+    ],
+    "dt_s": 0.03333333333333333,
+    "enforce_speed_limits": false,
+    "gripper_bounds": [
+      [
+        -0.785,
+        0
+      ],
+      [
+        -0.785,
+        0
+      ]
+    ],
+    "left_joints": [
+      "idx21_arm_l_joint1",
+      "idx22_arm_l_joint2",
+      "idx23_arm_l_joint3",
+      "idx24_arm_l_joint4",
+      "idx25_arm_l_joint5",
+      "idx26_arm_l_joint6",
+      "idx27_arm_l_joint7"
+    ],
+    "max_chunk_steps": 256,
+    "right_joints": [
+      "idx61_arm_r_joint1",
+      "idx62_arm_r_joint2",
+      "idx63_arm_r_joint3",
+      "idx64_arm_r_joint4",
+      "idx65_arm_r_joint5",
+      "idx66_arm_r_joint6",
+      "idx67_arm_r_joint7"
+    ],
+    "robot_type": "G2_omnipicker",
+    "supports_eef": true
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8999
+  },
+  "simulator_codec": {
+    "left_link": "arm_l_end_link",
+    "path": "examples/urdf/G2_NO_GRIPPER.urdf",
+    "right_link": "arm_r_end_link",
+    "type": "corobot_ik_frame"
+  },
+  "version": 1
+}

@@ -1,0 +1,40 @@
+version = 1
+
+[robot]
+robot_type = "demo_dual_arm"
+left_joints = ["left_joint"]
+right_joints = ["right_joint"]
+dt_s = 0.05
+gripper_bounds = [[0, 1], [0, 1]]
+joint_limits = [[-2, 2], [-2, 2]]
+supports_eef = true
+
+[execution]
+mode = "motion"
+allowed_modes = ["motion"]
+execute_steps = 8
+
+[planner]
+type = "scripted"
+
+[[planner.decisions]]
+mode = "motion"
+instruction = "Lift the right hand by 5 cm."
+reason = "Observed right EEF is available; use local interpolation."
+success_condition = "Right EEF z reaches 0.55 m."
+
+[planner.decisions.motion]
+frame = "base_link"
+
+[[planner.decisions.motion.waypoints]]
+duration_s = 1.0
+right_pose = [0.4, -0.2, 0.55, 0, 0, 0, 1]
+
+[server]
+host = "127.0.0.1"
+port = 8999
+max_connections = 16
+
+[logging]
+level = "INFO"
+format = "json"
