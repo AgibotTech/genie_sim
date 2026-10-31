@@ -38,6 +38,9 @@ class InBBox(EvaluateAction):
         self.bbox_max = self.bbox_center + self.bbox_size / 2
 
     def update(self, delta_time: float) -> float:
+        if not self.is_running() or not self.claim_observation():
+            return 0.0
+
         # Find the correct object path (supporting background scene objects)
         # obj_path = self._find_obj_path(self.obj_id)
         obj_path = self._analyze_obj_name(self.obj_id)

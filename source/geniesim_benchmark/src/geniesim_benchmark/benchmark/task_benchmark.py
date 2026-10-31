@@ -312,23 +312,29 @@ class TaskBenchmark(object):
                         # one episode
                         try:
                             self.evaluate_episode(robot_cfg, single_te)
-                        except InferenceUnavailableError:
+                        except (InferenceUnavailableError, KeyboardInterrupt, SystemExit) as ep_err:
+                            single_te.assemble_expect_result(ep_err)
                             # Server is down past the retry budget. Don't break
                             # to the next episode — propagate so the whole run
                             # exits and an external supervisor can react.
                             raise
                         except Exception as ep_err:
+                            single_te.assemble_expect_result(ep_err)
                             # Physics is likely unrecoverable (e.g. after extreme joint
                             # positions corrupting PhysX transforms). Break the episode
                             # loop so GenieSim can shut down cleanly instead of hanging.
                             logger.error("Episode loop stopped due to fatal episode error: %s", ep_err)
                             break
+                        finally:
+                            if "scores" not in single_te.result:
+                                single_te.update_progress(self.env.task.task_progress)
+                            single_te.summarize_scores()
+                            self.evaluate_summary.make_cache()
                         self.policy.set_episode_idx(episode_idx)
                         if self.args.record:
                             self.api_core.stop_local_recording(episode_idx=episode_idx)
 
                         episode_idx += 1
-                        self.evaluate_summary.make_cache()
 
                 self.env.stop()
             if self.args.record:
@@ -544,6 +550,7 @@ class TaskBenchmark(object):
                         single_te.update_progress(task_progress)
                         self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.make_temp_statistic())
                     if done:
+                        single_te.update_progress(task_progress)
                         self.env.current_step = 0
                         single_te.summarize_scores()
                         _hold_render()
@@ -563,9 +570,9 @@ class TaskBenchmark(object):
                         break
                 self.data_courier.sleep()
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt as e:
             logger.info("Received KeyboardInterrupt during episode")
-            single_te.assemble_expect_result()
+            single_te.assemble_expect_result(e)
             # Ensure recording is stopped on interrupt
             if self.args.record and hasattr(self, "env") and self.env is not None:
                 try:
@@ -574,6 +581,7 @@ class TaskBenchmark(object):
                         logger.info("Recording stopped due to KeyboardInterrupt")
                 except Exception as e:
                     logger.warning(f"Failed to stop recording on interrupt: {e}")
+            raise
         except InferenceUnavailableError as e:
             # Inference server is unreachable after the configured retry budget.
             # Stop recording cleanly, then re-raise so the whole benchmark run
@@ -582,7 +590,7 @@ class TaskBenchmark(object):
             # would otherwise turn every remaining episode into a silent
             # failure.
             logger.error("Inference unavailable, aborting benchmark: %s", e)
-            single_te.assemble_expect_result()
+            single_te.assemble_expect_result(e)
             if self.args.record and hasattr(self, "env") and self.env is not None:
                 try:
                     if hasattr(self.env, "api_core") and self.env.api_core is not None:
@@ -596,23 +604,23 @@ class TaskBenchmark(object):
             # episode loop — prevents the worker thread from crashing silently while
             # Isaac Sim physics keeps spinning at 99% CPU indefinitely.
             logger.error("Unhandled exception in episode: %s — marking failed and stopping loop", e)
-            single_te.assemble_expect_result()
+            single_te.assemble_expect_result(e)
             raise
         finally:
             # Never leak a render refcount across episodes — otherwise the
             # main loop keeps rendering forever once on_demand_render is on.
             _drop_render()
+            end_time = time.time()
+            single_te.update_from_dict(
+                {
+                    "end_time": system_utils.get_local_time(),
+                    "duration": end_time - start_time,
+                }
+            )
 
         for callback in end_callbacks:  # during task
             callback(self.env, action)
 
-        end_time = time.time()
-        single_te.update_from_dict(
-            {
-                "end_time": system_utils.get_local_time(),
-                "duration": end_time - start_time,
-            }
-        )
 
     def _create_vec_policy(self, sub_task_name):
         """One CoRobotPolicy per env; each owns its own inference connection."""
@@ -740,13 +748,23 @@ class TaskBenchmark(object):
                         )
                         te_list.append(single_te)
 
-                    self._run_sync_episode(vec_env, vec_policy, te_list)
+                    try:
+                        self._run_sync_episode(vec_env, vec_policy, te_list)
+                    except BaseException as error:
+                        for slot, evaluation in enumerate(te_list):
+                            if "scores" not in evaluation.result:
+                                evaluation.update_progress(envs[slot].task.task_progress)
+                                evaluation.assemble_expect_result(error)
+                                evaluation.summarize_scores()
+                        raise
+                    finally:
+                        for evaluation in te_list:
+                            self.evaluate_summary.update_current(evaluation)
+                            self.evaluate_summary.make_cache()
 
                     for slot in range(n_envs):
                         policies[slot].set_episode_idx(episode_idxs[slot])
                         episode_idxs[slot] += 1
-                        self.evaluate_summary.update_current(te_list[slot])
-                        self.evaluate_summary.make_cache()
         finally:
             for env in envs:
                 try:
@@ -800,6 +818,7 @@ class TaskBenchmark(object):
                 if need_updates[i]:
                     te_list[i].update_progress(task_progresses[i])
                 if dones[i]:
+                    te_list[i].update_progress(task_progresses[i])
                     active[i] = False
                     finish_times[i] = time.time()
                     env.current_step = 0

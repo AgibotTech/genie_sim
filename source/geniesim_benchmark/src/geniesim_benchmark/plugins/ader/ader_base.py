@@ -40,6 +40,8 @@ class AderEnv(object):
         return self.action_executor.exist_action("eval")
 
     def do_eval_action(self):
+        if getattr(self.task, "instruction_mode", "full") == "subtask":
+            return
         self.do_action("eval", self.params.task_name, self.execute_action)
 
     def cancel_eval(self):
@@ -57,6 +59,10 @@ class AderEnv(object):
         return self.action_executor.exist_action("eval")
 
     def action_update(self):
+        # LLMTask.step drives the subtask checkers and their local deadlines.
+        # Starting the original tree would compete for placeholders and exits.
+        if getattr(self.task, "instruction_mode", "full") == "subtask":
+            return
         if not self.exist_eval_action():
             self.has_done = True
             return

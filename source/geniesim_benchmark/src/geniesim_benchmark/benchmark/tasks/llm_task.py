@@ -240,6 +240,7 @@ class LLMTask(BaseTask):
                 current = getattr(self.env, "current_step", 0)
                 anchor = step.setdefault("_step_anchor", current)
                 if (current - anchor) >= timeout_steps:
+                    checker.stop()
                     passed = True
                     logger.warning(
                         f"subtask step_out hit for index {self._subtask_idx} "

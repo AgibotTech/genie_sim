@@ -37,6 +37,9 @@ class Stack(EvaluateAction):
         self._pass_frame = 0
 
     def update(self, delta_time: float) -> float:
+        if not self.is_running() or not self.claim_observation():
+            return 0.0
+
         if len(self._obj_ids) < 2:
             return super().update(delta_time)
 

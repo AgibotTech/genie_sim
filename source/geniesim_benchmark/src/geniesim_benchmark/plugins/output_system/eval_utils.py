@@ -8,8 +8,10 @@ import re
 import os, json
 from geniesim_benchmark.plugins.logger import Logger
 from dataclasses import dataclass
-from collections import deque
 from copy import deepcopy
+from geniesim_benchmark.plugins.output_system.score_groups import (
+    SCORE_SCHEMA_VERSION, score_group_ids, goal_tree_metadata, score_layout_steps, normalize_steps, episode_complete, episode_counts,
+)
 
 logger = Logger()
 
@@ -83,7 +85,7 @@ TASK_STEPS = {
 # appear here — flatten them to their leaves in registration order.
 TASK_SUBTASK_STEPS = {
     "hold_pot": ["LiftUp", "InBBox", "Upright"],
-    "clean_the_desktop": ["Inside", "PushPull", "Inside", "RelativePosition", "Upright"],
+    "clean_the_desktop": ["Inside", "PushPull", "Inside", "RelativePositionChecker", "Upright"],
     "open_door": ["PushPull"],
     "place_block_into_box": ["PickUpOnGripper", "Inside"],
     "pour_workpiece": ["Inside", "Inside", "Inside", "Inside"],
@@ -172,16 +174,34 @@ class TaskEvaluation:
         self.sub_steps = get_task_steps(self.sub_task_name, self.instruction_mode)
 
     def safe_deepcopy(self, task_progress):
+        if self.instruction_mode == "subtask":
+            task_progress = [row for row in task_progress if "subtask_step_idx" in row]
+        score_groups = score_group_ids(task_progress)
+        goal_metadata = goal_tree_metadata(task_progress)
         all_progress = []
         for item in task_progress:
             progress = {}
             progress.setdefault("progress", {})
             progress["class_name"] = item["class_name"]
             progress["id"] = item["id"]
+            if item["id"] in score_groups:
+                progress["score_group"] = score_groups[item["id"]]
+            elif "score_group" in item:
+                progress["score_group"] = item["score_group"]
             if item.get("progress") and "SCORE" in item.get("progress", {}):
                 progress["progress"]["SCORE"] = item["progress"]["SCORE"]
             if item.get("progress") and "STATUS" in item.get("progress", {}):
                 progress["progress"]["STATUS"] = item["progress"]["STATUS"]
+            progress.update(goal_metadata.get(item["id"], {
+                key: item[key] for key in ("goal_operator", "goal_children", "goal_min_complete", "goal_finished")
+                if key in item
+            }))
+            for key in ("subtask_step_idx", "subtask_role"):
+                if key in item:
+                    progress[key] = item[key]
+            for key in ("GOAL_COMPLETE",):
+                if key in (item.get("progress") or {}):
+                    progress["progress"][key] = deepcopy(item["progress"][key])
             all_progress.append(progress)
 
         return all_progress
@@ -206,51 +226,30 @@ class TaskEvaluation:
         self.result["progress"] = self.safe_deepcopy(task_progress)
 
     def summarize_scores(self):
+        self.result["score_schema_version"] = SCORE_SCHEMA_VERSION
+        self.result["score_layout"] = list(self.sub_steps)
         if len(self.sub_steps) != 0:
-            self.result["scores"] = {"STEPS": [], "E2E": 0}
-            rows = self.result["progress"]
-            substeps = deque(self.sub_steps)
-            step_idx = 0
-            i = 0
-            while substeps and i < len(rows):
-                target = substeps[0]
-                if rows[i].get("class_name") == target:
-                    # Collect best score from consecutive rows with the same
-                    # class_name (e.g. left/right gripper variants inside
-                    # ActionSetWaitAny). Either hand succeeding counts.
-                    best_score = None
-                    while i < len(rows) and rows[i].get("class_name") == target:
-                        prog = rows[i].get("progress", {})
-                        if "SCORE" in prog:
-                            s = float(prog["SCORE"])
-                            if best_score is None or s > best_score:
-                                best_score = s
-                        i += 1
-                    step_name = substeps.popleft()
-                    score_template = deepcopy(SCORE_TEMPLATE)
-                    score_template["step"] = step_idx
-                    score_template["name"] = step_name
-                    if best_score is not None:
-                        score_template["score"] = best_score
-                    self.result["scores"]["STEPS"].append(score_template)
-                    step_idx += 1
-                else:
-                    i += 1
-            # Set E2E only if there is at least one recorded step
-            if len(self.result["scores"]["STEPS"]) > 0 and self.result["scores"]["STEPS"][-1]["score"] == 1.0:
-                self.result["scores"]["E2E"] = 1
+            self.result["scores"] = {
+                "STEPS": score_layout_steps(self.result["progress"], self.sub_steps),
+                "E2E": 0,
+            }
+            self.result["scores"]["E2E"] = int(episode_complete(
+                self.result, self.result["scores"]["STEPS"], self.sub_steps
+            ))
         else:
             logger.warning(f"No substeps defined for task {self.task_name}")
 
     def assemble_result(self, info):
         self.result["code"] = int(ErrorCode.SUCCESS.value)
 
-    def assemble_expect_result(self):
+    def assemble_expect_result(self, error=None):
         self.result["code"] = int(ErrorCode.ABNORMAL_INTERRUPTION.value)
-        self.result["msg"] = "expect: KeyboardInterrupt"
+        self.result["msg"] = f"{type(error).__name__}: {error}" if error is not None else "KeyboardInterrupt"
 
     def to_dir(self):
         dir = {
+            "sub_task_name": self.sub_task_name,
+            "instruction_mode": self.instruction_mode,
             "task_type": self.task_type,
             "task_uid": self.task_uid,
             "task_name": self.task_name,
@@ -266,23 +265,8 @@ class TaskEvaluation:
 
 
 def extract_scores(result, steps):
-    rows = list(result["progress"])
-    sub_scores = []
-    i = 0
-
-    for idx, step in enumerate(steps):
-        while i < len(rows):
-            if rows[i]["class_name"] == step:
-                best_score = 0
-                while i < len(rows) and rows[i]["class_name"] == step:
-                    s = rows[i]["progress"].get("SCORE", 0)
-                    if s > best_score:
-                        best_score = s
-                    i += 1
-                sub_scores.append({"step": idx, "name": step, "score": best_score})
-                break
-            i += 1
-    return sub_scores
+    recorded = (result.get("scores") or {}).get("STEPS")
+    return normalize_steps(recorded, steps) if recorded is not None else score_layout_steps(result.get("progress", []), steps)
 
 
 def get_statistics(evaluate_results, steps):
@@ -377,6 +361,8 @@ def get_statistics(evaluate_results, steps):
     e2e_sum = sum(item["result"].get("scores", {}).get("E2E", 0) for item in evaluate_results)
     statistics["average_e2e"] = round(e2e_sum / total_episodes, 4) if total_episodes else 0.0
 
+    statistics["episode_counts"] = episode_counts(evaluate_results)
+    statistics["run_complete"] = statistics["episode_counts"]["invalid"] == 0
     statistics["timecost"] = time_cost
     statistics["task_counts"] = task_counts
 
@@ -398,6 +384,10 @@ class EvaluationSummary:
         self.sub_steps = get_task_steps(sub_task_name, instruction_mode)
 
     def update_current(self, eval: TaskEvaluation):
+        if self.results and (self.sub_steps != eval.sub_steps or self.instruction_mode != eval.instruction_mode):
+            raise ValueError("Cannot combine different scoring layouts or instruction modes")
+        self.sub_steps = list(eval.sub_steps)
+        self.instruction_mode = eval.instruction_mode
         self.current_eval = eval
 
     def make_temp_statistic(self):
@@ -422,12 +412,10 @@ class EvaluationSummary:
 
     def to_dynamic_msg_pub(self, results=None):
         results = self.results if results is None else results
-        task_steps = get_task_steps(self.task_name, self.instruction_mode)
+        task_steps = self.sub_steps
         temp_scores = get_statistics(results, task_steps)["scores"]
         if self.current_eval.task_instruction not in temp_scores.keys():
-            temp_statistic = {"cnt": 1}
-            for step in task_steps:
-                temp_statistic[step] = 0.0
+            temp_statistic = [0.0] * len(task_steps)
         else:
             temp_statistic = temp_scores[self.current_eval.task_instruction]
 

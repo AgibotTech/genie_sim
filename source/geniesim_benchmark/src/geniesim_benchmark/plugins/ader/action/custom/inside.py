@@ -30,6 +30,9 @@ class Inside(EvaluateAction):
         return self._active_obj
 
     def update(self, delta_time: float) -> float:
+        if not self.is_running() or not self.claim_observation():
+            return 0.0
+
         pose_A = self.get_obj_pose(self.active_obj)
         pos_A = pose_A[:3, 3].reshape(
             -1,

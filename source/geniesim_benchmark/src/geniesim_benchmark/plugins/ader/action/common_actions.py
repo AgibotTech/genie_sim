@@ -193,6 +193,21 @@ class EvaluateAction(ActionBase):
         super().__init__(env)
         self.api_core: APICore = env.api_core
 
+    def claim_observation(self):
+        """Count at most one sample per control observation, including start().
+
+        Standalone callers without a step clock retain one sample per call.
+        Runtime benchmark environments supply current_step and rebuild actions
+        on reset, so nested start/update calls cannot fabricate stability.
+        """
+        step = getattr(self.env, "current_step", None)
+        if step is None:
+            return True
+        if getattr(self, "_last_observation_step", None) == step:
+            return False
+        self._last_observation_step = step
+        return True
+
     def _analyze_obj_name(self, obj_name):
         if obj_name.startswith("/World") or obj_name.startswith("/Workspace"):
             return obj_name
