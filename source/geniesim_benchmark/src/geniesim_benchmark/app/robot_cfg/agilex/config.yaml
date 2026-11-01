@@ -1,0 +1,40 @@
+# Minimal Lula descriptor for agilex.
+#
+# Like arx, agilex is registered for abs_joint replay only — Lula motion
+# planning and curobo IK are not configured. Every non-cspace joint is fixed.
+
+api_version: 1.0
+
+cspace:
+    - arm_fr_joint1
+
+default_q: [
+    0.0
+]
+
+acceleration_limits: [
+   10
+]
+
+jerk_limits: [
+   10000
+]
+
+cspace_to_urdf_rules:
+    - {name: arm_fl_joint1, rule: fixed, value: 0.0}
+    - {name: arm_fl_joint2, rule: fixed, value: 0.0}
+    - {name: arm_fl_joint3, rule: fixed, value: 0.0}
+    - {name: arm_fl_joint4, rule: fixed, value: 0.0}
+    - {name: arm_fl_joint5, rule: fixed, value: 0.0}
+    - {name: arm_fl_joint6, rule: fixed, value: 0.0}
+    - {name: arm_fr_joint2, rule: fixed, value: 0.0}
+    - {name: arm_fr_joint3, rule: fixed, value: 0.0}
+    - {name: arm_fr_joint4, rule: fixed, value: 0.0}
+    - {name: arm_fr_joint5, rule: fixed, value: 0.0}
+    - {name: arm_fr_joint6, rule: fixed, value: 0.0}
+    - {name: gripper_fl_active_joint, rule: fixed, value: 0.0}
+    - {name: gripper_fl_passive_joint, rule: fixed, value: 0.0}
+    - {name: gripper_fr_active_joint, rule: fixed, value: 0.0}
+    - {name: gripper_fr_passive_joint, rule: fixed, value: 0.0}
+
+collision_spheres:

@@ -29,7 +29,7 @@ class Onfloor(EvalExitAction):
         return self._obj_name
 
     def _analyze_obj_name(self, obj_name):
-        if obj_name.startswith("/World"):
+        if obj_name.startswith("/World") or obj_name.startswith("/Workspace"):
             return obj_name
 
         if not self.env.init_task_config.get("sub_task_name"):

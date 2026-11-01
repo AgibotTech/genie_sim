@@ -1,0 +1,256 @@
+{
+  "completion_bonus_points": 50,
+  "completion_rule": "all_steps_and_native_e2e",
+  "full": {
+    "cover_cup_lid": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "Ontop",
+        "MixedRules"
+      ],
+      "version": "cup-lid-weighted-5-15-30",
+      "weights": [
+        10,
+        30,
+        60
+      ]
+    },
+    "insert_building_block": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "InBBox"
+      ],
+      "version": "block-weighted-10-40",
+      "weights": [
+        20,
+        80
+      ]
+    },
+    "insert_coin_into_money_box": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "Inside"
+      ],
+      "version": "coin-weighted-20-30",
+      "weights": [
+        40,
+        60
+      ]
+    },
+    "insert_ethernet_cable": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "PlugInserted"
+      ],
+      "version": "ethernet-weighted-10-40",
+      "weights": [
+        20,
+        80
+      ]
+    },
+    "insert_straw_into_milk_tea_cup": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "MixedRules"
+      ],
+      "version": "straw-weighted-20-30",
+      "weights": [
+        40,
+        60
+      ]
+    },
+    "install_bearing": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "PlaceOnRivet"
+      ],
+      "weights": [
+        10,
+        90
+      ]
+    },
+    "install_bearing_shaft_progress": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "ShaftInserted",
+        "PlaceOnRivet"
+      ],
+      "version": "bearing-weighted-10-15-25",
+      "weights": [
+        20,
+        30,
+        50
+      ]
+    },
+    "phone_packaging": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "Inside",
+        "PickUpOnGripper",
+        "Ontop",
+        "PickUpOnGripper",
+        "Cover"
+      ],
+      "weights": [
+        5,
+        20,
+        5,
+        25,
+        5,
+        40
+      ]
+    },
+    "phone_packaging_precise": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "MixedRules",
+        "PickUpOnGripper",
+        "MixedRules",
+        "PickUpOnGripper",
+        "MixedRules"
+      ],
+      "version": "phone-packaging-weighted-5-10-5-10-5-15",
+      "weights": [
+        10,
+        20,
+        10,
+        20,
+        10,
+        30
+      ]
+    },
+    "pick_up_a_package": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "LiftUp",
+        "MixedRules"
+      ],
+      "version": "package-weighted-15-35",
+      "weights": [
+        30,
+        70
+      ]
+    },
+    "plug_charging_cable_into_phone": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "PickUpOnGripper",
+        "PlugInserted"
+      ],
+      "version": "charging-weighted-10-10-30",
+      "weights": [
+        20,
+        20,
+        60
+      ]
+    },
+    "put_the_cap_on_the_pen_new": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "PickUpOnGripper",
+        "PlugInserted",
+        "Ontop"
+      ],
+      "version": "pen-cap-weighted-5-5-20-20",
+      "weights": [
+        10,
+        10,
+        40,
+        40
+      ]
+    },
+    "stack_bowls_pickup": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "Stack"
+      ],
+      "version": "stack-bowls-pickup-weighted-10-40",
+      "weights": [
+        20,
+        80
+      ]
+    },
+    "take_the_book": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "Rotated",
+        "MixedRules"
+      ],
+      "version": "book-weighted-20-30",
+      "weights": [
+        40,
+        60
+      ]
+    },
+    "take_the_scissors": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "ScissorsHandleInserted",
+        "ScissorsHandleActuated"
+      ],
+      "version": "scissors-weighted-5-20-25",
+      "weights": [
+        10,
+        40,
+        50
+      ]
+    }
+  },
+  "process_points": 50,
+  "subtask": {
+    "insert_coin_into_money_box": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "Inside"
+      ],
+      "version": "coin-weighted-20-30",
+      "weights": [
+        40,
+        60
+      ]
+    },
+    "insert_straw_into_milk_tea_cup": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "MixedRules"
+      ],
+      "version": "straw-weighted-20-30",
+      "weights": [
+        40,
+        60
+      ]
+    },
+    "put_the_cap_on_the_pen_new": {
+      "rationale": "Checkpoint weights allocate 50 process points with a conditional 50-point completion bonus; divide by 100 for the normalized score.",
+      "steps": [
+        "PickUpOnGripper",
+        "PickUpOnGripper",
+        "PlugInserted",
+        "Ontop"
+      ],
+      "version": "pen-cap-weighted-5-5-20-20",
+      "weights": [
+        10,
+        10,
+        40,
+        40
+      ]
+    }
+  },
+  "version": "task-checker-weighted-completion"
+}

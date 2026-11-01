@@ -111,7 +111,7 @@ hold for N consecutive simulation frames before it passes.
 - Function: Detects whether the gripper has picked up an object
 - Syntax: `"PickUpOnGripper": "object|gripper_id"`
 - Parameters: `object` may be a single id or comma-separated list (passes if any is picked); `gripper_id` containing `right` → right gripper, otherwise left
-- Principle: Object lifted ≥ 0.02 m above its initial Z and within 0.2 m of the gripper center; SCORE = 1 on success
+- Principle: Object lifted strictly > 0.02 m above its first sampled Z and strictly < 0.2 m from the gripper reference (the robot config's `end_effector_prim_path`). SCORE = 1 on the first passing evaluator sample; no contact or closure is checked
 
 **StableGrasp (Stable Grasp Detection)**
 - Function: Detects whether an object is held stably and moves rigidly with the gripper

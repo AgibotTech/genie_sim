@@ -1,0 +1,42 @@
+# Minimal Lula descriptor for arx.
+#
+# The arx robot is registered for abs_joint replay only — Lula motion planning
+# and curobo IK are not configured. This file exists because the runtime loader
+# reads `robot.robot_description`, but every joint is treated as fixed so no
+# planning happens here.
+
+api_version: 1.0
+
+cspace:
+    - arm_r_joint1
+
+default_q: [
+    0.0
+]
+
+acceleration_limits: [
+   10
+]
+
+jerk_limits: [
+   10000
+]
+
+cspace_to_urdf_rules:
+    - {name: arm_l_joint1, rule: fixed, value: 0.0}
+    - {name: arm_l_joint2, rule: fixed, value: 0.0}
+    - {name: arm_l_joint3, rule: fixed, value: 0.0}
+    - {name: arm_l_joint4, rule: fixed, value: 0.0}
+    - {name: arm_l_joint5, rule: fixed, value: 0.0}
+    - {name: arm_l_joint6, rule: fixed, value: 0.0}
+    - {name: arm_r_joint2, rule: fixed, value: 0.0}
+    - {name: arm_r_joint3, rule: fixed, value: 0.0}
+    - {name: arm_r_joint4, rule: fixed, value: 0.0}
+    - {name: arm_r_joint5, rule: fixed, value: 0.0}
+    - {name: arm_r_joint6, rule: fixed, value: 0.0}
+    - {name: gripper_l_inner_joint, rule: fixed, value: 0.0}
+    - {name: gripper_l_outer_joint, rule: fixed, value: 0.0}
+    - {name: gripper_r_inner_joint, rule: fixed, value: 0.0}
+    - {name: gripper_r_outer_joint, rule: fixed, value: 0.0}
+
+collision_spheres:

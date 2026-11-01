@@ -13,17 +13,21 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from geniesim_benchmark.robot.isaac_sim.client import Rpc_Client
 from geniesim_benchmark.robot.utils import (
-    get_quaternion_from_rotation_matrix,
     get_quaternion_from_euler,
     matrix_to_euler_angles,
     get_rotation_matrix_from_quaternion,
 )
-import argparse
 from geniesim_benchmark.utils.ros_nodes.base_nodes import SimNode
 import geniesim_benchmark.utils.system_utils as system_utils
 import rclpy
 import threading
 from geniesim_benchmark.plugins.logger import Logger
+from geniesim_benchmark.teleop.replay_trace import (
+    ReplayTraceError,
+    frame_delay,
+    ordered_joint_positions,
+    robot_root_command,
+)
 
 logger = Logger()
 
@@ -88,17 +92,25 @@ class Recording:
             self.task = json.load(f)
 
         scene_usd = self.state["scene"]["scene_usd"]
-        robot_init_pose = self.task["robot"]["robot_init_pose"]
-        target_position = [0, 0, 0]
-        target_rotation = [1, 0, 0, 0]
-        for key, val in robot_init_pose.items():
-            if isinstance(val, dict):
-                target_position = val["position"]
-                target_rotation = val["quaternion"]
-            elif isinstance(val, list):
-                target_position = robot_init_pose["position"]
-                target_rotation = robot_init_pose["quaternion"]
-            break
+        self.init_frame = self.state["frames"][0] if len(self.state["frames"]) else None
+        assert self.init_frame is not None, "No init frame found"
+        root_pose = self.init_frame["robot"].get("root_pose")
+        if root_pose is not None:
+            target_position = root_pose["position"]
+            xyzw = root_pose["orientation_xyzw"]
+            target_rotation = [xyzw[3], *xyzw[:3]]
+        else:
+            robot_init_pose = self.task["robot"]["robot_init_pose"]
+            target_position = [0, 0, 0]
+            target_rotation = [1, 0, 0, 0]
+            for _key, val in robot_init_pose.items():
+                if isinstance(val, dict):
+                    target_position = val["position"]
+                    target_rotation = val["quaternion"]
+                elif isinstance(val, list):
+                    target_position = robot_init_pose["position"]
+                    target_rotation = robot_init_pose["quaternion"]
+                break
         translation_matrix = np.eye(4)
         translation_matrix[:3, :3] = get_rotation_matrix_from_quaternion(target_rotation)
         translation_matrix[:3, 3] = target_position
@@ -113,14 +125,12 @@ class Recording:
             init_position=target_position,
             init_rotation=target_rotation,
         )
-        self.init_frame = self.state["frames"][0] if len(self.state["frames"]) else None
-        assert self.init_frame is not None, "No init frame found"
         self.robot_pose = translation_matrix
         self.joint_name = self.init_frame["robot"]["joints"]["joint_name"]
         self.object_list = {}
         self.articulated_object_list = []
         self.run()
-        self.client.SendTaskStatus(True, [])
+        # State reconstruction is a replay view, not a new task-success verdict.
         self.client.Exit()
 
     def fetch_object_info(self):
@@ -228,18 +238,9 @@ class Recording:
         state = self.state["frames"]
         self.camera_list = self.task["recording_setting"]["camera_list"]
         task_name = self.task["task"]
-        target_joint = state[0]["robot"]["joints"]["joint_position"]
-        joint_names = []
-        joint_positions = self.client.get_joint_positions().states
-        for key in joint_positions:
-            joint_names.append(key.name)
-
-        joint_num = len(joint_positions)
-        joint_indices = []
-        for key in target_joint:
-            if key in joint_names:
-                index = joint_names.index(key)
-                joint_indices.append(index)
+        recorded_joint_names = state[0]["robot"]["joints"]["joint_name"]
+        joint_names = [item.name for item in self.client.get_joint_positions().states]
+        target_joint_positions = ordered_joint_positions(state[0], joint_names)
 
         self.sim_ros_node = SimNode()
         self.spin_thread = threading.Thread(target=rclpy.spin, args=(self.sim_ros_node,))
@@ -250,10 +251,7 @@ class Recording:
         self.add_articulated_objects()
         self.set_scenario_light()
 
-        target_joint_positions = [0] * joint_num
-        joint_list = list(state[0]["robot"]["joints"]["joint_position"])
-        joint_name = list(state[0]["robot"]["joints"]["joint_name"])
-        self.client.set_joint_positions(joint_list, False)
+        self.client.set_joint_positions(target_joint_positions, False)
         time.sleep(1)
         if self.use_recording:
             recording_objects_prim = self.task.get("recording_setting").get("objects_prim")
@@ -271,43 +269,64 @@ class Recording:
                     "gripper": False,
                 },
             )
-        robot_position_last, robot_rotation_last = None, None
-        BASE_MOVE_THRESH = 1e-3
         idx = 0
+        previous_frame = None
+        replay = self.state.get("replay", {})
+        for gap in replay.get("gaps", []):
+            logger.warning(f"Replay source gap: {gap}")
         while rclpy.ok() and idx < len(state):
-            # set object pose
-            object_info = state[idx]["objects"]
+            frame = state[idx]
+            delay = frame_delay(previous_frame, frame)
+            if delay:
+                time.sleep(delay)
+
             object_poses = []
-            for key, value in object_info.items():
-                object_pose = {}
-                target_matrix = self.init_translation_matrix @ (np.linalg.inv(self.robot_pose) @ value["pose"])
+            root_command = robot_root_command(frame)
+            if root_command is not None:
+                object_poses.append(root_command)
+            for key, value in frame["objects"].items():
+                if value.get("pose_frame") == "world":
+                    target_matrix = np.array(value["pose"])
+                else:
+                    target_matrix = self.init_translation_matrix @ (np.linalg.inv(self.robot_pose) @ value["pose"])
                 target_rotation_matrix, target_position = (
                     target_matrix[:3, :3],
                     target_matrix[:3, 3],
                 )
                 target_rotation = get_quaternion_from_euler(matrix_to_euler_angles(target_rotation_matrix), order="ZYX")
-                object_pose["prim_path"] = "/World/Objects/" + key
-                object_pose["position"] = target_position
-                object_pose["rotation"] = target_rotation
-                object_poses.append(object_pose)
+                object_poses.append(
+                    {
+                        "prim_path": value.get(
+                            "prim_path",
+                            "/World/Objects/" + key,
+                        ),
+                        "position": target_position,
+                        "rotation": target_rotation,
+                    }
+                )
 
-            target_joint_positions = [0] * joint_num
-            joint_list = list(state[idx]["robot"]["joints"]["joint_position"])
-            if any(np.isnan(v) for v in joint_list):
-                logger.error(f"Encounter NAN joint list, break with idx {idx}")
-                break
-            for _idx in range(len(joint_indices)):
-                target_joint_positions[joint_indices[_idx]] = joint_list[_idx]
+            frame_joint_names = frame["robot"]["joints"]["joint_name"]
+            if frame_joint_names != recorded_joint_names:
+                raise ReplayTraceError("replay robot joint membership changed inside the clip")
+            target_joint_positions = ordered_joint_positions(frame, joint_names)
+
             object_joints = []
-            for key, value in state[idx]["articulated_object"].items():
-                object_joint = {}
-                object_joint["prim_path"] = "/World/Objects/" + key
-                object_joint["joint_cmd"] = value["joints"]["joint_position"]
-                object_joints.append(object_joint)
-            self.client.SetObjectPose(object_poses, joint_list, object_joints)
-            # self.sim_ros_node.set_joint_state(joint_name, joint_list)
+            for key, value in frame.get("articulated_object", {}).items():
+                object_joints.append(
+                    {
+                        "prim_path": value.get("prim_path", "/World/Objects/" + key),
+                        "joint_cmd": value["joints"]["joint_position"],
+                    }
+                )
+            self.client.SetObjectPose(
+                object_poses,
+                target_joint_positions,
+                object_joints,
+            )
+            if delay is None:
+                self.sim_ros_node.loop_rate.sleep()
+            previous_frame = frame
             idx += 1
-            self.sim_ros_node.loop_rate.sleep()
         self.client.stop_recording()
         self.sim_ros_node.destroy_node()
         rclpy.shutdown()

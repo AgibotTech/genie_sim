@@ -103,12 +103,12 @@
     </collision>
   </link>
   <joint name="idx01_body_joint1" type="revolute">
-    <origin rpy="0 0 0" xyz="0.102 0 0.144"/>
-    <parent link="base_link"/>
-    <child link="body_link1"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0" lower="0" upper="1.18" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0.101999998 0 0.143999994" />
+  <parent link="base_link" />
+  <child link="body_link1" />
+  <axis xyz="0 1 0" />
+  <limit effort="0" lower="-1.08220001004" upper="9.99999921947e-05" velocity="1" />
+</joint>
   <link name="body_link2">
     <inertial>
       <origin rpy="0 0 0" xyz="0.014787 -0.004305 -4.7E-05"/>
@@ -136,12 +136,12 @@
     </collision>
   </link>
   <joint name="idx02_body_joint2" type="revolute">
-    <origin rpy="0 0 0" xyz="-0.32627 0 0.15214"/>
-    <parent link="body_link1"/>
-    <child link="body_link2"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0" lower="-3.2" upper="3.2" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0 0 0.360000014" />
+  <parent link="body_link1" />
+  <child link="body_link2" />
+  <axis xyz="0 1 0" />
+  <limit effort="0" lower="-9.99999921947e-05" upper="2.65300006526" velocity="1" />
+</joint>
   <link name="body_link3">
     <inertial>
       <origin rpy="0 0 0" xyz="0.090164 -0.000208 0.000106"/>
@@ -169,12 +169,12 @@
     </collision>
   </link>
   <joint name="idx03_body_joint3" type="revolute">
-    <origin rpy="0 0 0" xyz="0.23 0 0"/>
-    <parent link="body_link2"/>
-    <child link="body_link3"/>
-    <axis xyz="-1 0 0"/>
-    <limit effort="0" lower="-0.52" upper="0.52" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0 0 0.379999995" />
+  <parent link="body_link2" />
+  <child link="body_link3" />
+  <axis xyz="0 1 0" />
+  <limit effort="0" lower="-1.90699977492" upper="1.03900000847" velocity="1" />
+</joint>
   <link name="body_link4">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.00051665 -0.0075684 0.05319"/>
@@ -196,12 +196,12 @@
     </collision>
   </link>
   <joint name="idx04_body_joint4" type="revolute">
-    <origin rpy="0 0 0" xyz="0.175 0 0"/>
-    <parent link="body_link3"/>
-    <child link="body_link4"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0" lower="-0.39" upper="3.19" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0 0 0" />
+  <parent link="body_link3" />
+  <child link="body_link4" />
+  <axis xyz="1 0 0" />
+  <limit effort="0" lower="-0.43639995729" upper="0.43639995729" velocity="1" />
+</joint>
   <link name="body_link5">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.018295 0.00022303 0.20326"/>
@@ -241,12 +241,12 @@
     </collision>
   </link>
   <joint name="idx05_body_joint5" type="revolute">
-    <origin rpy="0 0 0" xyz="0.00017436 0 0.14676"/>
-    <parent link="body_link4"/>
-    <child link="body_link5"/>
-    <axis xyz="0 0 -1"/>
-    <limit effort="0" lower="-3.2" upper="3.2" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0 0 0.149000004" />
+  <parent link="body_link4" />
+  <child link="body_link5" />
+  <axis xyz="0 0 1" />
+  <limit effort="0" lower="-3.04559981105" upper="3.04559981105" velocity="1" />
+</joint>
   <!-- Arm -->
   <link name="arm_base_link"/>
   <joint name="idx20_arm_base_joint" type="fixed">
@@ -546,7 +546,7 @@
   <!-- Head -->
   <link name="head_base_link"/>
   <joint name="idx10_head_base_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="-0.013211 0 0.35976"/>
+    <origin rpy="0 0 0" xyz="-0.013 0 0.496"/>
     <parent link="body_link5"/>
     <child link="head_base_link"/>
     <axis xyz="0 0 0"/>
@@ -578,12 +578,12 @@
     </collision>
   </link>
   <joint name="idx11_head_joint1" type="revolute">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-    <parent link="head_base_link"/>
-    <child link="head_link1"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="0" lower="-3.14" upper="3.14" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0 0 0" />
+  <parent link="head_base_link" />
+  <child link="head_link1" />
+  <axis xyz="0 0 1" />
+  <limit effort="0" lower="-0.780999952857" upper="0.780999952857" velocity="1" />
+</joint>
   <link name="head_link2">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.031307 -0.0003235 -0.00019793"/>
@@ -611,12 +611,12 @@
     </collision>
   </link>
   <joint name="idx12_head_joint2" type="revolute">
-    <origin rpy="0 0 0" xyz="0.029814 0 0.21419"/>
-    <parent link="head_link1"/>
-    <child link="head_link2"/>
-    <axis xyz="-1 0 0"/>
-    <limit effort="0" lower="-0.35" upper="0.35" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="0.0333499983 0 0.0700000003" />
+  <parent link="head_link1" />
+  <child link="head_link2" />
+  <axis xyz="1 0 0" />
+  <limit effort="0" lower="-0.150999985451" upper="0.150999985451" velocity="1" />
+</joint>
   <link name="head_link3">
     <inertial>
       <origin rpy="0 0 0" xyz="0.031207 -0.002346 0.034439"/>
@@ -650,12 +650,12 @@
     </collision>
   </link>
   <joint name="idx13_head_joint3" type="revolute">
-    <origin rpy="0 0 0" xyz="-0.029814 0 -0.00019325"/>
-    <parent link="head_link2"/>
-    <child link="head_link3"/>
-    <axis xyz="0 1 0"/>
-    <limit effort="0" lower="-0.52" upper="0.52" velocity="1"/>
-  </joint>
+  <origin rpy="0 0 0" xyz="-0.0303499997 0 0" />
+  <parent link="head_link2" />
+  <child link="head_link3" />
+  <axis xyz="0 1 0" />
+  <limit effort="0" lower="-0.0180999995788" upper="0.523099998816" velocity="1" />
+</joint>
   <!-- properties -->
   <!-- Arm -->
   <link name="arm_l_link1">
@@ -689,7 +689,7 @@
     <parent link="arm_base_link"/>
     <child link="arm_l_link1"/>
     <axis xyz="0 0 1"/>
-    <limit effort="108" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="108" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link2">
     <inertial>
@@ -728,7 +728,7 @@
     <parent link="arm_l_link1"/>
     <child link="arm_l_link2"/>
     <axis xyz="0 0 1"/>
-    <limit effort="108" lower="-2.0944" upper="2.0944" velocity="3.1416"/>
+    <limit effort="108" lower="-2.0595" upper="2.0595" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link3">
     <inertial>
@@ -775,7 +775,7 @@
     <parent link="arm_l_link2"/>
     <child link="arm_l_link3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="66" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="66" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link4">
     <inertial>
@@ -814,7 +814,7 @@
     <parent link="arm_l_link3"/>
     <child link="arm_l_link4"/>
     <axis xyz="0 0 1"/>
-    <limit effort="66" lower="-2.5307" upper="1.0472" velocity="3.1416"/>
+    <limit effort="66" lower="-2.4959" upper="1.0123" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link5">
     <inertial>
@@ -865,7 +865,7 @@
     <parent link="arm_l_link4"/>
     <child link="arm_l_link5"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="18" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link6">
     <inertial>
@@ -892,7 +892,7 @@
     <parent link="arm_l_link5"/>
     <child link="arm_l_link6"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-1.0472" upper="1.0472" velocity="3.1416"/>
+    <limit effort="18" lower="-1.0123" upper="1.0123" velocity="3.1416"/>
   </joint>
   <link name="arm_l_link7">
     <inertial>
@@ -931,11 +931,11 @@
     <parent link="arm_l_link6"/>
     <child link="arm_l_link7"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-1.5708" upper="1.5708" velocity="3.1416"/>
+    <limit effort="18" lower="-1.5359" upper="1.5359" velocity="3.1416"/>
   </joint>
   <link name="arm_l_end_link"/>
   <joint name="arm_l_end_joint" type="fixed">
-    <origin rpy="3.1416 -1.5708 0" xyz="0.088 0.0 0.0"/>
+    <origin rpy="3.1416 -1.5708 0" xyz="0.095 0.0 0.0"/>
     <parent link="arm_l_link7"/>
     <child link="arm_l_end_link"/>
   </joint>
@@ -972,7 +972,7 @@
     <parent link="arm_base_link"/>
     <child link="arm_r_link1"/>
     <axis xyz="0 0 1"/>
-    <limit effort="108" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="108" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link2">
     <inertial>
@@ -1011,7 +1011,7 @@
     <parent link="arm_r_link1"/>
     <child link="arm_r_link2"/>
     <axis xyz="0 0 1"/>
-    <limit effort="108" lower="-2.0944" upper="2.0944" velocity="3.1416"/>
+    <limit effort="108" lower="-2.0595" upper="2.0595" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link3">
     <inertial>
@@ -1044,7 +1044,7 @@
     <parent link="arm_r_link2"/>
     <child link="arm_r_link3"/>
     <axis xyz="0 0 1"/>
-    <limit effort="66" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="66" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link4">
     <inertial>
@@ -1083,7 +1083,7 @@
     <parent link="arm_r_link3"/>
     <child link="arm_r_link4"/>
     <axis xyz="0 0 1"/>
-    <limit effort="66" lower="-2.5307" upper="1.0472" velocity="3.1416"/>
+    <limit effort="66" lower="-2.4959" upper="1.0123" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link5">
     <inertial>
@@ -1134,7 +1134,7 @@
     <parent link="arm_r_link4"/>
     <child link="arm_r_link5"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-3.1067" upper="3.1067" velocity="3.1416"/>
+    <limit effort="18" lower="-3.0718" upper="3.0718" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link6">
     <inertial>
@@ -1161,7 +1161,7 @@
     <parent link="arm_r_link5"/>
     <child link="arm_r_link6"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-1.0472" upper="1.0472" velocity="3.1416"/>
+    <limit effort="18" lower="-1.0123" upper="1.0123" velocity="3.1416"/>
   </joint>
   <link name="arm_r_link7">
     <inertial>
@@ -1201,10 +1201,10 @@
     <parent link="arm_r_link6"/>
     <child link="arm_r_link7"/>
     <axis xyz="0 0 1"/>
-    <limit effort="18" lower="-1.5708" upper="1.5708" velocity="3.1416"/>
+    <limit effort="18" lower="-1.5359" upper="1.5359" velocity="3.1416"/>
   </joint>
   <joint name="arm_r_end_joint" type="fixed">
-    <origin rpy="3.141592653589793 -1.5707963267948966 0" xyz="0.088 0.0 0.0"/>
+    <origin rpy="3.141592653589793 -1.5707963267948966 0" xyz="0.095 0.0 0.0"/>
     <parent link="arm_r_link7"/>
     <child link="arm_r_end_link"/>
   </joint>
@@ -1456,7 +1456,7 @@
   <link name="gripper_l_center_link">
     </link>
   <joint name="idx52_gripper_l_center_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.14308"/>
+    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.185"/>
     <parent link="gripper_l_base_link"/>
     <child link="gripper_l_center_link"/>
   </joint>
@@ -1719,7 +1719,7 @@
   <link name="gripper_r_center_link">
     </link>
   <joint name="idx92_gripper_r_center_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.14308"/>
+    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.185"/>
     <parent link="gripper_r_base_link"/>
     <child link="gripper_r_center_link"/>
   </joint>

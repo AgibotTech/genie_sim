@@ -51,6 +51,9 @@ class Logger:
     def _init_logger(self):
         self.logger = logging.getLogger("ColoredLogger")
         self.logger.setLevel(logging.INFO)  # logging.DEBUG to enable debug log
+        # This logger owns its output handler. Forwarding into Kit's root
+        # handler also enters UI locks from control-worker threads.
+        self.logger.propagate = False
 
         if not self.logger.handlers:
             console_handler = logging.StreamHandler(sys.stdout)

@@ -29,22 +29,13 @@ class VRServer:
     def udp_listener(self):
         while True:
             try:
-                data, addr = self.sock.recvfrom(4096)
-                # Some datagrams are not valid UTF-8 (we observed packets whose
-                # 19th byte is 0xed). A strict decode raises UnicodeDecodeError,
-                # which is not a JSONDecodeError, so it would escape the loop and
-                # kill this listener thread for good - no VR data would ever be
-                # received again. Drop the bad bytes and keep going instead.
-                message = data.decode("utf-8", errors="ignore")
+                data, addr = self.sock.recvfrom(1024)
+                message = data.decode("utf-8")
                 _new_message = message.replace("False", "false")
                 json_data = json.loads(_new_message)
                 self.data = json_data
             except json.JSONDecodeError:
-                # Malformed or partial payload: drop this packet, keep listening.
-                pass
-            except Exception:
-                # Last-resort guard: no single packet may terminate the thread.
-                pass
+                logger.info(f"Receive {addr} NON-JSON data: {_new_message}")
 
     def on_update(self):
         self.counter += 1

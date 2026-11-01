@@ -27,7 +27,12 @@ class PickUpOnGripper(EvaluateAction):
         obj_name: Object name or comma-separated object names to check.
             Examples: "obj1" or "obj1,obj2,obj3"
             Can also use placeholder: "{@placeholder_str1}"
-        gripper_id: Gripper identifier, e.g. "right" or "left".
+        gripper_id: Gripper identifier, e.g. "right" or "left". Use "any_gripper"
+            (or "any"/"both") to accept a pickup by EITHER hand -- the check then
+            tries both grippers each frame and passes on the first that succeeds.
+            This keeps one checker (and so one ``progress`` row) per step, unlike
+            branching into a left/right pair, which makes ``score_layout_steps``
+            read the pair as two separate layout steps.
 
     Supported parameter formats:
         - Single object: "obj1|right_gripper"
@@ -51,6 +56,7 @@ class PickUpOnGripper(EvaluateAction):
         self._done_flag = False
         self._holder_id, self._gripper_id = self.placeholder_sparser(gripper_id)
         self._matched_obj = None  # Track which object was successfully picked
+        self._matched_gripper = None  # Track which hand picked it (for "any_gripper")
         self._update_count = 0  # Debug counter to track update calls
 
         # Threshold Parameters for pickup detection
@@ -62,6 +68,7 @@ class PickUpOnGripper(EvaluateAction):
         self._picked_z_map = {}  # {obj_name: current_z at pickup success}
         self.success_detected = False
         self._debug_counter = 0
+        self._last_metrics = {}  # {obj_name: {gripper_path, initial_z, z, z_diff, distance}}
 
         # Initialize a global set on env to track already-picked objects across rounds
         if not hasattr(self.env, "_picked_objects"):
@@ -116,28 +123,29 @@ class PickUpOnGripper(EvaluateAction):
             return getattr(self, self._gripper_id)
         return self._gripper_id
 
+    @property
+    def gripper_ids(self) -> list:
+        """Grippers to try this frame.
+
+        A hand-agnostic id ("any_gripper" / "any" / "both") expands to both
+        hands so either one succeeding counts; anything else stays a
+        single-element list, preserving the side-specific behaviour.
+        """
+        gid = self.gripper_id or ""
+        if gid.split("_")[0].lower() in ("any", "both", "either"):
+            return ["left_gripper", "right_gripper"]
+        return [gid]
+
     def _get_gripper_position(self):
         """Get the current gripper world position.
 
         Returns:
             The gripper position as a numpy array.
         """
-        robot_cfg = getattr(self.env, "robot_cfg", None)
-        if robot_cfg is None:
-            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
-        if "G1" in robot_cfg:
-            robot_base = "/G1"
-        else:
-            robot_base = "/genie"
-        link_prim_path = (
-            f"{robot_base}/gripper_r_center_link"
-            if "right" in self.gripper_id
-            else f"{robot_base}/gripper_l_center_link"
-        )
-        g_pos, _ = self.get_world_pose(link_prim_path)
+        g_pos, _ = self.get_world_pose(self.gripper_link_path(self.gripper_id))
         return g_pos
 
-    def check_pickup_success(self, gripper_pose, obj_pose, obj_name):
+    def check_pickup_success(self, gripper_pose, obj_pose, obj_name, gripper_id=None):
         """Check if the object is successfully picked up.
 
         Args:
@@ -155,36 +163,47 @@ class PickUpOnGripper(EvaluateAction):
             return False
 
         initial_z = self._initial_z_map[obj_name]
+        gripper_id = gripper_id or self.gripper_id
 
         # Check 1: Is the object lifted?
         z_diff = current_z - initial_z
+        gripper_pos = gripper_pose[:3, 3]
+        obj_pos = obj_pose[:3, 3]
+        distance = np.linalg.norm(gripper_pos - obj_pos)
+        self._last_metrics[(obj_name, gripper_id)] = {
+            "gripper_path": self.gripper_link_path(gripper_id),
+            "initial_z": initial_z,
+            "z": current_z,
+            "z_diff": z_diff,
+            "distance": distance,
+        }
+
         if z_diff <= self.z_threshold:
             return False
 
         # Check 2: Distance between object and gripper
-        gripper_pos = gripper_pose[:3, 3]
-        obj_pos = obj_pose[:3, 3]
-        distance = np.linalg.norm(gripper_pos - obj_pos)
-
-        # If the object is lifted and close to the gripper, consider it a successful grasp
         if distance < self.distance_threshold:
             self._picked_z_map[obj_name] = current_z
             return True
 
         return False
 
-    def _check_single_object_pickup(self, obj_name, gripper_pose):
-        """Check if the given object is successfully picked up by the gripper.
+    def _check_single_object_pickup(self, obj_name, gripper_poses):
+        """Check if the given object is picked up by any of the given grippers.
 
         Args:
             obj_name: Name of the object to check.
-            gripper_pose: Current gripper pose matrix.
+            gripper_poses: ``{gripper_id: pose matrix}`` for the hands to try.
 
         Returns:
-            True if the object is successfully picked up.
+            True if the object is successfully picked up by one of them.
         """
         current_obj_pose = self.get_obj_pose(obj_name)
-        return self.check_pickup_success(gripper_pose, current_obj_pose, obj_name)
+        for gid, pose in gripper_poses.items():
+            if self.check_pickup_success(pose, current_obj_pose, obj_name, gid):
+                self._matched_gripper = gid
+                return True
+        return False
 
     def update(self, delta_time: float) -> float:
         if not self.is_running():
@@ -197,20 +216,14 @@ class PickUpOnGripper(EvaluateAction):
             return super().update(delta_time)
 
         try:
-            # Get robot type
-            robot_cfg = getattr(self.env, "robot_cfg", None)
-            if robot_cfg is None:
-                robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
-            if "G1" in robot_cfg:
-                robot_base = "/G1"
-            else:
-                robot_base = "/genie"
-            link_prim_path = (
-                f"{robot_base}/gripper_r_center_link"
-                if "right" in self.gripper_id
-                else f"{robot_base}/gripper_l_center_link"
-            )
-            current_gripper_pose = self.get_world_pose_matrix(link_prim_path)
+            gripper_poses = {}
+            for gid in self.gripper_ids:
+                try:
+                    gripper_poses[gid] = self.get_world_pose_matrix(self.gripper_link_path(gid))
+                except Exception as e:
+                    logger.warning(f"[PickUpOnGripper] Could not read gripper '{gid}' pose: {e}")
+            if not gripper_poses:
+                return super().update(delta_time)
 
             # Check if gripper picks up any of the target objects (excluding already-picked)
             candidates = self.obj_name_list
@@ -229,7 +242,7 @@ class PickUpOnGripper(EvaluateAction):
 
             # Find the first matching object that satisfies pickup condition
             matched = self.find_matching_object(
-                candidates, lambda obj: self._check_single_object_pickup(obj, current_gripper_pose)
+                candidates, lambda obj: self._check_single_object_pickup(obj, gripper_poses)
             )
             if matched is not None:
                 self._done_flag = True
@@ -238,7 +251,8 @@ class PickUpOnGripper(EvaluateAction):
                 self.env._picked_objects.add(matched)
                 self.env.update_place_holder("placeholder_str1", matched)
                 logger.info(
-                    f"[PickUpOnGripper] Successfully picked object '{matched}' (picked so far: {self.env._picked_objects})"
+                    f"[PickUpOnGripper] Successfully picked object '{matched}' with "
+                    f"'{self._matched_gripper}' (picked so far: {self.env._picked_objects})"
                 )
 
         except Exception as e:
@@ -253,9 +267,30 @@ class PickUpOnGripper(EvaluateAction):
         if self._done_flag and self.success_detected:
             self.progress_info["STATUS"] = "SUCCESS"
 
+    def _log_failure_diagnostics(self):
+        """One-shot summary of the last measured metrics per object, printed
+        only when the checker is cancelled without success."""
+        if self.success_detected:
+            return
+        if not self._last_metrics:
+            logger.warning(
+                f"[PickUpOnGripper] Cancelled without any measurement "
+                f"(obj: {self.obj_name}, gripper: {self.gripper_id})"
+            )
+            return
+        for (obj_name, gid), m in self._last_metrics.items():
+            logger.warning(
+                f"[PickUpOnGripper] Cancelled without success: obj='{obj_name}' "
+                f"gripper='{gid}' ref='{m['gripper_path']}' "
+                f"initial_z={m['initial_z']:.4f} z={m['z']:.4f} "
+                f"z_diff={m['z_diff']:.4f} (need > {self.z_threshold}) "
+                f"distance={m['distance']:.4f} (need < {self.distance_threshold})"
+            )
+
     def handle_action_event(self, action: ActionBase, event: ActionEvent) -> None:
         logger.info(
-            f"Action [PickUpOnGripper] {self.gripper_id}, obj: {self.obj_name}, matched: {self._matched_obj}, evt: {event.value}"
+            f"Action [PickUpOnGripper] {self.gripper_id}, obj: {self.obj_name}, "
+            f"matched: {self._matched_obj} by {self._matched_gripper}, evt: {event.value}"
         )
 
         if event == ActionEvent.STARTED:
@@ -263,10 +298,11 @@ class PickUpOnGripper(EvaluateAction):
         elif event == ActionEvent.PAUSED:
             pass
         elif event == ActionEvent.CANCELED:
-            pass
+            self._log_failure_diagnostics()
         elif event == ActionEvent.FINISHED:
             # Simplified scoring: 1 point for success, 0 for failure
             if self.success_detected:
                 self.progress_info["SCORE"] = 1
             else:
+                self._log_failure_diagnostics()
                 self.progress_info["SCORE"] = 0

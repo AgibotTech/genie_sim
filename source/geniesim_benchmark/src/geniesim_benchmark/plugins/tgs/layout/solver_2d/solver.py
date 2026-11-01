@@ -299,7 +299,9 @@ class LayoutSolver2D:
                         # If the index is out of range, you can choose to exit the loop or take other measures
                         break
                 else:
-                    x, y = available_grid_points[np.random.randint(len(available_grid_points))]  # Randomly select a point
+                    x, y = available_grid_points[
+                        np.random.randint(len(available_grid_points))
+                    ]  # Randomly select a point
                     angle = int(np.random.choice([0, 30, 60, 90, 120, 150, 180, 210, 240, 270]))
 
                 new_corners = get_rotated_corners(x, y, width, height, angle)

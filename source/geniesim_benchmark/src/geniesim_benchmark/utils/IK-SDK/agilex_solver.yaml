@@ -1,0 +1,54 @@
+limit_way: "urdf"
+
+optimizer:
+  initial_step: 1e-4
+  xtol_rel: 1.0e-7
+  ftol_rel: 1.0e-7
+  maxeval: 1000
+  maxtime: 0.05
+  gradient_eps: 1e-8
+
+objectives:
+  cartesian_space:
+    - name: "end_effector"
+      position: { weight: 60.0, use_groove: true }
+      orientation: { weight: 30.0, use_groove: true }
+
+  joint_space:
+    weights:
+      joint_1: 1.2
+      joint_2: 1.2
+      joint_3: 1.2
+      joint_4: 1.0
+      joint_5: 1.0
+      joint_6: 1.0
+    velocity: { weight: 8.0, use_groove: true }
+    acceleration: { weight: 5.0, use_groove: true }
+    jerk: { weight: 0.0, use_groove: true }
+    limits: { weight: 6.0, use_groove: true }
+
+active_joints:
+  left_arm:
+    - arm_fl_joint1
+    - arm_fl_joint2
+    - arm_fl_joint3
+    - arm_fl_joint4
+    - arm_fl_joint5
+    - arm_fl_joint6
+  right_arm:
+    - arm_fr_joint1
+    - arm_fr_joint2
+    - arm_fr_joint3
+    - arm_fr_joint4
+    - arm_fr_joint5
+    - arm_fr_joint6
+
+target_links:
+  left_arm:
+    base: arm_base_link
+    target:
+      - arm_fl_end_link
+  right_arm:
+    base: arm_base_link
+    target:
+      - arm_fr_end_link

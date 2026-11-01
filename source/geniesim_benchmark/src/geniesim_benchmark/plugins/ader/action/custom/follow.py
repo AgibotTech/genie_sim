@@ -92,13 +92,41 @@ class Follow(EvaluateAction):
             robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
         if "G1" in robot_cfg:
             robot_base = "/G1"
+        elif "arx" in robot_cfg or "agilex" in robot_cfg:
+            robot_base = "/robot"
         else:
             robot_base = "/genie"
-        link_prim_path = (
-            f"{robot_base}/gripper_r_center_link"
-            if "right" in self.gripper_id
-            else f"{robot_base}/gripper_l_center_link"
-        )
+        if "arx" in robot_cfg:
+            link_prim_path = (
+                f"{robot_base}/gripper_r_base_link/gripper_r_center"
+                if "right" in self.gripper_id
+                else f"{robot_base}/gripper_l_base_link/gripper_l_center"
+            )
+        elif "agilex" in robot_cfg:
+            link_prim_path = (
+                f"{robot_base}/gripper_fr_base_link/gripper_r_center_link"
+                if "right" in self.gripper_id
+                else f"{robot_base}/gripper_fl_base_link/gripper_l_center_link"
+            )
+        elif "wuji" in robot_cfg:
+            is_right = "right" in self.gripper_id
+            side = "right" if is_right else "left"
+            fallback = f"{robot_base}/hand_{side[0]}_index_link4"
+            link_prim_path = fallback
+            eef_map = getattr(self.api_core, "end_effector_prim_path", None)
+            if isinstance(eef_map, dict):
+                configured = eef_map.get(side)
+                if isinstance(configured, str) and configured.strip():
+                    link_prim_path = configured
+            if not hasattr(self, "_wuji_link_logged"):
+                self._wuji_link_logged = True
+                logger.info(f"[Follow] Wuji gripper link: {link_prim_path}")
+        else:
+            link_prim_path = (
+                f"{robot_base}/gripper_r_center_link"
+                if "right" in self.gripper_id
+                else f"{robot_base}/gripper_l_center_link"
+            )
         g_pos, _ = self.get_world_pose(link_prim_path)
         return g_pos
 

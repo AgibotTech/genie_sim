@@ -81,6 +81,618 @@
       ]
     }
   },
+  "profile": {
+    "arm": {
+      "joint_names": {
+        "left": [
+          "idx21_arm_l_joint1",
+          "idx22_arm_l_joint2",
+          "idx23_arm_l_joint3",
+          "idx24_arm_l_joint4",
+          "idx25_arm_l_joint5",
+          "idx26_arm_l_joint6",
+          "idx27_arm_l_joint7"
+        ],
+        "right": [
+          "idx61_arm_r_joint1",
+          "idx62_arm_r_joint2",
+          "idx63_arm_r_joint3",
+          "idx64_arm_r_joint4",
+          "idx65_arm_r_joint5",
+          "idx66_arm_r_joint6",
+          "idx67_arm_r_joint7"
+        ]
+      }
+    },
+    "articulation": {
+      "sleep_threshold": 0.0,
+      "solver_position_iterations": 128,
+      "solver_velocity_iterations": 8,
+      "source": "Position iterations remain 128 with zero sleep threshold. Eight velocity iterations are an explicit Jev near-field standstill validation candidate, not a relaxed completion threshold."
+    },
+    "asset": {
+      "base_motion_mode": "release_world_fixed_joint",
+      "robot_usd": "robot/G2_crsB_90d/robot_fix.usda",
+      "world_fixed_joint": "/genie/base_link/FixedJoint"
+    },
+    "camera_frames": {
+      "head_front": "/genie/head_link3/head_front_Camera",
+      "left_wrist": "/genie/gripper_l_camera_link/Left_Camera",
+      "right_wrist": "/genie/gripper_r_camera_link/Right_Camera"
+    },
+    "chassis": {
+      "base_link": "base_link",
+      "controller": {
+        "angular_gain_s_inv": 1.5,
+        "angular_standstill_tolerance_rad_s": 0.03,
+        "goal_timeout_s": 15.0,
+        "history_ticks": 4096,
+        "linear_gain_s_inv": 1.5,
+        "linear_standstill_tolerance_m_s": 0.007,
+        "max_angular_speed_rad_s": 0.5,
+        "max_linear_speed_m_s": 0.15,
+        "max_steer_target_rate_rad_s": 1.0,
+        "max_wheel_linear_acceleration_m_s2": 0.3,
+        "max_wheel_linear_speed_m_s": 0.15,
+        "maximum_path_deviation_m": 0.02,
+        "maximum_position_tolerance_m": 0.002,
+        "maximum_transient_yaw_error_rad": 0.05235987755982989,
+        "maximum_yaw_tolerance_rad": 0.005,
+        "minimum_position_tolerance_m": 0.00025,
+        "minimum_yaw_tolerance_rad": 0.00025,
+        "parking_position_tolerance_m": 0.00025,
+        "parking_yaw_tolerance_rad": 0.00025,
+        "receipt_reacquisition_tolerance_fraction": 0.5,
+        "roll_standstill_tolerance_rad_s": 0.05,
+        "source": "G2_90d wheel geometry plus conservative software bounds pending fixed-tick runtime acceptance",
+        "steer_alignment_tolerance_rad": 0.05,
+        "steer_position_drive": {
+          "articulation_damping": 57295.78125,
+          "articulation_stiffness": 572957.8125,
+          "source": "one tenth of the composed asset articulation-controller readback for the bounded physical stability discriminator"
+        },
+        "steer_position_limits_rad": [
+          [
+            -2.9699997901916504,
+            2.9699997901916504
+          ],
+          [
+            -2.9699997901916504,
+            2.9699997901916504
+          ],
+          [
+            -2.9699997901916504,
+            2.9699997901916504
+          ],
+          [
+            -2.9699997901916504,
+            2.9699997901916504
+          ]
+        ],
+        "steer_position_limits_source": "G2_90d composed articulation dof_properties",
+        "tolerance_fraction": 0.1,
+        "type": "analytic_4ws_pose",
+        "wheel_positions_xy_m": [
+          [
+            0.23,
+            0.22
+          ],
+          [
+            -0.23,
+            0.22
+          ],
+          [
+            0.23,
+            -0.22
+          ],
+          [
+            -0.23,
+            -0.22
+          ]
+        ],
+        "wheel_radius_m": 0.07,
+        "zero_rotation_tolerance_rad": 0.003,
+        "zero_translation_tolerance_m": 0.002
+      },
+      "drive_joints": [
+        "idx112_chassis_lwheel_front_joint2",
+        "idx122_chassis_lwheel_rear_joint2",
+        "idx132_chassis_rwheel_front_joint2",
+        "idx142_chassis_rwheel_rear_joint2"
+      ],
+      "minimum_support_radius_m": 0.22,
+      "parking": {
+        "damping": 10000.0,
+        "gain_units": "usd_angular",
+        "mode": "joint_position_hold",
+        "reference": "same_tick_roll_q",
+        "revision": "2026-09-17-q0-position-hold-v1",
+        "source": "G2_90d robot_fixed.usda original angular drives; Main A2/B20/A-prime2 showed reduced drift, not long-term standstill qualification",
+        "stiffness": 100000.0
+      },
+      "steer_joints": [
+        "idx111_chassis_lwheel_front_joint1",
+        "idx121_chassis_lwheel_rear_joint1",
+        "idx131_chassis_rwheel_front_joint1",
+        "idx141_chassis_rwheel_rear_joint1"
+      ],
+      "velocity_drive": {
+        "damping": 10000.0,
+        "source": "robot_physics.usd ships roll joints as position drives; velocity control requires zero stiffness",
+        "stiffness": 0.0
+      },
+      "wheel_collision_prims": [
+        "/genie/chassis_lwheel_front_link2/collisions",
+        "/genie/chassis_lwheel_rear_link2/collisions",
+        "/genie/chassis_rwheel_front_link2/collisions",
+        "/genie/chassis_rwheel_rear_link2/collisions"
+      ]
+    },
+    "completion": {
+      "arm_position_max_tolerance_m": 0.001,
+      "arm_position_min_tolerance_m": 0.0001,
+      "arm_rotation_max_tolerance_rad": 0.005,
+      "arm_rotation_min_tolerance_rad": 0.0001,
+      "arm_tolerance_fraction": 0.1,
+      "gripper_joint_min_tolerance_rad": 5e-05,
+      "gripper_tolerance_fraction": 0.1,
+      "ik_position_tolerance_m": 1e-05,
+      "ik_rotation_tolerance_rad": 1e-05,
+      "joint_position_tolerance_rad": 0.002,
+      "joint_velocity_tolerance_rad_s": 0.02,
+      "linear_joint_position_tolerance_m": 0.0005,
+      "linear_joint_velocity_tolerance_m_s": 0.005,
+      "roll_standstill_basis": "position_range_v1",
+      "stable_duration_s": 0.1,
+      "stable_samples": 3,
+      "steer_standstill_basis": "position_range_v1"
+    },
+    "derivation": "G2_crsB_90d is the G2_90d body with a different forearm: robot_fix.usda differs from G2_90d robot_fixed.usda only in the joint4/5/6 and arm-end origins (scripts/derive_g2_crsb_90d_control_model.py checks this). Chassis, parking, articulation, completion, runtime validation, grippers and cameras are the G2_90d profile values; the kinematic model is G2_crsB_90D_control.urdf.",
+    "frame_contract": {
+      "arm_end_to_tool_center_rpy_rad": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "arm_end_to_tool_center_translation_m": [
+        0.0,
+        0.0,
+        0.185
+      ],
+      "base_frame": "arm_base_link",
+      "kinematic_endpoints": {
+        "left": "arm_l_end_link",
+        "right": "arm_r_end_link"
+      },
+      "runtime_source": "robot_fix.usda idx52/idx92 gripper-center fixed joints: 0.185 m on the arm-end z axis, identical to G2_90d; not separately measured in a running G2_crsB_90d session",
+      "tool_center_frames": {
+        "left": "gripper_l_center_link",
+        "right": "gripper_r_center_link"
+      }
+    },
+    "gripper": {
+      "left": {
+        "aperture_geometry": {
+          "asset": "robot/G2_crsB_90d/robot_fix.usda",
+          "asset_revision": "1e032b87cae5fffbfbc4220dc6fb6899528eacb7",
+          "basis": "profile_jaw_datum_joint_fk_v1",
+          "closing_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "derivation": "G2_90d probes reused: all 16 gripper joint frames and limits are identical in robot_fix.usda",
+          "frame": "gripper_l_base_link",
+          "meaning": "Nonnegative separation of two authored support datums projected on the closing axis. Nominal joint FK excludes contact offsets and compliance.",
+          "probes": [
+            {
+              "datum_m": [
+                -0.02565000019967556,
+                0.04495302587747574,
+                -0.0005633335676975547
+              ],
+              "joint_chain": [
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx32_gripper_l_outer_joint1",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      0.7071067811865476,
+                      0.7071067811865476,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.03014099970459938,
+                      0.0,
+                      0.10414999723434448
+                    ]
+                  }
+                },
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx33_gripper_l_left_support_joint",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.040359001606702805,
+                      0.03736500069499016,
+                      0.0
+                    ]
+                  }
+                }
+              ],
+              "link": "gripper_l_left_support_link",
+              "source_mesh": "/genie/gripper_l_left_support_link/visuals/left_support_link/mesh",
+              "source_vertex_index": 4310
+            },
+            {
+              "datum_m": [
+                -0.02565000019967556,
+                0.04495302587747574,
+                -0.0005288326065056025
+              ],
+              "joint_chain": [
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      0.0,
+                      0.0,
+                      1.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx35_gripper_l_outer_joint2",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      -3.090862019268387e-08,
+                      0.7071067811865469,
+                      0.7071067811865469,
+                      -3.090862019268387e-08
+                    ],
+                    "translation_m": [
+                      -0.03014099970459938,
+                      0.0,
+                      0.10414999723434448
+                    ]
+                  }
+                },
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx36_gripper_l_right_support_joint",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.040359001606702805,
+                      0.03736500069499016,
+                      0.0
+                    ]
+                  }
+                }
+              ],
+              "link": "gripper_l_right_support_link",
+              "source_mesh": "/genie/gripper_l_right_support_link/visuals/right_support_link/mesh",
+              "source_vertex_index": 4310
+            }
+          ]
+        },
+        "aperture_probes": [
+          {
+            "link": "gripper_l_left_outer_link",
+            "point_m": [
+              0.040359001606702805,
+              0.03736500069499016,
+              0.0
+            ],
+            "source_joint": "idx33_gripper_l_left_support_joint.physics:localPos0"
+          },
+          {
+            "link": "gripper_l_right_outer_link",
+            "point_m": [
+              0.040359001606702805,
+              0.03736500069499016,
+              0.0
+            ],
+            "source_joint": "idx36_gripper_l_right_support_joint.physics:localPos0"
+          }
+        ],
+        "closed_position_rad": -0.91,
+        "control_joint": "idx32_gripper_l_outer_joint1",
+        "jaw_links": [
+          "gripper_l_left_support_link",
+          "gripper_l_right_support_link"
+        ],
+        "joint_limits_rad": [
+          -0.91,
+          0.0
+        ],
+        "mimic_joint": "idx31_gripper_l_inner_joint1",
+        "open_position_rad": 0.0
+      },
+      "right": {
+        "aperture_geometry": {
+          "asset": "robot/G2_crsB_90d/robot_fix.usda",
+          "asset_revision": "1e032b87cae5fffbfbc4220dc6fb6899528eacb7",
+          "basis": "profile_jaw_datum_joint_fk_v1",
+          "closing_axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "derivation": "G2_90d probes reused: all 16 gripper joint frames and limits are identical in robot_fix.usda",
+          "frame": "gripper_r_base_link",
+          "meaning": "Nonnegative separation of two authored support datums projected on the closing axis. Nominal joint FK excludes contact offsets and compliance.",
+          "probes": [
+            {
+              "datum_m": [
+                -0.025650000199675345,
+                0.04495302587747596,
+                -0.000563333567697541
+              ],
+              "joint_chain": [
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx72_gripper_r_outer_joint1",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      0.7071067811865476,
+                      0.7071067811865476,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.03014099970459938,
+                      0.0,
+                      0.10414999723434448
+                    ]
+                  }
+                },
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx73_gripper_r_left_support_joint",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.040359001606702805,
+                      0.03736500069499016,
+                      0.0
+                    ]
+                  }
+                }
+              ],
+              "link": "gripper_r_left_support_link",
+              "source_mesh": "/genie/gripper_r_left_support_link/visuals/left_support_link/mesh",
+              "source_vertex_index": 4310
+            },
+            {
+              "datum_m": [
+                -0.025650000199675567,
+                0.04495302587747574,
+                -0.0005288326065056025
+              ],
+              "joint_chain": [
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      0.0,
+                      0.0,
+                      1.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx75_gripper_r_outer_joint2",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      -3.090862019268387e-08,
+                      0.7071067811865469,
+                      0.7071067811865469,
+                      -3.090862019268387e-08
+                    ],
+                    "translation_m": [
+                      -0.03014099970459938,
+                      0.0,
+                      0.10414999723434448
+                    ]
+                  }
+                },
+                {
+                  "axis": "Z",
+                  "child_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ]
+                  },
+                  "joint": "idx76_gripper_r_right_support_joint",
+                  "parent_joint_frame": {
+                    "orientation_xyzw": [
+                      0.0,
+                      1.0,
+                      0.0,
+                      0.0
+                    ],
+                    "translation_m": [
+                      0.040359001606702805,
+                      0.03736500069499016,
+                      0.0
+                    ]
+                  }
+                }
+              ],
+              "link": "gripper_r_right_support_link",
+              "source_mesh": "/genie/gripper_r_right_support_link/visuals/right_support_link/mesh",
+              "source_vertex_index": 4310
+            }
+          ]
+        },
+        "aperture_probes": [
+          {
+            "link": "gripper_r_left_outer_link",
+            "point_m": [
+              0.040359001606702805,
+              0.03736500069499016,
+              0.0
+            ],
+            "source_joint": "idx73_gripper_r_left_support_joint.physics:localPos0"
+          },
+          {
+            "link": "gripper_r_right_outer_link",
+            "point_m": [
+              0.040359001606702805,
+              0.03736500069499016,
+              0.0
+            ],
+            "source_joint": "idx76_gripper_r_right_support_joint.physics:localPos0"
+          }
+        ],
+        "closed_position_rad": -0.91,
+        "control_joint": "idx72_gripper_r_outer_joint1",
+        "jaw_links": [
+          "gripper_r_left_support_link",
+          "gripper_r_right_support_link"
+        ],
+        "joint_limits_rad": [
+          -0.91,
+          0.0
+        ],
+        "mimic_joint": "idx71_gripper_r_inner_joint1",
+        "open_position_rad": 0.0
+      }
+    },
+    "ik_solver": {
+      "bfgs_gradient_norm_termination": 1e-10,
+      "bfgs_max_iterations": 600,
+      "ccd_descent_termination_delta": 1e-09,
+      "ccd_max_iterations": 1000,
+      "lula_descriptions": {
+        "left": "/G2_crsB_90D/lula_left.yaml",
+        "right": "/G2_crsB_90D/lula_right.yaml"
+      },
+      "model_urdf": "/G2_crsB_90D/G2_crsB_90D_control.urdf",
+      "source": "raw bundled Lula Cartesian replay with SO(3)-bounded orientation convergence. The shipped G2_crsB_90D.urdf does not match robot_fix.usda, so control kinematics use the derived G2_crsB_90D_control.urdf; the per-arm descriptions are G2_90d's (same seven joints per arm).",
+      "type": "lula_ccd_bfgs"
+    },
+    "motion_continuity": {
+      "failure": "reject the entire EEF goal before returning a joint trajectory",
+      "joint_delta_tolerance_rad": 1e-06,
+      "joint_velocity_source": "G2_crsB_90D_control.urdf",
+      "max_cartesian_plan_waypoints": 450,
+      "waypoint_rate_hz": 30.0
+    },
+    "name": "G2_crsB_90d",
+    "runtime_validation": {
+      "ground_plane_z_m": 0.0,
+      "robot_spawn_world_m": [
+        0.0,
+        0.0,
+        0.04
+      ],
+      "root_to_base_z_m": 0.0,
+      "source": "composed root/base coincidence and 0.04 m anchored GPU wheel-ground measurement",
+      "wheel_center_from_base_z_m": 0.03,
+      "wheel_radius_m": 0.07
+    },
+    "schema_version": 1
+  },
   "robot": {
     "arm": "right",
     "base_prim_path": "/genie",

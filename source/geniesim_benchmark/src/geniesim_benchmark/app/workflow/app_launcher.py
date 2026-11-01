@@ -205,7 +205,7 @@ class AppLauncher:
         #                                                rtx::shaderdb,
         #                                                stage_templates,
         #                                                screenshot_page.
-        # geniesim3.5 container only ships ${exe-path}=/isaac-sim/kit but not
+        # geniesim3 container only ships ${exe-path}=/isaac-sim/kit but not
         # /isaac-sim/kit/{cache,data,logs}, so leaving the omni_* family
         # unanchored cascades into shaderdb init failure → no SimulationView →
         # empty camera buffers → cvtColor !_src.empty().

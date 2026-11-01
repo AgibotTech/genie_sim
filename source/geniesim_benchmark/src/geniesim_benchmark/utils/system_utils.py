@@ -34,14 +34,15 @@ def check_and_fix_env():
     if not os.path.exists(env_root_path):
         os.makedirs(env_root_path, exist_ok=True)
 
-    # check SIM_ASSETS
-    assets_path = os.getenv("SIM_ASSETS")
+    # check SIM_ASSETS. The CLI and container entrypoint export the canonical
+    # GENIESIM_ASSETS_PATH; SIM_ASSETS is the legacy name this package reads.
+    assets_path = os.getenv("SIM_ASSETS") or os.getenv("GENIESIM_ASSETS_PATH")
     if not assets_path:
         assets_path = os.path.join(os.path.expanduser("~"), "assets")
-        os.environ["SIM_ASSETS"] = assets_path
         logger.warning(f"Warning: env [SIM_ASSETS] empty, will use default: {assets_path}")
     else:
         logger.info(f"using env SIM_ASSETS={assets_path}")
+    os.environ["SIM_ASSETS"] = assets_path
 
 
 def config_path():
@@ -61,7 +62,11 @@ def app_root_path():
 
 
 def assets_path():
-    # Assets are shipped via the `geniesim_assets` pip package, not vendored in the repo.
+    # SIM_ASSETS overrides the packaged assets (e.g. a mounted checkout in a
+    # control container); otherwise assets come from the `geniesim_assets` pip package.
+    configured_path = os.getenv("SIM_ASSETS")
+    if configured_path:
+        return configured_path
     return ASSETS_PATH
 
 

@@ -27,6 +27,7 @@ import numpy as np
 from geniesim_benchmark.plugins.logger import Logger
 from geniesim_benchmark.app.controllers.api_core import APICore
 from geniesim_benchmark.utils.data_courier import DataCourier
+from geniesim_benchmark.utils.ikfk_utils import ik_frame, arm_base_transform_from_poses
 
 logger = Logger()
 
@@ -70,8 +71,10 @@ class BenchmarkVecEnv:
             env.need_infer = need
 
     def set_depth_status(self, need_depth_list: List[bool]):
+        # Shared-camera rendering runs on the root API, not a per-env view.
+        self._api_core.want_camera_calibration = any(need_depth_list)
         for env, need in zip(self._envs, need_depth_list):
-            env.need_depth = need
+            env.set_depth_status(need)
 
     # ----------------------------- reset --------------------------------
     def reset_all(self) -> List:
@@ -150,17 +153,18 @@ class BenchmarkVecEnv:
                 if not getattr(env, "need_infer", True):
                     continue
                 api_view = env.api_core
-                images = api_view._get_observation_image(env.data_courier._camera_dirs())
+                dirs = env.data_courier._camera_dirs()
+                images = api_view._get_observation_image(dirs)
                 if images:
                     obs["images"] = images
-                # Mirrors the image fetch above so a fresh episode's first
-                # observation (built via reset -> _batched_reset -> here,
-                # bypassing _read_obs_direct's normal per-step path) still
-                # carries real depth when the policy wants it.
-                if getattr(env, "need_depth", True):
-                    depths = api_view._get_observation_depth(env.data_courier._camera_dirs())
-                    if depths:
-                        obs["depth"] = depths
+                    # The forced render replaces the old RGB capture. Refresh
+                    # depth/calibration from that same cache as well.
+                    if getattr(env, "need_depth", False):
+                        obs["depth"] = api_view._get_observation_depth(dirs)
+                        obs["calibration"] = api_view._read_shared_calibration(dirs)
+                    else:
+                        obs["depth"] = None
+                        obs.pop("calibration", None)
 
         self._api_core.run_on_physics_loop(_read_images)
 
@@ -249,12 +253,9 @@ class BenchmarkVecEnv:
         api_view = env.api_core
 
         images = {}
-        depths = {}
         if getattr(env, "need_infer", True) and not skip_images:
             # _camera_dirs() is the same robot->camera mapping the serial path uses.
             images = api_view._get_observation_image(env.data_courier._camera_dirs())
-            if getattr(env, "need_depth", True):
-                depths = api_view._get_observation_depth(env.data_courier._camera_dirs())
 
         art = api_view._get_articulation()
         if art is not None:
@@ -265,23 +266,46 @@ class BenchmarkVecEnv:
             full_joint_states = api_view._get_joint_state_dict()
 
         if not full_joint_states:
-            return {"images": images, "states": [], "depth": depths}
+            return {"images": images, "states": [], "depth": None}
 
         def jv(names):
             return [full_joint_states[name] for name in names]
 
         cfg = env.cfg
         gripper_values = jv(cfg["gripper_joints"])
+        # [left..., right...] split in half: dexterous hands map their whole
+        # per-side finger set; a 2-value parallel gripper still gives 1 per side.
+        n_half = len(gripper_values) // 2
         states = {
             "left_arm": jv(cfg["left_arm_joints"]),
             "right_arm": jv(cfg["right_arm_joints"]),
-            "left_gripper": gripper_values[:1],
-            "right_gripper": gripper_values[1:2],
+            "left_gripper": gripper_values[:n_half],
+            "right_gripper": gripper_values[n_half : 2 * n_half],
             "waist": jv(cfg["waist_joints"]),
             "head": jv(cfg.get("obs_extra_joints", [])),
         }
         env.cur_arm = states["left_arm"] + states["right_arm"]
-        return {"images": images, "states": states, "depth": depths}
+        obs = {"images": images, "states": states, "depth": None}
+        if images and getattr(env, "need_depth", False):
+            dirs = env.data_courier._camera_dirs()
+            obs["depth"] = api_view._get_observation_depth(dirs)
+            obs["calibration"] = api_view._read_shared_calibration(dirs)
+        if getattr(env, "ikfk_solver", None) is not None:
+            obs["eef"] = env.ikfk_solver.compute_eef(env.cur_arm)
+            if ik_frame(getattr(env, "robot_cfg", "")) == "base_link":
+                # This embodiment's IK/FK already solves in base_link, so the
+                # two declared EEF frames name the same frame. Pin the
+                # transform to identity — see pi_env.get_observation for the
+                # matching serial-path comment.
+                obs["arm_base_transform"] = np.eye(4)
+            else:
+                try:
+                    base_pos, base_rot = api_view._get_link_world_pose("base_link")
+                    arm_pos, arm_rot = api_view._get_link_world_pose("arm_base_link")
+                    obs["arm_base_transform"] = arm_base_transform_from_poses(base_pos, base_rot, arm_pos, arm_rot)
+                except Exception as e:
+                    logger.warning(f"[env{env_idx}] arm_base_transform unavailable: {e}")
+        return obs
 
     def _rate_sleep(self):
         now = time.time()
@@ -348,7 +372,6 @@ class VecEnvAdapter:
             self.last_update_time = time.time()
             self.has_done = False
             self.need_infer = True
-            self.need_depth = True
             self.current_step = 0
             if self.task is not None:
                 self.task.reset(self)
@@ -359,7 +382,7 @@ class VecEnvAdapter:
             if art is None:
                 return
             cfg = self.cfg
-            init_gripper = list(cfg.get("init_gripper_open", [0.0, 0.0]))
+            init_gripper = self.init_gripper_target()
             for values, names in (
                 (list(self.init_arm), cfg["arm_joints"]),
                 (list(self.init_waist), cfg["waist_joints"]),
@@ -426,6 +449,7 @@ class VecPolicyWrapper:
         gen_configs: list,
         step_nums: List[int],
         active_mask: List[bool] = None,
+        task_segments: list = None,
     ) -> list:
         if active_mask is None:
             active_mask = [True] * self._n
@@ -438,6 +462,7 @@ class VecPolicyWrapper:
                     observations[idx],
                     step_num=step_nums[idx],
                     task_instruction=instructions[idx],
+                    task_segments=task_segments[idx] if task_segments is not None else [],
                     gen_config=gen_configs[idx],
                 )
             except Exception as e:
@@ -455,7 +480,7 @@ class VecPolicyWrapper:
         return [p.need_infer() for p in self._policies]
 
     def need_depth_list(self) -> List[bool]:
-        return [p.need_depth() for p in self._policies]
+        return [bool(getattr(p, "need_depth", lambda: False)()) for p in self._policies]
 
     def update_task_status_batch(self, dones: List[bool], progresses: list):
         for i, policy in enumerate(self._policies):

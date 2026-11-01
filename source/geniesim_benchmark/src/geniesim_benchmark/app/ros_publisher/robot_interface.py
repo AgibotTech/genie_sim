@@ -13,6 +13,7 @@ from isaacsim.core.utils.prims import get_prim_object_type
 from geniesim_benchmark.utils.usd_utils import *
 
 import numpy as np
+import time
 
 from pxr import UsdPhysics, Usd
 
@@ -20,6 +21,16 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import JointState, Image
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
+
+
+def _as_np_f64(x):
+    """Coerce a joint-state value to a float64 numpy array. With the World on a
+    cuda device, articulation getters return cuda torch tensors which np.asarray
+    cannot read directly — move them to host first."""
+    if hasattr(x, "detach"):
+        x = x.detach().cpu().numpy()
+    return np.asarray(x, dtype=np.float64)
+
 
 MAP_DYNAMIC_TF_NAMES = {
     "idx01_body_joint1",
@@ -102,6 +113,9 @@ class RobotInterface:
         # cache
         self.annotators = {}
         self.depth_annotators = {}
+        self.camera_param_annotators = {}
+        self.reference_time_annotators = {}
+        self._camera_sample_state = {}
         self.parameters = {}
 
         self.articulated_objs = []
@@ -164,6 +178,12 @@ class RobotInterface:
         return self._node
 
     def destroy(self):
+        for annotator in self.camera_param_annotators.values():
+            try:
+                annotator.detach()
+            except Exception:
+                pass
+        self.camera_param_annotators = {}
         # Tear down the backing Node if one was created (teleop). No-op on the
         # eval path, which never instantiated a node.
         if self._node is not None:
@@ -341,8 +361,15 @@ class RobotInterface:
             logger.warning(f"Failed to register camera {camera_prim}: {e}")
             return
 
+        # camera_params belongs to the same render product as the pixels, so the
+        # published intrinsics/extrinsics always describe the frame we read.
+        self.camera_param_annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("camera_params")
+        self.camera_param_annotators[camera_id].attach(rp)
         self.annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("rgb")
         self.annotators[camera_id].attach(rp)
+        self.reference_time_annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("ReferenceTime")
+        self.reference_time_annotators[camera_id].attach(rp)
+        self._camera_sample_state.pop(camera_id, None)
 
         if "Fisheye" not in camera_prim and "Top" not in camera_prim:
             self.depth_annotators[camera_id] = rep.AnnotatorRegistry.get_annotator("distance_to_image_plane")
@@ -385,9 +412,9 @@ class RobotInterface:
         self._articulation_eff = self._articulation.get_measured_joint_efforts()
 
         if self._dof_pos_cache is not None:
-            np.copyto(self._dof_pos_cache, np.asarray(self._articulation_pos, dtype=np.float64))
-            np.copyto(self._dof_vel_cache, np.asarray(self._articulation_vel, dtype=np.float64))
-            np.copyto(self._dof_eff_cache, np.asarray(self._articulation_eff, dtype=np.float64))
+            np.copyto(self._dof_pos_cache, _as_np_f64(self._articulation_pos))
+            np.copyto(self._dof_vel_cache, _as_np_f64(self._articulation_vel))
+            np.copyto(self._dof_eff_cache, _as_np_f64(self._articulation_eff))
 
         # dynamic TF poses (teleop only — list is empty unless register_robot_tf ran)
         for tf, (prim, parent) in zip(self._dynamic_tfs_prebuilt, self._dynamic_tf_tree):
@@ -500,17 +527,42 @@ class RobotInterface:
         ret = {}
         if dir == {}:
             for k, annot in self.depth_annotators.items():
-                d = annot.get_data()
-                if d is not None and d.size > 0:
-                    ret[k] = d.squeeze()
+                ret[k] = annot.get_data().squeeze()
         else:
             for k, v in dir.items():
-                if v not in self.depth_annotators:
-                    continue
-                d = self.depth_annotators[v].get_data()
-                if d is not None and d.size > 0:
-                    ret[k] = d.squeeze()
+                if v in self.depth_annotators:
+                    ret[k] = self.depth_annotators[v].get_data().squeeze()
         return ret
+
+    def get_camera_samples(self, dirs):
+        """Return the render reference clock, not the observation packaging time."""
+        samples = {}
+        for name, camera in (dirs or {}).items():
+            annotator = self.reference_time_annotators.get(camera)
+            if annotator is None:
+                continue
+            value = annotator.get_data()
+            if not isinstance(value, dict):
+                continue
+            numerator = int(value.get("referenceTimeNumerator", 0))
+            denominator = int(value.get("referenceTimeDenominator", 0))
+            if denominator <= 0:
+                continue
+            old = self._camera_sample_state.get(camera)
+            if old is None or (old["reference_time_numerator"], old["reference_time_denominator"]) != (
+                numerator,
+                denominator,
+            ):
+                old = {
+                    "sequence": 1 if old is None else old["sequence"] + 1,
+                    "reference_time_numerator": numerator,
+                    "reference_time_denominator": denominator,
+                    "captured_at_ns": time.time_ns(),
+                    "clock_domain": "render_reference",
+                }
+                self._camera_sample_state[camera] = old
+            samples[name] = dict(old)
+        return samples
 
     def get_joint_state_dict(self):
         return {

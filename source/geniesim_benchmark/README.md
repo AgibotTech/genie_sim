@@ -47,6 +47,19 @@ geniesim benchmark check-inference \
   --infer-host=<IP>:8999 --arch=corobot
 ```
 
+### Runtime and scoring contracts
+
+Isaac task execution uses the full task instruction and ordered instruction
+segments. Segment transitions and checker progress are separate signals.
+Scores retain the declared checker layout, logical goal tree, and missing
+steps. Weighted profiles add process credit and a completion bonus; interrupted
+attempts remain in the episode counts and cannot earn completion credit.
+
+The G2 shared-control runtime exposes bounded commands, measured completion,
+and generation-scoped execution receipts. See the
+[control protocol](../../docs/shared_control_protocol.md) and
+[render-loop lifecycle](../../docs/render-loop-scheduler.md) for their contracts.
+
 ### Discover tasks
 
 ```bash

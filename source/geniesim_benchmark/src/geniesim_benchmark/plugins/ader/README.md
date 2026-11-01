@@ -1,185 +1,150 @@
 # 🧠 Benchmark Evaluation Framework
 
-Use ADER (Action Domain Evaluation Rule) for evaluation configuration
+Use ADER (Action Domain Evaluation Rule) to configure task evaluation.
 
----
+## Overview
 
-## 📦 What is ader?
+ADER expresses task conditions as a tree of actions. Sequencing primitives such
+as `ActionList`, `ActionSetWaitAny` and `ActionSetWaitAll` combine predicates such
+as `Ontop`, `Inside` and `PickUpOnGripper`. The runtime evaluates the tree against
+simulator state and reports success, cancellation or progress.
 
-ADER (Action Domain Evaluation Rule) is a declarative framework for expressing a
-task's success criteria. An evaluation is described as a tree of *actions* —
-sequencing primitives such as `ActionList`, `ActionSetWaitAny` and
-`ActionSetWaitAll`, combined with domain predicates such as `Ontop`, `Inside` and
-`PickUpOnGripper`. The tree is loaded from human-readable JSON and evaluated each
-step against the simulator state to decide whether a task has succeeded, failed,
-or is still in progress.
+## Authoring a configuration
 
----
+Each scene instance supplies `problems.json`. The parser
+([`action/action_parsing.py`](action/action_parsing.py) → `parse_action`) reads
+`problems["problem<i>"]["Acts"][0]`. Use that parser and the task configuration
+for supported arguments and condition values.
 
-## 🚀 How it is used
+Write the configuration directly or generate it with the LLM evaluator:
 
-Each scene instance carries a `problems.json` (the eval config). At runtime the
-parser ([`action/action_parsing.py`](action/action_parsing.py) → `parse_action`)
-turns `problems["problem<i>"]["Acts"][0]` into the action tree; that file is the
-**single source of truth** for which checkers exist and how their arguments are
-parsed.
+```bash
+python -m geniesim_benchmark.evaluator.generators.eval_gen --scene_dir <llm_task/<task>/<i>>
+```
 
-Two ways to author the config:
+Generation uses [`ADER_SYSTEM_PROMPT.md`](../../evaluator/prompts/ADER_SYSTEM_PROMPT.md),
+`PROMPT_EVAL.txt` and the scene's `instructions.json`. Register new predicates in
+`action_parsing.py` and update the generator's specification alongside their API.
 
-1. **Hand-write** `problems.json` for a scene instance (the `add-benchmark-task`
-   skill walks through the full task layout).
-2. **Auto-generate** with the LLM evaluator:
-   ```bash
-   python -m geniesim_benchmark.evaluator.generators.eval_gen --scene_dir <llm_task/<task>/<i>>
-   ```
-   This feeds [`../../evaluator/prompts/ADER_SYSTEM_PROMPT.md`](../../evaluator/prompts/ADER_SYSTEM_PROMPT.md)
-   (the checker spec) + `PROMPT_EVAL.txt` + the scene's `instructions.json` to a
-   model and writes `problems.json`. Keep that spec in sync with the checkers below.
+## Example structure
 
-> When you add a checker, register its key in `action_parsing.py`, document it in
-> this table, **and** add it to `ADER_SYSTEM_PROMPT.md` (otherwise the generator
-> never emits it).
-
----
-
-## ⚙️ Example Configuration
 ```json
 {
   "Acts": [
     {
       "ActionList": [
-        {
-          "ActionSetWaitAny": [
-            { "Follow": "beverage_bottle_002|[0.2,0.2,0.2]|right" },
-            { "Onfloor": "beverage_bottle_002|0.0" }
-          ]
-        },
-        {
-          "ActionSetWaitAny": [
-            { "PickUpOnGripper": "beverage_bottle_002|right" },
-            { "Timeout": 120 },
-            { "Onfloor": "beverage_bottle_002|0.0" }
-          ]
-        },
-        {
-          "ActionSetWaitAny": [
-            { "Inside": "beverage_bottle_002|handbag_000|1" },
-            { "StepOut": 1000 }
-          ]
-        }
+        {"PickUpOnGripper": "beverage_bottle_002|right_gripper"},
+        {"Ontop": "beverage_bottle_002|table_000"}
       ]
     }
   ],
   "Init": [],
   "Objects": [],
-  "Problem": "pack_in_the_supermarket"
+  "Problem": "example_task"
 }
 ```
 
----
+## Control and composite actions
 
-## 🧱 Control & composite actions
+| Action | Purpose | Value form |
+|---|---|---|
+| ActionList | Run children in order | `[ {…}, {…} ]` |
+| ActionSetWaitAny | Finish when any child finishes; stop the others | `[ {…}, {…} ]` |
+| ActionSetWaitAll | Finish when all children finish | `[ {…}, {…} ]` |
+| ActionSetWaitSome_N | Finish after the number of children named by the suffix | `[ {…}, {…} ]` |
+| ActionWaitForTime | Wait without blocking the evaluation loop | Number of seconds |
+| Timeout | Cancel after the configured elapsed time | Number of seconds |
+| StepOut | Cancel after the configured step limit | Number of steps |
 
-These build the tree. `ActionList` sequences children; the `WaitAny/All/Some`
-sets run children in parallel and decide completion. `Timeout`/`StepOut` are
-**cancel actions** — when they fire they set `SCORE = 0` and cancel the whole
-evaluation, so they are the standard "give up" guards inside a `WaitAny`.
+Pair cancellation guards with success predicates inside `ActionSetWaitAny` to
+express a task that can finish or time out. Task files supply the limits.
 
-| Action | Description | Value form |
-|--------|-------------|------------|
-| ActionList | Run children strictly in order; finish when the last one finishes. | `[ {…}, {…} ]` |
-| ActionSetWaitAny | Finish as soon as **any** child finishes (others are stopped). | `[ {…}, {…} ]` |
-| ActionSetWaitAll | Finish only when **all** children finish. | `[ {…}, {…} ]` |
-| ActionSetWaitSome_N | Finish when at least **N** children finish (key suffix is the count, default 1). | `[ {…}, {…} ]` |
-| ActionWaitForTime | Non-blocking sleep for N seconds, then finish. | raw number, e.g. `3.0` |
-| Timeout | **Cancel** when accumulated time exceeds N seconds (`SCORE=0`). | raw number, e.g. `120` |
-| StepOut | **Cancel** when step count since start exceeds N steps (`SCORE=0`). | raw number, e.g. `1000` |
+## Predicate arguments
 
----
+Arguments are pipe-separated unless a JSON object is specified. Brackets in
+signatures mark optional arguments. Spatial distances are metres unless noted.
 
-## 🧩 Evaluation predicates
+### Spatial relationships
 
-Pipe-separated arguments unless stated otherwise. `[opt]` = optional with the default shown.
-"Frames" = consecutive simulation frames that must hold before the check passes.
+| Predicate | Syntax | Purpose |
+|---|---|---|
+| Ontop | `"active_obj\|passive_obj"` | Check the active object's placement above the reference surface |
+| Inside | `"active_obj\|passive_obj\|scale"` | Check the active center against the reference's scaled AABB |
+| InBBox | `"obj_id\|cx,cy,cz\|lx,ly,lz"` | Check a world-axis-aligned box defined by center and full side lengths |
+| Cover | `"active_obj\|passive_obj"` | Check the active object's coverage of the reference |
+| Stack | `"[a,b,c]\|[x,y]"` | Check alignment of the listed objects relative to the first |
+| OnShelf | `"obj\|target\|[xmin,xmax,ymin,ymax,zmin,zmax]\|height"` | Check the object in a target-relative offset region with a Z height adjustment |
+| Onfloor | `"obj\|ref_z"` | Cancel when the object reaches the configured floor region |
+| Upright | `"obj\|tilt_deg[\|allow_flipped]"` | Compare the object's local +Y axis with world +Z; optionally accept the flipped direction |
+| RelativePosition | `"objA\|objB\|relation[\|threshold]"` | Compare objects in the robot body frame using `leftof`, `rightof`, `topof`, `bottomof` or `aligned_x/y/z` |
 
-### Spatial relationship
+### Grasping and manipulation
 
-| Predicate | Syntax | Details |
-|-----------|--------|-------|
-| Ontop | `"active_obj\|passive_obj"` | Active sits on passive: vertical gap ≤ 0.02 m and XY overlap ≥ 50% (1 frame). |
-| Inside | `"active_obj\|passive_obj\|scale"` | Active center inside passive AABB scaled by `scale` (2 frames). |
-| InBBox | `"obj_id\|cx,cy,cz\|lx,ly,lz"` | Object inside a fixed world AABB (center + full side lengths) (2 frames). |
-| Cover | `"active_obj\|passive_obj"` | Active covers passive: active CoG ≤ passive top + 0.002 m and XY overlap ≥ 50% (1 frame). |
-| Stack | `"[a,b,c]\|[x,y]"` | ≥2 ids; every object's XY center within `(x,y)` of the first (default 0.05 m each) (2 frames). |
-| OnShelf | `"obj\|target\|[xmin,xmax,ymin,ymax,zmin,zmax]\|height"` | Object pose relative to `target` (z minus `height`) inside the offset box (>5 frames). |
-| Onfloor | `"obj\|ref_z"` | **Cancel**: object dropped to within 0.3 m of `ref_z` (`SCORE=0`). |
-| Upright | `"obj\|tilt_deg[\|allow_flipped]"` | Object +Y axis within `tilt_deg` of world +Z; `allow_flipped=true` also accepts −Z. Default tilt 15°, allow_flipped false (1 frame). |
-| RelativePosition | `"objA\|objB\|relation[\|threshold]"` | A vs B in robot body frame. `relation` ∈ `leftof,rightof,topof,bottomof,aligned_x,aligned_y,aligned_z`. `threshold` (default 0.05) only used by `aligned_*` (2 frames). |
+| Predicate | Syntax | Purpose |
+|---|---|---|
+| PickUpOnGripper | `"object\|gripper_id"` | Check lift relative to the first observed object height and proximity to the gripper reference |
+| StableGrasp | `"object\|gripper_id[\|dist[\|pos_diff[\|rot_diff_rad]]]"` | Check relative object/gripper motion; angular differences use radians |
+| Follow | `"object\|[x,y,z]\|gripper_id"` | Check the gripper center in a box around the object |
+| Approach | `"x\|y\|z"` | Check the right gripper against a world-space target point |
+| GripperPassing | `"obj_prim\|reverse"` | Check handover in the selected direction between grippers |
+| LiftUp | `"object\|lift_threshold"` | Check lift relative to the object's first observed height |
 
-### Grasping & manipulation
+`PickUpOnGripper` uses the robot configuration's `end_effector_prim_path` or its
+family fallback as the gripper reference. `PickUpOnGripper` and `Follow` accept
+comma-separated object candidates. Gripper identifiers containing `right`
+select the right hand; other identifiers select the left.
 
-| Predicate | Syntax | Details |
-|-----------|--------|-------|
-| PickUpOnGripper | `"object\|gripper_id"` | Object lifted ≥0.02 m above start and within 0.2 m of the gripper. `object` may be comma-separated (any). `gripper_id` contains `right`→right else left. |
-| StableGrasp | `"object\|gripper_id[\|dist[\|pos_diff[\|rot_diff_rad]]]"` | Object stays near the gripper and moves rigidly with it. Defaults: dist 0.1 m, pos_diff 0.02 m, rot_diff 0.1 rad (2 frames). |
-| Follow | `"object\|[x,y,z]\|gripper_id"` | Gripper center inside a box of size `[x,y,z]` around the object. `object` may be comma-separated (any) (1 frame). |
-| Approach | `"x\|y\|z"` | Right gripper center within 0.01 m (per axis) of target point (1 frame). |
-| GripperPassing | `"obj_prim\|reverse"` | Handover detected (left→right, or right→left if `reverse=true`) with the object on the line between grippers. |
-| LiftUp | `"object\|lift_threshold"` | Object Z risen ≥ `lift_threshold` above its first Z (default 0.05 m) (1 frame). |
+### Joint, state and navigation
 
-### Joint, state & navigation
+| Predicate | Syntax | Purpose |
+|---|---|---|
+| PushPull | `"obj\|min\|max[\|joint_index]"` | Check the selected prismatic joint within the configured interval |
+| TriggerAction | `"prim_path\|expected"` | Compare `get_trigger_action(prim_path)` with the expected value |
+| ChassisAtTarget | `"[x,y,yaw]\|[x_th,y_th,yaw_th]"` | Check a planar chassis target; yaw is in degrees |
 
-| Predicate | Syntax | Details |
-|-----------|--------|-------|
-| PushPull | `"obj\|min\|max[\|joint_index]"` | Prismatic joint `joint_index` (default 0) position within `[min,max]` — drawer open/closed (2 frames). |
-| TriggerAction | `"prim_path\|expected"` | `get_trigger_action(prim_path)` equals `expected` (1 frame). |
-| ChassisAtTarget | `"[x,y,yaw]\|[x_th,y_th,yaw_th]"` | Chassis within XY box and yaw threshold of target (yaw in degrees) (1 frame). |
+### Other predicates
 
-### Special scenarios
+| Predicate | Syntax | Purpose |
+|---|---|---|
+| FluidInside | `"container\|object_info_dir"` | Check fluid-particle occupancy of the container AABB from the object metadata |
+| CheckParticleInBBox | `"threshold\|xmin,ymin,zmin,xmax,ymax,zmax"` | Compare the particle population in the configured box with its limit |
+| CheckStainClean | `"stain_prim\|threshold"` | Compare the visible stain population with its limit |
+| PlaceOnRivet | `"active\|passive\|rx,ry,rz\|qw,qx,qy,qz\|[xy_tol]\|[z_tol]\|[orient_tol]\|[still_thresh]\|[still_steps]"` | Check target-relative placement and stillness |
+| VLM | `"task_id\|interval"` | Evaluate the configured task description at the selected update interval |
 
-| Predicate | Syntax | Details |
-|-----------|--------|-------|
-| FluidInside | `"container\|object_info_dir"` | >50 fluid particles inside the container's AABB (size read from `object_info_dir`). |
-| CheckParticleInBBox | `"threshold\|xmin,ymin,zmin,xmax,ymax,zmax"` | Particle count inside the box drops **below** `threshold`. |
-| CheckStainClean | `"stain_prim\|threshold"` | Visible stain meshes drop **below** `threshold`. |
-| PlaceOnRivet | `"active\|passive\|rx,ry,rz\|qw,qx,qy,qz\|[xy_tol]\|[z_tol]\|[orient_tol]\|[still_thresh]\|[still_steps]"` | Workpiece reaches target relative pose vs workspace and holds still. Defaults: xy_tol 0.02 m, z_tol 0.01 m, orient_tol 0.15 rad, still_thresh 0.02, still_steps 15. |
-| VLM | `"task_id\|interval"` | A VLM scorer judges the `task_id` description every `interval` updates; emits a fractional score (passes at ≥1.0). |
+For `PlaceOnRivet`, positional tolerances use metres, angular tolerances use
+radians, and speed uses metres per simulation second. `still_steps` counts
+checker evaluations. The quaternion order is `wxyz`.
 
-### Meta
+## Combining predicates
 
-| Predicate | Syntax | Details |
-|-----------|--------|-------|
-| MixedRules | JSON object (below) | Aggregate several sub-checkers with OR (partial credit) or AND (all required). |
+`MixedRules` accepts a JSON object containing named sub-checkers and their
+parameters:
 
 ```json
 {
   "MixedRules": {
     "rules": [
-      { "name": "Inside", "params": "cup|tray|1.0" },
-      { "name": "Upright", "params": "cup|15" }
+      {"name": "Ontop", "params": "cup|tray"},
+      {"name": "RelativePosition", "params": "cup|bowl|leftof"}
     ],
-    "check_interval": 1,
-    "mode": "or"
+    "mode": "and"
   }
 }
 ```
-`mode: "or"` scores `passed/total` (e.g. 0.5); `mode: "and"` scores 1.0 only when
-all pass. Supported sub-checker `name`s: `Inside, PushPull, Upright,
-RelativePosition, Ontop, Onfloor, Cover, LiftUp, InBBox, Stack, StableGrasp`.
 
----
+OR mode permits partial credit; AND mode requires all configured sub-checkers.
+Supported names include `Inside`, `PushPull`, `Upright`, `RelativePosition`,
+`Ontop`, `Onfloor`, `Cover`, `LiftUp`, `InBBox`, `Stack` and `StableGrasp`.
+Use the task configuration for its selected mode and condition settings.
 
-## 📝 Remarks
+## Argument conventions
 
-- **Argument format**: object ids are used directly (`beverage_bottle_002`);
-  bbox/list args are list literals (`[0.2,0.2,0.2]`); numbers and booleans
-  (`true`/`false`) are plain strings inside the pipe value.
-- **Placeholders**: many object args accept `{@placeholder_name}`, resolved at
-  runtime (e.g. propagating the object a previous `PickUpOnGripper` grabbed).
-- **Cancel vs success**: `Timeout`, `StepOut`, and `Onfloor` are cancel actions —
-  pair them with success predicates inside `ActionSetWaitAny` to express
-  "succeed, or give up on timeout/drop".
-- **Key vs class names**: JSON key `Timeout` → class `TimeOut`; key
-  `RelativePosition` → class `RelativePositionChecker`.
-</content>
-</invoke>
+- Use object IDs directly in pipe arguments. List arguments are list literals;
+  numeric and boolean arguments remain plain text within the pipe string.
+- Supported object arguments can use `{@placeholder_name}` to reference a value
+  resolved at runtime, such as the object selected by an earlier pickup.
+- `Timeout`, `StepOut` and `Onfloor` cancel the evaluation; they are distinct from
+  success predicates.
+- JSON key `Timeout` maps to class `TimeOut`; `RelativePosition` maps to
+  `RelativePositionChecker`.

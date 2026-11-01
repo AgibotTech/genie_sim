@@ -278,6 +278,43 @@ class EvaluateAction(ActionBase):
     def get_world_pose(self, prim_path):
         return self.api_core.get_obj_world_pose(prim_path)
 
+    def gripper_link_path(self, gripper_id):
+        """Prim path of the link that stands in for a gripper's position.
+
+        Prefers the robot config's ``gripper.end_effector_prim_path`` (top-level
+        ``api_core`` attribute first, then ``api_core.robot_cfg``), then falls
+        back to the per-family hard-coded paths. Paths stay robot-relative;
+        ``_env_path`` scopes them in vectorized mode.
+        """
+        robot_cfg = getattr(self.env, "robot_cfg", None)
+        if robot_cfg is None:
+            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
+        is_right = "right" in gripper_id
+        side = "right" if is_right else "left"
+        for holder in (self.api_core, getattr(self.api_core, "robot_cfg", None)):
+            mapping = getattr(holder, "end_effector_prim_path", None)
+            if isinstance(mapping, dict):
+                path = mapping.get(side)
+                if path:
+                    return path
+        if "G1" in robot_cfg:
+            return "/G1/gripper_r_center_link" if is_right else "/G1/gripper_l_center_link"
+        if "arx" in robot_cfg:
+            return (
+                "/robot/gripper_r_base_link/gripper_r_center"
+                if is_right
+                else "/robot/gripper_l_base_link/gripper_l_center"
+            )
+        if "agilex" in robot_cfg:
+            return (
+                "/robot/gripper_fr_base_link/gripper_r_center_link"
+                if is_right
+                else "/robot/gripper_fl_base_link/gripper_l_center_link"
+            )
+        if "wuji" in robot_cfg:
+            return "/genie/hand_r_index_link4" if is_right else "/genie/hand_l_index_link4"
+        return "/genie/gripper_r_center_link" if is_right else "/genie/gripper_l_center_link"
+
     def get_observation_image(self, disable_robot=True):
         if not disable_robot:
             return self.api_core.get_observation_image(dir={})

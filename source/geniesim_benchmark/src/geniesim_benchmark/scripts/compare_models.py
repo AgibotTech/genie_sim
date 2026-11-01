@@ -40,12 +40,13 @@ Consequence: a true model gap near the run-to-run floor (~0.04) may read as
 "not significant". To gain power, add more layouts / instructions - they are the
 independent units.
 
-Metric: step_mean (default, == leaderboard `statistics.average`) or e2e.
+Metric: step_mean (default, == leaderboard `statistics.average`), e2e, or weighted.
+For weighted, inputs must use the same recorded weight profile per task group.
 
 Usage
 -----
     python compare_models.py --a <runA_dir> --b <runB_dir>
-        [--name-a A --name-b B] [--metric step_mean|e2e] [--merge]
+        [--name-a A --name-b B] [--metric step_mean|e2e|weighted] [--merge]
         [--ci 0.95] [--json out.json] [--plot out.png]
 
 --paired opts OUT of the conservative unpaired default: it aligns A and B by
@@ -319,9 +320,13 @@ def _rollout_scalar(detail, metric, layout=None):
     result = detail.get("result", {})
     if result.get("code", 0) not in (0, 2):
         raise ValueError("Evaluation contains an interrupted/invalid episode; compare complete runs")
-    layout = result.get("score_layout") or get_task_steps(
-        detail.get("score_layout_name") or detail.get("sub_task_name", ""), detail.get("instruction_mode", "full")
-    ) or layout
+    layout = (
+        result.get("score_layout")
+        or get_task_steps(
+            detail.get("score_layout_name") or detail.get("sub_task_name", ""), detail.get("instruction_mode", "full")
+        )
+        or layout
+    )
     if not layout:
         raise ValueError("Missing scoring layout; cannot recover the episode denominator")
     # Old exports may contain the #200-compressed STEPS. Prefer the original
@@ -330,9 +335,42 @@ def _rollout_scalar(detail, metric, layout=None):
         steps = score_layout_steps(result["progress"], layout)
     else:
         steps = extract_scores(result, layout)
+    scores = result.get("scores", {})
     if metric == "e2e":
         return float(episode_complete(result, steps, layout))
+    if metric == "weighted":
+        v = scores.get("WEIGHTED")
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or not np.isfinite(v) or not 0 <= v <= 1:
+            raise ValueError("Missing/invalid WEIGHTED score; reweight the input evaluation file first")
+        return float(v)
     return sum(s["score"] for s in steps) / len(layout)
+
+
+def _weighted_profile(detail):
+    from geniesim_benchmark.plugins.output_system.weighted_scoring import (
+        canonical_score_layout,
+        canonical_weight_version,
+    )
+
+    config = detail.get("result", {}).get("weighted_scoring")
+    required = ("version", "task", "instruction_mode", "steps", "weights")
+    if not isinstance(config, dict) or any(key not in config for key in required):
+        raise ValueError("WEIGHTED requires its recorded weight profile; reweight the input file first")
+    profile = {key: config[key] for key in required}
+    profile["task"] = canonical_score_layout(profile["task"])
+    profile["version"] = canonical_weight_version(profile["version"])
+    for key in ("process_points", "completion_bonus_points", "completion_rule"):
+        profile[key] = config.get(key)
+    return profile
+
+
+def validate_weighted_compatibility(reference_info, model_info):
+    """Do not compare different weight versions/layouts as model improvements."""
+    reference = reference_info["weighted_profiles"]
+    model = model_info["weighted_profiles"]
+    for group in reference.keys() & model.keys():
+        if reference[group] != model[group]:
+            raise ValueError(f"Different weighted scoring profiles for {group}; reweight both runs identically")
 
 
 # --------------------------------------------------------------------------- #
@@ -362,6 +400,7 @@ def load_task_scores(root, metric):
     tasks = defaultdict(list)  # (file, rollout_index, instruction) -> [rollout scalar]
     file_sig = {}  # file relpath -> content signature
     file_subname = {}  # file relpath -> sub_task_name from content (or None)
+    weighted_profiles = {}
     n_rollouts = 0
     for fp in files:
         try:
@@ -373,6 +412,7 @@ def load_task_scores(root, metric):
         rel = os.path.relpath(fp, root)
         rows = []  # (instruction, scalar) in file order
         task_name = None
+        file_profile = None
         # sub_task_name lives in the statistics block of newer outputs; also
         # accept it at the top level or inside details for robustness
         stats = payload.get("statistics") or {}
@@ -384,6 +424,11 @@ def load_task_scores(root, metric):
             task_name = task_name or detail.get("task_name")
             sub_name = sub_name or detail.get("sub_task_name")
             v = _rollout_scalar(detail, metric, [s["name"] for s in stats.get("weighted_step_scores", [])])
+            if metric == "weighted":
+                profile = _weighted_profile(detail)
+                if file_profile is not None and profile != file_profile:
+                    raise ValueError(f"Mixed weighted profiles in {fp}")
+                file_profile = profile
             if v is not None:
                 rows.append((instr, v))
         if not rows:
@@ -391,6 +436,11 @@ def load_task_scores(root, metric):
         # signature: prefer the explicit sub_task_name; fall back to instruction set
         key2 = sub_name if sub_name else frozenset(r[0] for r in rows)
         file_sig[rel] = (task_name or "?", key2)
+        if metric == "weighted":
+            sig = file_sig[rel]
+            if sig in weighted_profiles and weighted_profiles[sig] != file_profile:
+                raise ValueError(f"Mixed weighted profiles for {sig[0]} under {root}")
+            weighted_profiles[sig] = file_profile
         file_subname[rel] = sub_name
         # each rollout is an independent (instruction, layout) instance -> one unit
         for gi, (instr, v) in enumerate(rows):
@@ -450,6 +500,8 @@ def load_task_scores(root, metric):
         "n_files": len(files),
         "groups": sorted(groups),
     }
+    if metric == "weighted":
+        info["weighted_profiles"] = {labels[sig]: profile for sig, profile in weighted_profiles.items()}
     return scores, groups, names, group_instr, info
 
 
@@ -1097,7 +1149,7 @@ def main():
     ap.add_argument(
         "--name-b", nargs="+", default=None, help="display names matching --b order (default: dir basenames)"
     )
-    ap.add_argument("--metric", choices=["step_mean", "e2e"], default="step_mean")
+    ap.add_argument("--metric", choices=["step_mean", "e2e", "weighted"], default="step_mean")
     ap.add_argument("--ci", type=float, default=0.95)
     ap.add_argument(
         "--merge",
@@ -1159,6 +1211,8 @@ def main():
     for nm, d in zip(names_b, args.b):
         print(f"Loading {nm} <- {d}")
         s, g, n, gi, i = load_task_scores(d, args.metric)
+        if args.metric == "weighted":
+            validate_weighted_compatibility(a_info, i)
         models.append({"name": nm, "dir": d, "scores": s, "groups": g, "names": n, "ginstr": gi, "info": i})
 
     # display names (sub_task dir); prefer the reference's naming, dedupe collisions

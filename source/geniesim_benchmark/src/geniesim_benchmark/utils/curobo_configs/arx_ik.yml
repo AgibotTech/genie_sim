@@ -1,0 +1,51 @@
+# ARX dual-arm IK-only config for cuRobo v0.7.6
+# No collision spheres — pure kinematics IK/FK only.
+# ARX is a desktop robot with no body/head joints.
+
+robot_cfg:
+  kinematics:
+    use_usd_kinematics: False
+    urdf_path: "arx.urdf"
+    asset_root_path: ""
+    isaac_usd_path: ""
+    usd_robot_root: null
+    usd_path: null
+
+    base_link: "base_link"
+    ee_link: "arm_r_end_link"
+    link_names: ["arm_r_end_link", "arm_l_end_link"]
+
+    collision_link_names: []
+    collision_spheres: {}
+    collision_sphere_buffer: 0.0
+    self_collision_ignore: {}
+    self_collision_buffer: {}
+    use_global_cumul: True
+
+    lock_joints: {}
+
+    cspace:
+      joint_names:
+        - arm_l_joint1
+        - arm_l_joint2
+        - arm_l_joint3
+        - arm_l_joint4
+        - arm_l_joint5
+        - arm_l_joint6
+        - arm_r_joint1
+        - arm_r_joint2
+        - arm_r_joint3
+        - arm_r_joint4
+        - arm_r_joint5
+        - arm_r_joint6
+      retract_config:
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+         0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      null_space_weight:
+        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+         1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      cspace_distance_weight:
+        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+         1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      max_jerk: 500.0
+      max_acceleration: 15.0

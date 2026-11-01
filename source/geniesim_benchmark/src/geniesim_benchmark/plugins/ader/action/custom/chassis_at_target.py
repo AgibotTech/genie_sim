@@ -35,6 +35,7 @@ class ChassisAtTarget(EvaluateAction):
         # Status record
         self._done_flag = False
         self.success_detected = False
+        self._poll_count = 0
 
     def quaternion_to_yaw(self, quat):
         """
@@ -84,11 +85,17 @@ class ChassisAtTarget(EvaluateAction):
         if robot_cfg is None:
             robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
 
-        # Determine chassis prim path (G1 uses /G1, G2 uses /genie)
+        # Read base_link, NOT the robot's root Xform (/genie, /G1): that wrapper
+        # keeps whatever reset() authored (the episode's spawn pose) because
+        # PhysX never writes back to it, so a bare "/genie" query reports the
+        # chassis as frozen at its spawn point for the whole episode. base_link
+        # is a real articulation link and tracks the simulated chassis -- same
+        # link [chassis-loop] measures, and the same convention as
+        # robot_near_object / relative_position_checker.
         if "G1" in robot_cfg:
-            chassis_path = "/G1"
+            chassis_path = "/G1/base_link"
         else:
-            chassis_path = "/genie"
+            chassis_path = "/genie/base_link"
 
         # Get chassis pose
         try:
@@ -105,6 +112,14 @@ class ChassisAtTarget(EvaluateAction):
 
         # Check orientation
         orientation_ok, yaw_diff = self.check_orientation(current_yaw)
+
+        # Log the first five position checks and every tenth check thereafter.
+        self._poll_count += 1
+        if self._poll_count <= 5 or self._poll_count % 10 == 0:
+            logger.info(
+                f"[ChassisAtTarget] poll #{self._poll_count} pos=({current_x:.3f}, {current_y:.3f}), "
+                f"yaw={current_yaw:.1f}° | x_diff={x_diff:.3f} y_diff={y_diff:.3f} yaw_diff={yaw_diff:.1f}°"
+            )
 
         # Check if target reached (once detected, pass immediately)
         if position_ok and orientation_ok:

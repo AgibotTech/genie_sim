@@ -116,6 +116,8 @@ class RelativePositionChecker(EvaluateAction):
 
         if "G1" in robot_cfg:
             link_path = "/G1/base_link"
+        elif "arx" in robot_cfg or "agilex" in robot_cfg:
+            link_path = "/robot/base_link"
         else:
             link_path = "/genie/base_link"
 

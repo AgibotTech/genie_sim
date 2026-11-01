@@ -24,17 +24,26 @@ class RobotCfg(Robot):
             self.robot_generation = "G1"
         elif "G2" in self.robot_name:
             self.robot_generation = "G2"
+        elif "arx" in self.robot_name:
+            self.robot_generation = "arx"
+        elif "agilex" in self.robot_name:
+            self.robot_generation = "agilex"
         else:
             raise ValueError("robot name error")
         self.cam_prim_path = robot_cfg["camera"].keys()
         self.robot_prim_path = robot_cfg["robot"]["base_prim_path"]
         self.urdf_name = robot_cfg["robot"]["urdf_name"]
         self.arm_type = robot_cfg["robot"]["arm"]
+        self.profile = robot_cfg.get("profile")
         if robot_cfg["robot"]["arm"] == "single":
             self.is_single = True
         else:
             self.is_single = False
-        if "active_arm_joints" in robot_cfg["robot"]:
+        profile_arm = self.profile.get("arm") if isinstance(self.profile, dict) else None
+        profile_arm_joints = profile_arm.get("joint_names") if isinstance(profile_arm, dict) else None
+        if profile_arm_joints is not None:
+            self.active_arm_joints = profile_arm_joints
+        elif "active_arm_joints" in robot_cfg["robot"]:
             self.active_arm_joints = robot_cfg["robot"]["active_arm_joints"]
         else:
             self.active_arm_joints = None
@@ -66,6 +75,7 @@ class RobotCfg(Robot):
             self.end_effector_name = robot_cfg["gripper"]["end_effector_name"]["left"]
         self.end_effector_prim_path = robot_cfg["gripper"]["end_effector_prim_path"]
         self.finger_names = robot_cfg["gripper"]["finger_names"]
+        self.jaw_pocket = robot_cfg["gripper"].get("jaw_pocket")
         self.gripper_control_joint = robot_cfg["gripper"]["gripper_control_joint"]
         self.opened_positions = robot_cfg["gripper"]["opened_positions"]
         self.closed_velocities = robot_cfg["gripper"]["closed_velocities"]

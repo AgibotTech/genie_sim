@@ -18,6 +18,7 @@ from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils.types import ArticulationAction
 from geniesim_benchmark.app.controllers.kinematics_solver import Kinematics_Solver
 from geniesim_benchmark.plugins.logger import Logger
+from geniesim_benchmark.g2_90d_profile import apply_g2_90d_articulation_profile
 
 logger = Logger()  # Create singleton instance
 
@@ -44,6 +45,7 @@ class UIBuilder:
         self.cameras = robot.cameras
         self.init_joint_position = robot.init_joint_position
         self.end_effector_prim_path = robot.end_effector_prim_path
+        self.robot_profile = robot.profile
         self.initialize_articulation(batch_num)
         self.arm_type = robot.arm_type
         self.end_effector_name = robot.end_effector_name
@@ -165,6 +167,18 @@ class UIBuilder:
             return
         self._currentLeftTask = 10
         self._currentRightTask = 10
+        # With a cuda (torch) backend, set_joint_positions/ArticulationAction expect
+        # backend tensors, not Python lists (else expand_dims/unsqueeze on a list
+        # raises). Convert positions/indices onto the articulation's device.
+        bu = getattr(self.articulation, "_backend_utils", None)
+        dev = getattr(self.articulation, "_device", None)
+        # CPU-backed articulations took plain lists before and still do; only the
+        # cuda path needs the conversion.
+        if bu is not None and dev is not None and "cuda" in str(dev):
+            if target_positions is not None:
+                target_positions = bu.convert(target_positions, dev, dtype="float32")
+            if target_joint_indices is not None:
+                target_joint_indices = bu.convert(target_joint_indices, dev, dtype="int32")
         actions = ArticulationAction(joint_positions=target_positions, joint_indices=target_joint_indices)
         if not is_trajectory:
             self.articulation.set_joint_positions(target_positions, joint_indices=target_joint_indices)
@@ -180,6 +194,12 @@ class UIBuilder:
             self.articulation = SingleArticulation(prim_path=self.robot_prim_path, name=self.robot_name)
             scene.add(self.articulation)
         self.articulation.initialize()
+        runtime_profile = apply_g2_90d_articulation_profile(
+            self.articulation,
+            getattr(self, "robot_profile", None) if getattr(self, "profile_control_enabled", False) else None,
+        )
+        if runtime_profile:
+            logger.info(f"Applied G2_90d articulation runtime profile: {runtime_profile}")
 
         robot_list = []
         for idx in range(batch_num):

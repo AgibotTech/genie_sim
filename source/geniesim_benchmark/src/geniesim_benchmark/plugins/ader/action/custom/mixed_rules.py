@@ -14,7 +14,7 @@ logger = Logger()
 
 
 class MixedRules(EvaluateAction):
-    def __init__(self, env, rules, check_interval=1, mode="or"):
+    def __init__(self, env, rules, check_interval=1, mode="or", strict=False, carry_distance=None):
         super().__init__(env)
         self._done_flag = False
         self._update_counter = 0
@@ -23,8 +23,26 @@ class MixedRules(EvaluateAction):
         self._sub_checkers = []
         self._sub_results = []
         self._mode = mode.lower() if mode else "or"
+        if not isinstance(strict, bool):
+            raise ValueError("strict must be a boolean")
+        self._strict = strict
+        if strict and (
+            self._mode not in ("and", "or")
+            or type(check_interval) is not int
+            or self._check_interval < 1
+            or not isinstance(rules, list)
+            or not rules
+        ):
+            raise ValueError("Strict MixedRules requires rules, a positive interval, and and/or mode")
 
         self._build_sub_checkers(env, rules)
+        self._carry_score = None
+        if carry_distance is not None:
+            from .carry_distance import CarryDistanceScore
+
+            if not isinstance(carry_distance, dict) or not strict or check_interval != 1:
+                raise ValueError("Carry distance requires strict rules and check_interval=1")
+            self._carry_score = CarryDistanceScore(self, **carry_distance)
 
     def _build_sub_checkers(self, env, rules):
         factory = {
@@ -39,6 +57,11 @@ class MixedRules(EvaluateAction):
             "InBBox": self._create_inbbox,
             "Stack": self._create_stack,
             "StableGrasp": self._create_stable_grasp,
+            "InsidePrecise": self._create_inside_precise,
+            "CoverPrecise": self._create_cover_precise,
+            "ThroughOpening": self._create_through_opening,
+            "PointInVolume": self._create_point_in_volume,
+            "ShaftInserted": self._create_shaft_inserted,
         }
 
         for rule in rules:
@@ -46,18 +69,55 @@ class MixedRules(EvaluateAction):
             params_str = rule["params"]
             creator = factory.get(checker_name)
             if creator is None:
+                if self._strict:
+                    raise ValueError(f"Unknown checker: {checker_name}")
                 logger.warning(f"[MixedRules] Unknown checker: {checker_name}, skipping")
                 continue
             try:
                 checker = creator(env, params_str)
                 checker._skip_progress_report = True
+                own = getattr(checker, "set_composite_managed", None)
+                if callable(own):
+                    own(True)
                 checker.state = checker.State.RUNNING
                 self._sub_checkers.append({"name": checker_name, "checker": checker})
             except Exception as e:
+                if self._strict:
+                    raise ValueError(f"Invalid checker {checker_name}: {e}") from e
                 logger.error(f"[MixedRules] Failed to create checker {checker_name}: {e}")
 
         self._sub_results = [False] * len(self._sub_checkers)
         logger.info(f"[MixedRules] Total sub-checkers: {len(self._sub_checkers)}")
+
+    @staticmethod
+    def _create_shaft_inserted(env, params):
+        from .shaft_inserted import ShaftInserted
+
+        return ShaftInserted(env, **params)
+
+    @staticmethod
+    def _create_point_in_volume(env, params):
+        from .point_in_volume import PointInVolume
+
+        return PointInVolume(env, **params)
+
+    @staticmethod
+    def _create_through_opening(env, params):
+        from .through_opening import ThroughOpening
+
+        return ThroughOpening(env, **params)
+
+    @staticmethod
+    def _create_inside_precise(env, params):
+        from .precise import InsidePrecise
+
+        return InsidePrecise(env, **params)
+
+    @staticmethod
+    def _create_cover_precise(env, params):
+        from .precise import CoverPrecise
+
+        return CoverPrecise(env, **params)
 
     @staticmethod
     def _create_inside(env, params_str):
@@ -147,6 +207,8 @@ class MixedRules(EvaluateAction):
             kwargs["pose_diff_pos_threshold"] = float(params[3])
         if len(params) >= 5:
             kwargs["pose_diff_rot_threshold_rad"] = float(params[4])
+        if len(params) >= 6:
+            kwargs["min_movement_threshold"] = float(params[5])
         return StableGrasp(env, params[0], params[1], **kwargs)
 
     def _evaluate_sub_checker(self, entry, force_update=False):
@@ -170,13 +232,37 @@ class MixedRules(EvaluateAction):
             logger.warning(f"[MixedRules] Error evaluating {name}: {e}")
             return False
 
+    def _replay_placeholders(self):
+        """Propagate env placeholder values onto sub-checkers.
+
+        Sub-checkers built by the factory are NOT registered into
+        task_progress (record_act_obj is never called for them), so
+        AderEnv.update_place_holder's setattr loop never reaches them — a
+        ``{@placeholder_str1}`` reference inside a MixedRules rule would
+        never resolve. Mirror the replay llm_task.py applies to lazily-
+        built subtask checkers: push env._placeholders down each tick.
+        No-op for configs whose env has no placeholders.
+        """
+        cached = getattr(self.env, "_placeholders", None)
+        if not cached:
+            return
+        for entry in self._sub_checkers:
+            checker = entry["checker"]
+            for key, value in cached.items():
+                if getattr(checker, key, None) != value:
+                    setattr(checker, key, value)
+
     def update(self, delta_time: float) -> float:
         if not self.is_running():
             return 0.0
+        if self._carry_score is not None:
+            return self._carry_score.update(delta_time)
 
         self._update_counter += 1
         if self._update_counter % self._check_interval != 0:
             return super().update(delta_time)
+
+        self._replay_placeholders()
 
         total = len(self._sub_checkers)
         if total == 0:
@@ -219,18 +305,28 @@ class MixedRules(EvaluateAction):
 
     def update_progress(self):
         self.progress_info["SCORE"] = self._best_score
+        if self._carry_score is not None:
+            self.progress_info["GOAL_COMPLETE"] = self._done_flag
+            self.progress_info["CARRY_DISTANCE"] = dict(self._carry_score.last_measurement)
+            self.progress_info["STATUS"] = (
+                "SUCCESS" if self._done_flag else "FAILED" if self._carry_score.sealed else "PENDING"
+            )
         if self._done_flag:
             self.progress_info["STATUS"] = "SUCCESS"
         details = []
         for i, entry in enumerate(self._sub_checkers):
-            details.append(
-                {
-                    "name": entry["name"],
-                    "passed": self._sub_results[i],
-                }
-            )
+            detail = {"name": entry["name"], "passed": self._sub_results[i]}
+            measurement = getattr(entry["checker"], "last_measurement", None)
+            if measurement is not None:
+                detail["measurement"] = measurement
+            details.append(detail)
         self.progress_info["DETAILS"] = details
 
     def handle_action_event(self, action: ActionBase, event: ActionEvent) -> None:
+        if event in (ActionEvent.FINISHED, ActionEvent.CANCELED):
+            for entry in self._sub_checkers:
+                close = getattr(entry["checker"], "close", None)
+                if callable(close):
+                    close()
         if event == ActionEvent.FINISHED:
             self.progress_info["SCORE"] = self._best_score

@@ -84,13 +84,60 @@ class BaseEnv(AderEnv):
 
         self.data_courier: DataCourier = None
         self.need_infer = False
-        # Whether depth should be fetched alongside images. Default True so
-        # any env/policy that never calls set_depth_status still gets depth
-        # (prior behavior); CoRobotPolicy drives this down once the server
-        # says it doesn't need depth anymore.
-        self.need_depth = True
+        self.need_depth = False
+        self._wallclock_timeout_action = None
+        self._wallclock_timeout_deadline = None
+
+    def check_wallclock_timeout(self, now=None):
+        action = self._wallclock_timeout_action
+        deadline = self._wallclock_timeout_deadline
+        if action is None or deadline is None:
+            return False
+        if (time.time() if now is None else now) < deadline:
+            return False
+        self._wallclock_timeout_action = None
+        self._wallclock_timeout_deadline = None
+        action.force_timeout()
+        return True
 
     def init_gripper_target(self):
+        """Effective gripper/hand initial-joint target for reset.
+
+        Multi-DOF dexterous hands (WUJI five-finger hand, >2 finger joints)
+        honour the per-task ``init_hand`` from ``robot_init_states.py`` the same
+        way ``init_arm`` drives the arm.  2-DOF grippers keep the robot-config
+        ``init_gripper_open`` sentinel (open jaw): their ``init_hand`` is a
+        ``[0, 0]`` closed placeholder, so using it would start every grasp task
+        with the jaw shut.
+        """
+        cfgs = self.cfg.get("gripper_joints") or []
+        task_hand = getattr(self, "init_gripper", None)
+        if task_hand and len(task_hand) == len(cfgs) and len(cfgs) > 2:
+            return list(task_hand)
+        return list(self.cfg.get("init_gripper_open", [0.0, 0.0]))
+
+    def init_gripper_target(self):
+        """Effective gripper/hand initial-joint target for reset.
+
+        Multi-DOF dexterous hands (WUJI five-finger hand, >2 finger joints)
+        honour the per-task ``init_hand`` from ``robot_init_states.py`` the same
+        way ``init_arm`` drives the arm.  2-DOF grippers keep the robot-config
+        ``init_gripper_open`` sentinel (open jaw): their ``init_hand`` is a
+        ``[0, 0]`` closed placeholder, so using it would start every grasp task
+        with the jaw shut.
+        """
+        # Profile gripper limits apply only to shared control or explicit
+        # validation; ordinary benchmarks retain their upstream open sentinel.
+        if getattr(self.api_core, "profile_control_enabled", False) or self.init_task_config.get("control_mode"):
+            from geniesim_benchmark.control_observation import gripper_travel, has_control_profile
+
+            profile = getattr(self.api_core, "robot_profile", None)
+            if has_control_profile(profile):
+                targets = {
+                    gripper["control_joint"]: gripper_travel(gripper)[0]
+                    for gripper in profile["gripper"].values()
+                }
+                return [targets[name] for name in self.cfg["gripper_joints"]]
         cfgs = self.cfg.get("gripper_joints") or []
         task_hand = getattr(self, "init_gripper", None)
         if task_hand and len(task_hand) == len(cfgs) and len(cfgs) > 2:
@@ -193,6 +240,10 @@ class BaseEnv(AderEnv):
                 position = new_pos.tolist()
                 quaternion = list(current_quat)
             api_core.update_robot_base(position, quaternion)
+            # Keep the resolved pose, not the thresholds: every episode of this
+            # file must start from the same base, and update_init_env re-samples
+            # the threshold form for the next file.
+            self.robot_init_pose = {"position": list(position), "quaternion": list(quaternion)}
             logger.info(f"Applied robot base position: {position}")
 
         # --- init_joint: perturb init_arm via stored rand_init_arm ---
@@ -238,7 +289,14 @@ class BaseEnv(AderEnv):
         self.need_infer = need_infer
 
     def set_depth_status(self, need_depth):
-        self.need_depth = need_depth
+        """Apply the policy's depth choice before capture, including frame zero.
+
+        Benchmark policies start enabled; control uses explicit depth requests.
+        """
+        self.need_depth = bool(need_depth)
+        api_core = getattr(self, "api_core", None)
+        if api_core is not None:
+            api_core.want_camera_calibration = self.need_depth
 
     def load(self, task_file):
         self.generate_layout(task_file)
@@ -262,14 +320,12 @@ class BaseEnv(AderEnv):
         pass
 
     def reset(self):
+        self._wallclock_timeout_action = None
+        self._wallclock_timeout_deadline = None
         super().reset()
         if self.task is not None:
             self.task.reset(self)
         self.reset_variables()
-        # A new episode always gets a real depth frame on its first
-        # observation — undo any prior episode's need_depth=False before
-        # fetching, mirroring CoRobotPolicy.reset()'s _send_depth reset.
-        self.need_depth = True
         observaion = self.get_observation()
         return observaion
 

@@ -18,7 +18,6 @@ from typing import Any, Callable, Optional, Tuple, Type
 _BASE_DELAY_SEC = 1.0
 _MAX_DELAY_SEC = 30.0
 _JITTER_SEC = 2.0
-_RECV_TIMEOUT_SEC = 120.0
 
 
 # Errors that indicate a transient connectivity / server-overload condition.
@@ -113,23 +112,6 @@ def get_max_consecutive_failures(default: int = 30) -> int:
 
 def get_backoff_cap(default: float = _MAX_DELAY_SEC) -> float:
     return _env_float("GENIESIM_INFER_BACKOFF_CAP_SEC", default)
-
-
-def get_recv_timeout(default: float = _RECV_TIMEOUT_SEC) -> float:
-    """Deadline for a single inference response, in seconds.
-
-    Without a deadline a lost request or a lost reply hangs the simulator
-    forever: the WebSocket itself stays healthy (the gateway keeps answering
-    keepalive pings), so nothing ever raises and the episode blocks until the
-    pod watchdog kills it. The deadline is what converts that silent hang into
-    a transient TimeoutError the retry loop above can act on.
-
-    Picking the value: it must be comfortably ABOVE the slowest legitimate
-    inference, or healthy-but-slow models get killed and re-asked in a loop.
-    That also makes it the floor on recovery latency — a one-second network
-    blip costs one full timeout — so it is a backstop, not a fast path.
-    """
-    return _env_float("GENIESIM_INFER_RECV_TIMEOUT_SEC", default)
 
 
 def run_with_inference_retry(

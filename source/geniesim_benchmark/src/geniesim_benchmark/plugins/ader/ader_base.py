@@ -2,6 +2,8 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+from __future__ import annotations
+
 import time
 from dataclasses import dataclass
 

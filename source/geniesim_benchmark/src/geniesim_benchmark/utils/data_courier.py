@@ -4,6 +4,7 @@
 
 import time
 import json
+import threading
 
 from geniesim_benchmark.app.controllers.api_core import APICore
 from geniesim_benchmark.plugins.logger import Logger
@@ -49,6 +50,7 @@ class DataCourier:
                 api_core.local_recorder.set_sub_task_name(api_core.sub_task_name or "")
 
         self._next = time.time()
+        self._stop_requested = threading.Event()
         self.hz = hz
         self.robot_cfg = None
 
@@ -56,11 +58,21 @@ class DataCourier:
         self.robot_cfg = robot_cfg
 
     def loop_ok(self):
+        if self._stop_requested.is_set():
+            return False
         if self.enable_ros and self.sim_ros_node is not None:
             import rclpy
 
             return rclpy.ok()
         return True
+
+    def request_stop(self):
+        """Stop this courier's loop without changing global ROS state."""
+
+        self._stop_requested.set()
+
+    def stop_requested(self):
+        return self._stop_requested.is_set()
 
     def sleep(self):
         if self.enable_ros and self.sim_ros_node is not None and hasattr(self.sim_ros_node, "loop_rate"):
@@ -70,7 +82,7 @@ class DataCourier:
         now = time.time()
         to_sleep = self._next - now
         if to_sleep > 0:
-            time.sleep(to_sleep)
+            self._stop_requested.wait(timeout=to_sleep)
         self._next += 1 / self.hz
 
     def pub_static_info_msg(self, msg: str):
@@ -103,14 +115,22 @@ class DataCourier:
 
     _G1_CAM_DIRS = {"head": "head_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
     _G2_CAM_DIRS = {"head": "head_front_camera", "left_hand": "left_camera", "right_hand": "right_camera"}
-    _G2_CFGS = {"G2_omnipicker", "G2_90d_gp", "G2_90d", "G2_crsB_omnipicker"}
+    _ARX_CAM_DIRS = {"head": "head_camera", "left_hand": "hand_left_camera", "right_hand": "hand_right_camera"}
+    _AGILEX_CAM_DIRS = {"head": "head_camera", "left_hand": "hand_left_camera", "right_hand": "hand_right_camera"}
+    _G2_CFGS = {"G2_omnipicker", "G2_90d_gp", "G2_90d", "G2_crsB_omnipicker", "G2_crsB_wuji", "G2_crsB_90d"}
     _G1_CFGS = {"G1_omnipicker", "G1_120s"}
+    _ARX_CFGS = {"arx"}
+    _AGILEX_CFGS = {"agilex"}
 
     def _camera_dirs(self):
         if self.robot_cfg in self._G1_CFGS:
             return self._G1_CAM_DIRS
         if self.robot_cfg in self._G2_CFGS:
             return self._G2_CAM_DIRS
+        if self.robot_cfg in self._ARX_CFGS:
+            return self._ARX_CAM_DIRS
+        if self.robot_cfg in self._AGILEX_CFGS:
+            return self._AGILEX_CAM_DIRS
         raise ValueError(f"Invalid robot cfg: {self.robot_cfg}")
 
     def get_observation_image(self):
@@ -119,13 +139,11 @@ class DataCourier:
     def get_observation_depth(self):
         return self.api_core.get_observation_depth(self._camera_dirs())
 
-    def get_obs_bundle(self, fetch_images=True, fetch_depth=True, link_names=None):
-        # Depth never rides without images (no image fetch this step => no
-        # fresh render to read depth back from either).
+    def get_obs_bundle(self, fetch_images=True, link_names=None, **kwargs):
         if fetch_images:
             dirs = self._camera_dirs()
             image_dirs = dirs
-            depth_dirs = dirs if fetch_depth else None
+            depth_dirs = dirs
         else:
             image_dirs = None
             depth_dirs = None
@@ -134,6 +152,7 @@ class DataCourier:
             depth_dirs=depth_dirs,
             link_names=link_names,
             want_joint_state=True,
+            **kwargs,
         )
 
     def set_joint_state(self, name, position):

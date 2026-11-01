@@ -9,8 +9,8 @@
       480
     ],
     "/G1/head_link2/Head_Camera": [
-      1280,
-      800
+      640,
+      400
     ],
     "/World/Camera": [
       1280,
@@ -81,6 +81,128 @@
         2
       ]
     }
+  },
+  "profile": {
+    "arm": {
+      "joint_names": {
+        "left": [
+          "idx21_arm_l_joint1",
+          "idx22_arm_l_joint2",
+          "idx23_arm_l_joint3",
+          "idx24_arm_l_joint4",
+          "idx25_arm_l_joint5",
+          "idx26_arm_l_joint6",
+          "idx27_arm_l_joint7"
+        ],
+        "right": [
+          "idx61_arm_r_joint1",
+          "idx62_arm_r_joint2",
+          "idx63_arm_r_joint3",
+          "idx64_arm_r_joint4",
+          "idx65_arm_r_joint5",
+          "idx66_arm_r_joint6",
+          "idx67_arm_r_joint7"
+        ]
+      }
+    },
+    "completion": {
+      "arm_position_max_tolerance_m": 0.001,
+      "arm_position_min_tolerance_m": 0.0001,
+      "arm_rotation_max_tolerance_rad": 0.005,
+      "arm_rotation_min_tolerance_rad": 0.0001,
+      "arm_tolerance_fraction": 0.1,
+      "gripper_joint_min_tolerance_rad": 5e-05,
+      "gripper_tolerance_fraction": 0.1,
+      "ik_position_tolerance_m": 1e-05,
+      "ik_rotation_tolerance_rad": 1e-05,
+      "joint_position_tolerance_rad": 0.002,
+      "joint_velocity_tolerance_rad_s": 0.02,
+      "linear_joint_position_tolerance_m": 0.0005,
+      "linear_joint_velocity_tolerance_m_s": 0.005,
+      "source": "Reused from G2_omnipicker: generic actuator settle bounds (joint position and velocity, stable window, arm TCP and IK accuracy) and the joint-position gripper tolerance of the same omnipicker gripper. Fixed base: no chassis standstill limits or roll window.",
+      "stable_duration_s": 0.1,
+      "stable_samples": 3
+    },
+    "frame_contract": {
+      "arm_end_to_tool_center_rpy_rad": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "arm_end_to_tool_center_translation_m": [
+        0.0,
+        0.0,
+        0.15
+      ],
+      "base_frame": "arm_base_link",
+      "kinematic_endpoints": {
+        "left": "arm_l_end_link",
+        "right": "arm_r_end_link"
+      },
+      "runtime_source": "Reused from G2_omnipicker: the same omnipicker gripper on the same arm end (URDF arm_<side>_end_link -> gripper_<side>_center_link is 0.1431 m along z on both robots); user-provided physical measurement 0.15 m, 2026-09-24. TCP orientation is the arm-end orientation, not the right center link's URDF yaw of pi. The arm base sits behind the uncommanded lift/pitch waist; base_from_arm_base follows the measured waist.",
+      "tool_center_calibration_status": "measured",
+      "tool_center_frames": {
+        "left": "gripper_l_center_link",
+        "right": "gripper_r_center_link"
+      }
+    },
+    "gripper": {
+      "left": {
+        "closed_position_rad": 0.0,
+        "control_joint": "idx41_gripper_l_outer_joint1",
+        "joint_limits_rad": [
+          0.0,
+          0.7853981633974483
+        ],
+        "joint_limits_rad_source": "control_joint physics:lowerLimit/upperLimit, direct unit conversion from USD degrees",
+        "max_opening_m": 0.12,
+        "max_opening_source": "Reused from G2_omnipicker: user-provided physical measurement of the same omnipicker gripper, 2026-09-28: maximum opening between the fingertips",
+        "mechanism": "coupled_revolute_linkage",
+        "mimic_joint": "idx31_gripper_l_inner_joint1",
+        "open_closed_source": "Reused from G2_omnipicker by user decision, 2026-09-28: the same omnipicker gripper keeps the public -0.785 (open) .. 0 (closed) range; public = outer_joint1 raw * public_state_scale (-1), so the raw joint opens at 0.785 rad.",
+        "open_position_rad": -0.785,
+        "public_state_scale": -1.0,
+        "source": "Composed G1_omnipicker robot.usda joint prims: the driven outer_joint1 (0..45 deg) and its inner_joint1 counterpart (-45..0 deg), the same omnipicker linkage as G2_omnipicker. No jaw aperture calibration exists, so the sample carries no aperture evidence."
+      },
+      "right": {
+        "closed_position_rad": 0.0,
+        "control_joint": "idx81_gripper_r_outer_joint1",
+        "joint_limits_rad": [
+          0.0,
+          0.7853981633974483
+        ],
+        "joint_limits_rad_source": "control_joint physics:lowerLimit/upperLimit, direct unit conversion from USD degrees",
+        "max_opening_m": 0.12,
+        "max_opening_source": "Reused from G2_omnipicker: user-provided physical measurement of the same omnipicker gripper, 2026-09-28: maximum opening between the fingertips",
+        "mechanism": "coupled_revolute_linkage",
+        "mimic_joint": "idx71_gripper_r_inner_joint1",
+        "open_closed_source": "Reused from G2_omnipicker by user decision, 2026-09-28: the same omnipicker gripper keeps the public -0.785 (open) .. 0 (closed) range; public = outer_joint1 raw * public_state_scale (-1), so the raw joint opens at 0.785 rad.",
+        "open_position_rad": -0.785,
+        "public_state_scale": -1.0,
+        "source": "Composed G1_omnipicker robot.usda joint prims: the driven outer_joint1 (0..45 deg) and its inner_joint1 counterpart (-45..0 deg), the same omnipicker linkage as G2_omnipicker. No jaw aperture calibration exists, so the sample carries no aperture evidence."
+      }
+    },
+    "ik_solver": {
+      "bfgs_gradient_norm_termination": 1e-10,
+      "bfgs_max_iterations": 600,
+      "ccd_descent_termination_delta": 1e-09,
+      "ccd_max_iterations": 1000,
+      "lula_descriptions": {
+        "left": "/G1_omnipicker/lula_left.yaml",
+        "right": "/G1_omnipicker/lula_right.yaml"
+      },
+      "source": "Reused from G2_omnipicker: raw bundled Lula Cartesian replay with SO(3)-bounded orientation convergence. The per-arm descriptions are byte-identical to G2_omnipicker's (the same seven arm joints per side, all present in G1_omnipicker.urdf); the benchmark keeps robot.robot_description for its single right-arm solver.",
+      "type": "lula_ccd_bfgs"
+    },
+    "motion_continuity": {
+      "failure": "reject the entire EEF goal before returning a joint trajectory",
+      "joint_delta_tolerance_rad": 1e-06,
+      "joint_velocity_source": "G1_omnipicker/G1_omnipicker.urdf",
+      "max_cartesian_plan_waypoints": 450,
+      "waypoint_rate_hz": 30.0
+    },
+    "name": "G1_omnipicker",
+    "schema_version": 1
   },
   "robot": {
     "arm": "right",

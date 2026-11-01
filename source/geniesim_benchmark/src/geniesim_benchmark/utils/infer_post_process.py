@@ -83,7 +83,16 @@ def process_gripper_action_relabel(action_slice, cfg):
 
 def process_gripper_action_crsb(action_slice, cfg):
     scale = cfg["gripper_scale"]
-    return [float(v) / scale for v in action_slice]
+    limit = cfg["limit_val"]
+    # Position-driven fingers settle where they touch, so a target equal to the
+    # commanded width leaves the drive with ~no error and ~no grip force. Shift
+    # every target closed by gripper_shift so the fingers keep pushing inward.
+    shift = cfg.get("gripper_shift", 0.0)
+
+    def _map(v):
+        return max(0.0, min(float(v) / scale - shift, limit))
+
+    return [_map(v) for v in action_slice]
 
 
 def process_gripper_action_passthrough(action_slice, cfg):

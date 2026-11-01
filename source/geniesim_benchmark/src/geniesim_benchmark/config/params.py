@@ -110,9 +110,25 @@ class AppConfig:
     enable_rate_limit: bool = False
     enable_playback: bool = False
     enable_pub_depth_camera: bool = False
-    # Restore scene objects to their initial poses when an episode ends
-    reset_scene_after_episode: bool = True
     on_demand_render: bool = False
+    # FEM cloth/deformable support: the beta PhysX flag, a cuda World, GPU
+    # broadphase and the per-tick cloth-pin update. Separate from
+    # enable_gpu_dynamics so tasks that only want PhysX GPU rigid-body dynamics
+    # keep the backend they already run on.
+    enable_deformable: bool = False
+    show_pin_sphere: bool = False  # draw the cloth-pin debug sphere (cloth-fold)
+    log_jaw_pocket_counts: bool = False  # periodically log live left/right jaw_pocket inside_count (cloth-fold)
+    # Keep the robot's gripper collision meshes active during cloth-fold. Default
+    # False: cloth_pin disables them so the cloth is driven purely by the pin (not
+    # by gripper-vs-cloth contact/friction). Set True to let the grippers physically
+    # collide with the cloth.
+    enable_gripper_collision: bool = False
+    # Optional independent pose stream for the keyboard mock server's map.
+    teleop_telemetry_endpoint: str = ""
+    teleop_telemetry_rate_hz: float = 10.0
+    # Exit the process (code 1) when one main-loop world.step() runs longer
+    # than this; it can hang forever inside Kit's native app.update(). 0 disables.
+    main_loop_stall_timeout_s: float = 300.0
 
 
 @dataclass
@@ -125,9 +141,21 @@ class BenchmarkConfig:
     output_dir: str = "output"
     fps: int = 30
     record: bool = False
+    # Opt-in replay state and the stage-root third-person camera.
+    record_state: bool = False
+    record_world_camera: bool = False
+    record_video_dir: str = ""
     infer_host: str = "localhost:8999"
     model_arc: str = "pi"
     interactive: bool = False
+    startup_validation_seconds: float = 0.0
+    startup_validation_result: str = ""
+    # A dedicated G2 shared-control session. It uses the CoRobot transport but
+    # does not use benchmark instruction, scoring, or completion routing.
+    control_mode: bool = False
+    # Operator-owned text for the shared-control observation. This is kept
+    # separate from benchmark prompts and is intentionally empty by default.
+    control_user_text: str = ""
     seed: int = 1
     preview: bool = False
     enable_vec: int = 0
@@ -136,17 +164,32 @@ class BenchmarkConfig:
     # Number of scene instances to sample (deterministically by `seed`).
     # 0 (default) means "use all instances under llm_task/<sub_task>/".
     num_instances: int = 0
+    # Exact comma-separated instance ids, in caller order. An explicit value
+    # takes precedence over num_instances and keeps supervised control pinned
+    # to the scenario revision recorded by its launcher.
     instance_ids: str = ""
+    # realprobe evals target the real robot: CoRobotPolicy drops the "_sim"
+    # suffix from the reported robot_type (e.g. g2a_sim -> g2a) so the
+    # inference server sees the real-robot embodiment tag. Also settable from
+    # the eval json's robot.realprobe flag.
+    realprobe: bool = False
+    # Number of linearly-interpolated substeps per raw action-chunk waypoint
+    # executed by CoRobotPolicy. <=1 disables interpolation (raw passthrough).
+    policy_action_interp_substeps: int = 1
+    # Wait this many seconds for the arm to settle before collecting the
+    # next observation for inference.
+    infer_settle_timeout: float = 1.0
     # Overlay semantically-aligned paraphrased instructions from a sidecar
     # config (keyed by sub_task_name + instance_id). Off by default.
     language_perturbation: bool = False
     language_perturbation_config: str = ""
-    # "full"   : send one full instruction the whole episode (legacy).
-    # "subtask": iterate subtask_steps from instructions.json, advance to
-    #            the next instruction only when the current step's checker
-    #            passes. Requires the task's instructions.json to define a
-    #            `subtask_steps` list paired with checkers.
-    instruction_mode: str = "full"
+    # Pause the simulation timeline (via omni.timeline) while the policy
+    # blocks on an inference round-trip, so objects don't drift under
+    # gravity during the wait. Disabled by default.
+    pause_physics_during_inference: bool = False
+    # Override only the configured gripper control-joint drives on the runtime
+    # USD stage. -1 preserves the shared asset values; angular drives use N·m.
+    gripper_drive_max_force: float = -1.0
 
 
 @dataclass

@@ -6,11 +6,29 @@ from enum import Enum
 import uuid
 import re
 import os, json
+from geniesim_benchmark.benchmark.config.sandbox_tasks import SANDBOX_TASKS
 from geniesim_benchmark.plugins.logger import Logger
 from dataclasses import dataclass
 from copy import deepcopy
 from geniesim_benchmark.plugins.output_system.score_groups import (
-    SCORE_SCHEMA_VERSION, score_group_ids, goal_tree_metadata, score_layout_steps, normalize_steps, episode_complete, episode_counts,
+    SCORE_SCHEMA_VERSION,
+    score_group_ids,
+    goal_tree_metadata,
+    score_layout_steps,
+    normalize_steps,
+    episode_complete,
+    episode_counts,
+)
+from geniesim_benchmark.plugins.output_system.weighted_scoring import (
+    WeightProfile,
+    add_weighted_score,
+    canonical_score_layout,
+    get_weight_profile,
+    weighted_score_breakdown,
+)
+from geniesim_benchmark.plugins.output_system.policy_budget import (
+    add_policy_budget_scores,
+    policy_budget_breakdown,
 )
 
 logger = Logger()
@@ -67,25 +85,152 @@ TASK_STEPS = {
     "place_block_into_drawer": ["Inside"],
     "sort_number": ["MixedRules"],
     "stack_bowls": ["Stack"],
+    "stack_bowls_pickup": ["PickUpOnGripper", "Stack"],
     "stack_three_building_blocks": ["Stack"],
     "sort_cubes_by_size": ["MixedRules"],
     "pick_object_absolute_position": ["Follow", "PickUpOnGripper"],
     "pick_object_relative_position": ["Follow", "PickUpOnGripper"],
     "place_object_relative_position": ["Follow", "MixedRules"],
     "place_beverage_to_anothers_position": ["Follow", "MixedRules"],
+    "open_short_trash_can_and_throw_garbage_multi_robot": ["PushPull", "PickUpOnGripper", "Inside"],
+    # Two steps, each an ActionSetWaitAll pair: step 1 needs BOTH grippers on
+    # the beam, step 2 needs the beam on BOTH supports. Caveat on the per-step
+    # numbers below: score_layout_steps groups consecutive rows sharing a
+    # class_name and takes max() over the run, so each pair is reported as
+    # either-one-is-enough (one gripper, or one support, reads as a pass).
+    # Runtime pass/fail and E2E are unaffected -- ActionSetWaitAll._is_done
+    # requires all children -- so E2E stays strict while these two per-step
+    # rates read optimistically. Registering them anyway beats an empty
+    # layout, which would drop this task back to the "last leaf only"
+    # fallback in checker_runner and report nothing per-step.
+    "place_long_block_on_supports_multi_robot": ["PickUpOnGripper", "Ontop"],
+    "pick_specific_object_multi_robot": ["Follow", "PickUpOnGripper"],
+    "store_chess_multi_robot": ["PickUpOnGripper", "Ontop"],
+    "hang_cups_on_cup_tree_arxone": ["PickUpOnGripper", "Hang"],
+    "hang_cups_on_cup_tree_agilex": ["PickUpOnGripper", "Hang"],
+    "hang_cups_on_cup_tree_g1": ["PickUpOnGripper", "Hang"],
+    "hang_cups_on_cup_tree_g2_omnipicker": ["PickUpOnGripper", "Hang"],
+    "scrape_chicken_bone_into_bin_arxone": ["PickUpOnGripper", "MixedRules"],
+    "scrape_chicken_bone_into_bin_agilex": ["PickUpOnGripper", "MixedRules"],
+    "scrape_chicken_bone_into_bin_g1": ["PickUpOnGripper", "MixedRules"],
+    "scrape_chicken_bone_into_bin_g2_omnipicker": ["PickUpOnGripper", "MixedRules"],
+    "keyboard_keycap_swap_arxone": ["PickUpOnGripper", "LiftUp", "PlaceOnRivet"],
+    "keyboard_keycap_swap_agilex": ["PickUpOnGripper", "LiftUp", "PlaceOnRivet"],
+    "keyboard_keycap_swap_g1": ["PickUpOnGripper", "LiftUp", "PlaceOnRivet"],
+    "keyboard_keycap_swap_g2_omnipicker": ["PickUpOnGripper", "LiftUp", "PlaceOnRivet"],
+    "write_uppercase_letter_with_pen_arxone": ["PickUpOnGripper", "InkOverlap"],
+    "write_uppercase_letter_with_pen_agilex": ["PickUpOnGripper", "InkOverlap"],
+    "write_uppercase_letter_with_pen_g1": ["PickUpOnGripper", "InkOverlap"],
+    "write_uppercase_letter_with_pen_g2_omnipicker": ["PickUpOnGripper", "InkOverlap"],
+    "pour_50ml_into_graduated_cylinder_arxone": ["PickUpOnGripper", "PourVolume"],
+    "pour_50ml_into_graduated_cylinder_agilex": ["PickUpOnGripper", "PourVolume"],
+    "pour_50ml_into_graduated_cylinder_g1": ["PickUpOnGripper", "PourVolume"],
+    "pour_50ml_into_graduated_cylinder_g2_omnipicker": ["PickUpOnGripper", "PourVolume"],
+    "stack_three_building_blocks_large_multi_robot": [
+        "PickUpOnGripper",
+        "PickUpOnGripper",
+        "PickUpOnGripper",
+        "Stack",
+    ],
+    "plug_charging_cable_into_phone": ["PickUpOnGripper", "PickUpOnGripper", "PlugInserted"],
+    "insert_building_block": ["PickUpOnGripper", "InBBox"],
+    "insert_ethernet_cable": ["PickUpOnGripper", "PlugInserted"],
+    # Retired bearing names remain score-layout IDs for archived results only.
+    "install_bearing": ["PickUpOnGripper", "PlaceOnRivet"],
+    "install_bearing_shaft_progress": ["PickUpOnGripper", "ShaftInserted", "PlaceOnRivet"],
+    "install_bearing_shaft_seat5mm": ["PickUpOnGripper", "ShaftInserted", "PlaceOnRivet"],
+    "install_bearing_shaft_seat5mm_geometry10": ["PickUpOnGripper", "ShaftInserted", "PlaceOnRivet"],
+    "install_bearing_shaft_seat5mm_geometry10_angle10": ["PickUpOnGripper", "ShaftInserted", "PlaceOnRivet"],
+    "put_the_cap_on_the_pen_new": ["PickUpOnGripper", "PickUpOnGripper", "PlugInserted", "Ontop"],
+    "insert_coin_into_money_box": ["PickUpOnGripper", "Inside"],
+    "insert_straw_into_milk_tea_cup": ["PickUpOnGripper", "MixedRules"],
+    "pick_up_trash": ["PickUpOnGripper"],
+    "phone_packaging_precise": [
+        "PickUpOnGripper",
+        "MixedRules",
+        "PickUpOnGripper",
+        "MixedRules",
+        "PickUpOnGripper",
+        "MixedRules",
+    ],
+    "phone_packaging": [
+        "PickUpOnGripper",
+        "Inside",
+        "PickUpOnGripper",
+        "Ontop",
+        "PickUpOnGripper",
+        "Cover",
+    ],
+    "pick_up_a_package": ["LiftUp", "MixedRules"],
+    "cover_cup_lid": ["PickUpOnGripper", "Ontop", "MixedRules"],
+    "take_the_scissors": ["PickUpOnGripper", "ScissorsHandleInserted", "ScissorsHandleActuated"],
+    "take_the_book": ["Rotated", "MixedRules"],
+    # Whole-body-control: robot drives to the trash, picks it up, drives to
+    # the bin, drops it in, in the home_b_aligned living-room background.
+    # 6 个 G2 crsB 90d WBC（全身协同）任务, 2026-10-02 搭建完成
+    # 见 llm_task/<task>/0/problems.json 的 Acts 树; 每个 ActionSetWaitAny 内的
+    # 左右手/多候选变体只在这里列一次(score_layout_steps 的 best-of 规则会处理),
+    # 同一个 checker 类名在不同步骤重复出现(如 open_the_door 的两次 PushPull)则按
+    # 实际步数各写一次。
+    "sending_food": ["LiftUp", "ChassisAtTarget", "Ontop", "Ontop"],
+    "pick_up_trash_wbc": [
+        "RobotNearObject",
+        "PickUpOnGripper",
+        "RobotNearObject",
+        "PickUpOnGripper",
+        "RobotNearObject",
+        "PushPull",
+        "Inside",
+    ],
+    "open_the_door": ["ChassisAtTarget", "PushPull", "ChassisAtTarget", "PushPull"],
+    "match_and_pick_from_conveyor": ["PickUpOnGripper", "RobotNearObject", "InBBox"],
+    "put_the_plates_on_the_shelf": ["PickUpOnGripper", "PickUpOnGripper", "RobotNearObject", "InBBox", "InBBox"],
+    "open_the_roller_shutter": ["RobotNearObject", "PickUpOnGripper", "PushPull", "PushPull", "ChassisAtTarget"],
+    # ONLY the wipe is scored. Picking the eraser up and walking to the board
+    # are prerequisites, not deliverables: their checkers still run and still
+    # gate the episode (and the Onfloor guard still aborts it), but they are
+    # deliberately absent from this layout, so score_layout_steps skips their
+    # rows and the episode score is exactly the erased fraction, 0..1.
+    # E2E therefore requires a complete wipe (scores[-1] == 1.0).
+    "clean_the_blackboard": ["Erased"],
+    # Load all four parcels onto the cart (gate 1: any two on; gate 2: all four),
+    # push the cart to the sorting tables, then unload the two yellow parcels onto
+    # either left table and the two white ones onto either right table. The two
+    # tables of each pair are edge-to-edge, so one bbox per pair covers "either".
+    # One layout entry per leaf row: score_layout_steps splits a run of same-class
+    # rows over however many consecutive entries share the name, capped by the run
+    # length, so a step registered with fewer entries than it has rows steals the
+    # next step's entries.
+    "transport_cartons_to_table_wbc": [
+        "Ontop",
+        "Ontop",
+        "Ontop",
+        "Ontop",  # (1) any two parcels on the cart deck
+        "Ontop",
+        "Ontop",
+        "Ontop",
+        "Ontop",  # (2) all four on the cart deck
+        "InBBox",  # (3) cart pushed to the tables
+        "InBBox",
+        "InBBox",  # (4) yellow parcels on a left table
+        "InBBox",
+        "InBBox",  #     white parcels on a right table
+    ],
+    # New instructions and geometry use separate foreground identities.
+    "stack_bowls_wuji": ["Stack"],
 }
 
-# Subtask-mode scoring layout. When the manip task's yaml sets
-# `instruction_mode: subtask`, the runtime no longer drives the original
-# problems.json checker tree — it builds one checker per sub-instruction.
-# Class-name list here must match the LEAF checker class names registered
-# into task_progress when each `subtask_steps[i].checker` entry in
-# `source/geniesim_benchmark/src/geniesim_benchmark/benchmark/config/llm_task/<task>/<inst>/instructions.json`
-# is parsed. Container nodes like ActionSetWaitAll/ActionSetWaitAny do not
-# appear here — flatten them to their leaves in registration order.
+# Sandbox episodes have only a StepOut exit; they declare no scored success checks.
+TASK_STEPS.update({name: [] for name in SANDBOX_TASKS})
+
+# Archived subtask-result layouts, retained only for reading/reweighting old
+# results. Benchmark execution always uses the full task checker tree.
 TASK_SUBTASK_STEPS = {
+    "put_the_cap_on_the_pen_new": ["PickUpOnGripper", "PickUpOnGripper", "PlugInserted", "Ontop"],
+    "insert_coin_into_money_box": ["PickUpOnGripper", "Inside"],
+    "insert_straw_into_milk_tea_cup": ["PickUpOnGripper", "MixedRules"],
     "hold_pot": ["LiftUp", "InBBox", "Upright"],
-    "clean_the_desktop": ["Inside", "PushPull", "Inside", "RelativePositionChecker", "Upright"],
+    "clean_the_desktop": ["Inside", "PushPull", "Inside", "RelativePosition", "Upright"],
     "open_door": ["PushPull"],
     "place_block_into_box": ["PickUpOnGripper", "Inside"],
     "pour_workpiece": ["Inside", "Inside", "Inside", "Inside"],
@@ -115,13 +260,23 @@ TASK_SUBTASK_STEPS = {
     ],
     "stock_and_straighten_shelf": ["PickUpOnGripper", "InBBox", "Upright"],
     "take_wrong_item_shelf": ["Follow", "Inside"],
+    # sim2real (a2d_probe) tasks. Segmentation mirrors the training data's
+    # meta/agibot/segments.parquet; see scripts/add_s2r_subtask_steps.py.
+    "pick_block_color": ["PickUpOnGripper"],
+    "pick_block_size": ["PickUpOnGripper"],
+    "pick_specific_object": ["PickUpOnGripper"],
+    "place_object_into_box_color": ["PickUpOnGripper", "Inside"],
+    "pack_in_supermarket": ["PickUpOnGripper", "Inside"],
+    "sort_fruit": ["PickUpOnGripper", "Inside"],
+    "bimanual_chip_handover": ["PickUpOnGripper", "StableGrasp", "Upright"],
+    "place_block_into_drawer": ["PushPull", "PickUpOnGripper", "Inside", "PushPull"],
+    # New instructions and geometry use separate foreground identities.
 }
 
 
 def get_task_steps(sub_task_name, instruction_mode="full"):
-    """Return the scoring layout for `sub_task_name`. In subtask mode, fall
-    back to the legacy TASK_STEPS list if no subtask layout is registered."""
-    key = re.sub(r"_\d+$", "", sub_task_name)
+    """Read full task layouts or explicitly selected archived result layouts."""
+    key = canonical_score_layout(re.sub(r"_\d+$", "", sub_task_name))
     if instruction_mode == "subtask" and key in TASK_SUBTASK_STEPS:
         return TASK_SUBTASK_STEPS[key]
     return TASK_STEPS.get(key, [])
@@ -153,7 +308,14 @@ class TaskEvaluation:
     duration: float
     task_instruction: str
 
-    def __init__(self, task_name="", sub_task_name="", task_type="benchmark", instruction_mode="full"):
+    def __init__(
+        self,
+        task_name="",
+        sub_task_name="",
+        task_type="benchmark",
+        instruction_mode="full",
+        score_layout_name: str | None = None,
+    ):
         self.task_name = task_name
         self.sub_task_name = sub_task_name
         self.task_type = task_type
@@ -171,11 +333,36 @@ class TaskEvaluation:
         self.task_instruction = ""
         self.duration = 0.0
         self.instruction_mode = instruction_mode
-        self.sub_steps = get_task_steps(self.sub_task_name, self.instruction_mode)
+        self.score_layout_name = (
+            canonical_score_layout(score_layout_name) if isinstance(score_layout_name, str) else score_layout_name
+        )
+        if score_layout_name is not None and (not isinstance(score_layout_name, str) or not score_layout_name):
+            raise ValueError("ScoreLayout must name a registered scoring layout")
+        scoring_task = score_layout_name or self.sub_task_name
+        self.sub_steps = get_task_steps(scoring_task, self.instruction_mode)
+        if score_layout_name is not None and not self.sub_steps:
+            raise ValueError(f"Unknown ScoreLayout: {score_layout_name}")
+        self.weight_profile = get_weight_profile(scoring_task, self.sub_steps, self.instruction_mode)
+        self.policy_dispatch_count: int | None = None
+        self._policy_dispatch_start: int | None = None
+
+    def start_policy_statistics(self, policy: object) -> None:
+        """Snapshot an optional lifetime counter without changing policy state."""
+        count = getattr(policy, "policy_dispatch_count", None)
+        self._policy_dispatch_start = count if type(count) is int and count >= 0 else None
+        self.policy_dispatch_count = 0 if self._policy_dispatch_start is not None else None
+
+    def update_policy_statistics(self, policy: object) -> None:
+        """Keep an episode delta; missing/reset counters are unavailable, not zero."""
+        start = self._policy_dispatch_start
+        count = getattr(policy, "policy_dispatch_count", None)
+        self.policy_dispatch_count = (
+            count - start if start is not None and type(count) is int and count >= start else None
+        )
+        if self.policy_dispatch_count is None:
+            self._policy_dispatch_start = None
 
     def safe_deepcopy(self, task_progress):
-        if self.instruction_mode == "subtask":
-            task_progress = [row for row in task_progress if "subtask_step_idx" in row]
         score_groups = score_group_ids(task_progress)
         goal_metadata = goal_tree_metadata(task_progress)
         all_progress = []
@@ -192,14 +379,20 @@ class TaskEvaluation:
                 progress["progress"]["SCORE"] = item["progress"]["SCORE"]
             if item.get("progress") and "STATUS" in item.get("progress", {}):
                 progress["progress"]["STATUS"] = item["progress"]["STATUS"]
-            progress.update(goal_metadata.get(item["id"], {
-                key: item[key] for key in ("goal_operator", "goal_children", "goal_min_complete", "goal_finished")
-                if key in item
-            }))
+            progress.update(
+                goal_metadata.get(
+                    item["id"],
+                    {
+                        key: item[key]
+                        for key in ("goal_operator", "goal_children", "goal_min_complete", "goal_finished")
+                        if key in item
+                    },
+                )
+            )
             for key in ("subtask_step_idx", "subtask_role"):
                 if key in item:
                     progress[key] = item[key]
-            for key in ("GOAL_COMPLETE",):
+            for key in ("GOAL_COMPLETE", "CARRY_DISTANCE", "POLICY_BUDGET"):
                 if key in (item.get("progress") or {}):
                     progress["progress"][key] = deepcopy(item["progress"][key])
             all_progress.append(progress)
@@ -233,11 +426,13 @@ class TaskEvaluation:
                 "STEPS": score_layout_steps(self.result["progress"], self.sub_steps),
                 "E2E": 0,
             }
-            self.result["scores"]["E2E"] = int(episode_complete(
-                self.result, self.result["scores"]["STEPS"], self.sub_steps
-            ))
+            self.result["scores"]["E2E"] = int(
+                episode_complete(self.result, self.result["scores"]["STEPS"], self.sub_steps)
+            )
         else:
             logger.warning(f"No substeps defined for task {self.task_name}")
+        add_weighted_score(self.result, self.result.get("scores", {}).get("STEPS", []), self.weight_profile)
+        add_policy_budget_scores(self.result, self.result.get("scores", {}).get("STEPS", []), self.weight_profile)
 
     def assemble_result(self, info):
         self.result["code"] = int(ErrorCode.SUCCESS.value)
@@ -248,8 +443,6 @@ class TaskEvaluation:
 
     def to_dir(self):
         dir = {
-            "sub_task_name": self.sub_task_name,
-            "instruction_mode": self.instruction_mode,
             "task_type": self.task_type,
             "task_uid": self.task_uid,
             "task_name": self.task_name,
@@ -261,20 +454,31 @@ class TaskEvaluation:
             "model_type": self.model_type,
             "task_instruction": self.task_instruction,
         }
+        dir["sub_task_name"] = self.sub_task_name
+        dir["instruction_mode"] = self.instruction_mode
+        if self.score_layout_name is not None:
+            dir["score_layout_name"] = self.score_layout_name
+        if self.policy_dispatch_count is not None:
+            dir["policy_dispatch_count"] = self.policy_dispatch_count
         return dir
 
 
 def extract_scores(result, steps):
     recorded = (result.get("scores") or {}).get("STEPS")
-    return normalize_steps(recorded, steps) if recorded is not None else score_layout_steps(result.get("progress", []), steps)
+    return (
+        normalize_steps(recorded, steps)
+        if recorded is not None
+        else score_layout_steps(result.get("progress", []), steps)
+    )
 
 
-def get_statistics(evaluate_results, steps):
+def get_statistics(evaluate_results, steps, weight_profile: WeightProfile | None = None):
     """Calculates statistics for evaluation results
 
     Args:
         evaluate_results: List of evaluation results
         steps: List of steps
+        weight_profile: Explicit task/mode weights. None reports weighted as unavailable.
 
     Returns:
         statistics: {
@@ -299,6 +503,11 @@ def get_statistics(evaluate_results, steps):
     task_step_scores = {}
     # Stores the number of executions for each task
     task_counts = {}
+    weighted_totals = {}
+    weighted_process_total = 0.0
+    weighted_bonus_total = 0.0
+    weighted_complete_count = 0
+    policy_budget_results = []
 
     # Collect all scores
     for item in evaluate_results:
@@ -314,6 +523,19 @@ def get_statistics(evaluate_results, steps):
 
         # Extract step scores for the current result
         scores = extract_scores(item["result"], steps)
+        policy_budget = policy_budget_breakdown(item["result"], scores, weight_profile)
+        if policy_budget is not None:
+            policy_budget_results.append(policy_budget)
+        if weight_profile is not None:
+            breakdown = weighted_score_breakdown(
+                scores,
+                weight_profile,
+                item["result"].get("scores", {}).get("E2E"),
+            )
+            weighted_totals[task_key] = weighted_totals.get(task_key, 0.0) + breakdown.total
+            weighted_process_total += breakdown.process
+            weighted_bonus_total += breakdown.completion_bonus
+            weighted_complete_count += int(breakdown.complete)
         for score_item in scores:
             step_idx = score_item["step"]
             score_value = score_item["score"]
@@ -360,11 +582,47 @@ def get_statistics(evaluate_results, steps):
     total_episodes = len(evaluate_results)
     e2e_sum = sum(item["result"].get("scores", {}).get("E2E", 0) for item in evaluate_results)
     statistics["average_e2e"] = round(e2e_sum / total_episodes, 4) if total_episodes else 0.0
+    # Historical/unsupported-policy rows have no counter. Report the measured
+    # denominator explicitly instead of silently treating absent values as zero.
+    dispatch_counts = [
+        item["policy_dispatch_count"]
+        for item in evaluate_results
+        if type(item.get("policy_dispatch_count")) is int and item["policy_dispatch_count"] >= 0
+    ]
+    if dispatch_counts:
+        statistics["policy_dispatch_count"] = sum(dispatch_counts)
+        statistics["average_policy_dispatch_count"] = round(sum(dispatch_counts) / len(dispatch_counts), 4)
+        statistics["policy_dispatch_episodes"] = len(dispatch_counts)
+    # Compute from unrounded episode scores, rather than rounded per-step means.
+    if weight_profile is not None:
+        statistics["weighted"] = round(sum(weighted_totals.values()) / total_episodes, 4) if total_episodes else 0.0
+        statistics["weighted_by_instruction"] = {
+            key: round(total / task_counts[key], 4) for key, total in weighted_totals.items()
+        }
+        statistics["weighted_scoring"] = weight_profile.to_dict()
+        for key, total in (
+            ("weighted_process", weighted_process_total),
+            ("weighted_completion_bonus", weighted_bonus_total),
+            ("weighted_completion_rate", weighted_complete_count),
+        ):
+            statistics[key] = round(total / total_episodes, 4) if total_episodes else 0.0
 
     statistics["episode_counts"] = episode_counts(evaluate_results)
     statistics["run_complete"] = statistics["episode_counts"]["invalid"] == 0
     statistics["timecost"] = time_cost
     statistics["task_counts"] = task_counts
+    if policy_budget_results:
+        if any(b["scoring"] != policy_budget_results[0]["scoring"] for b in policy_budget_results[1:]):
+            raise ValueError("Cannot aggregate different policy budget configurations")
+        count = len(policy_budget_results)
+        statistics["policy_budget_episodes"] = count
+        for key, source in (
+            ("policy_budget_weighted", "total"),
+            ("policy_budget_process", "process"),
+            ("policy_budget_completion_bonus", "completion_bonus"),
+        ):
+            statistics[key] = round(sum(b[source] for b in policy_budget_results) / count, 4)
+        statistics["policy_budget_scoring"] = policy_budget_results[0]["scoring"]
 
     return statistics
 
@@ -381,13 +639,22 @@ class EvaluationSummary:
         self.task_name = task_name
         self.sub_task_name = sub_task_name
         self.instruction_mode = instruction_mode
+        self.score_layout_name = None
         self.sub_steps = get_task_steps(sub_task_name, instruction_mode)
+        self.weight_profile = get_weight_profile(sub_task_name, self.sub_steps, instruction_mode)
 
     def update_current(self, eval: TaskEvaluation):
-        if self.results and (self.sub_steps != eval.sub_steps or self.instruction_mode != eval.instruction_mode):
-            raise ValueError("Cannot combine different scoring layouts or instruction modes")
+        if self.results and (
+            self.sub_steps != eval.sub_steps
+            or self.instruction_mode != eval.instruction_mode
+            or self.score_layout_name != eval.score_layout_name
+            or self.weight_profile != eval.weight_profile
+        ):
+            raise ValueError("Cannot combine different scoring layouts, modes or weight profiles")
         self.sub_steps = list(eval.sub_steps)
         self.instruction_mode = eval.instruction_mode
+        self.score_layout_name = eval.score_layout_name
+        self.weight_profile = eval.weight_profile
         self.current_eval = eval
 
     def make_temp_statistic(self):
@@ -413,9 +680,11 @@ class EvaluationSummary:
     def to_dynamic_msg_pub(self, results=None):
         results = self.results if results is None else results
         task_steps = self.sub_steps
-        temp_scores = get_statistics(results, task_steps)["scores"]
+        temp_scores = get_statistics(results, task_steps, self.weight_profile)["scores"]
         if self.current_eval.task_instruction not in temp_scores.keys():
-            temp_statistic = [0.0] * len(task_steps)
+            temp_statistic = {"cnt": 1}
+            for step in task_steps:
+                temp_statistic[step] = 0.0
         else:
             temp_statistic = temp_scores[self.current_eval.task_instruction]
 
@@ -427,5 +696,5 @@ class EvaluationSummary:
         with open(self.file_path, "w+") as f:
             general_results = {}
             general_results["details"] = self.results
-            general_results["statistics"] = get_statistics(self.results, self.sub_steps)
+            general_results["statistics"] = get_statistics(self.results, self.sub_steps, self.weight_profile)
             json.dump(general_results, f, indent=4)

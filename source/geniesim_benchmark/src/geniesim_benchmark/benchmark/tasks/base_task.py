@@ -24,6 +24,9 @@ class BaseTask(AderTask):
     def get_instruction(self):
         return self.instructions
 
+    def get_instruction_segments(self):
+        return []
+
     def set_instruction(self, instruction):
         self.instructions[0] = instruction
 

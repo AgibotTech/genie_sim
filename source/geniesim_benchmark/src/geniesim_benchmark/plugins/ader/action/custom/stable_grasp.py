@@ -108,26 +108,7 @@ class StableGrasp(EvaluateAction):
         if self._done_flag:
             return super().update(delta_time)
 
-        # Get robot type dynamically
-        robot_cfg = getattr(self.env, "robot_cfg", None)
-        if robot_cfg is None:
-            # Fallback: try to get from init_task_config
-            robot_cfg = getattr(self.env, "init_task_config", {}).get("robot_cfg", "G2_omnipicker")
-
-        # Determine robot base prim path (G1 uses /G1, G2 uses /genie)
-        # See: G1_omnipicker.json -> base_prim_path: "/G1"
-        # See: G2_omnipicker.json -> base_prim_path: "/genie"
-        if "G1" in robot_cfg:
-            robot_base = "/G1"
-        else:
-            robot_base = "/genie"
-
-        gripper_link_suffix = "_link"
-        link_prim_path = (
-            f"{robot_base}/gripper_r_center{gripper_link_suffix}"
-            if "right" in self.gripper_id
-            else f"{robot_base}/gripper_l_center{gripper_link_suffix}"
-        )
+        link_prim_path = self.gripper_link_path(self.gripper_id)
 
         try:
             gripper_pose = self.get_world_pose_matrix(link_prim_path)

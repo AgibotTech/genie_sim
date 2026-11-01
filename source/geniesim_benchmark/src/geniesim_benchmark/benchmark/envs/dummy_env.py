@@ -30,6 +30,8 @@ class DummyEnv(BaseEnv):
         self._load_teleop_initial_states()
 
     def _load_teleop_initial_states(self):
+        # Both collection launchers supply the same task context as Pico.
+        # PiEnv inherits DummyEnv but must retain its benchmark initial states.
         import os
 
         config = os.environ.get("GENIESIM_TELEOP_CONFIG")
@@ -95,12 +97,16 @@ class DummyEnv(BaseEnv):
         self._picked_objects = set()
         init_gripper = self.init_gripper_target()
         if self.api_core.robot_name == "G2_crsB_90d":
+            # Benchmark open sentinels are positive, but this direct reset
+            # writes physical angles: 90d opens at 0 rad (its upper limit).
             init_gripper = [0.0] * len(self.cfg["gripper_joints"])
         self.robot_joint_indices = self.api_core.get_robot_joint_indices()
         self.api_core.prepare_teleop_grippers()
 
         free_base = bool(self.init_task_config.get("robot", {}).get("free_base", False))
         if free_base or self.teleop_initial_states:
+            # Pose/reset under the world anchor, then release only after the
+            # initial body targets and wheel drive mode have been applied.
             if free_base:
                 self.api_core.set_robot_base_anchored(True)
                 self.api_core.prepare_teleop_chassis()
