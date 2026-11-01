@@ -24,7 +24,7 @@ def test_runtime_selection_preserves_config_and_forwarded_arguments(monkeypatch,
     selector = None
     if runtime is not None:
         selector = ModuleType("geniesim_benchmark.runtime")
-        selector.runtime_for_config = lambda path: runtime
+        selector.runtime_for_config = lambda path, overrides=(): runtime
     monkeypatch.setitem(sys.modules, "geniesim_benchmark.runtime", selector)
 
     result = benchmark._build_app_cmd(config, ["--literal", "value with spaces"], "localhost:8999")

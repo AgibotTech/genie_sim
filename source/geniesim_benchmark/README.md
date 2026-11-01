@@ -60,6 +60,15 @@ and generation-scoped execution receipts. See the
 [control protocol](../../docs/shared_control_protocol.md) and
 [render-loop lifecycle](../../docs/render-loop-scheduler.md) for their contracts.
 
+### Newton wok evaluation
+
+```bash
+geniesim benchmark run g2crsbwuji_dexmanip_wok_flip --infer-host=localhost:8999
+```
+
+The task selects its Python 3.12 / ROS / Newton runtime. Prepare the ROS overlay
+and asset package first; see the [runtime guide](docs/wuji-dexmanip-cli.md).
+
 ### Discover tasks
 
 ```bash

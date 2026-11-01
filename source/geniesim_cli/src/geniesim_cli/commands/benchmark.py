@@ -23,14 +23,12 @@ up the second token in :data:`_KNOWN_CATEGORIES` gives us a simple,
 deterministic tag inference without having to maintain per-file
 metadata.
 
-The interpreter is picked in this order so the same verb works inside
-the standard 6.x container (``python3``), inside the 5.1 container
-(``omni_python``), and on a host that ``pip install``\\ed isaacsim
-(``sys.executable``):
-
-1. ``$GENIESIM_PY_CMD`` — explicit override, set by ``geniesim docker``
-2. ``omni_python`` if it's on ``$PATH`` (canonical Isaac Sim wrapper)
-3. ``sys.executable`` (or ``python3`` as last-resort string)
+The task runtime selects the interpreter in the combo image: legacy Isaac
+tasks use bundled 5.1 through ``omni_python``; the Newton wok task uses
+system ``python3.12`` with Isaac 6.2 and ROS Jazzy. Generic
+``GENIESIM_PY_CMD`` container defaults do not override this task selection.
+A custom prepared Python path still applies. Newton tasks load their built ROS
+overlay automatically before exec.
 """
 
 from __future__ import annotations
@@ -122,13 +120,32 @@ def _app_py() -> Path:
 
 
 def _python_cmd() -> str:
-    """Pick the interpreter used to launch ``app.py``."""
-    override = os.environ.get("GENIESIM_PY_CMD")
+    """Select bundled Isaac 5.1, independently of the container's default."""
+    override = _prepared_python_override()
     if override:
         return override
     if shutil.which("omni_python"):
         return "omni_python"
-    return sys.executable or "python3"
+    raise RuntimeError("This Isaac benchmark requires bundled Isaac Sim 5.1 (omni_python). Use the combo image.")
+
+
+def _prepared_python_override() -> str | None:
+    """Keep custom prepared environments, not generic container defaults."""
+    override = os.environ.get("GENIESIM_PY_CMD")
+    if override and Path(override).name not in {"omni_python", "python3", "python3.12"}:
+        return override
+    return None
+
+
+def _rt_python_cmd() -> str:
+    """Select the system 3.12 ABI for Isaac 6.2, ROS Jazzy runtime."""
+    override = _prepared_python_override()
+    if override:
+        return override
+    interpreter = shutil.which("python3.12")
+    if interpreter:
+        return interpreter
+    raise RuntimeError("This RT benchmark requires system Python 3.12 with Isaac Sim 6.2 and ROS Jazzy.")
 
 
 def _all_configs() -> list[Path]:
@@ -241,19 +258,25 @@ def _extract_flag(args: list[str], name: str) -> tuple[str | None, list[str]]:
     return val, rest
 
 
-def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None) -> list[str]:
+
+
+
+
+def _task_runtime(config_path: Path, forwarded: list[str]) -> str:
     try:
         from geniesim_benchmark.runtime import runtime_for_config
     except ModuleNotFoundError as error:
         if error.name != "geniesim_benchmark.runtime":
             raise
-        # Benchmark packages without the selector expose only app/app.py.
-        runtime = "isaac"
-    else:
-        runtime = runtime_for_config(config_path)
+        # Older benchmark wheels expose only the Isaac app.
+        return "isaac"
+    return runtime_for_config(config_path, forwarded)
+
+
+def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None) -> list[str]:
+    runtime = _task_runtime(config_path, forwarded)
     if runtime == "newton":
-        interpreter = os.environ.get("GENIESIM_PY_CMD") or sys.executable or "python3"
-        cmd = [interpreter, "-m", "geniesim_benchmark.newton.runner", "--config", str(config_path)]
+        cmd = [_rt_python_cmd(), "-m", f"geniesim_benchmark.{runtime}.runner", "--config", str(config_path)]
     elif runtime == "isaac":
         cmd = [_python_cmd(), str(_app_py()), "--config", str(config_path)]
     else:
@@ -262,6 +285,36 @@ def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | No
         cmd.append(f"--benchmark.infer_host={infer_host}")
     cmd.extend(forwarded)
     return cmd
+
+
+def _runtime_environment(config_path: Path, forwarded: list[str]) -> dict[str, str] | None:
+    runtime = _task_runtime(config_path, forwarded)
+    if runtime == "mujoco":
+        return None
+    if runtime != "newton" or "--dry-run" in forwarded:
+        return dict(os.environ)
+    from geniesim_benchmark.rt_engine.environment import runtime_environment
+
+    return runtime_environment(config_path)
+
+
+def _prepared_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None):
+    cmd = _build_app_cmd(config_path, forwarded, infer_host)
+    environment = _runtime_environment(config_path, forwarded)
+    if environment is not None and not _prepared_python_override():
+        virtualenv = environment.get("VIRTUAL_ENV")
+        if (
+            _task_runtime(config_path, forwarded) == "newton"
+            and "--dry-run" not in forwarded
+            and virtualenv
+            and Path(virtualenv).name == "rt_python"
+            and (Path(virtualenv) / "bin/python").is_file()
+        ):
+            cmd[0] = str(Path(virtualenv) / "bin/python")
+    if environment is not None:
+        # Render/engine children must inherit the task choice, not the image default.
+        environment["GENIESIM_PY_CMD"] = cmd[0]
+    return cmd, environment
 
 
 def _print_usage() -> None:
@@ -288,15 +341,11 @@ def _print_usage() -> None:
     print(f"  {DIM}3. unique substring match against config stems{RST}")
     print()
     print(f"{BOLD}Examples:{RST}")
-    print(f"  {CYAN}geniesim benchmark run{RST} g2op_if_pick_block_color {WHITE}--infer-host=10.204.129.46:8999{RST}")
+    print(f"  {CYAN}geniesim benchmark run{RST} g2op_if_pick_block_color {WHITE}--infer-host=localhost:8999{RST}")
     print(f"  {CYAN}geniesim benchmark list{RST} --robot=g2op --category=if")
-    print(f"  {CYAN}geniesim benchmark batch{RST} --category=if --robot=g2op --infer-host=10.0.0.5:8999")
-    print(
-        f"  {CYAN}geniesim benchmark check-inference{RST} --infer-host=10.204.130.36:8999   {DIM}# bundled payload{RST}"
-    )
-    print(
-        f"  {CYAN}geniesim benchmark check-inference{RST} debug_preview/debug_0001.pkl --infer-host=10.204.130.36:8999"
-    )
+    print(f"  {CYAN}geniesim benchmark batch{RST} --category=if --robot=g2op --infer-host=localhost:8999")
+    print(f"  {CYAN}geniesim benchmark check-inference{RST} --infer-host=localhost:8999   {DIM}# bundled payload{RST}")
+    print(f"  {CYAN}geniesim benchmark check-inference{RST} debug_preview/debug_0001.pkl --infer-host=localhost:8999")
     print()
     print(f"{BOLD}Forwarded flags:{RST}")
     print(f"  {DIM}Anything after the CONFIG (or any unknown flag) is forwarded verbatim to app.py.{RST}")
@@ -315,7 +364,7 @@ def _do_run(args: list[str]) -> None:
         forwarded = forwarded[1:]
 
     config_path = _resolve_config(config_arg)
-    cmd = _build_app_cmd(config_path, forwarded, infer_host)
+    cmd, environment = _prepared_app_cmd(config_path, forwarded, infer_host)
 
     print(f"{BOLD}{MAGENTA}🧪 geniesim benchmark run{RST}")
     print(f"   {DIM}Config:{RST}    {CYAN}{config_path}{RST}")
@@ -327,6 +376,9 @@ def _do_run(args: list[str]) -> None:
     print()
     # execvp so app.py owns the tty: Ctrl-C, stdout, exit code all
     # belong directly to the child. Matches `geniesim docker into`.
+    if environment is not None:
+        os.environ.update(environment)
+    sys.stdout.flush()
     os.execvp(cmd[0], cmd)
 
 
@@ -414,10 +466,10 @@ def _do_batch(args: list[str]) -> None:
 
     failed: list[str] = []
     for i, p in enumerate(configs, 1):
-        cmd = _build_app_cmd(p, forwarded, infer_host)
+        cmd, environment = _prepared_app_cmd(p, forwarded, infer_host)
         print(f"  {BOLD}[{i}/{len(configs)}]{RST} {CYAN}{p.stem}{RST}")
         print(f"     {YELLOW}$ {' '.join(cmd)}{RST}")
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd, **({"env": environment} if environment is not None else {}))
         if result.returncode != 0:
             print(f"     {RED}❌ exit {result.returncode}{RST}")
             failed.append(p.stem)
@@ -606,7 +658,5 @@ def run(args: list[str]) -> None:
         _do_check_inference(rest)
         return
 
-    # Bare-config shortcut: `geniesim benchmark <CONFIG> [args...]` falls
-    # straight into run. Matches the legacy ad-hoc `geniesim --config X`
-    # invocation that the run-geniesim-local skill documents.
+    # A bare config name dispatches to `benchmark run`.
     _do_run(args)

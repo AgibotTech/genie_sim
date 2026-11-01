@@ -1,0 +1,18 @@
+runtime: newton
+task_name: wok_flip
+instruction: Hold the wok handle with the right hand, toss the ingredients, and catch them in the wok.
+launcher: launcher_newton_wuji_eval.yaml
+episodes: 1
+max_steps: 600
+ready_timeout_s: 600
+step_timeout_s: 180
+observation_timeout_s: 180
+inference_timeout_s: 660
+task_progress_topic: /wuji_eval/task_progress
+evaluation_timeout_s: 30
+image_topics:
+  head: /wuji_eval/head/image_raw
+  hand_left: /wuji_eval/hand_left/image_raw
+  hand_right: /wuji_eval/hand_right/image_raw
+scene: scene_flat_g2_sp_chef_wuji_eval.yaml
+headless: false
