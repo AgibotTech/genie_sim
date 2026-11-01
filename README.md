@@ -259,6 +259,37 @@ Generate G1/G2 robot videos from recorded actions or a pi0.5 policy loop, with o
 
 See [the Dream quick start](source/geniesim_dream/README.md), [installation](source/geniesim_dream/docs/setup.md), and [model assets](source/geniesim_dream/docs/assets.md). Its pinned Cosmos Framework and OpenPI dependencies are Git submodules; checkpoints are downloaded separately.
 
+### 3.11 Post-training server
+
+```mermaid
+flowchart LR
+  build(["🔨 Build the Docker images"]) ==> shell(["💻 Enter the container"]) ==> server(["⚙️ Start the server"])
+  classDef step fill:#ccfbf1,stroke:#0f766e,color:#134e4a,font-weight:bold
+  class build,shell,server step
+  linkStyle 0,1 stroke:#0f766e,stroke-width:2px
+```
+
+Start a GenieSim simulation server for policy training and evaluation. Prepare the host CLI and an editable `geniesim_assets` installation in the same Python environment (see § 3.1). The asset directory is detected and mounted automatically.
+
+Build the GenieSim base from NVIDIA's Isaac Sim 6.2 image, then add the post-training layer:
+
+```bash
+# On the simulation host, outside containers, from the repository root:
+geniesim docker6.2 build
+geniesim docker --profile post-train build
+geniesim docker --profile post-train up --headless
+geniesim docker --profile post-train into
+```
+
+```bash
+# Inside the post_train_server container, from /workspace:
+geniesim post-train server start --count 1 --base-port 5601 --devices 0
+```
+
+This starts one server on GPU 0, listening on TCP port 5601. A client selects the task and initializes the simulation.
+
+For training and evaluation with RLinf, see the [RLinf GenieSim guide](https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/geniesim.html).
+
 # 4. 📜 Roadmap & Updates
 
 The arc of the platform — what shipped when, and what's coming next.

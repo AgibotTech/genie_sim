@@ -36,7 +36,7 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim docker5.1 …` / `docker6.2 …` / `docker4.5 …` | Per–Isaac-Sim variants |
 | `geniesim docker --profile post-train …` / `--profile post-train-teleop …` | post-training simulation server / optional teleop layer; see [Docker profiles](../../docker/README.md#post-training-profiles) |
 | `geniesim post-train server start\|status\|stop\|logs …` | Operate post-training server processes inside the prepared runtime; see [the server workflow](../rlinf_geniesim/README.md#start-and-initialize) |
-| `geniesim post-train teleop …` | Connect Pico debugging; see teleoperation |
+| `geniesim post-train teleop …` | Connect Pico debugging; see [teleoperation](../rlinf_geniesim/TELEOP_USAGE.md) |
 | `geniesim ros build {dev,release,cleanup}` | `colcon build` the ROS 2 workspace |
 | `geniesim ros doctor` | Repair rosdep |
 | `geniesim tool {deps-dag,ros-dag,docs} [--fix]` | Repo-maintenance audits (DAG + doc-coverage) |

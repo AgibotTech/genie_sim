@@ -93,7 +93,7 @@ don't cross-reference them as if they were peer distributions.
 |---|---|
 | `agent2act/` | LLM-to-action runtime and CoRobot WebSocket service; own uv environment — see [README.md](./agent2act/README.md) and [AGENTS.md](./agent2act/AGENTS.md) |
 | `data_collection/` | Independent Isaac Sim 5.1 / cuRobo v2 collection and replay — see [AGENTS.md](./data_collection/AGENTS.md) |
-| `rlinf_geniesim/` | RL training pipeline (RLinf, human-in-the-loop, distributed) — see [README.md](./rlinf_geniesim/README.md) |
+| `rlinf_geniesim/` | RL training pipeline (RLinf, human-in-the-loop, distributed) — see [README.md](./rlinf_geniesim/README.md) and [AGENTS.md](./rlinf_geniesim/AGENTS.md) |
 | `scene_reconstruction/` | 3D reconstruction pipeline (Dockerfile, third-party deps) |
 | `external/` | Vendored third-party code (ml-sharp, DA360, …) |
 

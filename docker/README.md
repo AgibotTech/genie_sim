@@ -135,7 +135,7 @@ The RLinf client chooses the task and physics/render backends when initializing
 the server. `geniesim post-train server status/stop` operates the selected ports;
 `geniesim post-train server logs --port 5601 --follow` streams a server's log.
 See [the server workflow](../source/rlinf_geniesim/README.md) for
-task initialization and teleoperation
+task initialization and [teleoperation](../source/rlinf_geniesim/TELEOP_USAGE.md)
 for the optional image. To inspect or remove the server container, run on the host:
 
 ```bash
@@ -188,7 +188,7 @@ Use `geniesim post-train server status` inside the server container to check
 its simulation processes.
 
 Base-image dependency conflicts and GPU backend acceptance remain in the
-runtime validation TODOs.
+[runtime validation TODOs](../source/rlinf_geniesim/tests/README.md#pending-runtime-validation).
 
 ### Base image layers
 
