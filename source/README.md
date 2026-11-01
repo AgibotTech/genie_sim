@@ -28,6 +28,7 @@ installs in topological order.
 | ⚡ [`geniesim_ros/`](geniesim_ros/) | **Genie Sim RT Engine** — realtime interactive ROS 2 simulation | [README.md](geniesim_ros/README.md) · [AGENTS.md](geniesim_ros/AGENTS.md) | [build-workspace](geniesim_ros/skills/build-workspace/SKILL.md), [launch-scene](geniesim_ros/skills/launch-scene/SKILL.md), [moveit-wbc](geniesim_ros/skills/moveit-wbc/SKILL.md), [add-robot](geniesim_ros/skills/add-robot/SKILL.md), [teleop-bridge](geniesim_ros/skills/teleop-bridge/SKILL.md), [record-episode](geniesim_ros/skills/record-episode/SKILL.md), [debug-physics](geniesim_ros/skills/debug-physics/SKILL.md), [material-override](geniesim_ros/skills/material-override/SKILL.md) |
 | 🎮 [`geniesim_teleop/`](geniesim_teleop/) | VR / Pico teleoperation bridge | [AGENTS.md](geniesim_teleop/AGENTS.md) | [run-teleop](geniesim_teleop/skills/run-teleop/SKILL.md) |
 | 🌍 [`geniesim_world/`](geniesim_world/) | Multimodal spatial world model (panorama → 3D world) | [README.md](geniesim_world/README.md) · [AGENTS.md](geniesim_world/AGENTS.md) | [generate-world](geniesim_world/skills/generate-world/SKILL.md) |
+| 🌙 [`geniesim_dream/`](geniesim_dream/) | G1/G2 world-model inference, policy and VLM evaluation; own environments | [README.md](geniesim_dream/README.md) · [AGENTS.md](geniesim_dream/AGENTS.md) | [run-dream](geniesim_dream/skills/run-dream/SKILL.md) |
 
 ### Where do I start?
 
@@ -55,6 +56,7 @@ Side branches:
 - **Synthesise scenes / search assets via LLM** → `geniesim_scene_agent`
 - **Train an RL policy in the loop** → `rlinf_geniesim`
 - **Connect LLM planning to robot actions** → [`agent2act`](agent2act/README.md)
+- **Generate robot videos with a world model** → [`geniesim_dream`](geniesim_dream/README.md) (separate installation)
 
 ---
 
@@ -76,6 +78,7 @@ graph TD
   geniesim["<b>geniesim</b><br/>meta-package"]
   geniesim_cli["<b>geniesim_cli</b><br/>console script"]
   geniesim_benchmark["<b>geniesim_benchmark</b><br/>Isaac Sim direct"]
+  geniesim_dream["<b>geniesim_dream</b><br/>🌙 world-model inference (own envs)"]
   geniesim_ros["<b>geniesim_ros</b><br/>⚡ RT Engine"]
   geniesim_scene_agent["<b>geniesim_scene_agent</b><br/>🏗️ scene gen (optional extra)"]
   geniesim_teleop["<b>geniesim_teleop</b><br/>🎮 VR / Pico"]
@@ -96,7 +99,7 @@ graph TD
   classDef leaf fill:#e9ecef,stroke:#6c757d,color:#495057
   classDef placeholder fill:#f8d7da,stroke:#842029,color:#842029
   classDef umbrella fill:#cfe2ff,stroke:#084298,color:#084298
-  class geniesim_world leaf
+  class geniesim_dream,geniesim_world leaf
   class geniesim umbrella
 ```
 <!-- AUTOGEN:deps-dag end -->

@@ -253,6 +253,12 @@ routing between execution modes, using visual observations and robot feedback to
 See [`source/agent2act/README.md`](source/agent2act/README.md) for installation, configuration,
 and usage instructions.
 
+### 3.10 🌙 World-model inference — `geniesim_dream`
+
+Generate G1/G2 robot videos from recorded actions or a pi0.5 policy loop, with optional VLM evaluation. Dream provides a browser UI and 20 example bundles. It uses separate world-model, policy and evaluator environments, outside the default `geniesim bootstrap` flow.
+
+See [the Dream quick start](source/geniesim_dream/README.md), [installation](source/geniesim_dream/docs/setup.md), and [model assets](source/geniesim_dream/docs/assets.md). Its pinned Cosmos Framework and OpenPI dependencies are Git submodules; checkpoints are downloaded separately.
+
 # 4. 📜 Roadmap & Updates
 
 The arc of the platform — what shipped when, and what's coming next.

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="285" viewBox="0 40 1200 285" role="img" aria-labelledby="workflowDiagramTitle workflowDiagramDescription" xmlns="http://www.w3.org/2000/svg">
+  <title id="workflowDiagramTitle">Dream rollout paths</title>
+  <desc id="workflowDiagramDescription">Initial observation and input actions drive policy or replay rollouts. The world model generates future observations for VLM review.</desc>
+  <rect x="1" y="41" width="1198" height="283" rx="20" fill="#fbfcff" stroke="#e1e8f2" stroke-width="2"/>
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; text-anchor: middle; }
+    .lane-label { fill: #52657d; font-size: 14px; font-weight: 700; letter-spacing: .06em; }
+    .node-label { fill: #fff; font-size: 16px; font-weight: 650; }
+    .outcome-label { fill: #18212c; }
+    .path-blue, .path-purple, .path-pink, .path-mint {
+      fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .path-blue { stroke: #315fc0; }
+    .path-purple { stroke: #8265d0; }
+    .path-pink { stroke: #d75680; }
+    .path-mint { stroke: #248e89; }
+  </style>
+  <defs>
+    <marker id="flowArrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 8 4 0 8Z" fill="#315fc0"/></marker>
+    <marker id="flowArrowPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 8 4 0 8Z" fill="#8265d0"/></marker>
+    <marker id="flowArrowPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 8 4 0 8Z" fill="#d75680"/></marker>
+    <marker id="flowArrowMint" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 8 4 0 8Z" fill="#248e89"/></marker>
+  </defs>
+
+  <rect x="300" y="59" width="535" height="98" rx="16" fill="#edf3ff" stroke="#dce7fb"/>
+  <rect x="300" y="195" width="535" height="99" rx="16" fill="#fff0f5" stroke="#f7dce6"/>
+  <rect x="850" y="137" width="336" height="93" rx="16" fill="#edf9f7" stroke="#d5ebe7"/>
+  <text class="lane-label" x="568" y="72">POLICY LOOP</text>
+  <text class="lane-label" x="568" y="209">ACTION REPLAY</text>
+
+  <path class="path-purple" d="M213 107 H330" marker-end="url(#flowArrowPurple)"/>
+  <path class="path-purple" d="M213 124 H246 Q256 124 256 134 V218 Q256 228 266 228 H499" marker-end="url(#flowArrowPurple)"/>
+  <path class="path-purple" d="M213 250 H499" marker-end="url(#flowArrowPurple)"/>
+  <path class="path-blue" d="M466 109 H499" marker-end="url(#flowArrowBlue)"/>
+  <path class="path-blue" d="M640 109 H673" marker-end="url(#flowArrowBlue)"/>
+  <path class="path-pink" d="M640 247 H673" marker-end="url(#flowArrowPink)"/>
+  <path class="path-blue" d="M829 109 H840 Q850 109 850 119 V168 Q850 178 860 178 H874" marker-end="url(#flowArrowBlue)"/>
+  <path class="path-pink" d="M829 247 H840 Q850 247 850 237 V196 Q850 186 860 186 H874" marker-end="url(#flowArrowPink)"/>
+  <path class="path-mint" d="M1007 182 H1032" marker-end="url(#flowArrowMint)"/>
+
+  <rect x="15" y="80" width="198" height="58" rx="13" fill="#8067d0"/>
+  <text class="node-label" x="114" y="114">Initial observation</text>
+  <rect x="15" y="221" width="198" height="58" rx="13" fill="#8067d0"/>
+  <text class="node-label" x="114" y="255">Input actions</text>
+
+  <rect x="331" y="80" width="135" height="58" rx="13" fill="#3165d9"/>
+  <text class="node-label" x="398" y="114">Policy</text>
+  <rect x="500" y="80" width="140" height="58" rx="13" fill="#3165d9"/>
+  <text class="node-label" x="570" y="114">World model</text>
+  <rect x="674" y="80" width="155" height="58" rx="13" fill="#3165d9"/>
+  <text class="node-label" x="751" y="105">Future</text>
+  <text class="node-label" x="751" y="123">observations</text>
+  <rect x="500" y="218" width="140" height="58" rx="13" fill="#d95b84"/>
+  <text class="node-label" x="570" y="252">World model</text>
+  <rect x="674" y="218" width="155" height="58" rx="13" fill="#d95b84"/>
+  <text class="node-label" x="751" y="243">Future</text>
+  <text class="node-label" x="751" y="261">observations</text>
+
+  <rect x="875" y="153" width="132" height="58" rx="13" fill="#319f9c"/>
+  <text class="node-label" x="941" y="187">VLM review</text>
+  <rect x="1033" y="153" width="152" height="58" rx="13" fill="#d5a94f"/>
+  <text class="node-label outcome-label" x="1109" y="187">Task outcome</text>
+</svg>

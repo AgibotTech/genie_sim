@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geniesim_dream"
+version = "0.1.0"
+description = "Session-based Cosmos FD rollouts, policy and visual evaluation adapters"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.30,<1", "pydantic>=2.10,<3",
+  "httpx>=0.27,<1", "numpy>=1.26,<3", "pillow>=10,<13",
+  "imageio>=2.34,<3", "imageio-ffmpeg>=0.5,<1", "pyyaml>=6,<7",
+  "iopath>=0.1.10,<1",
+  "qwen-vl-utils==0.0.14",
+  "boto3>=1.40,<2",
+]
+
+[project.optional-dependencies]
+recorded = ["safetensors>=0.4,<1"]
+
+[project.scripts]
+geniesim-dream = "geniesim_dream.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+geniesim_dream = ["web/*.html"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

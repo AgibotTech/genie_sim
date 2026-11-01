@@ -1,0 +1,122 @@
+{
+  "format": "geniesim-dream-example-v2",
+  "id": "g1_dollout_ep1240",
+  "title": "g1_dollout_ep1240",
+  "domain": "agibotworld_g1",
+  "caption": "Take out doll from box",
+  "checkpoint": null,
+  "domain_stats_sha256": "c46ec36d2b704e41987505c232a3cab1fe5b8734543b9658a0913d25884966b3",
+  "contract": {
+    "action_representation": "stateend_29d_backward_framewise_rot6d",
+    "chunk_length": 32,
+    "fps": 10,
+    "history_bucket_frames": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "history_sampling": "endpoints_fixed",
+    "num_conditional_frames": 1
+  },
+  "observation": {
+    "layout": "three_views",
+    "views": {
+      "head": {
+        "path": "observation/head.png",
+        "width": 640,
+        "height": 400,
+        "sha256": "81ac9356c4cae6c675dc9dff52ea270e3e6dd7d41af931cc875023bf5ab14365"
+      },
+      "left_wrist": {
+        "path": "observation/left_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "ba48f2a3335db1226f4031aacf9de4fa0e6d4b2fb7e2ed67c08ff583097524de"
+      },
+      "right_wrist": {
+        "path": "observation/right_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "09bfd4b4e090a275099ce5ea69c87c7875092e94d0f5cae619912a90c697edf7"
+      }
+    },
+    "view_source": "panels_split_from_source_image",
+    "native_camera_frames_available": false,
+    "concat": {
+      "width": 640,
+      "height": 600,
+      "layout": "head_full_width_top__left_right_wrists_bottom",
+      "panels": {
+        "head": {
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 400
+        },
+        "left_wrist": {
+          "x": 0,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        },
+        "right_wrist": {
+          "x": 320,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        }
+      }
+    }
+  },
+  "actions": {
+    "path": "actions.npy",
+    "dtype": "float32",
+    "shape": [
+      17,
+      32,
+      29
+    ],
+    "normalized": true,
+    "sha256": "cfc67c5593ed91891d7e37b6fc68d87f14953da95b015b65a598f1a295848047"
+  },
+  "provenance": {
+    "source_kind": "released_example",
+    "closed_loop_id": "pi05-g1_dollout_ep1240"
+  },
+  "closed_loop_seed": {
+    "path": "seed_state.json",
+    "sha256": "a78cbc3afaf5aa6b3f164e6798872cf298c28e509a47f561032e3f3862b06d18"
+  },
+  "external_only": true,
+  "initial_state": {
+    "format": "dream_g01_wm_joints16",
+    "policy_profile": "doll_out",
+    "joints": [
+      -1.1910496950149536,
+      0.8196613788604736,
+      1.2488267421722412,
+      -0.7446264028549194,
+      0.10852155089378357,
+      1.433133602142334,
+      0.7422706484794617,
+      0.0018111111130565405,
+      1.1069756746292114,
+      -0.566514253616333,
+      -0.3148503303527832,
+      0.7540668845176697,
+      -0.6137514114379883,
+      -1.4574239253997803,
+      -0.25037258863449097,
+      0.0
+    ],
+    "head_waist": [
+      0.0,
+      0.4363349676132202,
+      0.43022772669792175,
+      0.3356289565563202
+    ]
+  },
+  "policy_checkpoint": "g1-doll-out-v1",
+  "state_source": "measured"
+}

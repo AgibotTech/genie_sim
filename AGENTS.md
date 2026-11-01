@@ -69,6 +69,7 @@ Full surface: [`source/geniesim_cli/AGENTS.md`](./source/geniesim_cli/AGENTS.md)
 | `geniesim_ros` | [`.agent/geniesim_ros.md`](./.agent/geniesim_ros.md) |
 | `geniesim_teleop` | [`.agent/geniesim_teleop.md`](./.agent/geniesim_teleop.md) |
 | `geniesim_world` | [`source/geniesim_world/AGENTS.md`](./source/geniesim_world/AGENTS.md) |
+| `geniesim_dream` | [`source/geniesim_dream/AGENTS.md`](./source/geniesim_dream/AGENTS.md) |
 | `agent2act` | [`source/agent2act/AGENTS.md`](./source/agent2act/AGENTS.md) |
 | `data_collection` | [`source/data_collection/AGENTS.md`](./source/data_collection/AGENTS.md) |
 | `rlinf_geniesim` | [`source/rlinf_geniesim/README.md`](./source/rlinf_geniesim/README.md) |
@@ -87,6 +88,7 @@ source/
 ├── geniesim_ros/         Genie Sim RT Engine — ROS 2 workspace
 ├── geniesim_teleop/      VR / Pico teleoperation bridge
 ├── geniesim_world/       multimodal spatial world model (pano → 3D)
+├── geniesim_dream/       G1/G2 world-model inference (own environments)
 │
 │   ── separately-maintained (not `geniesim_*` peers) ──
 ├── agent2act/            LLM-to-action runtime and CoRobot service (own uv env)

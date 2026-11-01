@@ -1,0 +1,128 @@
+{
+  "architectures": [
+    "Cosmos3OmniModel"
+  ],
+  "auto_map": {
+    "AutoConfig": "cosmos3.model.Cosmos3OmniConfig",
+    "AutoModel": "cosmos3.model.Cosmos3OmniModel"
+  },
+  "dtype": "bfloat16",
+  "model": {
+    "_recursive_": false,
+    "_target": "omni_mot_model",
+    "config": {
+      "_type": "omni_mot_model_config",
+      "action_gen": true,
+      "compile": {
+        "compile_dynamic": true,
+        "compiled_region": "language",
+        "coordinate_descent_tuning": false,
+        "enabled": false,
+        "max_autotune_pointwise": false,
+        "use_cuda_graphs": false
+      },
+      "diffusion_expert_config": {
+        "base_fps": 24,
+        "enable_fps_modulation": true,
+        "load_weights_from_pretrained": false,
+        "max_vae_latent_side_after_patchify": 20,
+        "patch_spatial": 2,
+        "sound_base_temporal_compression_factor": null,
+        "timestep_range": 1.0,
+        "unified_3d_mrope_reset_spatial_ids": true,
+        "unified_3d_mrope_temporal_modality_margin": 15000,
+        "vision_temporal_position_mode": "latent_index"
+      },
+      "enable_input_bias": true,
+      "exclude_reasoner_weights_from_checkpoint": false,
+      "fixed_step_sampler_config": null,
+      "joint_attn_implementation": "two_way",
+      "latent_downsample_factor": 16,
+      "lora_enabled": false,
+      "max_action_dim": 64,
+      "max_num_tokens_after_packing": -1,
+      "natten_parameter_list": null,
+      "net": null,
+      "num_embodiment_domains": 32,
+      "parallelism": {
+        "attention_io_layout": "sequence_sharded",
+        "cfg_parallel_shard_degree": 1,
+        "context_parallel_shard_degree": 1,
+        "data_parallel_replicate_degree": 1,
+        "data_parallel_shard_degree": 1,
+        "enable_inference_mode": false,
+        "fsdp_master_dtype": "float32"
+      },
+      "precision": "bfloat16",
+      "rectified_flow_inference_config": {
+        "num_train_timesteps": 1000,
+        "scheduler_type": "unipc",
+        "shift": 1,
+        "use_dynamic_shifting": false
+      },
+      "resolution": "720",
+      "sound_dim": null,
+      "sound_gen": false,
+      "sound_latent_fps": 25,
+      "sound_tokenizer": null,
+      "state_ch": 48,
+      "state_t": 300,
+      "tokenizer": {
+        "_target": "wan2pt2_vae_interface",
+        "bucket_name": "",
+        "causal": true,
+        "chunk_duration": 93,
+        "encode_bucket_multiple": null,
+        "encode_chunk_frames": {
+          "256": 68,
+          "480": 24,
+          "720": 12
+        },
+        "encode_exact_durations": [
+          17
+        ],
+        "keep_decoder_cache": false,
+        "object_store_credential_path_pretrained": "",
+        "spatial_compression_factor": 16,
+        "temporal_compression_factor": 4,
+        "temporal_window": null,
+        "use_streaming_encode": false,
+        "vae_path": "__DREAM_VAE_PATH__"
+      },
+      "video_temporal_causal": false,
+      "vision_gen": true,
+      "vlm_config": {
+        "layer_module": "Qwen2MoTDecoderLayer",
+        "model_instance": {
+          "_target": "qwen3_vl_text_for_causal_lm",
+          "config": {
+            "_target": "create_vlm_config",
+            "base_config": {
+              "_target": "qwen3_vl_mot_config_from_json_file",
+              "json_file": "cosmos3://vfm/models/vlm/qwen3_vl/configs/Qwen3-VL-8B-Instruct.json"
+            },
+            "freeze_und": false,
+            "layer_module": "MoTDecoderLayer",
+            "qk_norm_for_text": true,
+            "tie_word_embeddings": true
+          }
+        },
+        "model_name": "Qwen/Qwen3-VL-8B-Instruct",
+        "pretrained_weights": {
+          "enabled": false
+        },
+        "qk_norm": false,
+        "safetensors_path": "",
+        "tie_word_embeddings": false,
+        "tokenizer": {
+          "_target": "create_qwen2_tokenizer_with_download",
+          "config_variant": "hf",
+          "pretrained_model_name": "__DREAM_TOKENIZER_PATH__"
+        },
+        "use_system_prompt": false
+      }
+    }
+  },
+  "model_type": "cosmos3_omni",
+  "transformers_version": "4.57.6"
+}

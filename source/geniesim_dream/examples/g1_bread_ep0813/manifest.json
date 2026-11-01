@@ -1,0 +1,122 @@
+{
+  "format": "geniesim-dream-example-v2",
+  "id": "g1_bread_ep0813",
+  "title": "g1_bread_ep0813",
+  "domain": "agibotworld_g1",
+  "caption": "Place bread from toaster onto plate",
+  "checkpoint": null,
+  "domain_stats_sha256": "c46ec36d2b704e41987505c232a3cab1fe5b8734543b9658a0913d25884966b3",
+  "contract": {
+    "action_representation": "stateend_29d_backward_framewise_rot6d",
+    "chunk_length": 32,
+    "fps": 10,
+    "history_bucket_frames": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "history_sampling": "endpoints_fixed",
+    "num_conditional_frames": 1
+  },
+  "observation": {
+    "layout": "three_views",
+    "views": {
+      "head": {
+        "path": "observation/head.png",
+        "width": 640,
+        "height": 400,
+        "sha256": "8ea2cb62cc2ae45e2939791874a6c2f47395c8fc843159be04db3713194c17a8"
+      },
+      "left_wrist": {
+        "path": "observation/left_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "b418bc8bca7d4432deaf2f065d989d5b98b09caa717b10f0332d17433994e00f"
+      },
+      "right_wrist": {
+        "path": "observation/right_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "daf6f5b20f4c1cbb7d1c07e957f12369c5d61de90376de7cb60a5d3ff2456ca4"
+      }
+    },
+    "view_source": "panels_split_from_source_image",
+    "native_camera_frames_available": false,
+    "concat": {
+      "width": 640,
+      "height": 600,
+      "layout": "head_full_width_top__left_right_wrists_bottom",
+      "panels": {
+        "head": {
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 400
+        },
+        "left_wrist": {
+          "x": 0,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        },
+        "right_wrist": {
+          "x": 320,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        }
+      }
+    }
+  },
+  "actions": {
+    "path": "actions.npy",
+    "dtype": "float32",
+    "shape": [
+      15,
+      32,
+      29
+    ],
+    "normalized": true,
+    "sha256": "b73fa742a3f3522009a0cefa60104d3fe6bdfb55494285d16f5283039a1c2c11"
+  },
+  "provenance": {
+    "source_kind": "released_example",
+    "closed_loop_id": "pi05-g1_bread_ep0813"
+  },
+  "closed_loop_seed": {
+    "path": "seed_state.json",
+    "sha256": "a1e806e62465585e7fc5727f0327221c94b38dc934f579d360fa5d6cb17e70e8"
+  },
+  "external_only": true,
+  "initial_state": {
+    "format": "dream_g01_wm_joints16",
+    "policy_profile": "bread",
+    "joints": [
+      -1.8387937545776367,
+      0.737262487411499,
+      1.6281548738479614,
+      -1.3610999584197998,
+      -0.03826785087585449,
+      0.8994601964950562,
+      0.8831619620323181,
+      0.0,
+      1.1260484457015991,
+      -0.5119655728340149,
+      -0.3352493941783905,
+      1.3370364904403687,
+      -0.7933119535446167,
+      -1.3736989498138428,
+      0.19847629964351654,
+      0.0018111111130565405
+    ],
+    "head_waist": [
+      0.0,
+      0.4363403022289276,
+      0.7739320993423462,
+      0.41734108328819275
+    ]
+  },
+  "policy_checkpoint": "g1-bread-v1",
+  "state_source": "measured"
+}

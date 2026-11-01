@@ -25,9 +25,13 @@ installs in topological order.
 | `geniesim_ros/` | `geniesim_ros` — Genie Sim RT Engine (ROS 2 workspace) | [README](geniesim_ros/README.md) | [AGENTS](geniesim_ros/AGENTS.md) | [skills/](geniesim_ros/skills/) |
 | `geniesim_teleop/` | `geniesim_teleop` — VR / Pico teleop bridge | [README](geniesim_teleop/README.md) | [AGENTS](geniesim_teleop/AGENTS.md) | [skills/](geniesim_teleop/skills/) |
 | `geniesim_world/` | `geniesim_world` — multimodal spatial world model (pano → 3D) | [README](geniesim_world/README.md) | [AGENTS](geniesim_world/AGENTS.md) | [skills/](geniesim_world/skills/) |
+| `geniesim_dream/` | `geniesim_dream` — G1/G2 world-model inference, policy and VLM evaluation (own environments) | [README](geniesim_dream/README.md) | [AGENTS](geniesim_dream/AGENTS.md) | [run-dream](geniesim_dream/skills/run-dream/SKILL.md) |
 
 > `geniesim_world` is installed separately because its CUDA and ML dependencies
 > use a dedicated environment. See its README for installation instructions.
+
+> `geniesim_dream` is also installed separately, with isolated world-model,
+> policy and evaluation environments. It is outside the umbrella and default bootstrap.
 
 > Benchmark configurations and ROS scene configurations have separate schemas.
 > Benchmark evaluation uses its direct Isaac runtime. The shared `genie_sim_client`

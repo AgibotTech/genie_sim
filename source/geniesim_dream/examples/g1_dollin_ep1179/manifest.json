@@ -1,0 +1,122 @@
+{
+  "format": "geniesim-dream-example-v2",
+  "id": "g1_dollin_ep1179",
+  "title": "g1_dollin_ep1179",
+  "domain": "agibotworld_g1",
+  "caption": "Put the doll into the box",
+  "checkpoint": null,
+  "domain_stats_sha256": "c46ec36d2b704e41987505c232a3cab1fe5b8734543b9658a0913d25884966b3",
+  "contract": {
+    "action_representation": "stateend_29d_backward_framewise_rot6d",
+    "chunk_length": 32,
+    "fps": 10,
+    "history_bucket_frames": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "history_sampling": "endpoints_fixed",
+    "num_conditional_frames": 1
+  },
+  "observation": {
+    "layout": "three_views",
+    "views": {
+      "head": {
+        "path": "observation/head.png",
+        "width": 640,
+        "height": 400,
+        "sha256": "391b686d284f6727c97b414fc6286e4ee1c85a9ea61369bd8417f056f21744dc"
+      },
+      "left_wrist": {
+        "path": "observation/left_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "fd3492650891f6499cd2152a66c9d689a0355a3f36b44eb99fc247c10c4a5ad9"
+      },
+      "right_wrist": {
+        "path": "observation/right_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "760fea6bc920fce2d31f515f5653e8b9b5463953e17859dcb611761218cd22b1"
+      }
+    },
+    "view_source": "panels_split_from_source_image",
+    "native_camera_frames_available": false,
+    "concat": {
+      "width": 640,
+      "height": 600,
+      "layout": "head_full_width_top__left_right_wrists_bottom",
+      "panels": {
+        "head": {
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 400
+        },
+        "left_wrist": {
+          "x": 0,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        },
+        "right_wrist": {
+          "x": 320,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        }
+      }
+    }
+  },
+  "actions": {
+    "path": "actions.npy",
+    "dtype": "float32",
+    "shape": [
+      11,
+      32,
+      29
+    ],
+    "normalized": true,
+    "sha256": "e1f7d6de33e1c82ba75776fd86e1ee752e6237ec31b7f5580c17ac688f1f60b6"
+  },
+  "provenance": {
+    "source_kind": "released_example",
+    "closed_loop_id": "pi05-g1_dollin_ep1179"
+  },
+  "closed_loop_seed": {
+    "path": "seed_state.json",
+    "sha256": "8d57aaff2e27383417701aa13fe366960bff34bc7ca2a518c35de46127ecfad5"
+  },
+  "external_only": true,
+  "initial_state": {
+    "format": "dream_g01_wm_joints16",
+    "policy_profile": "doll_in",
+    "joints": [
+      -1.3407707214355469,
+      0.7567192912101746,
+      0.6073123812675476,
+      -0.7685328722000122,
+      0.7933642268180847,
+      1.461280345916748,
+      -0.1110168993473053,
+      0.0018111111130565405,
+      1.607057809829712,
+      -1.0107911825180054,
+      -0.824093759059906,
+      0.6585630178451538,
+      -1.2300156354904175,
+      -1.4525728225708008,
+      0.22690235078334808,
+      0.0
+    ],
+    "head_waist": [
+      0.0,
+      0.4363296329975128,
+      0.3839713931083679,
+      0.31988441944122314
+    ]
+  },
+  "policy_checkpoint": "g1-doll-in-v1",
+  "state_source": "measured"
+}

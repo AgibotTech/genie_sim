@@ -1,0 +1,38 @@
+{
+  "backend": "cosmos",
+  "checkpoint": "${DREAM_ASSET_ROOT}/fd_cosmos",
+  "chunk_length": 32,
+  "cosmos_repo": "${DREAM_PACKAGE_ROOT}/third_party/cosmos-framework",
+  "domains": {
+    "agibotworld_g1": {
+      "domain_id": 15,
+      "stats_path": "${DREAM_PACKAGE_ROOT}/assets/stats/agibotworld_g1_stateend.json",
+      "stats_sha256": "c46ec36d2b704e41987505c232a3cab1fe5b8734543b9658a0913d25884966b3"
+    },
+    "agibotworld_g2": {
+      "domain_id": 17,
+      "stats_path": "${DREAM_PACKAGE_ROOT}/assets/stats/agibotworld_g2_stateend.json",
+      "stats_sha256": "301652819b0ed35a0446c4482dff1b64259432f203db155ba07a2efed55c25cb"
+    }
+  },
+  "evaluator_health_url": "http://127.0.0.1:8981/health/ready",
+  "evaluator_url": "http://127.0.0.1:8981/evaluate",
+  "example_roots": [
+    "${DREAM_PACKAGE_ROOT}/examples"
+  ],
+  "fps": 10,
+  "history_bucket_frames": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "history_sampling": "endpoints_fixed",
+  "model_id": "g1-g2-mixed-v1",
+  "num_steps": 10,
+  "output_dir": "${DREAM_OUTPUT_DIR}",
+  "policy_url": "http://127.0.0.1:8972/predict",
+  "seed": 42,
+  "verify_checkpoint_stats_pin": true,
+  "vlm_models_config": "${DREAM_PACKAGE_ROOT}/services/evaluation/configs/models.example.json"
+}

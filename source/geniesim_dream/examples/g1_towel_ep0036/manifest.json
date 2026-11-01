@@ -1,0 +1,122 @@
+{
+  "format": "geniesim-dream-example-v2",
+  "id": "g1_towel_ep0036",
+  "title": "g1_towel_ep0036",
+  "domain": "agibotworld_g1",
+  "caption": "Fold Towel",
+  "checkpoint": null,
+  "domain_stats_sha256": "c46ec36d2b704e41987505c232a3cab1fe5b8734543b9658a0913d25884966b3",
+  "contract": {
+    "action_representation": "stateend_29d_backward_framewise_rot6d",
+    "chunk_length": 32,
+    "fps": 10,
+    "history_bucket_frames": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "history_sampling": "endpoints_fixed",
+    "num_conditional_frames": 1
+  },
+  "observation": {
+    "layout": "three_views",
+    "views": {
+      "head": {
+        "path": "observation/head.png",
+        "width": 640,
+        "height": 400,
+        "sha256": "9213a1f7b95b44cb380b54e0f674fc230417996ab6f62a66b116e9d9454b5c51"
+      },
+      "left_wrist": {
+        "path": "observation/left_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "f2634c7d40773e98b3668f5679ccbd22d1f16cd16ee41cc247906faeb5440c52"
+      },
+      "right_wrist": {
+        "path": "observation/right_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "227995eec1de0a91b0389c4025cc65a9ba62f83350b7ff2b0756980e925fa05d"
+      }
+    },
+    "view_source": "panels_split_from_source_image",
+    "native_camera_frames_available": false,
+    "concat": {
+      "width": 640,
+      "height": 600,
+      "layout": "head_full_width_top__left_right_wrists_bottom",
+      "panels": {
+        "head": {
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 400
+        },
+        "left_wrist": {
+          "x": 0,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        },
+        "right_wrist": {
+          "x": 320,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        }
+      }
+    }
+  },
+  "actions": {
+    "path": "actions.npy",
+    "dtype": "float32",
+    "shape": [
+      34,
+      32,
+      29
+    ],
+    "normalized": true,
+    "sha256": "a9411ff632392383579b5f84abdd8eaa34e9c6224958fb85514ec58117e60be9"
+  },
+  "provenance": {
+    "source_kind": "released_example",
+    "closed_loop_id": "pi05-g1_towel_ep0036"
+  },
+  "closed_loop_seed": {
+    "path": "seed_state.json",
+    "sha256": "8ae2b01da6da89670df274d81cc1be874bdb0b24eb8728dbb3b83efd7417d734"
+  },
+  "external_only": true,
+  "initial_state": {
+    "format": "dream_g01_wm_joints16",
+    "policy_profile": "towel",
+    "joints": [
+      -1.3579938411712646,
+      0.8207781910896301,
+      0.4495468735694885,
+      -1.1007983684539795,
+      0.8024731278419495,
+      1.4434814453125,
+      -0.173784539103508,
+      0.0018111111130565405,
+      1.3411896228790283,
+      -0.9276419878005981,
+      -0.5170609354972839,
+      1.0814636945724487,
+      -0.779002845287323,
+      -1.4385255575180054,
+      0.028600551187992096,
+      0.0
+    ],
+    "head_waist": [
+      0.0016245282022282481,
+      0.4363349676132202,
+      0.2685963809490204,
+      0.24257583916187286
+    ]
+  },
+  "policy_checkpoint": "g1-towel-v1",
+  "state_source": "measured"
+}

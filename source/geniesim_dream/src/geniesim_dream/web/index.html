@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b111a">
+  <title>Genie Sim Dream</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b111a;
+      color: #edf3fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --surface: #111a26;
+      --surface-raised: #162231;
+      --surface-soft: #0e1722;
+      --border: rgba(168, 190, 215, .13);
+      --muted: #91a1b5;
+      --mint: #a5f0ce;
+      --blue: #8db9ff;
+      --amber: #f5c77d;
+      --red: #ff8c8c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 14% -8%, rgba(78, 146, 133, .18), transparent 34rem),
+        radial-gradient(ellipse at 100% 20%, rgba(74, 112, 178, .13), transparent 38rem),
+        #0b111a;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .48; }
+    button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--mint);
+      outline-offset: 2px;
+    }
+    .shell { width: min(1480px, calc(100% - 40px)); margin: 0 auto; padding: 24px 0 56px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 8px 0 30px; }
+    .brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+    .brand-mark {
+      display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid rgba(165, 240, 206, .35);
+      border-radius: 13px; background: linear-gradient(145deg, rgba(165, 240, 206, .19), rgba(141, 185, 255, .13));
+      color: var(--mint); font-size: 13px; font-weight: 800; letter-spacing: -.04em;
+    }
+    .brand-name { display: block; font-size: 14px; font-weight: 750; letter-spacing: .04em; }
+    .brand-caption { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; letter-spacing: .11em; }
+    .connection {
+      display: inline-flex; align-items: center; gap: 9px; padding: 9px 13px; border: 1px solid var(--border);
+      border-radius: 999px; background: rgba(17, 26, 38, .8); color: var(--muted); font-size: 12px;
+    }
+    .connection-dot { width: 7px; height: 7px; border-radius: 50%; background: #66778a; box-shadow: 0 0 0 4px rgba(102, 119, 138, .12); }
+    .connection[data-state="connected"] { border-color: rgba(165, 240, 206, .28); color: var(--mint); }
+    .connection[data-state="connected"] .connection-dot { background: var(--mint); box-shadow: 0 0 0 4px rgba(165, 240, 206, .12); }
+    .connection[data-state="error"] { border-color: rgba(255, 140, 140, .3); color: var(--red); }
+    .connection[data-state="error"] .connection-dot { background: var(--red); }
+
+    .topbar-right { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .lang-toggle {
+      display: inline-flex; align-items: stretch; padding: 3px; border: 1px solid var(--border);
+      border-radius: 999px; background: rgba(17, 26, 38, .8);
+    }
+    .lang-toggle button {
+      min-height: 28px; padding: 4px 11px; border: 0; border-radius: 999px;
+      background: transparent; color: var(--muted); font-size: 11px; font-weight: 650;
+    }
+    .lang-toggle button[aria-pressed="true"] {
+      background: rgba(165, 240, 206, .16); color: var(--mint);
+    }
+    .hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 4px 0 26px; }
+    .eyebrow { margin: 0 0 10px; color: var(--mint); font-size: 11px; font-weight: 750; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 4vw, 46px); font-weight: 690; letter-spacing: -.045em; line-height: 1.08; }
+    .hero-copy { max-width: 570px; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(260px, 300px) minmax(260px, 300px) minmax(0, 1fr);
+      align-items: start;
+      gap: 18px;
+    }
+    .card { border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(155deg, rgba(22, 34, 49, .96), rgba(16, 25, 37, .96)); box-shadow: 0 18px 55px rgba(0, 0, 0, .16); }
+    .controls, .run-panel { padding: 20px; }
+    .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .card-heading h2, .card-heading h3 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+    .step-number { color: #718399; font-size: 10px; font-weight: 700; letter-spacing: .13em; }
+    .field { display: grid; gap: 8px; margin: 16px 0; }
+    .field-label { color: #c4cfdd; font-size: 12px; font-weight: 580; }
+    .field-note { color: #75869a; font-size: 11px; line-height: 1.5; }
+    input, select {
+      width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid rgba(168, 190, 215, .18);
+      border-radius: 9px; background: #0e1722; color: #edf3fb;
+    }
+    input::placeholder { color: #66778a; }
+    select { appearance: none; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%2391a1b5' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; }
+    .button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 8px; padding: 9px 13px; border: 1px solid transparent; border-radius: 9px; font-size: 12px; font-weight: 650; transition: transform .16s ease, background .16s ease, border-color .16s ease; }
+    .button:hover:not(:disabled) { transform: translateY(-1px); }
+    .button-primary { background: var(--mint); color: #10231d; box-shadow: 0 5px 18px rgba(105, 220, 173, .12); }
+    .button-primary:hover:not(:disabled) { background: #b8f7da; }
+    .button-secondary { border-color: rgba(168, 190, 215, .17); background: #1b2939; color: #dce6f1; }
+    .button-secondary:hover:not(:disabled) { border-color: rgba(168, 190, 215, .32); background: #223247; }
+    .button-danger { border-color: rgba(255, 140, 140, .2); background: rgba(83, 39, 47, .35); color: #ffaaaa; }
+    .button-danger:hover:not(:disabled) { background: rgba(105, 48, 57, .55); }
+    .button-wide { width: 100%; }
+    .divider { height: 1px; margin: 20px 0; background: var(--border); }
+    .chunk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .chunk-row .field { margin: 0; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+    .action-grid .button:first-child { grid-column: 1 / -1; }
+    .utility-actions { display: grid; gap: 8px; margin-top: 10px; }
+    .server-sessions { display: grid; gap: 8px; max-height: 260px; overflow: auto; }
+    .server-session { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: rgba(10, 17, 25, .45); }
+    .server-session-info { display: grid; min-width: 0; gap: 4px; }
+    .server-session-title { color: #dce6f1; font-size: 11px; overflow-wrap: anywhere; }
+    .server-session-meta { color: #8293a7; font-size: 10px; line-height: 1.45; }
+    .server-session-actions { display: grid; gap: 5px; }
+    .server-session-outputs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+    .server-session-outputs a { color: #94e8c2; font-size: 10px; }
+    .button-compact { min-height: 32px; padding: 6px 9px; font-size: 11px; }
+    details { border-top: 1px solid var(--border); }
+    summary { cursor: pointer; color: #aebdce; font-size: 11px; font-weight: 600; }
+    pre { max-height: 280px; overflow: auto; margin: 12px 0 0; padding: 12px; border: 1px solid var(--border); border-radius: 9px; background: #0a1119; color: #9fb2c8; font: 10px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .stage { display: grid; gap: 18px; min-width: 0; }
+    .session-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 18px; }
+    .session-label { color: var(--muted); font-size: 11px; }
+    .session-id { margin-top: 5px; color: #e6edf6; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+    .session-metrics { display: flex; align-items: center; gap: 8px; }
+    .metric { min-width: 82px; padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: rgba(9, 16, 24, .36); text-align: right; }
+    .metric-label { display: block; color: #8091a5; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+    .metric-value { display: block; margin-top: 3px; color: #e7eff9; font-size: 13px; font-weight: 650; }
+    .media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .media-card { min-width: 0; overflow: hidden; }
+    .media-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .media-heading h3 { margin: 0; font-size: 12px; font-weight: 630; }
+    .media-kind { color: #7f91a6; font-size: 10px; }
+    .media-frame { position: relative; display: grid; min-height: 310px; place-items: center; overflow: hidden; background: radial-gradient(ellipse at center, #172333, #0b121b 75%); }
+    .media-frame img { display: block; width: 100%; max-height: 470px; object-fit: contain; }
+    .media-frame video { display: block; width: 100%; max-height: 470px; background: #070b10; }
+    .empty-state { display: grid; justify-items: center; gap: 10px; padding: 35px 20px; color: #74869b; text-align: center; }
+    .empty-icon { display: grid; width: 43px; height: 43px; place-items: center; border: 1px solid var(--border); border-radius: 13px; background: rgba(168, 190, 215, .04); color: #91a5bb; font-size: 17px; }
+    .empty-title { color: #aab9ca; font-size: 12px; font-weight: 600; }
+    .empty-copy { max-width: 230px; font-size: 10px; line-height: 1.5; }
+    [hidden] { display: none !important; }
+    .status-card { padding: 17px 19px; }
+    .status-line { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px; min-height: 20px; }
+    .status-indicator { width: 7px; height: 7px; flex: 0 0 7px; margin-top: 5px; border-radius: 50%; background: #718196; }
+    .status-indicator[data-tone="success"] { background: var(--mint); box-shadow: 0 0 0 4px rgba(165, 240, 206, .1); }
+    .status-indicator[data-tone="error"] { background: var(--red); }
+    .status-indicator[data-tone="working"] { background: var(--blue); animation: pulse 1.4s ease-in-out infinite; }
+    .status-message { color: #c7d2df; font-size: 12px; flex: 0 1 auto; }
+    .status-detail { flex: 1 1 100%; color: #9aabbf; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+    .raw-status { margin-top: 15px; }
+    .footer { margin-top: 22px; color: #65768a; font-size: 10px; text-align: center; }
+    @keyframes pulse { 50% { opacity: .42; } }
+    @media (max-width: 1100px) {
+      .dashboard { grid-template-columns: 1fr; }
+      .controls { order: 0; }
+      .run-panel { order: 1; }
+      .stage { order: 2; }
+      .media-grid { grid-template-columns: 1fr; }
+      .media-frame { min-height: 260px; }
+    }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 24px, 560px); padding-top: 14px; }
+      .topbar { padding-bottom: 24px; }
+      .hero { display: block; }
+      .dashboard { grid-template-columns: 1fr; }
+      .controls { order: 0; }
+      .run-panel { order: 1; }
+      .stage { order: 2; }
+      .session-bar { align-items: flex-start; flex-direction: column; }
+      .session-metrics { width: 100%; }
+      .metric { flex: 1; text-align: left; }
+      .media-grid { grid-template-columns: 1fr; }
+      .media-frame { min-height: 220px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#">
+        <span class="brand-name">GENIE SIM DREAM</span>
+      </a>
+      <div class="topbar-right">
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button type="button" data-lang="zh" aria-pressed="true">中文</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <div class="connection" id="connectionBadge" data-state="idle"><span class="connection-dot"></span><span id="connectionText" data-i18n="conn.idle">未连接</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Simulation workspace</p>
+          <h1 data-i18n="hero.title">视觉推演控制台</h1>
+        </div>
+      </section>
+
+      <div class="dashboard">
+        <aside class="card controls">
+          <div class="card-heading"><h2 data-i18n="ctrl.heading">运行设置</h2><span class="step-number">01 / CONTROL</span></div>
+          <button class="button button-secondary button-wide" id="load"><span data-i18n="btn.connect">连接服务</span> <span aria-hidden="true">→</span></button>
+
+          <div class="divider"></div>
+          <label class="field" for="models">
+            <span class="field-label" data-i18n="field.wm">世界模型（WM）</span>
+            <select id="models" disabled><option value="" data-i18n="ph.model">连接后选择模型…</option></select>
+            <span id="modelMeta" class="field-note" data-i18n="note.model.default">选择模型后才会加载权重。</span>
+          </label>
+          <label class="field" for="policy">
+            <span class="field-label" data-i18n="field.policy">运行方式</span>
+            <select id="policy" disabled><option value="replay" data-i18n="policy.replay">开环 · 录制动作回放</option></select>
+            <span id="policyMeta" class="field-note" data-i18n="note.policy.replay">开环：回放样例中保存的动作，策略不读取生成画面。</span>
+          </label>
+          <label class="field" for="tasks">
+            <span class="field-label" data-i18n="field.task">任务</span>
+            <select id="tasks" disabled><option value="" data-i18n="task.all">全部样例</option></select>
+            <span id="taskMeta" class="field-note" data-i18n="note.task.replay">按任务筛选录制动作样例。</span>
+          </label>
+          <label class="field" for="examples">
+            <span class="field-label" data-i18n="field.example">推理样例</span>
+            <select id="examples" disabled><option value="" data-i18n="ph.example">连接后加载样例…</option></select>
+            <span id="exampleMeta" class="field-note" data-i18n="note.example">从已配置的样例目录中选择 episode。</span>
+          </label>
+          <div class="chunk-row">
+            <label class="field" for="numSteps">
+              <span class="field-label" data-i18n="field.num_steps">去噪步数</span>
+              <input id="numSteps" type="number" value="10" min="1" max="200" step="1">
+            </label>
+            <label class="field" for="seed">
+              <span class="field-label" data-i18n="field.seed">Seed</span>
+              <input id="seed" type="number" value="42" min="0" step="1">
+            </label>
+          </div>
+          <p class="field-note" data-i18n="note.params_fixed">参数在创建会话时固定；如需更改，请先删除当前会话。</p>
+          <button class="button button-primary button-wide" id="create" disabled data-i18n="btn.create">创建会话</button>
+        </aside>
+
+        <aside class="card run-panel">
+          <div class="card-heading"><h3 data-i18n="rollout.heading">Rollout 控制</h3><span class="step-number">02 / RUN</span></div>
+          <div class="chunk-row">
+            <label class="field" for="count"><span class="field-label" data-i18n="field.chunks">运行段数</span><input id="count" type="number" value="2" min="1" max="64"></label>
+            <label class="field" for="chunk"><span class="field-label" data-i18n="field.chunk_len">每段动作步数</span><select id="chunk">
+              <option value="32" data-i18n="chunk.opt32">32 步</option>
+              <option value="16" data-i18n="chunk.opt16">16 步</option>
+            </select></label>
+          </div>
+          <div class="action-grid">
+            <button class="button button-primary" id="run" disabled data-i18n="btn.run">连续运行</button>
+            <button class="button button-secondary" id="step" disabled data-i18n="btn.step">单步执行</button>
+            <button class="button button-secondary" id="stop" disabled data-i18n="btn.stop">停止</button>
+          </div>
+          <div class="utility-actions">
+            <button class="button button-secondary" id="finish" disabled data-i18n="btn.finish">生成完整视频</button>
+            <label class="field" for="instruction">
+              <span class="field-label" data-i18n="field.instruction">评测指令（可覆盖 caption）</span>
+              <input id="instruction" data-i18n-placeholder="ph.instruction" placeholder="样例无 caption，请手动填写">
+            </label>
+            <button class="button button-secondary" id="evaluate" disabled data-i18n="btn.evaluate">运行 VLM 评测</button>
+            <button class="button button-secondary" id="archive" disabled data-i18n="btn.archive">归档当前会话并保留结果</button>
+            <button class="button button-danger" id="delete" disabled data-i18n="btn.delete">永久删除当前会话及输出</button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="card-heading">
+            <h3><span data-i18n="sessions.heading">服务端会话</span> <span id="serverSessionCount" class="step-number">0</span></h3>
+            <button class="button button-secondary button-compact" id="refreshSessions" disabled data-i18n="btn.refresh">刷新</button>
+          </div>
+          <p class="field-note" data-i18n="note.sessions">归档会保留输出并释放模型；永久删除会移除全部结果文件。</p>
+          <div id="serverSessions" class="server-sessions"></div>
+          <div id="serverSessionsEmpty" class="field-note" data-i18n="sessions.empty">暂无服务端会话。</div>
+        </aside>
+
+        <section class="stage" data-i18n-aria="stage.aria" aria-label="推理结果">
+          <div class="card session-bar">
+            <div><div class="session-label" data-i18n="session.current">当前会话</div><div class="session-id" id="sessionId" data-i18n="session.none">尚未创建</div></div>
+            <div class="session-metrics">
+              <div class="metric"><span class="metric-label" data-i18n="metric.state">状态</span><span class="metric-value" id="sessionState" data-i18n="sess.state.idle">空闲</span></div>
+              <div class="metric"><span class="metric-label" data-i18n="metric.step">当前段</span><span class="metric-value" id="stepCount">—</span></div>
+            </div>
+          </div>
+
+          <div class="media-grid">
+            <article class="card media-card">
+              <div class="media-heading"><h3 data-i18n="media.obs">当前 Observation</h3><span class="media-kind">CONDITION / FRAME</span></div>
+              <div class="media-frame">
+                <img id="observation" data-i18n-alt="media.obs_kind" alt="当前环境观察画面" hidden>
+                <div class="empty-state" id="observationPlaceholder"><span class="empty-icon">◉</span><span class="empty-title" data-i18n="empty.obs_title">等待初始画面</span><span class="empty-copy" data-i18n="empty.obs_copy">连接服务并创建会话后，这里会显示当前观察帧。</span></div>
+              </div>
+            </article>
+            <article class="card media-card">
+              <div class="media-heading"><h3 data-i18n="media.result">生成结果</h3><span class="media-kind">ROLLOUT / VIDEO</span></div>
+              <div class="media-frame">
+                <video id="video" controls playsinline hidden></video>
+                <div class="empty-state" id="videoPlaceholder"><span class="empty-icon">▷</span><span class="empty-title" data-i18n="empty.video_title">暂无视频</span><span class="empty-copy" data-i18n="empty.video_copy">完成一个或多个动作段后，生成的视频会显示在这里。</span></div>
+              </div>
+            </article>
+          </div>
+
+          <section class="card status-card">
+            <div class="status-line"><span class="status-indicator" id="statusIndicator"></span><span class="status-message" id="statusMessage" data-i18n="empty.disc_title">尚未连接服务</span><span class="status-detail" id="statusDetail"></span></div>
+            <details class="raw-status"><summary data-i18n="raw.summary">查看原始会话 / Job 数据</summary><pre id="status" data-i18n="raw.idle">尚未连接</pre></details>
+          </section>
+        </section>
+      </div>
+      <footer class="footer">Genie Sim Dream · Local inference interface</footer>
+    </main>
+  </div>
+
+  <script>
+    const I18N = {
+  "zh": {
+    "conn.idle": "未连接",
+    "conn.connecting": "连接中…",
+    "conn.ok": "服务已连接",
+    "conn.fail": "连接失败",
+    "hero.title": "视觉推演控制台",
+    "hero.copy": "选择开环动作回放或闭环 pi0.5 策略，观察 Cosmos FD 逐段生成的环境变化。",
+    "ctrl.heading": "运行设置",
+    "btn.connect": "连接服务",
+    "field.wm": "世界模型（WM）",
+    "ph.model": "连接后选择模型…",
+    "note.model.default": "选择模型后才会加载权重。",
+    "field.task": "任务",
+    "task.all": "全部样例",
+    "note.task.replay": "按任务筛选录制动作样例。",
+    "note.task.external": "按任务筛选 pi0.5 闭环样例；首次推理时加载对应策略权重。",
+    "field.example": "推理样例",
+    "ph.example": "连接后加载样例…",
+    "note.example": "从已配置的样例目录中选择 episode。",
+    "field.policy": "运行方式",
+    "note.policy.replay": "开环：回放样例中保存的动作，策略不读取生成画面。",
+    "field.num_steps": "去噪步数",
+    "field.seed": "Seed",
+    "note.params_fixed": "参数在创建会话时固定；如需更改，请先删除当前会话。",
+    "btn.create": "创建会话",
+    "rollout.heading": "Rollout 控制",
+    "field.chunks": "运行段数",
+    "field.chunk_len": "每段动作步数",
+    "chunk.opt32": "32 步",
+    "chunk.opt16": "16 步",
+    "btn.run": "连续运行",
+    "btn.step": "单步执行",
+    "btn.stop": "停止",
+    "btn.finish": "生成完整视频",
+    "field.instruction": "评测指令（可覆盖 caption）",
+    "ph.instruction": "样例无 caption，请手动填写",
+    "btn.evaluate": "运行 VLM 评测",
+    "btn.archive": "归档当前会话并保留结果",
+    "btn.delete": "永久删除当前会话及输出",
+    "sessions.heading": "服务端会话",
+    "sessions.count": "{n} 个",
+    "btn.refresh": "刷新",
+    "note.sessions": "归档会保留输出并释放模型；永久删除会移除全部结果文件。",
+    "sessions.empty": "暂无服务端会话。",
+    "stage.aria": "推理结果",
+    "session.current": "当前会话",
+    "session.none": "尚未创建",
+    "metric.state": "状态",
+    "metric.step": "当前段",
+    "media.obs": "当前 Observation",
+    "media.obs_kind": "当前环境观察画面",
+    "empty.obs_title": "等待初始画面",
+    "empty.obs_copy": "连接服务并创建会话后，这里会显示当前观察帧。",
+    "media.result": "生成结果",
+    "empty.video_title": "暂无视频",
+    "empty.video_copy": "完成一个或多个动作段后，生成的视频会显示在这里。",
+    "empty.disc_title": "尚未连接服务",
+    "raw.summary": "查看原始会话 / Job 数据",
+    "raw.idle": "尚未连接",
+    "task.cloth": "cloth · G02 叠衣服",
+    "task.bread": "bread · G01 拿面包",
+    "task.towel": "towel · G01 叠毛巾",
+    "task.doll_in": "doll_in · G01 放入娃娃",
+    "task.doll_out": "doll_out · G01 取出娃娃",
+    "policy.replay": "开环 · 录制动作回放",
+    "policy.external": "闭环 · pi0.5 策略",
+    "note.policy.external_ckpt": "闭环：pi0.5 根据当前生成画面预测下一段动作。权重：{ckpt}。",
+    "note.policy.external_no": "闭环：pi0.5 根据当前生成画面预测下一段动作。",
+    "example.suffix.closed": "闭环起点",
+    "example.suffix.replay": "{n} 段回放",
+    "example.suffix.policy_replay": "{n} 段录制策略动作回放",
+    "example.none": "当前运行方式没有可用样例",
+    "example.meta": "{n} 个可用样例 · 10 FPS",
+    "example.meta_empty": "当前模型与运行方式下没有可用样例。",
+    "model.ph.loading": "正在加载权重…",
+    "model.ph.select": "请选择模型…",
+    "model.meta.active": "当前支持：{domains}；切换模型前请删除会话。",
+    "model.meta.loading": "模型加载期间请稍候。",
+    "model.meta.failed": "模型加载失败；可重新选择模型后重试。",
+    "sess.label.archived": "已归档",
+    "sess.label.orphaned": "重启遗留",
+    "sess.label.manual": "手动会话",
+    "sess.state.running": "运行中",
+    "sess.state.archived": "已归档，输出保留",
+    "sess.state.orphaned": "进程重启遗留",
+    "sess.state.finished": "已完成",
+    "sess.state.idle": "空闲",
+    "sess.frames.unknown": "帧数未知",
+    "sess.frames": "{n} 帧",
+    "sess.line": "{policy} · {step} 段 · {frames} · {state}",
+    "sess.btn.archive": "归档保留",
+    "sess.btn.delete": "永久删除",
+    "sess.out.full": "完整视频",
+    "sess.out.chunk": "第 {n} 段",
+    "confirm.archive_id": "归档会话 {id}？结果文件会保留，并释放模型占用。",
+    "status.archived_id": "会话 {id} 已归档，结果已保留",
+    "confirm.delete_id": "永久删除会话 {id} 及其所有结果文件？此操作不可恢复。",
+    "status.deleted_id": "会话 {id} 及其结果已永久删除",
+    "status.model_ready": "模型已就绪，可以开始 rollout",
+    "status.pick_model": "请选择模型以加载权重",
+    "status.model_fail": "模型加载失败：{msg}",
+    "status.see_logs": "请查看服务端日志",
+    "status.model_boot_fail": "模型启动失败：{msg}",
+    "status.model_loading": "模型正在加载，请稍候…",
+    "status.model_status_err": "无法读取模型状态：{msg}",
+    "status.switching": "正在切换模型，等待权重加载…",
+    "status.switch_fail": "模型切换失败",
+    "status.switched": "模型已切换：{label}",
+    "status.switch_timeout": "模型加载超时，请检查服务端日志",
+    "err.delete_session_first": "请先删除当前会话",
+    "err.num_steps": "去噪步数需为 1 到 200 的整数",
+    "err.seed": "Seed 需为非负安全整数",
+    "status.session_created": "会话已创建，可以开始 rollout",
+    "err.create_session_first": "请先创建会话",
+    "err.model_not_ready": "模型仍未就绪，请等待状态变为“模型已就绪”后重试",
+    "err.chunk_count": "运行段数需在 1 到 64 之间",
+    "err.replay_left": "样例只剩 {n} 段动作",
+    "status.job_submitted": "推理任务已提交",
+    "status.stop_requested": "已请求停止，将在当前 chunk 完成后停止",
+    "status.video_building": "完整视频生成中…",
+    "status.video_done_meta": "完整视频已生成（{w}x{h}, {n} 帧）",
+    "status.video_done": "完整视频已生成",
+    "err.eval_need_video": "请先生成完整视频后再评测",
+    "err.eval_empty": "评测指令为空：请填写指令或确保样例 caption 非空",
+    "err.vlm": "VLM 未就绪：{msg}",
+    "err.vlm_cfg": "VLM 未就绪：请确认已配置 vlm_models_config 且权重可加载",
+    "status.eval_running": "评测运行中",
+    "label.job": "任务",
+    "label.eval": "评测",
+    "label.busy": "处理中",
+    "status.eval_verdict": "VLM 评测结论: {verdict}",
+    "status.first_chunk_wait": "正在准备本次首段 · 已等待 {s} 秒",
+    "status.infer_progress": "推理进行中 · 本次已完成 {n} 段 · 已用 {s} 秒",
+    "tip.first_chunk": "首段包含 pi05 动作推理和 WM 生成；首次使用或切换任务时还需加载对应 pi05 权重。",
+    "tip.first_chunk.replay": "首段回放样例中保存的动作，再由世界模型生成画面。",
+    "confirm.archive": "归档当前会话？输出文件会保留，并释放模型占用。",
+    "status.archived": "会话已归档，输出文件已保留",
+    "confirm.delete": "永久删除当前会话及所有结果文件？此操作不可恢复。",
+    "status.deleted": "会话与结果文件已永久删除"
+  },
+  "en": {
+    "conn.idle": "Disconnected",
+    "conn.connecting": "Connecting…",
+    "conn.ok": "Connected",
+    "conn.fail": "Connection failed",
+    "hero.title": "Visual rollout console",
+    "hero.copy": "Choose recorded action replay or the pi0.5 closed loop, then watch Cosmos FD generate each scene chunk.",
+    "ctrl.heading": "Run setup",
+    "btn.connect": "Connect",
+    "field.wm": "World model (WM)",
+    "ph.model": "Select a model after connecting…",
+    "note.model.default": "Weights load only after you select a model.",
+    "field.task": "Task",
+    "task.all": "All examples",
+    "note.task.replay": "Filter recorded action examples by task.",
+    "note.task.external": "Filter pi0.5 closed-loop examples by task; policy weights load on first inference.",
+    "field.example": "Example",
+    "ph.example": "Examples load after connecting…",
+    "note.example": "Choose an episode from the configured example roots.",
+    "field.policy": "Run mode",
+    "note.policy.replay": "Open loop: replay recorded actions; the policy does not observe generated frames.",
+    "field.num_steps": "Denoising steps",
+    "field.seed": "Seed",
+    "note.params_fixed": "Parameters are fixed when the session is created; delete the session to change them.",
+    "btn.create": "Create session",
+    "rollout.heading": "Rollout controls",
+    "field.chunks": "Chunks to run",
+    "field.chunk_len": "Action steps per chunk",
+    "chunk.opt32": "32 steps",
+    "chunk.opt16": "16 steps",
+    "btn.run": "Run continuously",
+    "btn.step": "Step once",
+    "btn.stop": "Stop",
+    "btn.finish": "Generate full video",
+    "field.instruction": "Eval instruction (overrides caption)",
+    "ph.instruction": "No caption on this example — enter an instruction",
+    "btn.evaluate": "Run VLM evaluation",
+    "btn.archive": "Archive session (keep outputs)",
+    "btn.delete": "Permanently delete session and outputs",
+    "sessions.heading": "Server sessions",
+    "sessions.count": "{n}",
+    "btn.refresh": "Refresh",
+    "note.sessions": "Archive keeps outputs and frees the model; permanent delete removes all result files.",
+    "sessions.empty": "No server sessions.",
+    "stage.aria": "Inference results",
+    "session.current": "Current session",
+    "session.none": "Not created",
+    "metric.state": "Status",
+    "metric.step": "Current chunk",
+    "media.obs": "Current Observation",
+    "media.obs_kind": "Environment observation frame",
+    "empty.obs_title": "Waiting for the first frame",
+    "empty.obs_copy": "After connecting and creating a session, the current observation frame appears here.",
+    "media.result": "Generated result",
+    "empty.video_title": "No video yet",
+    "empty.video_copy": "After one or more action chunks finish, the generated video appears here.",
+    "empty.disc_title": "Not connected",
+    "raw.summary": "View raw session / job data",
+    "raw.idle": "Not connected",
+    "task.cloth": "cloth · G02 Cloth Folding",
+    "task.bread": "bread · G01 Bread Pickup",
+    "task.towel": "towel · G01 Towel Folding",
+    "task.doll_in": "doll_in · G01 Doll In-Box",
+    "task.doll_out": "doll_out · G01 Doll Out-of-Box",
+    "policy.replay": "Open loop · recorded action replay",
+    "policy.external": "Closed loop · pi0.5 policy",
+    "note.policy.external_ckpt": "Closed loop: pi0.5 predicts the next actions from the current generated frame. Weights: {ckpt}.",
+    "note.policy.external_no": "Closed loop: pi0.5 predicts the next actions from the current generated frame.",
+    "example.suffix.closed": "closed-loop seed",
+    "example.suffix.replay": "{n}-chunk replay",
+    "example.suffix.policy_replay": "{n}-chunk recorded policy-action replay",
+    "example.none": "No examples for this run mode",
+    "example.meta": "{n} examples available · 10 FPS",
+    "example.meta_empty": "No examples for this model and run mode.",
+    "model.ph.loading": "Loading weights…",
+    "model.ph.select": "Select a model…",
+    "model.meta.active": "Supports: {domains}. Delete the session before switching models.",
+    "model.meta.loading": "Please wait while the model loads.",
+    "model.meta.failed": "Model load failed; select a model again to retry.",
+    "sess.label.archived": "Archived",
+    "sess.label.orphaned": "Orphaned after restart",
+    "sess.label.manual": "Manual session",
+    "sess.state.running": "Running",
+    "sess.state.archived": "Archived (outputs kept)",
+    "sess.state.orphaned": "Left over after process restart",
+    "sess.state.finished": "Finished",
+    "sess.state.idle": "Idle",
+    "sess.frames.unknown": "Frame count unknown",
+    "sess.frames": "{n} frames",
+    "sess.line": "{policy} · chunk {step} · {frames} · {state}",
+    "sess.btn.archive": "Archive",
+    "sess.btn.delete": "Delete permanently",
+    "sess.out.full": "Full video",
+    "sess.out.chunk": "Chunk {n}",
+    "confirm.archive_id": "Archive session {id}? Outputs are kept and the model is released.",
+    "status.archived_id": "Session {id} archived; outputs kept",
+    "confirm.delete_id": "Permanently delete session {id} and all result files? This cannot be undone.",
+    "status.deleted_id": "Session {id} and its outputs were permanently deleted",
+    "status.model_ready": "Model ready — you can start rollout",
+    "status.pick_model": "Select a model to load weights",
+    "status.model_fail": "Model load failed: {msg}",
+    "status.see_logs": "Check the server logs",
+    "status.model_boot_fail": "Model startup failed: {msg}",
+    "status.model_loading": "Model is loading, please wait…",
+    "status.model_status_err": "Cannot read model status: {msg}",
+    "status.switching": "Switching model; waiting for weights…",
+    "status.switch_fail": "Model switch failed",
+    "status.switched": "Model switched: {label}",
+    "status.switch_timeout": "Model load timed out; check server logs",
+    "err.delete_session_first": "Delete the current session first",
+    "err.num_steps": "Denoising steps must be an integer from 1 to 200",
+    "err.seed": "Seed must be a non-negative safe integer",
+    "status.session_created": "Session created — ready for rollout",
+    "err.create_session_first": "Create a session first",
+    "err.model_not_ready": "Model is not ready yet; wait until status is “Model ready”",
+    "err.chunk_count": "Chunk count must be between 1 and 64",
+    "err.replay_left": "Only {n} action chunk(s) left in this example",
+    "status.job_submitted": "Inference job submitted",
+    "status.stop_requested": "Stop requested; will halt after the current chunk",
+    "status.video_building": "Generating full video…",
+    "status.video_done_meta": "Full video ready ({w}x{h}, {n} frames)",
+    "status.video_done": "Full video ready",
+    "err.eval_need_video": "Generate the full video before evaluation",
+    "err.eval_empty": "Eval instruction is empty; fill it in or ensure the example caption is set",
+    "err.vlm": "VLM not ready: {msg}",
+    "err.vlm_cfg": "VLM not ready: ensure vlm_models_config is set and weights can load",
+    "status.eval_running": "Evaluation running",
+    "label.job": "Job",
+    "label.eval": "Evaluation",
+    "label.busy": "Working",
+    "status.eval_verdict": "VLM verdict: {verdict}",
+    "status.first_chunk_wait": "Preparing the first chunk · waited {s}s",
+    "status.infer_progress": "Inference running · {n} chunk(s) done · {s}s elapsed",
+    "tip.first_chunk": "The first chunk runs pi05 action inference and WM generation; the first use or a task switch also loads pi05 weights.",
+    "tip.first_chunk.replay": "The first chunk replays recorded actions, then the world model generates frames.",
+    "confirm.archive": "Archive the current session? Outputs are kept and the model is released.",
+    "status.archived": "Session archived; outputs kept",
+    "confirm.delete": "Permanently delete the current session and all result files? This cannot be undone.",
+    "status.deleted": "Session and result files permanently deleted"
+  }
+};
+    const LANG_KEY = 'dream.ui.lang';
+    let uiLang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'zh';
+    let statusState = { key: null, params: {}, tone: '', detailKey: null, detailParams: {}, raw: null, rawDetail: null };
+    let lastPolicies = null;
+    let lastServerSessions = [];
+    let session = null;
+    let job = null;
+    let timer = null;
+    let readinessTimer = null;
+    let connected = false;
+    let modelReady = false;
+    let startupFailure = null;
+    let mediaUrls = {};
+    let exampleDetails = new Map();
+    let modelCatalog = [];
+    let activeModelId = null;
+    let pendingModelId = null;
+    let modelSwitchState = 'loading';
+    let modelSwitchError = null;
+    let modelSwitching = false;
+    let instructionDirty = false;
+    const byId = id => document.getElementById(id);
+
+    function t(key, params = {}) {
+      const dict = I18N[uiLang] || I18N.zh;
+      let text = dict[key] ?? I18N.zh[key] ?? key;
+      return text.replace(/\{(\w+)\}/g, (_, name) => (
+        params[name] == null ? '' : String(params[name])
+      ));
+    }
+
+    function modelLabel(model) {
+      if (!model) return '';
+      if (uiLang === 'en') return model.label_en || model.label || model.id;
+      return model.label || model.label_en || model.id;
+    }
+
+    function applyStaticI18n() {
+      document.documentElement.lang = uiLang === 'en' ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        if (el.id === 'sessionId' && session) return;
+        if (el.id === 'sessionState' && session) return;
+        if (el.id === 'statusMessage' && (statusState.key || statusState.raw)) return;
+        if (el.id === 'status' && (session || job || connected)) return;
+        if (el.id === 'modelMeta') return;
+        if (el.id === 'policyMeta') return;
+        if (el.id === 'exampleMeta') return;
+        if (el.id === 'serverSessionCount') return;
+        if (el.id === 'connectionText') return;
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+      });
+      document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+        el.alt = t(el.dataset.i18nAlt);
+      });
+      document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+        el.setAttribute('aria-label', t(el.dataset.i18nAria));
+      });
+      document.querySelectorAll('.lang-toggle [data-lang]').forEach(btn => {
+        btn.setAttribute('aria-pressed', btn.dataset.lang === uiLang ? 'true' : 'false');
+      });
+      updateConnectionText();
+      paintStatus();
+      byId('serverSessionCount').textContent = t('sessions.count', { n: lastServerSessions.length });
+    }
+
+    function applyLang(next) {
+      uiLang = next === 'en' ? 'en' : 'zh';
+      localStorage.setItem(LANG_KEY, uiLang);
+      applyStaticI18n();
+      if (modelCatalog.length) {
+        renderModels({
+          models: modelCatalog,
+          active_model_id: activeModelId,
+          pending_model_id: pendingModelId,
+          switch_state: modelSwitchState,
+          switch_error: modelSwitchError,
+          ready: modelReady,
+          default_num_steps: null,
+        }, { preserveNumSteps: true });
+      }
+      if (lastPolicies) renderPolicies(lastPolicies);
+      rebuildTaskSelect();
+      if (exampleDetails.size) renderExamples();
+      renderSession();
+      if (connected) renderServerSessionRows(lastServerSessions);
+      updateControls();
+    }
+
+    function taskLabel(task) {
+      const key = `task.${task}`;
+      const translated = t(key);
+      return translated === key ? task : translated;
+    }
+
+    function rebuildTaskSelect() {
+      if (!exampleDetails.size) return;
+      const currentTask = byId('tasks').value;
+      const tasks = [...new Set([...exampleDetails.values()].map(e => e.policy_profile).filter(Boolean))];
+      byId('tasks').replaceChildren(
+        new Option(t('task.all'), ''),
+        ...tasks.map(task => new Option(taskLabel(task), task))
+      );
+      byId('tasks').value = tasks.includes(currentTask) ? currentTask : '';
+    }
+
+    function updateConnectionText() {
+      const state = byId('connectionBadge').dataset.state;
+      const key = state === 'connected' ? 'conn.ok' : state === 'error' ? 'conn.fail' : 'conn.idle';
+      // connecting uses conn.connecting temporarily via setConnection
+      if (byId('connectionText').dataset.connecting === '1') {
+        byId('connectionText').textContent = t('conn.connecting');
+        return;
+      }
+      byId('connectionText').textContent = t(key);
+    }
+
+    function setConnection(state, { connecting = false } = {}) {
+      byId('connectionBadge').dataset.state = state;
+      if (connecting) byId('connectionText').dataset.connecting = '1';
+      else delete byId('connectionText').dataset.connecting;
+      updateConnectionText();
+    }
+
+    function setStatusKey(key, tone = '', params = {}, detailKey = null, detailParams = {}) {
+      statusState = { key, params, tone, detailKey, detailParams, raw: null, rawDetail: null };
+      paintStatus();
+    }
+
+    function setStatus(message, tone = '', detail = '') {
+      statusState = { key: null, params: {}, tone, detailKey: null, detailParams: {}, raw: message, rawDetail: detail };
+      paintStatus();
+    }
+
+    function paintStatus() {
+      if (statusState.key) {
+        byId('statusMessage').textContent = t(statusState.key, statusState.params);
+        byId('statusDetail').textContent = statusState.detailKey
+          ? t(statusState.detailKey, statusState.detailParams)
+          : (statusState.rawDetail || '');
+      } else if (statusState.raw != null) {
+        byId('statusMessage').textContent = statusState.raw;
+        byId('statusDetail').textContent = statusState.rawDetail || '';
+      }
+      byId('statusIndicator').dataset.tone = statusState.tone || '';
+    }
+
+    function currentCaption() {
+      if (session?.caption) return String(session.caption);
+      const exampleId = byId('examples').value;
+      if (!exampleId) return '';
+      return String(exampleDetails.get(exampleId)?.caption || '');
+    }
+
+    function syncInstructionFromSource({ force = false } = {}) {
+      if (force) instructionDirty = false;
+      if (instructionDirty) return;
+      byId('instruction').value = currentCaption();
+    }
+
+    async function api(path, method = 'GET', body) {
+      const response = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await response.json();
+      if (!response.ok) throw Error(JSON.stringify(data));
+      return data;
+    }
+
+    async function media(path, id) {
+      if (!path) return;
+      const response = await fetch(path);
+      if (!response.ok) throw Error('Artifact download failed');
+      if (mediaUrls[id]) URL.revokeObjectURL(mediaUrls[id]);
+      mediaUrls[id] = URL.createObjectURL(await response.blob());
+      byId(id).src = mediaUrls[id];
+      byId(id).hidden = false;
+      byId(id + 'Placeholder').hidden = true;
+    }
+
+    function renderServerSessionRows(sessions) {
+      lastServerSessions = sessions;
+      const rows = sessions.map(entry => {
+        const row = document.createElement('div');
+        row.className = 'server-session';
+        const info = document.createElement('div');
+        info.className = 'server-session-info';
+        const title = document.createElement('div');
+        title.className = 'server-session-title';
+        const caseLabel = entry.example_id
+          || entry.example_title
+          || (entry.archived ? t('sess.label.archived') : entry.orphaned ? t('sess.label.orphaned') : t('sess.label.manual'));
+        title.textContent = `${caseLabel} · ${entry.domain} · ${entry.id.slice(0, 8)}`;
+        const meta = document.createElement('div');
+        meta.className = 'server-session-meta';
+        const state = entry.active_job
+          ? t('sess.state.running')
+          : entry.archived
+            ? t('sess.state.archived')
+            : entry.orphaned
+              ? t('sess.state.orphaned')
+              : entry.finished
+                ? t('sess.state.finished')
+                : t('sess.state.idle');
+        const frames = entry.total_frames == null
+          ? t('sess.frames.unknown')
+          : t('sess.frames', { n: entry.total_frames });
+        meta.textContent = t('sess.line', {
+          policy: entry.policy === 'external' ? t('policy.external')
+            : entry.policy === 'replay' ? t('policy.replay') : entry.policy,
+          step: entry.next_step,
+          frames,
+          state,
+        });
+        info.append(title, meta);
+        const actions = document.createElement('div');
+        actions.className = 'server-session-actions';
+        if (!entry.archived) {
+          const archive = document.createElement('button');
+          archive.className = 'button button-secondary button-compact';
+          archive.type = 'button';
+          archive.textContent = t('sess.btn.archive');
+          archive.disabled = entry.active_job;
+          archive.addEventListener('click', handler(async () => {
+            if (!confirm(t('confirm.archive_id', { id: entry.id.slice(0, 8) }))) return;
+            await api('/sessions/' + encodeURIComponent(entry.id) + '/archive', 'POST');
+            if (session?.id === entry.id) clearDisplayedSession();
+            await refreshServerSessions();
+            setStatusKey('status.archived_id', 'success', { id: entry.id.slice(0, 8) });
+          }));
+          actions.append(archive);
+        }
+        const remove = document.createElement('button');
+        remove.className = 'button button-danger button-compact';
+        remove.type = 'button';
+        remove.textContent = entry.active_job ? t('sess.state.running') : t('sess.btn.delete');
+        remove.disabled = entry.active_job;
+        remove.addEventListener('click', handler(async () => {
+          if (!confirm(t('confirm.delete_id', { id: entry.id.slice(0, 8) }))) return;
+          await api('/sessions/' + encodeURIComponent(entry.id), 'DELETE');
+          if (session?.id === entry.id) clearDisplayedSession();
+          await refreshServerSessions();
+          setStatusKey('status.deleted_id', 'success', { id: entry.id.slice(0, 8) });
+        }));
+        actions.append(remove);
+        row.append(info, actions);
+        const outputs = document.createElement('div');
+        outputs.className = 'server-session-outputs';
+        const links = [
+          ...(entry.video_url ? [{ label: t('sess.out.full'), url: entry.video_url }] : []),
+          ...(entry.step_videos || []).map((url, index) => ({ label: t('sess.out.chunk', { n: index + 1 }), url }))
+        ];
+        for (const output of links) {
+          const link = document.createElement('a');
+          link.href = output.url;
+          link.textContent = output.label;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          outputs.append(link);
+        }
+        if (links.length) row.append(outputs);
+        return row;
+      });
+      byId('serverSessions').replaceChildren(...rows);
+      byId('serverSessionCount').textContent = t('sessions.count', { n: sessions.length });
+      byId('serverSessionsEmpty').hidden = sessions.length > 0;
+    }
+
+    async function refreshServerSessions() {
+      const data = await api('/sessions');
+      renderServerSessionRows(data.sessions || []);
+    }
+
+    function clearDisplayedSession() {
+      session = null;
+      job = null;
+      clearInterval(timer);
+      for (const [id, url] of Object.entries(mediaUrls)) {
+        URL.revokeObjectURL(url);
+        byId(id).removeAttribute('src');
+        byId(id).hidden = true;
+        byId(id + 'Placeholder').hidden = false;
+      }
+      mediaUrls = {};
+      syncInstructionFromSource({ force: true });
+      renderSession();
+    }
+
+    async function pollReadiness() {
+      try {
+        const response = await fetch('/health/ready');
+        const readiness = await response.json();
+        modelReady = response.ok && readiness.ready;
+        startupFailure = readiness.error;
+        if (modelReady || modelSwitching) {
+          try {
+            renderModels(await api('/models'));
+          } catch (_) {
+            if (modelReady) modelSwitching = false;
+            updateControls();
+          }
+        } else {
+          updateControls();
+        }
+        if (modelReady) {
+          modelSwitching = false;
+          updateControls();
+          setStatusKey('status.model_ready', 'success');
+          return true;
+        }
+        if (modelSwitchState === 'unselected') {
+          setStatusKey('status.pick_model', '');
+          return true;
+        }
+        if (modelSwitchState === 'failed') {
+          setStatusKey('status.model_fail', 'error', {
+            msg: modelSwitchError || startupFailure || t('status.see_logs'),
+          });
+          return true;
+        }
+        if (startupFailure) {
+          setStatusKey('status.model_boot_fail', 'error', { msg: startupFailure });
+          return true;
+        }
+        setStatusKey('status.model_loading', 'working');
+        return false;
+      } catch (error) {
+        modelReady = false;
+        startupFailure = error.message;
+        updateControls();
+        setStatusKey('status.model_status_err', 'error', { msg: error.message });
+        return true;
+      }
+    }
+
+    function updateControls() {
+      const hasSession = Boolean(session);
+      byId('models').disabled = !connected || hasSession || modelSwitching || modelCatalog.length === 0;
+      byId('examples').disabled = !connected || hasSession || !modelReady || modelSwitching;
+      byId('tasks').disabled = !connected || hasSession || !modelReady || modelSwitching;
+      byId('policy').disabled = !connected || hasSession;
+      byId('chunk').disabled = !connected || hasSession;
+      byId('numSteps').disabled = hasSession;
+      byId('seed').disabled = hasSession;
+      byId('create').disabled = !connected || hasSession || !modelReady || !byId('examples').value;
+      const replayRemaining = hasSession && session.policy === 'replay' && session.max_replay_chunks != null
+        ? Math.max(0, session.max_replay_chunks - session.next_step)
+        : null;
+      for (const id of ['run', 'step', 'stop', 'finish', 'evaluate']) byId(id).disabled = !hasSession;
+      byId('archive').disabled = !hasSession || Boolean(session?.active_job);
+      byId('delete').disabled = !hasSession || Boolean(session?.active_job);
+      byId('refreshSessions').disabled = !connected;
+      byId('count').max = replayRemaining !== null ? String(Math.max(1, replayRemaining)) : '64';
+      const finished = Boolean(session?.finished);
+      const busy = Boolean(session?.active_job);
+      byId('run').disabled = !hasSession || !modelReady || modelSwitching || finished || replayRemaining === 0 || busy;
+      byId('step').disabled = !hasSession || !modelReady || modelSwitching || finished || replayRemaining === 0 || busy;
+      byId('stop').disabled = !hasSession || finished || !busy;
+      byId('finish').disabled = !hasSession || !modelReady || modelSwitching || busy || !session?.steps?.length;
+      byId('instruction').disabled = !hasSession;
+      byId('evaluate').disabled = !(hasSession && !busy && !modelSwitching);
+    }
+
+    function renderModels(data, { preserveNumSteps = false } = {}) {
+      const previousModelId = activeModelId;
+      modelCatalog = data.models || modelCatalog;
+      activeModelId = data.active_model_id;
+      if (!preserveNumSteps && !session && activeModelId && activeModelId !== previousModelId && data.default_num_steps) {
+        byId('numSteps').value = String(data.default_num_steps);
+      }
+      pendingModelId = data.pending_model_id || null;
+      modelSwitchState = data.switch_state || modelSwitchState || 'loading';
+      modelSwitchError = data.switch_error || null;
+      if (typeof data.ready === 'boolean') modelReady = data.ready;
+      modelSwitching = modelSwitchState === 'loading';
+      const options = [new Option(
+        modelSwitching ? t('model.ph.loading') : t('model.ph.select'),
+        ''
+      ), ...modelCatalog.map(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = modelLabel(model);
+        return option;
+      })];
+      byId('models').replaceChildren(...options);
+      byId('models').value = activeModelId || pendingModelId || '';
+      const active = modelCatalog.find(model => model.id === activeModelId);
+      byId('modelMeta').textContent = active
+        ? t('model.meta.active', { domains: active.supported_domains.join(' / ') })
+        : modelSwitching
+          ? t('model.meta.loading')
+          : modelSwitchState === 'failed'
+            ? t('model.meta.failed')
+            : t('note.model.default');
+      updateControls();
+    }
+
+    function renderPolicies(data) {
+      lastPolicies = data;
+      const labels = {
+        replay: t('policy.replay'),
+        external: t('policy.external'),
+      };
+      const current = byId('policy').value;
+      const policies = (data.policies || []).filter(policy =>
+        Object.prototype.hasOwnProperty.call(labels, policy));
+      byId('policy').replaceChildren(...policies.map(policy => new Option(labels[policy], policy)));
+      byId('policy').value = policies.includes(current) ? current : (policies[0] || '');
+      updatePolicyMeta();
+      updateControls();
+    }
+
+    function updatePolicyMeta() {
+      const example = exampleDetails.get(byId('examples').value);
+      const closedLoop = byId('policy').value === 'external';
+      byId('taskMeta').textContent = t(closedLoop ? 'note.task.external' : 'note.task.replay');
+      if (byId('policy').value === 'replay') {
+        byId('policyMeta').textContent = t('note.policy.replay');
+      } else if (example?.policy_checkpoint) {
+        byId('policyMeta').textContent = t('note.policy.external_ckpt', { ckpt: example.policy_checkpoint });
+      } else {
+        byId('policyMeta').textContent = t('note.policy.external_no');
+      }
+    }
+
+    async function loadExamples() {
+      const data = await api('/examples');
+      exampleDetails = new Map(data.examples.map(example => [example.id, example]));
+      rebuildTaskSelect();
+      renderExamples();
+      return data;
+    }
+
+    function formatExampleTitle(title) {
+      // bread / s00_0010_ep16 → bread / ep16
+      return String(title || '').replace(/\bs\d+_\d+_ep(\d+)\b/g, 'ep$1');
+    }
+
+    function syncChunkFromExample(example) {
+      if (!example || session) return;
+      // Closed-loop pi0.5 defaults to 32 action steps per query for all tasks
+      // (including G2 cloth). Open-loop replay keeps the example contract.
+      byId('chunk').value = byId('policy').value === 'external'
+        ? '32'
+        : String(example.chunk_length || 32);
+    }
+
+    function syncCountFromPolicy() {
+      if (session) return;
+      // Closed-loop pi0.5 usually needs a longer rollout; open-loop replay stays short.
+      byId('count').value = byId('policy').value === 'external' ? '20' : '2';
+    }
+
+    function renderExamples() {
+      const task = byId('tasks').value;
+      const closedLoop = byId('policy').value === 'external';
+      const examples = [...exampleDetails.values()].filter(example =>
+        Boolean(example.external_only) === closedLoop && (!task || example.policy_profile === task));
+      const previous = byId('examples').value;
+      const options = examples.map(example => {
+        const option = document.createElement('option');
+        option.value = example.id;
+        const suffix = example.external_only
+          ? t('example.suffix.closed')
+          : example.source_kind === 'external_policy_session'
+            ? t('example.suffix.policy_replay', { n: example.chunks })
+            : t('example.suffix.replay', { n: example.chunks });
+        option.textContent = `${formatExampleTitle(example.title)} · ${example.domain} · ${suffix}`;
+        return option;
+      });
+      if (!options.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = t('example.none');
+        options.push(option);
+      }
+      byId('examples').replaceChildren(...options);
+      if (examples.some(example => example.id === previous)) byId('examples').value = previous;
+      const selected = exampleDetails.get(byId('examples').value);
+      syncChunkFromExample(selected);
+      byId('exampleMeta').textContent = examples.length
+        ? t('example.meta', { n: examples.length })
+        : t('example.meta_empty');
+      syncInstructionFromSource({ force: byId('examples').value !== previous });
+      updatePolicyMeta();
+      updateControls();
+    }
+
+    function renderSession() {
+      if (!session) {
+        byId('sessionId').textContent = t('session.none');
+        byId('sessionState').textContent = t('sess.state.idle');
+        byId('stepCount').textContent = '—';
+      } else {
+        byId('sessionId').textContent = session.id;
+        const state = session.active_job
+          ? t('sess.state.running')
+          : session.archived
+            ? t('sess.state.archived')
+            : session.finished
+              ? t('sess.state.finished')
+              : t('sess.state.idle');
+        byId('sessionState').textContent = state;
+        const current = session.next_step || 0;
+        const total = session.policy === 'replay'
+          ? (exampleDetails.get(session.example_id)?.chunks ?? session.max_replay_chunks)
+          : null;
+        byId('stepCount').textContent = `${current}${total ? ` / ${total}` : ''}`;
+      }
+      if (session || job) {
+        byId('status').textContent = JSON.stringify({ session, job }, null, 2);
+      } else if (!connected) {
+        byId('status').textContent = t('raw.idle');
+      }
+      updateControls();
+    }
+
+    async function refresh() {
+      if (!session) return;
+      const previousStep = session.next_step;
+      const data = await api('/sessions/' + session.id);
+      session = data;
+      renderSession();
+      if (previousStep !== data.next_step) {
+        await media(data.observation_url, 'observation');
+        if (data.steps && data.steps.length) await media(data.steps.at(-1).video_url, 'video');
+      }
+      return data;
+    }
+
+    function handler(action) {
+      return async () => {
+        try {
+          await action();
+        } catch (error) {
+          setStatus(error.message, 'error');
+          byId('status').textContent = error.message;
+        }
+      };
+    }
+
+    function formatAssessment(text, maxLen = 500) {
+      const raw = String(text || '').trim();
+      if (!raw) return '';
+      return raw.length > maxLen ? `${raw.slice(0, maxLen)}…` : raw;
+    }
+
+    function watchJob(terminalStates, { labelKey = 'label.job' } = {}) {
+      clearInterval(timer);
+      const started = performance.now();
+      timer = setInterval(async () => {
+        try {
+          job = await api('/jobs/' + job.id);
+          await refresh();
+          const state = job.status || 'busy';
+          if (state === 'failed') {
+            setStatus(job.error || `${t(labelKey)} failed`, 'error');
+          } else if (state === 'completed' && job.result) {
+            const details = job.result.details || {};
+            const verdict = details.verdict
+              || (details.success === 1 ? 'success' : details.success === 0 ? 'failure' : 'unknown');
+            const tone = verdict === 'success' ? 'success' : verdict === 'failure' ? 'error' : 'working';
+            const assessment = formatAssessment(job.result.assessment);
+            statusState = {
+              key: 'status.eval_verdict',
+              params: { verdict },
+              tone,
+              detailKey: null,
+              detailParams: {},
+              raw: null,
+              rawDetail: assessment ? `Assessment: ${assessment}` : '',
+            };
+            paintStatus();
+          } else if (state === 'running' && job.kind !== 'evaluate') {
+            const elapsed = Math.floor((performance.now() - started) / 1000);
+            const completed = Number(job.completed_chunks || 0);
+            if (completed === 0) {
+              setStatusKey('status.first_chunk_wait', 'working', { s: elapsed },
+                session?.policy === 'replay' ? 'tip.first_chunk.replay' : 'tip.first_chunk');
+            } else {
+              setStatusKey('status.infer_progress', 'working', { n: completed, s: elapsed });
+            }
+          } else {
+            const label = t(labelKey);
+            const stateText = state === 'busy' ? t('label.busy') : state;
+            setStatus(label + ' ' + stateText, ['completed', 'stopped'].includes(state) ? 'success' : 'working');
+          }
+          if (terminalStates.includes(state)) clearInterval(timer);
+        } catch (error) {
+          clearInterval(timer);
+          setStatus(error.message, 'error');
+        }
+      }, 1500);
+    }
+
+    document.querySelectorAll('.lang-toggle [data-lang]').forEach(btn => {
+      btn.addEventListener('click', () => applyLang(btn.dataset.lang));
+    });
+
+    byId('load').onclick = handler(async () => {
+      byId('load').disabled = true;
+      setConnection('idle', { connecting: true });
+      try {
+        renderModels(await api('/models'));
+        const capabilities = await api('/capabilities');
+        renderPolicies(capabilities);
+        byId('chunk').value = String(capabilities.chunk_length || 32);
+        await loadExamples();
+        await refreshServerSessions();
+        connected = true;
+        setConnection('connected');
+        updateControls();
+        clearInterval(readinessTimer);
+        if (await pollReadiness()) return;
+        readinessTimer = setInterval(async () => {
+          if (await pollReadiness()) {
+            clearInterval(readinessTimer);
+            readinessTimer = null;
+          }
+        }, 2000);
+      } catch (error) {
+        connected = false;
+        setConnection('error');
+        throw error;
+      } finally {
+        byId('load').disabled = false;
+      }
+    });
+
+    byId('examples').onchange = () => {
+      const example = exampleDetails.get(byId('examples').value);
+      syncChunkFromExample(example);
+      syncInstructionFromSource({ force: true });
+      updatePolicyMeta();
+      updateControls();
+    };
+    byId('tasks').onchange = renderExamples;
+    byId('policy').onchange = () => {
+      syncCountFromPolicy();
+      renderExamples();
+    };
+    byId('refreshSessions').onclick = handler(refreshServerSessions);
+    byId('models').onchange = handler(async () => {
+      const targetModelId = byId('models').value;
+      if (!targetModelId || targetModelId === activeModelId) return;
+      pendingModelId = targetModelId;
+      modelSwitching = true;
+      modelReady = false;
+      updateControls();
+      setStatusKey('status.switching', 'working');
+      try {
+        await api('/models/active', 'POST', { model_id: targetModelId });
+        const deadline = Date.now() + 900000;
+        while (Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          const status = await api('/models');
+          renderModels(status);
+          if (status.switch_state === 'failed') {
+            throw Error(status.switch_error || t('status.switch_fail'));
+          }
+          if (status.ready && status.active_model_id === targetModelId) {
+            await loadExamples();
+            const label = modelLabel(status.models.find(model => model.id === targetModelId)) || targetModelId;
+            setStatusKey('status.switched', 'success', { label });
+            return;
+          }
+        }
+        throw Error(t('status.switch_timeout'));
+      } catch (error) {
+        await refreshServerSessions().catch(() => {});
+        throw error;
+      } finally {
+        const status = await api('/models').catch(() => null);
+        if (status) renderModels(status);
+        else modelSwitching = false;
+        updateControls();
+      }
+    });
+    byId('create').onclick = handler(async () => {
+      if (session) throw Error(t('err.delete_session_first'));
+      const numSteps = byId('numSteps').valueAsNumber;
+      const seed = byId('seed').valueAsNumber;
+      if (!Number.isInteger(numSteps) || numSteps < 1 || numSteps > 200) {
+        throw Error(t('err.num_steps'));
+      }
+      if (!Number.isSafeInteger(seed) || seed < 0) {
+        throw Error(t('err.seed'));
+      }
+      session = await api('/sessions', 'POST', {
+        example_id: byId('examples').value,
+        policy: byId('policy').value || 'replay',
+        chunk_length: Number(byId('chunk').value) || 32,
+        num_steps: numSteps,
+        seed,
+      });
+      syncInstructionFromSource({ force: true });
+      await media(session.observation_url, 'observation');
+      await refresh();
+      await refreshServerSessions();
+      setStatusKey('status.session_created', 'success');
+    });
+
+    async function submit(chunks) {
+      if (!session) throw Error(t('err.create_session_first'));
+      if (!modelReady) throw Error(t('err.model_not_ready'));
+      if (!Number.isInteger(chunks) || chunks < 1 || chunks > 64) throw Error(t('err.chunk_count'));
+      const remaining = session.policy === 'replay' && session.max_replay_chunks != null
+        ? session.max_replay_chunks - session.next_step
+        : null;
+      if (remaining !== null && chunks > remaining) throw Error(t('err.replay_left', { n: remaining }));
+      job = await api('/sessions/' + session.id + (chunks === 1 ? '/steps' : '/run'), 'POST', {
+        request_id: crypto.randomUUID(),
+        expected_step: session.next_step,
+        ...(chunks === 1 ? {} : { chunks })
+      });
+      renderSession();
+      setStatusKey('status.job_submitted', 'working');
+      byId('statusDetail').textContent = job.id;
+      statusState.rawDetail = job.id;
+      watchJob(['completed', 'failed', 'stopped']);
+    }
+
+    byId('step').onclick = handler(() => submit(1));
+    byId('run').onclick = handler(() => submit(Number(byId('count').value)));
+    byId('stop').onclick = handler(async () => {
+      await api('/sessions/' + session.id + '/stop', 'POST');
+      await refresh();
+      setStatusKey('status.stop_requested', 'working');
+    });
+    byId('finish').onclick = handler(async () => {
+      setStatusKey('status.video_building', 'working');
+      session = await api('/sessions/' + session.id + '/finish', 'POST');
+      await media(session.video_url, 'video');
+      renderSession();
+      if (session.video_metadata) {
+        setStatusKey('status.video_done_meta', 'success', {
+          w: session.video_metadata.width,
+          h: session.video_metadata.height,
+          n: session.video_metadata.frame_count,
+        });
+      } else {
+        setStatusKey('status.video_done', 'success');
+      }
+    });
+    byId('instruction').oninput = () => {
+      instructionDirty = true;
+      updateControls();
+    };
+    byId('evaluate').onclick = handler(async () => {
+      if (!session?.finished || !session?.video_url) throw Error(t('err.eval_need_video'));
+      const instruction = (byId('instruction').value || session.caption || '').trim();
+      if (!instruction) throw Error(t('err.eval_empty'));
+      if (!session.evaluation_available) {
+        throw Error(session.vlm_error
+          ? t('err.vlm', { msg: session.vlm_error })
+          : t('err.vlm_cfg'));
+      }
+      job = await api('/sessions/' + session.id + '/evaluate', 'POST', {
+        request_id: crypto.randomUUID(),
+        instruction,
+      });
+      renderSession();
+      setStatusKey('status.eval_running', 'working');
+      byId('statusDetail').textContent = job.id;
+      statusState.rawDetail = job.id;
+      watchJob(['completed', 'failed'], { labelKey: 'label.eval' });
+    });
+    byId('archive').onclick = handler(async () => {
+      if (!session || !confirm(t('confirm.archive'))) return;
+      await api('/sessions/' + encodeURIComponent(session.id) + '/archive', 'POST');
+      clearDisplayedSession();
+      await refreshServerSessions();
+      setStatusKey('status.archived', 'success');
+    });
+    byId('delete').onclick = handler(async () => {
+      if (!session || !confirm(t('confirm.delete'))) return;
+      await api('/sessions/' + encodeURIComponent(session.id), 'DELETE');
+      clearDisplayedSession();
+      await refreshServerSessions();
+      setStatusKey('status.deleted', 'success');
+    });
+
+    applyStaticI18n();
+    updateControls();
+    byId('load').click();
+  </script>
+</body>
+</html>

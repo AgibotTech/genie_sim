@@ -1,0 +1,126 @@
+{
+  "format": "geniesim-dream-example-v2",
+  "id": "g2_cloth_ep0269",
+  "title": "g2_cloth_ep0269",
+  "domain": "agibotworld_g2",
+  "caption": "Dual arms collaborate to fold clothes sleeves and corners inward and fold in half",
+  "checkpoint": null,
+  "domain_stats_sha256": "301652819b0ed35a0446c4482dff1b64259432f203db155ba07a2efed55c25cb",
+  "contract": {
+    "action_representation": "stateend_29d_backward_framewise_rot6d",
+    "chunk_length": 32,
+    "fps": 10,
+    "history_bucket_frames": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "history_sampling": "endpoints_fixed",
+    "num_conditional_frames": 1
+  },
+  "observation": {
+    "layout": "three_views",
+    "views": {
+      "head": {
+        "path": "observation/head.png",
+        "width": 640,
+        "height": 400,
+        "sha256": "d2db0aa2f2557c8f098225f807ff81740c9fa14abc1a778f17087b033f430e45"
+      },
+      "left_wrist": {
+        "path": "observation/left_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "745e9b2fe7442aa0fe233724be3a85aa6706a05839944ae19c73a3ec7fcfb733"
+      },
+      "right_wrist": {
+        "path": "observation/right_wrist.png",
+        "width": 320,
+        "height": 200,
+        "sha256": "40151ca619216600986721329ffa06428bb0f8cb148a4c10aaa0380d41a8548b"
+      }
+    },
+    "view_source": "panels_split_from_source_image",
+    "native_camera_frames_available": false,
+    "concat": {
+      "width": 640,
+      "height": 600,
+      "layout": "head_full_width_top__left_right_wrists_bottom",
+      "panels": {
+        "head": {
+          "x": 0,
+          "y": 0,
+          "width": 640,
+          "height": 400
+        },
+        "left_wrist": {
+          "x": 0,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        },
+        "right_wrist": {
+          "x": 320,
+          "y": 400,
+          "width": 320,
+          "height": 200
+        }
+      }
+    }
+  },
+  "actions": {
+    "path": "actions.npy",
+    "dtype": "float32",
+    "shape": [
+      10,
+      32,
+      29
+    ],
+    "normalized": true,
+    "sha256": "f3a126e3a53735344946cb97790d9e4e018afea1bf65ead2fcd3918092032f70"
+  },
+  "provenance": {
+    "source_kind": "released_example",
+    "closed_loop_id": "pi05-g2_cloth_ep0269"
+  },
+  "closed_loop_seed": {
+    "path": "seed_state.json",
+    "sha256": "9c58598016266e84b79aa2004b3af9437fba31d2e2f63dd2264a12f5860d55a8"
+  },
+  "external_only": true,
+  "initial_state": {
+    "format": "dream_g2_wm_joints16",
+    "policy_profile": "cloth",
+    "joints": [
+      0.5267699956893921,
+      -0.519248902797699,
+      -1.0936782360076904,
+      -1.5949862003326416,
+      -1.148962378501892,
+      0.3391209542751312,
+      -1.1802136898040771,
+      -0.0,
+      -0.524793803691864,
+      -0.5191733837127686,
+      1.0943124294281006,
+      -1.595990538597107,
+      1.1481918096542358,
+      0.33973097801208496,
+      1.1806570291519165,
+      -0.0
+    ],
+    "head_body": [
+      0.0,
+      0.0,
+      0.34489938616752625,
+      -0.8030775189399719,
+      1.5042970180511475,
+      -0.341465026140213,
+      0.0,
+      0.0
+    ]
+  },
+  "policy_checkpoint": "g2-cloth-v1",
+  "state_source": "measured"
+}
