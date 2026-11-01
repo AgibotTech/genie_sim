@@ -327,6 +327,47 @@ def _state_for_corobot(payload):
     return out
 
 
+def validate_action_schema(result):
+    """Check the required chunk structure consumed by CoRobotPolicy._parse_result."""
+    arrays = {}
+    kinds = []
+    for key in ("left_arm", "right_arm", "left_effector", "right_effector"):
+        values = result.get(key)
+        if key.endswith("arm"):
+            if not isinstance(values, dict) or "values" not in values:
+                fail(f"{key}: required action block must contain 'values'")
+                return False
+            kind = values.get("kind", "JOINT_ABS")
+            if kind not in ("JOINT_ABS", "EEF_ABS"):
+                fail(f"{key}: unsupported action kind {kind!r}")
+                return False
+            kinds.append(kind)
+            values = values["values"]
+        try:
+            arr = np.asarray(values)
+        except (TypeError, ValueError):
+            fail(f"{key}: expected a rectangular numeric action chunk")
+            return False
+        if arr.ndim != 2 or arr.size == 0 or arr.dtype.kind not in "fiub":
+            fail(f"{key}: expected a non-empty numeric [steps, dimensions] action chunk")
+            return False
+        if key.endswith("arm") and kind == "EEF_ABS" and arr.shape[1] != 7:
+            fail(f"{key}: EEF_ABS requires 7 dimensions (xyz + xyzw quaternion)")
+            return False
+        arrays[key] = arr
+    if kinds[0] != kinds[1]:
+        fail("left_arm/right_arm: action kinds must match")
+        return False
+    if len({arr.shape[0] for arr in arrays.values()}) != 1:
+        fail("required action chunks must have matching step counts")
+        return False
+    frame = result["left_arm"].get("base_link") or result.get("base_link") or "base_link"
+    if frame not in ("base_link", "arm_base_link"):
+        fail(f"unsupported EEF frame: {frame!r}")
+        return False
+    return True
+
+
 def check_corobot(ws, payload, max_dims):
     t0 = time.time()
     ws.send(_pack(payload))
@@ -337,6 +378,9 @@ def check_corobot(ws, payload, max_dims):
         return False
     result = _unpack(resp)
     section(ICON_RESP, f"corobot response  {dt:.1f} ms")
+    if not isinstance(result, dict):
+        fail("response must be a corobot JSON-RPC dict")
+        return False
     info(f"keys: {list(result.keys())}")
     if result.get("error"):
         fail(f"server error: {result['error']}")
@@ -346,6 +390,8 @@ def check_corobot(ws, payload, max_dims):
         fail(f"response missing 'result' dict. keys={list(result.keys())}")
         return False
     info(f"result keys: {list(inner.keys())}")
+    if not validate_action_schema(inner):
+        return False
 
     state_map = _state_for_corobot(payload)
     passed = True
@@ -358,7 +404,7 @@ def check_corobot(ws, payload, max_dims):
         if arr.size == 0:
             info(f"{key}: empty values, skipping")
             continue
-        kind = sub.get("kind")
+        kind = sub.get("kind", "JOINT_ABS")
         passed &= per_idx_summary(arr, key, kind=kind, state=state_map.get(key), max_dims=max_dims)
         if arr.ndim >= 2 and arr.shape[0] > 1:
             chunk_continuity([arr[i] for i in range(arr.shape[0])], f"{key}")

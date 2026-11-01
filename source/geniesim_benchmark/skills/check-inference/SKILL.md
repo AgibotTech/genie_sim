@@ -51,6 +51,14 @@ Sends a saved corobot `.pkl` payload to `ws://<HOST>:<PORT>` and validates the r
 
 The payload is a corobot JSON-RPC envelope — `{"method": "infer", "params": {...}}` — and the server replies with `{"result": {"left_arm": …, "right_arm": …, …}}` (or `{"error": …}`).
 
+Required actions match the benchmark's corobot consumer: `left_arm` and
+`right_arm` contain numeric `values` chunks and matching `kind` values
+(`JOINT_ABS` by default, or `EEF_ABS`); `left_effector` and `right_effector`
+are numeric chunks. Each chunk has shape `[steps, dimensions]`, is non-empty,
+and has the same step count. `EEF_ABS` arm poses contain seven values
+(xyz + xyzw quaternion). Head and waist actions are optional. Numeric metadata
+such as scores or history settings cannot substitute for actions.
+
 ## Required Input
 
 The user must provide:
