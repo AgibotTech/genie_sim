@@ -1,0 +1,13 @@
+include README.md AGENTS.md LICENSE VERSION .dockerignore
+include THIRD_PARTY_NOTICES.md
+recursive-include THIRD_PARTY_LICENSES *
+recursive-include skills *
+include examples/*.py examples/*.md
+recursive-include examples/tasks *
+recursive-include docs *
+recursive-include docker *
+prune examples/assets
+prune .cache
+prune .models
+prune tests
+global-exclude __pycache__ *.py[cod]

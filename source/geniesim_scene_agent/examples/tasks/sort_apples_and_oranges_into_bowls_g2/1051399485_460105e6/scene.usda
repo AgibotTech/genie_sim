@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_20d07d7c" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_572dba3f" (
+            prepend payload = @../../../assets/objects/benchmark/bowl/benchmark_bowl_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.158, 0.255, 0.769)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_95e7be15" (
+            prepend payload = @../../../assets/objects/benchmark/bowl/benchmark_bowl_025/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.139, -0.263, 0.773)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_apple_4f9dda6a" (
+            prepend payload = @../../../assets/objects/benchmark/apple/benchmark_apple_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.900197, 0, 0, -0.435483)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.162, 0.14, 0.779)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_orange_362ca76b" (
+            prepend payload = @../../../assets/objects/benchmark/orange/benchmark_orange_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.090776, 0, 0, 0.995871)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.169, -0.076, 0.777)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

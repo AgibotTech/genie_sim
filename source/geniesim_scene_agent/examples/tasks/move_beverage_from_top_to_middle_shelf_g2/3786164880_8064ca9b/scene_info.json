@@ -1,0 +1,192 @@
+{
+  "scene_id": "move_beverage_from_top_to_middle_shelf_g2",
+  "seed": 3786164880,
+  "layout": {
+    "benchmark_supermarket_shelf_f8dbd263": {
+      "usd": "benchmark_supermarket_shelf_006",
+      "xyz": [
+        0.4,
+        0.0,
+        0.943
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_beabb908",
+        "shelf_beverage_top_to_middle_78dc71d4",
+        "benchmark_supermarket_shelf_f8dbd263"
+      ],
+      "keywords": [
+        "target_shelf",
+        "shelf",
+        "storage_furniture",
+        "supermarket_display",
+        "wood",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "supermarket_shelf"
+        ],
+        "object_category": [
+          "furniture",
+          "storage"
+        ],
+        "color": "brown",
+        "shape": "rectangular",
+        "materials": [
+          "wood",
+          "metal"
+        ],
+        "dimensions": [
+          0.36687761545181274,
+          1.8872956037521362,
+          1.0509772896766663
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "sturdy",
+          "organized",
+          "tiered",
+          "functional",
+          "modern"
+        ],
+        "full_description": [
+          "A multi-tiered shelf with light wood-colored surfaces and black metal framing."
+        ]
+      }
+    },
+    "benchmark_beverage_bottle_219913af": {
+      "usd": "benchmark_beverage_bottle_004",
+      "xyz": [
+        0.297,
+        0.003,
+        1.411
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_beabb908",
+        "shelf_beverage_top_to_middle_78dc71d4",
+        "benchmark_beverage_bottle_219913af"
+      ],
+      "keywords": [
+        "target_beverage",
+        "beverage",
+        "bottle",
+        "drink",
+        "container",
+        "on_top_layer",
+        "target",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "beverage_bottle"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "red",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "liquid"
+        ],
+        "dimensions": [
+          0.06153380125761032,
+          0.14993929862976074,
+          0.06153379566967487
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "red",
+          "liquid",
+          "bottled",
+          "packaged"
+        ],
+        "full_description": [
+          "A plastic bottle with a red label and black cap, containing dark liquid, featuring Chinese text and a Suntory logo."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_beabb908"
+        },
+        {
+          "id": "shelf_beverage_top_to_middle_78dc71d4"
+        },
+        {
+          "tags": [
+            "target_shelf",
+            "shelf",
+            "storage_furniture",
+            "supermarket_display",
+            "wood",
+            "left"
+          ],
+          "id": "benchmark_supermarket_shelf_f8dbd263"
+        },
+        {
+          "tags": [
+            "target_beverage",
+            "beverage",
+            "bottle",
+            "drink",
+            "container",
+            "on_top_layer",
+            "target",
+            "left"
+          ],
+          "id": "benchmark_beverage_bottle_219913af"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_beabb908",
+          "target": "shelf_beverage_top_to_middle_78dc71d4"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_78dc71d4",
+          "target": "benchmark_supermarket_shelf_f8dbd263"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_78dc71d4",
+          "target": "benchmark_beverage_bottle_219913af"
+        }
+      ]
+    }
+  },
+  "task_name": "move_beverage_from_top_to_middle_shelf_g2",
+  "english_task_name": "Move a beverage from the top shelf to the middle shelf",
+  "instance_id": "3786164880_8064ca9b"
+}

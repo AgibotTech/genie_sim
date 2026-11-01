@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_bf8b76d1" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_peach_6fb21499" (
+            prepend payload = @../../../assets/objects/benchmark/peach/benchmark_peach_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.923195, 0, 0, 0.384332)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.119, -0.137, 0.811)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_peach_8969c48e" (
+            prepend payload = @../../../assets/objects/benchmark/peach/benchmark_peach_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.840658, 0, 0, 0.541566)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.104, -0.126, 0.811)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bottle_ab83b947" (
+            prepend payload = @../../../assets/objects/benchmark/bottle/benchmark_bottle_017/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.209004, 0, 0, 0.977915)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.105, 0.243, 0.847)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

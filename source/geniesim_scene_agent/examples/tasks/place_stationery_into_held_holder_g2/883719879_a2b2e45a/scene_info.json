@@ -1,0 +1,237 @@
+{
+  "scene_id": "place_stationery_into_held_holder_g2",
+  "seed": 883719879,
+  "layout": {
+    "table_20d4d609": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_a02baac2",
+        "place_stationery_into_held_pen_holder_b810a131",
+        "table_20d4d609"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_stationery_c9569234": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.072,
+        -0.087,
+        0.772
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.616499,
+        0.787355
+      ],
+      "scale": [
+        1.45,
+        1.45,
+        1.0
+      ],
+      "tags": [
+        "root_scene_a02baac2",
+        "place_stationery_into_held_pen_holder_b810a131",
+        "benchmark_stationery_c9569234"
+      ],
+      "keywords": [
+        "pen_holder",
+        "stationery",
+        "container",
+        "target_container",
+        "POSITION_TAG_right"
+      ],
+      "description": {
+        "semantic_name": [
+          "pen_holder"
+        ],
+        "full_description": [
+          "A black cylindrical pen holder with a mesh body, smooth solid rim at the top, and a flat solid base."
+        ]
+      }
+    },
+    "benchmark_stationery_35d77003": {
+      "usd": "benchmark_stationery_012",
+      "xyz": [
+        -0.084,
+        0.082,
+        0.768
+      ],
+      "xyzw": [
+        0.681305,
+        -0.189272,
+        -0.189272,
+        0.681305
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_a02baac2",
+        "place_stationery_into_held_pen_holder_b810a131",
+        "benchmark_stationery_35d77003"
+      ],
+      "keywords": [
+        "stationery_item_to_place",
+        "stationery",
+        "eraser",
+        "on_desk",
+        "to_place",
+        "POSITION_TAG_left"
+      ],
+      "description": {
+        "semantic_name": [
+          "eraser"
+        ],
+        "object_category": [
+          "stationery",
+          "writing_tool_accessory"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "rubber",
+          "plastic",
+          "paper"
+        ],
+        "dimensions": [
+          0.031223641708493233,
+          0.016342392191290855,
+          0.0737399309873581
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "white",
+          "rectangular",
+          "small",
+          "labeled",
+          "stationery",
+          "blue-accented"
+        ],
+        "full_description": [
+          "A white rectangular eraser with a blue and white paper wrapper labeled 'ERASER' and '4B'."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_a02baac2"
+        },
+        {
+          "id": "place_stationery_into_held_pen_holder_b810a131"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_20d4d609"
+        },
+        {
+          "tags": [
+            "pen_holder",
+            "stationery",
+            "container",
+            "target_container",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_stationery_c9569234"
+        },
+        {
+          "tags": [
+            "stationery_item_to_place",
+            "stationery",
+            "eraser",
+            "on_desk",
+            "to_place",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_stationery_35d77003"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_a02baac2",
+          "target": "place_stationery_into_held_pen_holder_b810a131"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_b810a131",
+          "target": "table_20d4d609"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_b810a131",
+          "target": "benchmark_stationery_c9569234"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_b810a131",
+          "target": "benchmark_stationery_35d77003"
+        }
+      ]
+    }
+  },
+  "task_name": "place_stationery_into_held_holder_g2",
+  "english_task_name": "Place stationery into a holder held by the other hand",
+  "instance_id": "883719879_a2b2e45a"
+}

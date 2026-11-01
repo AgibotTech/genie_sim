@@ -1,0 +1,250 @@
+{
+  "scene_id": "place_object_at_relative_position_aloha",
+  "seed": 1368987191,
+  "layout": {
+    "table_48ac35b8": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_23c533ff",
+        "table_with_random_objects_147ec2f2",
+        "place_random_objects_on_desk_77e4f3ba",
+        "table_48ac35b8"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_orange_96cf7e41": {
+      "usd": "benchmark_orange_004",
+      "xyz": [
+        -0.068,
+        0.122,
+        0.807
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.117283,
+        0.993098
+      ],
+      "tags": [
+        "root_scene_23c533ff",
+        "table_with_random_objects_147ec2f2",
+        "place_random_objects_on_desk_77e4f3ba",
+        "benchmark_orange_96cf7e41"
+      ],
+      "keywords": [
+        "orange",
+        "benchmark_orange_004",
+        "on_desk",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "orange"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "orange",
+        "shape": "spherical",
+        "materials": [
+          "organic",
+          "fruit flesh",
+          "peel"
+        ],
+        "dimensions": [
+          0.0740404799580574,
+          0.07486499100923538,
+          0.07437027990818024
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "smooth",
+          "vibrant",
+          "juicy",
+          "fresh"
+        ],
+        "full_description": [
+          "A round, orange-colored fruit with a textured peel and small dimples visible on its surface."
+        ]
+      }
+    },
+    "benchmark_apple_a43a6db8": {
+      "usd": "benchmark_apple_002",
+      "xyz": [
+        -0.092,
+        -0.206,
+        0.827
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.042948,
+        0.999077
+      ],
+      "tags": [
+        "root_scene_23c533ff",
+        "table_with_random_objects_147ec2f2",
+        "place_random_objects_on_desk_77e4f3ba",
+        "benchmark_apple_a43a6db8"
+      ],
+      "keywords": [
+        "apple",
+        "benchmark_apple_002",
+        "on_desk",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "apple"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "red",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.093,
+          0.0945,
+          0.0917
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "red",
+          "ripe",
+          "smooth",
+          "natural"
+        ],
+        "full_description": [
+          "A red and yellow apple with a glossy surface and a short brown stem."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_23c533ff"
+        },
+        {
+          "id": "table_with_random_objects_147ec2f2"
+        },
+        {
+          "id": "place_random_objects_on_desk_77e4f3ba"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_48ac35b8"
+        },
+        {
+          "tags": [
+            "orange",
+            "benchmark_orange_004",
+            "on_desk",
+            "left"
+          ],
+          "id": "benchmark_orange_96cf7e41"
+        },
+        {
+          "tags": [
+            "apple",
+            "benchmark_apple_002",
+            "on_desk",
+            "left"
+          ],
+          "id": "benchmark_apple_a43a6db8"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_23c533ff",
+          "target": "table_with_random_objects_147ec2f2"
+        },
+        {
+          "source": "table_with_random_objects_147ec2f2",
+          "target": "place_random_objects_on_desk_77e4f3ba"
+        },
+        {
+          "source": "place_random_objects_on_desk_77e4f3ba",
+          "target": "table_48ac35b8"
+        },
+        {
+          "source": "place_random_objects_on_desk_77e4f3ba",
+          "target": "benchmark_orange_96cf7e41"
+        },
+        {
+          "source": "place_random_objects_on_desk_77e4f3ba",
+          "target": "benchmark_apple_a43a6db8"
+        }
+      ]
+    }
+  },
+  "task_name": "place_object_at_relative_position_aloha",
+  "english_task_name": "Place an object at a relative position",
+  "instance_id": "1368987191_5ab08bfe"
+}

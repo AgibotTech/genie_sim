@@ -1,0 +1,72 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_72e5135e" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_f41f1915" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_029/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.109537, 0, 0, 0.993983)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.036, -0.151, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_f8c1a1c0" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.798549, 0, 0, -0.60193)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.095, -0.103, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_eccc0a95" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.710513, 0, 0, -0.703684)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.041, 0.031, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_e70a26bd" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.484189, 0, 0, 0.874963)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.079, 0.212, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_39b448c3" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.707419, 0, 0, -0.706794)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.067, -0.241, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

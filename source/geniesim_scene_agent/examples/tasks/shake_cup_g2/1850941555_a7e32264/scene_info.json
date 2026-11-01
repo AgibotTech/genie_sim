@@ -1,0 +1,162 @@
+{
+  "scene_id": "shake_cup_g2",
+  "seed": 1850941555,
+  "layout": {
+    "table_b2cebdee": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_6206e028",
+        "table_with_random_cup_eb36a105",
+        "place_cup_on_table_1a234ea4",
+        "table_b2cebdee"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_beer_mug_af996022": {
+      "usd": "benchmark_beer_mug_002",
+      "xyz": [
+        -0.052,
+        -0.196,
+        0.862
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.99818,
+        -0.060308
+      ],
+      "tags": [
+        "root_scene_6206e028",
+        "table_with_random_cup_eb36a105",
+        "place_cup_on_table_1a234ea4",
+        "random_cup_bdedf508",
+        "benchmark_beer_mug_af996022"
+      ],
+      "keywords": [
+        "cup",
+        "random_selection",
+        "benchmark_beer_mug_002"
+      ],
+      "description": {
+        "semantic_name": [
+          "beer_mug"
+        ],
+        "full_description": [
+          "A transparent glass beer mug with a slightly tapered cylindrical shape, containing amber-colored liquid and a frothy white head, viewed from multiple angles."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_6206e028"
+        },
+        {
+          "id": "table_with_random_cup_eb36a105"
+        },
+        {
+          "id": "place_cup_on_table_1a234ea4"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_b2cebdee"
+        },
+        {
+          "id": "random_cup_bdedf508"
+        },
+        {
+          "tags": [
+            "cup",
+            "random_selection",
+            "benchmark_beer_mug_002"
+          ],
+          "id": "benchmark_beer_mug_af996022"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_6206e028",
+          "target": "table_with_random_cup_eb36a105"
+        },
+        {
+          "source": "table_with_random_cup_eb36a105",
+          "target": "place_cup_on_table_1a234ea4"
+        },
+        {
+          "source": "place_cup_on_table_1a234ea4",
+          "target": "table_b2cebdee"
+        },
+        {
+          "source": "place_cup_on_table_1a234ea4",
+          "target": "random_cup_bdedf508"
+        },
+        {
+          "source": "random_cup_bdedf508",
+          "target": "benchmark_beer_mug_af996022"
+        }
+      ]
+    }
+  },
+  "task_name": "shake_cup_g2",
+  "english_task_name": "Shake a cup",
+  "instance_id": "1850941555_a7e32264"
+}

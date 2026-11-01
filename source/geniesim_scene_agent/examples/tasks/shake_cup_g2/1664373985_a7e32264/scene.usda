@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_68904285" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beer_mug_5ddd9f7b" (
+            prepend payload = @../../../assets/objects/benchmark/beer_mug/benchmark_beer_mug_007/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.99764, 0, 0, 0.068661)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.033, -0.114, 0.86)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

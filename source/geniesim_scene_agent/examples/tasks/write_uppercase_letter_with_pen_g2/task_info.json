@@ -1,0 +1,110 @@
+{
+  "task_name": "write_uppercase_letter_with_pen_g2",
+  "mode": "llm",
+  "run_times": 1,
+  "task_description": {
+    "task_name": "Write an uppercase letter with a pen",
+    "english_task_name": "Write an uppercase letter with a pen",
+    "init_scene_text": "A pen stands in a holder beside a sheet of paper on a writing desk."
+  },
+  "robot": {
+    "init_arm_pose_noise": {
+      ".*_arm_.*": {
+        "noise_type": "uniform",
+        "low": 0.0,
+        "high": 0.0
+      }
+    },
+    "robot_cfg": "G2_omnipicker_fixed_dual.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "position": [
+        -0.7,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/G2/head_link3/head_front_Camera",
+      "/G2/gripper_r_base_link/Right_Camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {},
+  "writing_contract": {
+    "target_field": "scene_info.json:target_letter",
+    "supported_letters": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z"
+    ],
+    "instance_mapping": {
+      "0": "A",
+      "1": "B",
+      "2": "C",
+      "3": "D",
+      "4": "E",
+      "5": "F",
+      "6": "G",
+      "7": "H",
+      "8": "I",
+      "9": "J",
+      "10": "K",
+      "11": "L",
+      "12": "M",
+      "13": "N",
+      "14": "O",
+      "15": "P",
+      "16": "Q",
+      "17": "R",
+      "18": "S",
+      "19": "T",
+      "20": "U",
+      "21": "V",
+      "22": "W",
+      "23": "X",
+      "24": "Y",
+      "25": "Z"
+    },
+    "selection": "The collector selects a scene instance; execute_task reads its explicit letter and never samples or overrides it."
+  }
+}

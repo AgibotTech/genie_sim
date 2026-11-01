@@ -6,13 +6,11 @@
 
 This distribution ships **no Python code of its own**. It exists purely as a
 PEP 621 meta-package that pulls in the real content-bearing peer
-distributions via ``[project.optional-dependencies]``:
+distributions via required dependencies and optional extras:
 
-    pip install geniesim                  # bare meta + its required peers
-    pip install geniesim[benchmark]       # + geniesim_benchmark
-    pip install geniesim[generator]       # + geniesim_generator
-    pip install geniesim[ros]        # + geniesim_ros
-    pip install geniesim[full]            # + all of the above
+    geniesim bootstrap                   # required local peers
+    pip install -e 'source/geniesim[scene_agent]'  # optional scene tools
+    pip install -e 'source/geniesim[all]'          # all optional peers
 
 Modelled on Isaac Sim's layout (``isaacsim`` + ``isaacsim-kernel`` /
 ``isaacsim-benchmark`` / …): the umbrella name is a stable install target

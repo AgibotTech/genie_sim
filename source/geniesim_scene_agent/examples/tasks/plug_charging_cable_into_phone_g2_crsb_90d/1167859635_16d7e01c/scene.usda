@@ -1,0 +1,66 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_9d178b41" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_phone_holder_419f4af7" (
+            prepend payload = @../../../assets/objects/benchmark/phone_holder/benchmark_phone_holder_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.921573, 0, 0, -0.388206)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.016, 0.125, 0.788)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_phone_d2e13b12" (
+            prepend payload = @../../../assets/objects/benchmark/phone/benchmark_phone_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.331078, -0.415679, -0.165658, 0.830756)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.025, 0.138, 0.817)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_plug_e1219fce" (
+            prepend payload = @../../../assets/objects/benchmark/plug/benchmark_plug_017/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.640554, 0.665873, -0.276802, -0.263977)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.215, -0.353, 0.741)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_power_strip_storage_box_9230672d" (
+            prepend payload = @../../../assets/objects/benchmark/power_strip_storage_box/benchmark_power_strip_storage_box_000/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (0.898666, 0, 0, 0.438634)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.134, -0.245, 0.8)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

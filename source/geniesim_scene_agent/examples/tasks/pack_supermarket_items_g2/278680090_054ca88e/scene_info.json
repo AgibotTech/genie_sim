@@ -1,0 +1,203 @@
+{
+  "scene_id": "pack_supermarket_items_g2",
+  "seed": 278680090,
+  "layout": {
+    "table_91d18013": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_d3d2fdda",
+        "desk_with_product_and_bag_be2df1ba",
+        "table_91d18013"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_handbag_d23b2c66": {
+      "usd": "benchmark_handbag_004",
+      "xyz": [
+        0.11,
+        0.101,
+        0.925
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.73056,
+        0.682848
+      ],
+      "tags": [
+        "root_scene_d3d2fdda",
+        "desk_with_product_and_bag_be2df1ba",
+        "place_bag_on_desk_dbdad635",
+        "benchmark_handbag_d23b2c66"
+      ],
+      "keywords": [
+        "handbag",
+        "bag",
+        "left_area",
+        "on_desk"
+      ],
+      "description": {}
+    },
+    "benchmark_beverage_bottle_2379ef31": {
+      "usd": "benchmark_beverage_bottle_073",
+      "xyz": [
+        -0.107,
+        -0.19,
+        0.86
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.959414,
+        0.282002
+      ],
+      "tags": [
+        "root_scene_d3d2fdda",
+        "desk_with_product_and_bag_be2df1ba",
+        "place_product_on_desk_cecb9dee",
+        "select_product_565d29a3",
+        "benchmark_beverage_bottle_2379ef31"
+      ],
+      "keywords": [
+        "product",
+        "red",
+        "red_bull",
+        "on_desk"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_d3d2fdda"
+        },
+        {
+          "id": "desk_with_product_and_bag_be2df1ba"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_91d18013"
+        },
+        {
+          "id": "place_bag_on_desk_dbdad635"
+        },
+        {
+          "tags": [
+            "handbag",
+            "bag",
+            "left_area",
+            "on_desk"
+          ],
+          "id": "benchmark_handbag_d23b2c66"
+        },
+        {
+          "id": "place_product_on_desk_cecb9dee"
+        },
+        {
+          "id": "select_product_565d29a3"
+        },
+        {
+          "tags": [
+            "product",
+            "red",
+            "red_bull",
+            "on_desk"
+          ],
+          "id": "benchmark_beverage_bottle_2379ef31"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_d3d2fdda",
+          "target": "desk_with_product_and_bag_be2df1ba"
+        },
+        {
+          "source": "desk_with_product_and_bag_be2df1ba",
+          "target": "table_91d18013"
+        },
+        {
+          "source": "desk_with_product_and_bag_be2df1ba",
+          "target": "place_bag_on_desk_dbdad635"
+        },
+        {
+          "source": "desk_with_product_and_bag_be2df1ba",
+          "target": "place_product_on_desk_cecb9dee"
+        },
+        {
+          "source": "place_bag_on_desk_dbdad635",
+          "target": "benchmark_handbag_d23b2c66"
+        },
+        {
+          "source": "place_product_on_desk_cecb9dee",
+          "target": "select_product_565d29a3"
+        },
+        {
+          "source": "select_product_565d29a3",
+          "target": "benchmark_beverage_bottle_2379ef31"
+        }
+      ]
+    }
+  },
+  "task_name": "pack_supermarket_items_g2",
+  "english_task_name": "Pack supermarket items",
+  "instance_id": "278680090_054ca88e"
+}

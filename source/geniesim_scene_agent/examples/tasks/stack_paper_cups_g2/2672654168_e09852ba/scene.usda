@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_04e7bcb0" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_6ee7f3d4" (
+            prepend payload = @../../../assets/objects/benchmark/cup/benchmark_cup_105/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.686075, 0, 0, 0.727531)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.037, -0.062, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_08e88de1" (
+            prepend payload = @../../../assets/objects/benchmark/cup/benchmark_cup_105/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.811561, 0, 0, 0.584267)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.105, 0.3, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_19884d95" (
+            prepend payload = @../../../assets/objects/benchmark/cup/benchmark_cup_105/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.632243, 0, 0, 0.77477)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.003, 0.186, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_312449a0" (
+            prepend payload = @../../../assets/objects/benchmark/cup/benchmark_cup_105/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.548133, 0, 0, 0.836391)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.297, 0.145, 0.904)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

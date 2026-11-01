@@ -49,9 +49,9 @@ outputs:
 
 Do **not** use for:
 - USD scene authoring without a panorama input → that's the
-  `generate-scene` skill in `geniesim_generator`.
-- Asset / object library search → `search-assets` in
-  `geniesim_generator`.
+  `geniesim-scene-generation` skill in `geniesim_scene_agent`.
+- Asset / object library search → `geniesim-asset-search` in
+  `geniesim_scene_agent`.
 - Importing an existing USD scene into the RT Engine → just point
   the scene yaml's `scene_usda` at the existing USD (see `add-robot`
   / `launch-scene`). This skill is **not** the path for that —

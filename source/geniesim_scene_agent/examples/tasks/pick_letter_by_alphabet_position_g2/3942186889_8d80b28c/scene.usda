@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_00b816ce" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_building_blocks_4964498b" (
+            prepend payload = @../../../assets/objects/benchmark/building_blocks/benchmark_building_blocks_041/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.1123, 0, 0, 0.993674)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.052, 0.109, 0.739)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_letter_d8354fb5" (
+            prepend payload = @../../../assets/objects/benchmark/letter/benchmark_letter_037/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.233316, 0, 0, 0.972401)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.006, -0.085, 0.747)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_letter_b5db24fb" (
+            prepend payload = @../../../assets/objects/benchmark/letter/benchmark_letter_036/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.000299, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.068, -0.037, 0.747)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_letter_1a7c6345" (
+            prepend payload = @../../../assets/objects/benchmark/letter/benchmark_letter_032/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.123643, 0, 0, 0.992327)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.025, -0.011, 0.747)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -1,0 +1,224 @@
+{
+  "scene_id": "sort_chess_pieces_by_color_g2",
+  "seed": 3682967762,
+  "layout": {
+    "table_1240a0a9": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_1a1aa126",
+        "sort_chess_by_color_313edad5",
+        "table_1240a0a9"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_chess_4647dd0a": {
+      "usd": "benchmark_chess_008",
+      "xyz": [
+        -0.02,
+        -0.054,
+        0.767
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.859442,
+        0.511232
+      ],
+      "tags": [
+        "root_scene_1a1aa126",
+        "sort_chess_by_color_313edad5",
+        "create_scattered_pieces_405ee088",
+        "benchmark_chess_4647dd0a"
+      ],
+      "keywords": [
+        "chess_knight_black_b2",
+        "knight_black",
+        "black",
+        "chess_piece",
+        "knight",
+        "value_3",
+        "scattered",
+        "on_desk",
+        "right",
+        "sortable_by_color"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_knight"
+        ],
+        "full_description": [
+          "A matte black chess knight piece with a stylized horse head and neck mounted on a cylindrical base, viewed from multiple rotation angles."
+        ]
+      }
+    },
+    "benchmark_chess_5469645c": {
+      "usd": "benchmark_chess_002",
+      "xyz": [
+        0.024,
+        0.117,
+        0.767
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.433349,
+        0.901226
+      ],
+      "tags": [
+        "root_scene_1a1aa126",
+        "sort_chess_by_color_313edad5",
+        "create_scattered_pieces_405ee088",
+        "benchmark_chess_5469645c"
+      ],
+      "keywords": [
+        "chess_knight_white_w2",
+        "knight_white",
+        "white",
+        "chess_piece",
+        "knight",
+        "value_3",
+        "scattered",
+        "on_desk",
+        "left",
+        "sortable_by_color"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_knight"
+        ],
+        "full_description": [
+          "A light-colored wooden chess knight piece with a carved horse head and neck mounted on a cylindrical base, showing visible wood grain texture."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_1a1aa126"
+        },
+        {
+          "id": "sort_chess_by_color_313edad5"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood"
+          ],
+          "id": "table_1240a0a9"
+        },
+        {
+          "id": "create_scattered_pieces_405ee088"
+        },
+        {
+          "tags": [
+            "chess_knight_black_b2",
+            "knight_black",
+            "black",
+            "chess_piece",
+            "knight",
+            "value_3",
+            "scattered",
+            "on_desk",
+            "right",
+            "sortable_by_color"
+          ],
+          "id": "benchmark_chess_4647dd0a"
+        },
+        {
+          "tags": [
+            "chess_knight_white_w2",
+            "knight_white",
+            "white",
+            "chess_piece",
+            "knight",
+            "value_3",
+            "scattered",
+            "on_desk",
+            "left",
+            "sortable_by_color"
+          ],
+          "id": "benchmark_chess_5469645c"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_1a1aa126",
+          "target": "sort_chess_by_color_313edad5"
+        },
+        {
+          "source": "sort_chess_by_color_313edad5",
+          "target": "table_1240a0a9"
+        },
+        {
+          "source": "sort_chess_by_color_313edad5",
+          "target": "create_scattered_pieces_405ee088"
+        },
+        {
+          "source": "create_scattered_pieces_405ee088",
+          "target": "benchmark_chess_4647dd0a"
+        },
+        {
+          "source": "create_scattered_pieces_405ee088",
+          "target": "benchmark_chess_5469645c"
+        }
+      ]
+    }
+  },
+  "task_name": "sort_chess_pieces_by_color_g2",
+  "english_task_name": "Sort chess pieces by color",
+  "instance_id": "3682967762_b876748c"
+}

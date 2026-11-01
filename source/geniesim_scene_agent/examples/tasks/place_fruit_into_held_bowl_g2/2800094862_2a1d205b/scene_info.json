@@ -1,0 +1,250 @@
+{
+  "scene_id": "place_fruit_into_held_bowl_g2",
+  "seed": 2800094862,
+  "layout": {
+    "table_cbb9ab78": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7f3143f7",
+        "place_fruit_into_held_bowl_bc7c0e6d",
+        "table_cbb9ab78"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_bowl_f5e393ca": {
+      "usd": "benchmark_bowl_025",
+      "xyz": [
+        -0.02,
+        -0.122,
+        0.773
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.979373,
+        -0.202062
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7f3143f7",
+        "place_fruit_into_held_bowl_bc7c0e6d",
+        "benchmark_bowl_f5e393ca"
+      ],
+      "keywords": [
+        "bowl_025",
+        "bowl",
+        "container",
+        "target_container"
+      ],
+      "description": {
+        "semantic_name": [
+          "bowl"
+        ],
+        "object_category": [
+          "kitchenware",
+          "bowl"
+        ],
+        "color": "light green",
+        "shape": "round",
+        "materials": [
+          "ceramic",
+          "glaze"
+        ],
+        "dimensions": [
+          0.15623040771484376,
+          0.0825987319946289,
+          0.15708323669433594
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "smooth",
+          "glazed",
+          "ceramic",
+          "shallow"
+        ],
+        "full_description": [
+          "A small, light green ceramic bowl with a dark rim and a glossy finish, featuring a subtle mark on its base."
+        ]
+      }
+    },
+    "benchmark_pomegranate_0f99faf0": {
+      "usd": "benchmark_pomegranate_001",
+      "xyz": [
+        -0.026,
+        0.107,
+        0.778
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.010722,
+        0.999943
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7f3143f7",
+        "place_fruit_into_held_bowl_bc7c0e6d",
+        "benchmark_pomegranate_0f99faf0"
+      ],
+      "keywords": [
+        "fruit",
+        "on_desk",
+        "to_place"
+      ],
+      "description": {
+        "semantic_name": [
+          "pomegranate"
+        ],
+        "object_category": [
+          "fruit",
+          "berry"
+        ],
+        "color": "colorful",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.07423783874511719,
+          0.09322422790527345,
+          0.07993949890136719
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "colorful",
+          "juicy",
+          "sweet",
+          "vibrant"
+        ],
+        "full_description": [
+          "A round, glossy pomegranate with a gradient of red to yellow-green skin and a prominent green calyx at the top."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_7f3143f7"
+        },
+        {
+          "id": "place_fruit_into_held_bowl_bc7c0e6d"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_cbb9ab78"
+        },
+        {
+          "tags": [
+            "bowl_025",
+            "bowl",
+            "container",
+            "target_container"
+          ],
+          "id": "benchmark_bowl_f5e393ca"
+        },
+        {
+          "tags": [
+            "fruit",
+            "on_desk",
+            "to_place"
+          ],
+          "id": "benchmark_pomegranate_0f99faf0"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_7f3143f7",
+          "target": "place_fruit_into_held_bowl_bc7c0e6d"
+        },
+        {
+          "source": "place_fruit_into_held_bowl_bc7c0e6d",
+          "target": "table_cbb9ab78"
+        },
+        {
+          "source": "place_fruit_into_held_bowl_bc7c0e6d",
+          "target": "benchmark_bowl_f5e393ca"
+        },
+        {
+          "source": "place_fruit_into_held_bowl_bc7c0e6d",
+          "target": "benchmark_pomegranate_0f99faf0"
+        }
+      ]
+    }
+  },
+  "task_name": "place_fruit_into_held_bowl_g2",
+  "english_task_name": "Place a fruit into a bowl held by the other hand",
+  "instance_id": "2800094862_2a1d205b"
+}

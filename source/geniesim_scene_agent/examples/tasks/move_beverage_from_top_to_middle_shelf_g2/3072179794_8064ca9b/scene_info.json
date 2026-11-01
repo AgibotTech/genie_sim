@@ -1,0 +1,192 @@
+{
+  "scene_id": "move_beverage_from_top_to_middle_shelf_g2",
+  "seed": 3072179794,
+  "layout": {
+    "benchmark_supermarket_shelf_04793997": {
+      "usd": "benchmark_supermarket_shelf_006",
+      "xyz": [
+        0.4,
+        0.0,
+        0.943
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_8b579b4a",
+        "shelf_beverage_top_to_middle_370dc935",
+        "benchmark_supermarket_shelf_04793997"
+      ],
+      "keywords": [
+        "target_shelf",
+        "shelf",
+        "storage_furniture",
+        "supermarket_display",
+        "wood",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "supermarket_shelf"
+        ],
+        "object_category": [
+          "furniture",
+          "storage"
+        ],
+        "color": "brown",
+        "shape": "rectangular",
+        "materials": [
+          "wood",
+          "metal"
+        ],
+        "dimensions": [
+          0.36687761545181274,
+          1.8872956037521362,
+          1.0509772896766663
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "sturdy",
+          "organized",
+          "tiered",
+          "functional",
+          "modern"
+        ],
+        "full_description": [
+          "A multi-tiered shelf with light wood-colored surfaces and black metal framing."
+        ]
+      }
+    },
+    "iros_beverage_bottle_ea984e05": {
+      "usd": "iros_beverage_bottle_001",
+      "xyz": [
+        0.296,
+        0.037,
+        1.416
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_8b579b4a",
+        "shelf_beverage_top_to_middle_370dc935",
+        "iros_beverage_bottle_ea984e05"
+      ],
+      "keywords": [
+        "target_beverage",
+        "beverage",
+        "bottle",
+        "drink",
+        "container",
+        "on_top_layer",
+        "target",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "Sprite can"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "green",
+        "shape": "cylindrical",
+        "materials": [
+          "metal",
+          "plastic"
+        ],
+        "dimensions": [
+          0.05535351671278477,
+          0.14131903648376465,
+          0.055531058460474014
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "green",
+          "metallic",
+          "printed",
+          "packaged"
+        ],
+        "full_description": [
+          "A green aluminum soda can with white Chinese characters and a silver pull-tab top."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_8b579b4a"
+        },
+        {
+          "id": "shelf_beverage_top_to_middle_370dc935"
+        },
+        {
+          "tags": [
+            "target_shelf",
+            "shelf",
+            "storage_furniture",
+            "supermarket_display",
+            "wood",
+            "left"
+          ],
+          "id": "benchmark_supermarket_shelf_04793997"
+        },
+        {
+          "tags": [
+            "target_beverage",
+            "beverage",
+            "bottle",
+            "drink",
+            "container",
+            "on_top_layer",
+            "target",
+            "left"
+          ],
+          "id": "iros_beverage_bottle_ea984e05"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_8b579b4a",
+          "target": "shelf_beverage_top_to_middle_370dc935"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_370dc935",
+          "target": "benchmark_supermarket_shelf_04793997"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_370dc935",
+          "target": "iros_beverage_bottle_ea984e05"
+        }
+      ]
+    }
+  },
+  "task_name": "move_beverage_from_top_to_middle_shelf_g2",
+  "english_task_name": "Move a beverage from the top shelf to the middle shelf",
+  "instance_id": "3072179794_8064ca9b"
+}

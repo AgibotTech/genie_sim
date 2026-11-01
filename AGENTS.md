@@ -65,7 +65,7 @@ Full surface: [`source/geniesim_cli/AGENTS.md`](./source/geniesim_cli/AGENTS.md)
 | `geniesim` (umbrella) | [`.agent/geniesim.md`](./.agent/geniesim.md) |
 | `geniesim_cli` | [`.agent/geniesim_cli.md`](./.agent/geniesim_cli.md) |
 | `geniesim_benchmark` | [`.agent/geniesim_benchmark.md`](./.agent/geniesim_benchmark.md) |
-| `geniesim_generator` | [`.agent/geniesim_generator.md`](./.agent/geniesim_generator.md) |
+| `geniesim_scene_agent` | [`.agent/geniesim_scene_agent.md`](./.agent/geniesim_scene_agent.md) |
 | `geniesim_ros` | [`.agent/geniesim_ros.md`](./.agent/geniesim_ros.md) |
 | `geniesim_teleop` | [`.agent/geniesim_teleop.md`](./.agent/geniesim_teleop.md) |
 | `geniesim_world` | [`source/geniesim_world/AGENTS.md`](./source/geniesim_world/AGENTS.md) |
@@ -83,7 +83,7 @@ source/
 ├── geniesim/             umbrella meta-package (no code, only deps)
 ├── geniesim_cli/         CLI dispatcher; owns the `geniesim` console script
 ├── geniesim_benchmark/   benchmark tasks, scoring, LLM eval configs
-├── geniesim_generator/   scene generation, procedural layout
+├── geniesim_scene_agent/   scene generation, procedural layout
 ├── geniesim_ros/         Genie Sim RT Engine — ROS 2 workspace
 ├── geniesim_teleop/      VR / Pico teleoperation bridge
 ├── geniesim_world/       multimodal spatial world model (pano → 3D)

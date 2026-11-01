@@ -1,0 +1,174 @@
+{
+  "scene_id": "shake_medicine_bottle_g2",
+  "seed": 1584751185,
+  "layout": {
+    "table_803f4950": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_83278797",
+        "table_with_medicine_bottle_3850c79e",
+        "table_803f4950"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_medicine_bottle_d6772d62": {
+      "usd": "benchmark_medicine_bottle_000",
+      "xyz": [
+        0.093,
+        0.089,
+        0.787
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.921605,
+        0.38813
+      ],
+      "tags": [
+        "root_scene_83278797",
+        "table_with_medicine_bottle_3850c79e",
+        "benchmark_medicine_bottle_d6772d62"
+      ],
+      "keywords": [
+        "medicine_bottle",
+        "bottle",
+        "medical",
+        "cylindrical",
+        "on_desk",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "medicine_bottle"
+        ],
+        "object_category": [
+          "container",
+          "medicine"
+        ],
+        "color": "colorful",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "paper"
+        ],
+        "dimensions": [
+          0.06152497100830078,
+          0.11030638122558593,
+          0.06207268714904785
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "white",
+          "yellow",
+          "packaged",
+          "small"
+        ],
+        "full_description": [
+          "A white plastic bottle with a bright yellow label featuring black text, including 'Glucosamine HCl Mega', and a white cap."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_83278797"
+        },
+        {
+          "id": "table_with_medicine_bottle_3850c79e"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood",
+            "desktop_with_legs"
+          ],
+          "id": "table_803f4950"
+        },
+        {
+          "tags": [
+            "medicine_bottle",
+            "bottle",
+            "medical",
+            "cylindrical",
+            "on_desk",
+            "left"
+          ],
+          "id": "benchmark_medicine_bottle_d6772d62"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_83278797",
+          "target": "table_with_medicine_bottle_3850c79e"
+        },
+        {
+          "source": "table_with_medicine_bottle_3850c79e",
+          "target": "table_803f4950"
+        },
+        {
+          "source": "table_with_medicine_bottle_3850c79e",
+          "target": "benchmark_medicine_bottle_d6772d62"
+        }
+      ]
+    }
+  },
+  "task_name": "shake_medicine_bottle_g2",
+  "english_task_name": "Shake a medicine bottle",
+  "instance_id": "1584751185_f26ad8fd"
+}

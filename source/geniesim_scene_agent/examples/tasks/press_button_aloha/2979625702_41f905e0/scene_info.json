@@ -1,0 +1,178 @@
+{
+  "scene_id": "press_button_aloha",
+  "seed": 2979625702,
+  "layout": {
+    "table_da149c45": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_59a6b4b1",
+        "scene_setup_dcf2eaf7",
+        "table_da149c45"
+      ],
+      "keywords": [
+        "table",
+        "white",
+        "furniture",
+        "desktop"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_button_911d8b46": {
+      "usd": "benchmark_button_018",
+      "xyz": [
+        0.139,
+        0.022,
+        0.898
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_59a6b4b1",
+        "scene_setup_dcf2eaf7",
+        "random_button_2addba67",
+        "benchmark_button_911d8b46"
+      ],
+      "keywords": [
+        "benchmark_button_018",
+        "button",
+        "control",
+        "randomly_selected"
+      ],
+      "description": {
+        "semantic_name": [
+          "button"
+        ],
+        "object_category": [
+          "hardware",
+          "control"
+        ],
+        "color": "blue",
+        "shape": "complex-shaped",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.0997999981045723,
+          0.06752872205452246,
+          0.0997999981045723
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "square",
+          "control",
+          "simple",
+          "functional"
+        ],
+        "full_description": [
+          "A square metallic base with a glossy blue dome-shaped button on top."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_59a6b4b1"
+        },
+        {
+          "id": "scene_setup_dcf2eaf7"
+        },
+        {
+          "tags": [
+            "table",
+            "white",
+            "furniture",
+            "desktop"
+          ],
+          "id": "table_da149c45"
+        },
+        {
+          "id": "random_button_2addba67"
+        },
+        {
+          "tags": [
+            "benchmark_button_018",
+            "button",
+            "control",
+            "randomly_selected"
+          ],
+          "id": "benchmark_button_911d8b46"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_59a6b4b1",
+          "target": "scene_setup_dcf2eaf7"
+        },
+        {
+          "source": "scene_setup_dcf2eaf7",
+          "target": "table_da149c45"
+        },
+        {
+          "source": "scene_setup_dcf2eaf7",
+          "target": "random_button_2addba67"
+        },
+        {
+          "source": "random_button_2addba67",
+          "target": "benchmark_button_911d8b46"
+        }
+      ]
+    }
+  },
+  "task_name": "press_button_aloha",
+  "english_task_name": "Press a button",
+  "instance_id": "2979625702_41f905e0"
+}

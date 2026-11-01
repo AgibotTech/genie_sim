@@ -1,0 +1,233 @@
+{
+  "scene_id": "pack_supermarket_items_g1",
+  "seed": 4093725700,
+  "layout": {
+    "table_9d15071a": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_bc4d2f53",
+        "desk_with_product_and_bag_d83ce82e",
+        "table_9d15071a"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_handbag_40d5372c": {
+      "usd": "benchmark_handbag_004",
+      "xyz": [
+        0.056,
+        0.149,
+        0.925
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.755523,
+        0.655122
+      ],
+      "tags": [
+        "root_scene_bc4d2f53",
+        "desk_with_product_and_bag_d83ce82e",
+        "place_bag_on_desk_ce858040",
+        "benchmark_handbag_40d5372c"
+      ],
+      "keywords": [
+        "handbag",
+        "bag",
+        "left_area",
+        "on_desk"
+      ],
+      "description": {}
+    },
+    "benchmark_apple_ae835183": {
+      "usd": "benchmark_apple_001",
+      "xyz": [
+        -0.011,
+        -0.227,
+        0.866
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.644713,
+        0.764425
+      ],
+      "tags": [
+        "root_scene_bc4d2f53",
+        "desk_with_product_and_bag_d83ce82e",
+        "place_product_on_desk_2639c17e",
+        "select_product_ba8cda21",
+        "benchmark_apple_ae835183"
+      ],
+      "keywords": [
+        "product",
+        "red",
+        "apple",
+        "on_desk"
+      ],
+      "description": {
+        "semantic_name": [
+          "apple"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "red",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.09059999883174896,
+          0.10100000351667404,
+          0.08980000019073486
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "red",
+          "ripe",
+          "smooth",
+          "fresh"
+        ],
+        "full_description": [
+          "A round red and yellow apple with a short stem and speckled skin."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_bc4d2f53"
+        },
+        {
+          "id": "desk_with_product_and_bag_d83ce82e"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_9d15071a"
+        },
+        {
+          "id": "place_bag_on_desk_ce858040"
+        },
+        {
+          "tags": [
+            "handbag",
+            "bag",
+            "left_area",
+            "on_desk"
+          ],
+          "id": "benchmark_handbag_40d5372c"
+        },
+        {
+          "id": "place_product_on_desk_2639c17e"
+        },
+        {
+          "id": "select_product_ba8cda21"
+        },
+        {
+          "tags": [
+            "product",
+            "red",
+            "apple",
+            "on_desk"
+          ],
+          "id": "benchmark_apple_ae835183"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_bc4d2f53",
+          "target": "desk_with_product_and_bag_d83ce82e"
+        },
+        {
+          "source": "desk_with_product_and_bag_d83ce82e",
+          "target": "table_9d15071a"
+        },
+        {
+          "source": "desk_with_product_and_bag_d83ce82e",
+          "target": "place_bag_on_desk_ce858040"
+        },
+        {
+          "source": "desk_with_product_and_bag_d83ce82e",
+          "target": "place_product_on_desk_2639c17e"
+        },
+        {
+          "source": "place_bag_on_desk_ce858040",
+          "target": "benchmark_handbag_40d5372c"
+        },
+        {
+          "source": "place_product_on_desk_2639c17e",
+          "target": "select_product_ba8cda21"
+        },
+        {
+          "source": "select_product_ba8cda21",
+          "target": "benchmark_apple_ae835183"
+        }
+      ]
+    }
+  },
+  "task_name": "pack_supermarket_items_g1",
+  "english_task_name": "Pack supermarket items",
+  "instance_id": "4093725700_054ca88e"
+}

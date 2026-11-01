@@ -1,0 +1,239 @@
+{
+  "scene_id": "store_billiard_balls_in_box_g2",
+  "seed": 1656129646,
+  "layout": {
+    "table_db8d91e4": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_93e8f166",
+        "table_with_billiards_and_box_24416f56",
+        "table_db8d91e4"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_storage_box_9ab56845": {
+      "usd": "benchmark_storage_box_002",
+      "xyz": [
+        0.02,
+        0.009,
+        0.781
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.726707,
+        -0.686948
+      ],
+      "tags": [
+        "root_scene_93e8f166",
+        "table_with_billiards_and_box_24416f56",
+        "benchmark_storage_box_9ab56845"
+      ],
+      "keywords": [
+        "storage_box",
+        "container",
+        "box",
+        "target_container"
+      ],
+      "description": {
+        "semantic_name": [
+          "storage_box"
+        ],
+        "object_category": [
+          "container",
+          "storage"
+        ],
+        "color": "white",
+        "shape": "rectangular prism",
+        "materials": [
+          "plastic"
+        ],
+        "dimensions": [
+          0.23986084759235382,
+          0.09914634749293327,
+          0.3198598176240921
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "rectangular",
+          "open",
+          "simple",
+          "hollow",
+          "rigid"
+        ],
+        "full_description": [
+          "A white rectangular storage box with smooth surfaces and a small label on its side."
+        ]
+      }
+    },
+    "benchmark_billiards_384233ec": {
+      "usd": "benchmark_billiards_009",
+      "xyz": [
+        0.064,
+        -0.218,
+        0.76
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_93e8f166",
+        "table_with_billiards_and_box_24416f56",
+        "benchmark_billiards_384233ec"
+      ],
+      "keywords": [
+        "billiard_ball_0",
+        "billiard",
+        "ball",
+        "on_desk",
+        "right"
+      ],
+      "description": {
+        "semantic_name": [
+          "six_billiard_ball"
+        ],
+        "object_category": [
+          "sports equipment",
+          "billiards"
+        ],
+        "color": "green",
+        "shape": "spherical",
+        "materials": [
+          "plastic"
+        ],
+        "dimensions": [
+          0.05719999969005585,
+          0.05719999969005585,
+          0.05719999969005585
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "green",
+          "smooth",
+          "glossy",
+          "small"
+        ],
+        "full_description": [
+          "A glossy green spherical billiard ball with a white circle and the number 6 on its surface."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_93e8f166"
+        },
+        {
+          "id": "table_with_billiards_and_box_24416f56"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood",
+            "desktop_with_legs"
+          ],
+          "id": "table_db8d91e4"
+        },
+        {
+          "tags": [
+            "storage_box",
+            "container",
+            "box",
+            "target_container"
+          ],
+          "id": "benchmark_storage_box_9ab56845"
+        },
+        {
+          "tags": [
+            "billiard_ball_0",
+            "billiard",
+            "ball",
+            "on_desk",
+            "right"
+          ],
+          "id": "benchmark_billiards_384233ec"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_93e8f166",
+          "target": "table_with_billiards_and_box_24416f56"
+        },
+        {
+          "source": "table_with_billiards_and_box_24416f56",
+          "target": "table_db8d91e4"
+        },
+        {
+          "source": "table_with_billiards_and_box_24416f56",
+          "target": "benchmark_storage_box_9ab56845"
+        },
+        {
+          "source": "table_with_billiards_and_box_24416f56",
+          "target": "benchmark_billiards_384233ec"
+        }
+      ]
+    }
+  },
+  "task_name": "store_billiard_balls_in_box_g2",
+  "english_task_name": "Store billiard balls in a box",
+  "instance_id": "1656129646_30f46f27"
+}

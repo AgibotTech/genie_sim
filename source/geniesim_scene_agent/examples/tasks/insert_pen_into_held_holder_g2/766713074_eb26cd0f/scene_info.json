@@ -1,0 +1,233 @@
+{
+  "scene_id": "insert_pen_into_held_holder_g2",
+  "seed": 766713074,
+  "layout": {
+    "table_25f2709f": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7566b190",
+        "place_pen_into_held_pen_holder_542bdc9f",
+        "table_25f2709f"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_stationery_fe2ede32": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.016,
+        -0.121,
+        0.772
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.264073,
+        0.964503
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7566b190",
+        "place_pen_into_held_pen_holder_542bdc9f",
+        "benchmark_stationery_fe2ede32"
+      ],
+      "keywords": [
+        "stationery_021",
+        "pen_holder",
+        "holder",
+        "container",
+        "target_container"
+      ],
+      "description": {
+        "semantic_name": [
+          "pen_holder"
+        ],
+        "full_description": [
+          "A black cylindrical pen holder with a mesh body, smooth solid rim at the top, and a flat solid base."
+        ]
+      }
+    },
+    "benchmark_pen_9ade7653": {
+      "usd": "benchmark_pen_001",
+      "xyz": [
+        -0.023,
+        0.122,
+        0.742
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.968791,
+        0.24788
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7566b190",
+        "place_pen_into_held_pen_holder_542bdc9f",
+        "benchmark_pen_9ade7653"
+      ],
+      "keywords": [
+        "pen",
+        "stationery",
+        "writing_tool",
+        "on_desk",
+        "to_place"
+      ],
+      "description": {
+        "semantic_name": [
+          "pen"
+        ],
+        "object_category": [
+          "writing utensil",
+          "pen"
+        ],
+        "color": "blue",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.019767053425312042,
+          0.14499999582767487,
+          0.018000000156462193
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "elongated",
+          "smooth",
+          "portable",
+          "writing",
+          "blue"
+        ],
+        "full_description": [
+          "A translucent blue plastic pen with white text and a white cap, shown from multiple rotational angles."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_7566b190"
+        },
+        {
+          "id": "place_pen_into_held_pen_holder_542bdc9f"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_25f2709f"
+        },
+        {
+          "tags": [
+            "stationery_021",
+            "pen_holder",
+            "holder",
+            "container",
+            "target_container"
+          ],
+          "id": "benchmark_stationery_fe2ede32"
+        },
+        {
+          "tags": [
+            "pen",
+            "stationery",
+            "writing_tool",
+            "on_desk",
+            "to_place"
+          ],
+          "id": "benchmark_pen_9ade7653"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_7566b190",
+          "target": "place_pen_into_held_pen_holder_542bdc9f"
+        },
+        {
+          "source": "place_pen_into_held_pen_holder_542bdc9f",
+          "target": "table_25f2709f"
+        },
+        {
+          "source": "place_pen_into_held_pen_holder_542bdc9f",
+          "target": "benchmark_stationery_fe2ede32"
+        },
+        {
+          "source": "place_pen_into_held_pen_holder_542bdc9f",
+          "target": "benchmark_pen_9ade7653"
+        }
+      ]
+    }
+  },
+  "task_name": "insert_pen_into_held_holder_g2",
+  "english_task_name": "Insert a pen into a holder held by the other hand",
+  "instance_id": "766713074_eb26cd0f"
+}

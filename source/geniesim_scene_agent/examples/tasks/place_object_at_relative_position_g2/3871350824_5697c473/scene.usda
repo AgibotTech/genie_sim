@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_b6fa61f4" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "genie_beverage_bottle_3c4fe00a" (
+            prepend payload = @../../../assets/objects/genie/beverage_bottle/genie_beverage_bottle_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999984, 0, 0, -0.005729)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.133, 0.248, 1.034)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_toy_car_5311214a" (
+            prepend payload = @../../../assets/objects/benchmark/toy_car/benchmark_toy_car_018/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.99533, 0, 0, 0.096528)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.009, -0.206, 0.898)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_clock_1a7cdaa5" (
+            prepend payload = @../../../assets/objects/benchmark/clock/benchmark_clock_044/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.996672, 0, 0, 0.08152)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.063, -0.029, 1.005)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_orange_0ad20945" (
+            prepend payload = @../../../assets/objects/benchmark/orange/benchmark_orange_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999818, 0, 0, -0.019077)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.196, 0.097, 0.94)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

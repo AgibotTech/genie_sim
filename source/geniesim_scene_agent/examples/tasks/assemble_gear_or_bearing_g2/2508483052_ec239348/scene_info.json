@@ -1,0 +1,189 @@
+{
+  "scene_id": "assemble_gear_or_bearing_g2",
+  "seed": 2508483052,
+  "layout": {
+    "table_a3c4a9d0": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_402408e7",
+        "table_scene_8a8819ef",
+        "table_a3c4a9d0"
+      ],
+      "keywords": [
+        "main_table",
+        "furniture",
+        "table_000"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_gearbox_6e155347": {
+      "usd": "benchmark_gearbox_000",
+      "xyz": [
+        -0.071,
+        -0.003,
+        0.886
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.999616,
+        0.027693
+      ],
+      "tags": [
+        "root_scene_402408e7",
+        "table_scene_8a8819ef",
+        "benchmark_gearbox_6e155347"
+      ],
+      "keywords": [
+        "gearbox_center",
+        "mechanical_part",
+        "placed_middle"
+      ],
+      "description": {
+        "semantic_name": [
+          "gearbox"
+        ],
+        "full_description": [
+          "A metallic gray circular base with three mounted spur gears of varying sizes and two cylindrical shafts, all exhibiting a machined metal finish."
+        ]
+      }
+    },
+    "benchmark_bearing_478c15c0": {
+      "usd": "benchmark_bearing_001",
+      "xyz": [
+        0.036,
+        -0.18,
+        0.833
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.007935,
+        0.999969
+      ],
+      "tags": [
+        "root_scene_402408e7",
+        "table_scene_8a8819ef",
+        "benchmark_bearing_478c15c0"
+      ],
+      "keywords": [
+        "part_benchmark_bearing_001",
+        "mechanical",
+        "random_placement",
+        "side_item"
+      ],
+      "description": {
+        "semantic_name": [
+          "bearing"
+        ],
+        "full_description": [
+          "A metallic silver cylindrical bearing with a smooth outer surface, inner ring groove, and precise concentric circular geometry."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_402408e7"
+        },
+        {
+          "id": "table_scene_8a8819ef"
+        },
+        {
+          "tags": [
+            "main_table",
+            "furniture",
+            "table_000"
+          ],
+          "id": "table_a3c4a9d0"
+        },
+        {
+          "tags": [
+            "gearbox_center",
+            "mechanical_part",
+            "placed_middle"
+          ],
+          "id": "benchmark_gearbox_6e155347"
+        },
+        {
+          "tags": [
+            "part_benchmark_bearing_001",
+            "mechanical",
+            "random_placement",
+            "side_item"
+          ],
+          "id": "benchmark_bearing_478c15c0"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_402408e7",
+          "target": "table_scene_8a8819ef"
+        },
+        {
+          "source": "table_scene_8a8819ef",
+          "target": "table_a3c4a9d0"
+        },
+        {
+          "source": "table_scene_8a8819ef",
+          "target": "benchmark_gearbox_6e155347"
+        },
+        {
+          "source": "table_scene_8a8819ef",
+          "target": "benchmark_bearing_478c15c0"
+        }
+      ]
+    }
+  },
+  "task_name": "assemble_gear_or_bearing_g2",
+  "english_task_name": "Assemble a gear or bearing",
+  "instance_id": "2508483052_ec239348"
+}

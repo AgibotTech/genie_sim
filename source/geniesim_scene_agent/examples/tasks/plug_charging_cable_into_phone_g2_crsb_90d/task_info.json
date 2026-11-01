@@ -1,0 +1,140 @@
+{
+  "task_name": "plug_charging_cable_into_phone_g2_crsb_90d",
+  "task_description": {
+    "english_task_name": "Plug a charging cable into a phone",
+    "init_scene_text": "Two adjacent tables stand in front of the robot. A phone holder with a phone in it sits on the left table; a plug rests on the right table near a power-strip storage box.",
+    "task_name": "Plug a charging cable into a phone"
+  },
+  "robot": {
+    "init_arm_pose_noise": {
+      ".*_arm_.*": {
+        "noise_type": "uniform",
+        "low": -0.0,
+        "high": 0.0
+      },
+      "idx01_body_joint1": {
+        "noise_type": "uniform",
+        "low": -0.0,
+        "high": 0.0
+      },
+      "idx02_body_joint2": {
+        "noise_type": "uniform",
+        "low": -0.0,
+        "high": 0.0
+      }
+    },
+    "init_arm_pose": {
+      "idx21_arm_l_joint1": 1.3016596,
+      "idx61_arm_r_joint1": -1.3016596,
+      "idx05_body_joint5": 0.0,
+      "idx11_head_joint1": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx13_head_joint3": 0.3,
+      "idx22_arm_l_joint2": -0.34969469,
+      "idx62_arm_r_joint2": -0.34969469,
+      "idx04_body_joint4": 0.0,
+      "idx23_arm_l_joint3": -1.26587354,
+      "idx63_arm_r_joint3": 1.26587354,
+      "idx03_body_joint3": 0.10025,
+      "idx24_arm_l_joint4": -1.78645893,
+      "idx64_arm_r_joint4": -1.78645893,
+      "idx02_body_joint2": 1.2172,
+      "idx25_arm_l_joint5": -1.13306412,
+      "idx65_arm_r_joint5": 1.13306412,
+      "idx01_body_joint1": -0.83423,
+      "idx26_arm_l_joint6": -0.24670486,
+      "idx66_arm_r_joint6": -0.24670486,
+      "idx27_arm_l_joint7": -1.07063398,
+      "idx67_arm_r_joint7": 1.07063398,
+      "idx111_chassis_lwheel_front_joint1": null,
+      "idx121_chassis_lwheel_rear_joint1": null,
+      "idx131_chassis_rwheel_front_joint1": null,
+      "idx141_chassis_rwheel_rear_joint1": null,
+      "idx112_chassis_lwheel_front_joint2": null,
+      "idx122_chassis_lwheel_rear_joint2": null,
+      "idx132_chassis_rwheel_front_joint2": null,
+      "idx142_chassis_rwheel_rear_joint2": null,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx31_gripper_l_inner_joint1": null,
+      "idx33_gripper_l_left_support_joint": null,
+      "idx34_gripper_l_inner_joint2": null,
+      "idx35_gripper_l_outer_joint2": null,
+      "idx36_gripper_l_right_support_joint": null,
+      "idx71_gripper_r_inner_joint1": null,
+      "idx73_gripper_r_left_support_joint": null,
+      "idx74_gripper_r_inner_joint2": null,
+      "idx75_gripper_r_outer_joint2": null,
+      "idx76_gripper_r_right_support_joint": null
+    },
+    "robot_cfg": "G2_crsB_90D.json",
+    "robot_id": "G2_crsB_90d",
+    "robot_init_pose": {
+      "position": [
+        -0.8,
+        0.0,
+        0
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.02,
+          0.02,
+          0
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/G2/head_link3/head_front_Camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": [
+      {
+        "params": {
+          "camera": "head",
+          "downsample_ratio": 0.2,
+          "gripper": "right",
+          "out_view_allow_time": 0.5,
+          "zoom_factor": 1.4
+        },
+        "result_code": 4,
+        "rule_name": "is_gripper_in_view"
+      },
+      {
+        "params": {
+          "camera": "head",
+          "downsample_ratio": 0.2,
+          "gripper": "left",
+          "out_view_allow_time": 0.5,
+          "zoom_factor": 1.4
+        },
+        "result_code": 4,
+        "rule_name": "is_gripper_in_view"
+      },
+      {
+        "params": {
+          "tolerance": 0.01
+        },
+        "result_code": 6,
+        "rule_name": "is_body_stable"
+      },
+      {
+        "params": {},
+        "result_code": 5,
+        "rule_name": "is_crs_bound_valid_g2"
+      }
+    ]
+  },
+  "backend": "gpu",
+  "enable_deformable": true
+}

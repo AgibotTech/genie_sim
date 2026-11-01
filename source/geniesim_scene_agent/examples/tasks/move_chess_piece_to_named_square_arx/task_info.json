@@ -1,0 +1,62 @@
+{
+  "task_name": "move_chess_piece_to_named_square_arx",
+  "task_description": {
+    "english_task_name": "Move a chess piece to a named square",
+    "init_scene_text": "",
+    "task_name": "Move a chess piece to a named square"
+  },
+  "robot": {
+    "init_arm_pose": {
+      "arm_l_joint1": -0.0002,
+      "arm_l_joint2": 0.9588,
+      "arm_l_joint3": 0.8536,
+      "arm_l_joint4": -0.5804,
+      "arm_l_joint5": -0.0002,
+      "arm_l_joint6": 0.0044,
+      "arm_r_joint1": -0.0002,
+      "arm_r_joint2": 0.9588,
+      "arm_r_joint3": 0.8536,
+      "arm_r_joint4": -0.5804,
+      "arm_r_joint5": -0.0002,
+      "arm_r_joint6": 0.0044,
+      "gripper_l_passive_joint": 0.044,
+      "gripper_r_passive_joint": 0.044,
+      "gripper_l_active_joint": 0.044,
+      "gripper_r_active_joint": 0.044
+    },
+    "robot_cfg": "ARX.json",
+    "robot_id": "ARX",
+    "robot_init_pose": {
+      "position": [
+        -0.4,
+        0.0,
+        0.95
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.0,
+          0.0,
+          0
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/ARX/base_link/head_camera",
+      "/ARX/arm_l_end_link/hand_left_camera",
+      "/ARX/arm_r_end_link/hand_right_camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": []
+  }
+}

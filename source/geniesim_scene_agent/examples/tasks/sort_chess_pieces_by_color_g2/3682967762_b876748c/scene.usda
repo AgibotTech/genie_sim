@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_1240a0a9" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_chess_4647dd0a" (
+            prepend payload = @../../../assets/objects/benchmark/chess/benchmark_chess_008/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.511232, 0, 0, 0.859442)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.02, -0.054, 0.767)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_chess_5469645c" (
+            prepend payload = @../../../assets/objects/benchmark/chess/benchmark_chess_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.901226, 0, 0, -0.433349)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.024, 0.117, 0.767)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

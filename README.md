@@ -90,8 +90,8 @@ The repo ships `AGENTS.md` + per-package `skills/<name>/SKILL.md` as machine-rea
 > (sourced from [HuggingFace](https://huggingface.co/datasets/agibot-world/GenieSimAssets) / [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)),
 > and editable-installed by the entrypoint so every other peer can find it.
 >
-> Tier-2 peers (`geniesim_teleop` · `geniesim_generator` · `geniesim_world`) have heavy stacks (VR / LLM / CUDA-ML) and are **not** auto-installed.
-> Install with `pip install -e "source/geniesim/[teleop|generator|world|all]"` — or run `geniesim bootstrap` for an interactive re-install of the whole tree.
+> Tier-2 peers (`geniesim_teleop` · `geniesim_scene_agent` · `geniesim_world`) have heavy stacks (VR / LLM / CUDA-ML) and are **not** auto-installed.
+> Install with `pip install -e "source/geniesim/[teleop|scene_agent|world|all]"` — or run `geniesim bootstrap` for an interactive re-install of the whole tree.
 
 ### 3.2 🧪 Benchmark — debug locally, compete globally on RoboColiseum
 
@@ -167,27 +167,29 @@ cat source/scene_reconstruction/AGENTS.md
 
 See [`source/scene_reconstruction/README.md`](source/scene_reconstruction/README.md) for the full pipeline details and [`AGENTS.md`](AGENTS.md) for the per-subsystem agent guides.
 
-### 3.6 💬 Generate a scene from a prompt — `geniesim_generator`
+### 3.6 💬 Generate a scene from a prompt — `geniesim_scene_agent`
 
 ```mermaid
 flowchart LR
-  nl(["💬 NL prompt<br/>'an apple on the table'"]) ==> assets(["🔍 search<br/>asset library"]) ==> dsl(["📝 Scene-Language<br/>LLM_RESULT.py"]) ==> usda(["🏗️ scene.usda<br/>+ layout graph"])
+  nl(["💬 NL prompt<br/>'an apple on the table'"]) ==> assets(["🔍 search<br/>asset library"]) ==> dsl(["📝 Scene recipe<br/>DSL / direct / hybrid"]) ==> usda(["🏗️ scene.usda<br/>+ scene metadata"])
   classDef step fill:#ede9fe,stroke:#6d28d9,color:#3b0764,font-weight:bold
   class nl,assets,dsl,usda step
   linkStyle 0,1,2 stroke:#6d28d9,stroke-width:2px
 ```
 
-Describe a scene in words; an LLM grounds it against the asset library, writes a Scene-Language DSL program, and the generator compiles it into `scene.usda` + a relationship graph. Drive it through the Open WebUI agent loop, or have Claude write the DSL directly (no WebUI / no MCP server). Embeddings run via a text-embedding API (no GPU) or a local VL model (GPU) — your pick at deploy time.
-
-Generated scenes are written under `source/geniesim_generator/src/benchmark/config/llm_task/<scene_id>/<run_id>/`. If generated inside the Docker stack, the same bind-mounted files appear at `/opt/geniesim_generator/src/benchmark/config/llm_task/<scene_id>/<run_id>/` in the container and at the `source/...` path on the host. Open the resulting `scene.usda` with Isaac Sim **inside the Genie Sim container** so its payload paths resolve as generated; if you open it from the host side, adjust the payload paths inside the USDA first.
+Describe a scene in words, search the external asset library, and generate a foreground scene using the bundled Python tools and agent skills. Scene authoring is a standalone workflow; robot task execution uses the independent collection runtime. Optional GPU embeddings support asset retrieval, and rendering uses a configured Isaac Sim environment or the scene-agent image.
 
 ```bash
-cat source/geniesim_generator/skills/deploy-generator/SKILL.md    # install + start: MCP stack + Open WebUI, text vs VL embeddings
-cat source/geniesim_generator/skills/search-assets/SKILL.md       # query the asset index by concept
-cat source/geniesim_generator/skills/generate-scene/SKILL.md      # prompt → LLM_RESULT.py → scene.usda
+python -m pip install -e 'source/geniesim_scene_agent[scene]'
+geniesim-scene-agent resources
+geniesim-scene-agent assets-root
+
+cat source/geniesim_scene_agent/skills/geniesim-asset-search/SKILL.md
+cat source/geniesim_scene_agent/skills/geniesim-scene-generation/SKILL.md
+cat source/geniesim_scene_agent/skills/geniesim-scene-to-data/SKILL.md
 ```
 
-See [`source/geniesim_ros/README.md`](source/geniesim_ros/README.md) for the engine overview, [`source/README.md`](source/README.md) for the full module map (every `geniesim_*` package with its docs + skills), and [`AGENTS.md`](AGENTS.md) for the per-subsystem agent guides.
+See [the scene-agent guide](source/geniesim_scene_agent/README.md) for scene generation and optional task orchestration, [the container guide](source/geniesim_scene_agent/docker/README.md) for rendering, and [the example library](source/geniesim_scene_agent/examples/README.md) for task and scene references. The [module map](source/README.md) lists each package's docs and skills.
 
 ### 3.7 🎮 Teleoperation — `geniesim_teleop`
 
@@ -289,7 +291,7 @@ flowchart LR
 
 - 🏆 **RoboColiseum** — opened [RoboColiseum](https://robocoliseum.ai/): submit a policy and get it scored on the official leaderboard. Added a new `spatial` board (alongside `instruction` / `robust` / `manip`), and the `robust` board now aggregates and scores tasks per perturbation type (instruction, robot pose, background, image quality, camera position). The full pipeline — download datasets, fetch baseline weights, run an example leaderboard service, submit & track — ships as agent-friendly one-click SKILLs under [`source/geniesim_benchmark/skills/robocoliseum/`](source/geniesim_benchmark/skills/robocoliseum/).
 - 🧞 **`geniesim` CLI** — one command for docker, ROS 2 builds, `bootstrap`, `status`, `doctor`, `deploy`; bash/zsh completion; standalone PEP 517 / PEP 621 wheel.
-- 🤖 **Agent SKILLs** — self-contained `SKILL.md` recipes (run-benchmark, check-inference, generate-scene, search-assets, deploy-generator, run-teleop) that Claude Code and other agents invoke to drive the simulator end-to-end.
+- 🤖 **Agent SKILLs** — self-contained `SKILL.md` recipes (run-benchmark, check-inference, geniesim-scene-generation, geniesim-asset-search, geniesim-scene-to-data, run-teleop) that Claude Code and other agents invoke to drive the simulator end-to-end.
 - ⚡ **Genie Sim RT Engine (realtime, interactive)** — `geniesim_ros` ships physics + render + robot as a first-class ROS 2 node sharing one `sim_time`. Multiple physics backends (Isaac Sim PhysX, Isaac Sim Newton, Kit-free Newton-standalone) with cloth / soft-body on the Newton path.
 - 🦾 **Customizable robots** — Genie G2 family (Tier 1, continuously maintained) with `arm × gripper` matrix, drop-in MoveIt 2 + WBC RViz, three IK plugins; reference URDF for Franka, UR5, Aloha, ARX, Agilex; bring-your-own via xacro + offline mesh-prep tools.
 - 🎬 **New demos** — pick-and-place (`scene_pnp_g2_op`) and whole-body control (`scene_wbc_g2_sp`).

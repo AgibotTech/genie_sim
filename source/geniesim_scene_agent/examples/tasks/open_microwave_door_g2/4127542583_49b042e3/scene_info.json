@@ -1,0 +1,178 @@
+{
+  "scene_id": "open_microwave_door_g2",
+  "seed": 4127542583,
+  "layout": {
+    "table_279f17f0": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_12122b85",
+        "table_with_microwave_191610cc",
+        "table_279f17f0"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_microwave_oven_2afc9f88": {
+      "usd": "benchmark_microwave_oven_003",
+      "xyz": [
+        -0.059,
+        -0.017,
+        0.874
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.999318,
+        0.036917
+      ],
+      "tags": [
+        "root_scene_12122b85",
+        "table_with_microwave_191610cc",
+        "microwave_on_table_e5afa140",
+        "benchmark_microwave_oven_2afc9f88"
+      ],
+      "keywords": [
+        "microwave",
+        "kitchen_appliance",
+        "gray",
+        "rectangular"
+      ],
+      "description": {
+        "semantic_name": [
+          "microwave_oven"
+        ],
+        "object_category": [
+          "kitchen appliance",
+          "microwave oven"
+        ],
+        "color": "green",
+        "shape": "box",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.4379824995994568,
+          0.28200094401836395,
+          0.4458608478307724
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "rectangular",
+          "modern",
+          "functional",
+          "compact",
+          "sturdy"
+        ],
+        "full_description": [
+          "A green and white microwave oven with a rounded glass door, control panel, and ventilation grilles on the sides and back."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_12122b85"
+        },
+        {
+          "id": "table_with_microwave_191610cc"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_279f17f0"
+        },
+        {
+          "id": "microwave_on_table_e5afa140"
+        },
+        {
+          "tags": [
+            "microwave",
+            "kitchen_appliance",
+            "gray",
+            "rectangular"
+          ],
+          "id": "benchmark_microwave_oven_2afc9f88"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_12122b85",
+          "target": "table_with_microwave_191610cc"
+        },
+        {
+          "source": "table_with_microwave_191610cc",
+          "target": "table_279f17f0"
+        },
+        {
+          "source": "table_with_microwave_191610cc",
+          "target": "microwave_on_table_e5afa140"
+        },
+        {
+          "source": "microwave_on_table_e5afa140",
+          "target": "benchmark_microwave_oven_2afc9f88"
+        }
+      ]
+    }
+  },
+  "task_name": "open_microwave_door_g2",
+  "english_task_name": "Open a microwave door",
+  "instance_id": "4127542583_49b042e3"
+}

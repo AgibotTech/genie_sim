@@ -1,0 +1,191 @@
+{
+  "scene_id": "store_chess_pieces_in_box_aloha",
+  "seed": 2867355567,
+  "layout": {
+    "table_60919180": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_7bb2b639",
+        "chessboard_scene_cf3aa340",
+        "table_60919180"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workplace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_chessboard_c0ff34ff": {
+      "usd": "benchmark_chessboard_001",
+      "xyz": [
+        -0.046,
+        0.013,
+        0.739
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.809747,
+        0.58678
+      ],
+      "tags": [
+        "root_scene_7bb2b639",
+        "chessboard_scene_cf3aa340",
+        "benchmark_chessboard_c0ff34ff"
+      ],
+      "keywords": [
+        "chessboard",
+        "container",
+        "wooden"
+      ],
+      "description": {
+        "semantic_name": [
+          "chessboard"
+        ],
+        "full_description": [
+          "A rectangular chessboard with a dark matte frame surrounding a light wood-grain playing surface."
+        ]
+      }
+    },
+    "benchmark_chess_d89bd51f": {
+      "usd": "benchmark_chess_000",
+      "xyz": [
+        -0.102,
+        0.247,
+        0.775
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.998827,
+        -0.048422
+      ],
+      "tags": [
+        "root_scene_7bb2b639",
+        "chessboard_scene_cf3aa340",
+        "benchmark_chess_d89bd51f"
+      ],
+      "keywords": [
+        "chess_piece",
+        "target",
+        "white",
+        "highlighted",
+        "position_x_-0.017_y_0.006"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_pawn"
+        ],
+        "full_description": [
+          "A light-colored wooden chess pawn with a spherical head, narrow neck, and flared base, featuring subtle vertical grain texture."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_7bb2b639"
+        },
+        {
+          "id": "chessboard_scene_cf3aa340"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workplace"
+          ],
+          "id": "table_60919180"
+        },
+        {
+          "tags": [
+            "chessboard",
+            "container",
+            "wooden"
+          ],
+          "id": "benchmark_chessboard_c0ff34ff"
+        },
+        {
+          "tags": [
+            "chess_piece",
+            "target",
+            "white",
+            "highlighted",
+            "position_x_-0.017_y_0.006"
+          ],
+          "id": "benchmark_chess_d89bd51f"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_7bb2b639",
+          "target": "chessboard_scene_cf3aa340"
+        },
+        {
+          "source": "chessboard_scene_cf3aa340",
+          "target": "table_60919180"
+        },
+        {
+          "source": "chessboard_scene_cf3aa340",
+          "target": "benchmark_chessboard_c0ff34ff"
+        },
+        {
+          "source": "chessboard_scene_cf3aa340",
+          "target": "benchmark_chess_d89bd51f"
+        }
+      ]
+    }
+  },
+  "task_name": "store_chess_pieces_in_box_aloha",
+  "english_task_name": "Store chess pieces in a box",
+  "instance_id": "2867355567_b6c36556"
+}

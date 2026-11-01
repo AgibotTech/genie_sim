@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_8672ece5" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_handbag_2a6b2d4e" (
+            prepend payload = @../../../assets/objects/benchmark/handbag/benchmark_handbag_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.180174, 0, 0, 0.983635)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.092, 0.123, 0.925)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_apple_72803fea" (
+            prepend payload = @../../../assets/objects/benchmark/apple/benchmark_apple_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.973012, 0, 0, 0.230755)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.134, -0.208, 0.866)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

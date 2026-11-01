@@ -1,0 +1,189 @@
+{
+  "scene_id": "hand_over_chips_bucket_g2",
+  "seed": 1812174037,
+  "layout": {
+    "table_ca0009d6": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_688ebf7a",
+        "table_with_chips_bucket_634b6da8",
+        "place_chips_on_table_7e749c48",
+        "table_ca0009d6"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_snack_15746616": {
+      "usd": "benchmark_snack_242",
+      "xyz": [
+        0.032,
+        0.192,
+        0.872
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.923622,
+        0.383305
+      ],
+      "tags": [
+        "root_scene_688ebf7a",
+        "table_with_chips_bucket_634b6da8",
+        "place_chips_on_table_7e749c48",
+        "random_chips_bucket_4c10b79d",
+        "benchmark_snack_15746616"
+      ],
+      "keywords": [
+        "chips_bucket",
+        "snack",
+        "cylinder",
+        "food",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "Lay's potato chips canister"
+        ],
+        "object_category": [
+          "container",
+          "food packaging"
+        ],
+        "color": "yellow",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "paper"
+        ],
+        "dimensions": [
+          0.07145223021507263,
+          0.20660219341516495,
+          0.07111576199531555
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "yellow",
+          "packaged",
+          "portable",
+          "sealed"
+        ],
+        "full_description": [
+          "A yellow cylindrical canister with a red Lay's logo and Chinese characters, featuring images of potato chips on its surface."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_688ebf7a"
+        },
+        {
+          "id": "table_with_chips_bucket_634b6da8"
+        },
+        {
+          "id": "place_chips_on_table_7e749c48"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_ca0009d6"
+        },
+        {
+          "id": "random_chips_bucket_4c10b79d"
+        },
+        {
+          "tags": [
+            "chips_bucket",
+            "snack",
+            "cylinder",
+            "food",
+            "left"
+          ],
+          "id": "benchmark_snack_15746616"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_688ebf7a",
+          "target": "table_with_chips_bucket_634b6da8"
+        },
+        {
+          "source": "table_with_chips_bucket_634b6da8",
+          "target": "place_chips_on_table_7e749c48"
+        },
+        {
+          "source": "place_chips_on_table_7e749c48",
+          "target": "table_ca0009d6"
+        },
+        {
+          "source": "place_chips_on_table_7e749c48",
+          "target": "random_chips_bucket_4c10b79d"
+        },
+        {
+          "source": "random_chips_bucket_4c10b79d",
+          "target": "benchmark_snack_15746616"
+        }
+      ]
+    }
+  },
+  "task_name": "hand_over_chips_bucket_g2",
+  "english_task_name": "Pass a chips bucket between hands and place it on the opposite side",
+  "instance_id": "1812174037_6fb2e28d"
+}

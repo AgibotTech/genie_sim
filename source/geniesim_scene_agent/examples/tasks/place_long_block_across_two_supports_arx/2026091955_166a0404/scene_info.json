@@ -1,0 +1,256 @@
+{
+  "scene_id": "place_long_block_across_two_supports_arx",
+  "seed": 2026091955,
+  "layout": {
+    "table_02148680": {
+      "usd": "table_000",
+      "xyz": [
+        0,
+        0,
+        0.367
+      ],
+      "xyzw": [
+        0,
+        0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_266e3d1b",
+        "table_02148680"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_building_blocks_9395ce86": {
+      "usd": "benchmark_building_blocks_169",
+      "xyz": [
+        -0.14195324386079458,
+        0.0013391418196410793,
+        0.754
+      ],
+      "xyzw": [
+        0,
+        0,
+        0.022531869404306355,
+        0.9997461252043677
+      ],
+      "tags": [
+        "root_scene_266e3d1b",
+        "benchmark_building_blocks_9395ce86"
+      ],
+      "keywords": [
+        "lift_block",
+        "yellow",
+        "long_block",
+        "left",
+        "on_table"
+      ],
+      "description": {
+        "semantic_name": [
+          "building_blocks",
+          "lift_block"
+        ],
+        "object_category": [
+          "toy",
+          "building_block"
+        ],
+        "color": "yellow",
+        "shape": "rectangular_prism",
+        "dimensions": [
+          0.04,
+          0.4,
+          0.04
+        ],
+        "unit": "m",
+        "full_description": [
+          "A yellow 40 x 4 x 4 cm, 600 g block for bimanual lifting."
+        ]
+      }
+    },
+    "support_left": {
+      "usd": "benchmark_building_blocks_172",
+      "xyz": [
+        -0.04264132553134048,
+        0.08524972774208885,
+        0.754
+      ],
+      "xyzw": [
+        0,
+        0,
+        0.08394432621936176,
+        0.9964704461726787
+      ],
+      "keywords": [
+        "bridge_support",
+        "left",
+        "on_table"
+      ],
+      "tags": [
+        "support_left"
+      ],
+      "description": {
+        "dimensions": [
+          0.08,
+          0.08,
+          0.04
+        ],
+        "unit": "m",
+        "full_description": [
+          "A red 8 x 8 x 4 cm, 500 g square foundation block."
+        ],
+        "color": "red"
+      }
+    },
+    "support_right": {
+      "usd": "benchmark_building_blocks_172",
+      "xyz": [
+        -0.008190671873014945,
+        -0.1177743370530971,
+        0.754
+      ],
+      "xyzw": [
+        0,
+        0,
+        0.08394432621936176,
+        0.9964704461726787
+      ],
+      "keywords": [
+        "bridge_support",
+        "right",
+        "on_table"
+      ],
+      "tags": [
+        "support_right"
+      ],
+      "description": {
+        "dimensions": [
+          0.08,
+          0.08,
+          0.04
+        ],
+        "unit": "m",
+        "full_description": [
+          "A red 8 x 8 x 4 cm, 500 g square foundation block."
+        ],
+        "color": "red"
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_266e3d1b"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table"
+          ],
+          "id": "table_02148680"
+        },
+        {
+          "tags": [
+            "lift_block",
+            "yellow",
+            "long_block",
+            "left",
+            "on_table"
+          ],
+          "id": "benchmark_building_blocks_9395ce86"
+        },
+        {
+          "id": "support_left",
+          "tags": [
+            "bridge_support",
+            "left"
+          ]
+        },
+        {
+          "id": "support_right",
+          "tags": [
+            "bridge_support",
+            "right"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "source": "root_scene_266e3d1b",
+          "target": "table_02148680"
+        },
+        {
+          "source": "root_scene_266e3d1b",
+          "target": "benchmark_building_blocks_9395ce86"
+        }
+      ]
+    }
+  },
+  "generalization": {
+    "beam_xyz": [
+      -0.14195324386079458,
+      0.0013391418196410793,
+      0.754
+    ],
+    "beam_yaw_rad": 0.04506755271174389,
+    "support_xyz": [
+      [
+        -0.04264132553134048,
+        0.08524972774208885,
+        0.754
+      ],
+      [
+        -0.008190671873014945,
+        -0.1177743370530971,
+        0.754
+      ]
+    ],
+    "support_yaw_rad": 0.16808645574180064,
+    "forward_m": 0.11653724515861687,
+    "lateral_m": -0.01760144647514521,
+    "spacing_m": 0.20592624510597418,
+    "rejection_attempts": 0
+  },
+  "task_name": "place_long_block_across_two_supports_arx",
+  "english_task_name": "Place a long block across two supports using both hands",
+  "instance_id": "2026091955_166a0404"
+}

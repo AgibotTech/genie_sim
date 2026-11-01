@@ -25,7 +25,7 @@ License: [Mozilla Public License Version 2.0](LICENSE)
 | Peer | Extra | Why opt-in |
 |---|---|---|
 | 🎮 [`geniesim_teleop`](../geniesim_teleop/) | `[teleop]` · `[all]` | VR / Pico device stack — only needed for teleoperation |
-| 🏗️ [`geniesim_generator`](../geniesim_generator/) | `[generator]` · `[all]` | Heavy LLM / ML deps (jax, mitsuba, torch) |
+| 🏗️ [`geniesim_scene_agent`](../geniesim_scene_agent/) | `[scene_agent]` · `[all]` | Scene authoring with USD; optional GPU embeddings |
 | 🌍 [`geniesim_world`](../geniesim_world/) | `[world]` · `[all]` | PanoRecon: CUDA + PyTorch + SHARP + DA360 — own conda env recommended |
 
 ---
@@ -46,7 +46,7 @@ itself for its dep pin:
 ```bash
 pip install -e source/geniesim/          # tier-1 only
 pip install -e "source/geniesim/[teleop]"     # + VR / Pico teleop
-pip install -e "source/geniesim/[generator]"  # + LLM scene generator
+pip install -e "source/geniesim/[scene_agent]"  # + scene authoring tools
 pip install -e "source/geniesim/[world]"      # + panorama → 3D world (heavy CUDA / ML)
 pip install -e "source/geniesim/[all]"        # everything
 ```

@@ -1,0 +1,110 @@
+{
+  "task_name": "fold_double_layer_t_shirt_g2",
+  "task_description": {
+    "english_task_name": "Fold a double-layer T-shirt with both arms",
+    "init_scene_text": "A FEM-baked double-layer T-shirt lies on the table; both arms fold it.",
+    "task_name": "Fold a double-layer T-shirt with both arms"
+  },
+  "robot": {
+    "init_arm_pose_noise": {
+      ".*_arm_.*": {
+        "noise_type": "uniform",
+        "low": 0.05,
+        "high": 0.05
+      },
+      "idx01_body_joint1": {
+        "noise_type": "uniform",
+        "low": -0.01,
+        "high": 0.01
+      },
+      "idx02_body_joint2": {
+        "noise_type": "uniform",
+        "low": -0.01,
+        "high": 0.01
+      }
+    },
+    "init_arm_pose": {
+      "idx01_body_joint1": -0.80288581,
+      "idx02_body_joint2": 1.50496805,
+      "idx03_body_joint3": -0.34146504,
+      "idx04_body_joint4": 0.0,
+      "idx05_body_joint5": 0.0,
+      "idx11_head_joint1": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx13_head_joint3": 0.4450911,
+      "idx21_arm_l_joint1": 1.3016596,
+      "idx22_arm_l_joint2": -0.34969469,
+      "idx23_arm_l_joint3": -1.26587354,
+      "idx24_arm_l_joint4": -1.78645893,
+      "idx25_arm_l_joint5": -1.13306412,
+      "idx26_arm_l_joint6": -0.24670486,
+      "idx27_arm_l_joint7": -1.07063398,
+      "idx31_gripper_l_inner_joint1": -0.785,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx33_gripper_l_left_support_joint": 0.0,
+      "idx34_gripper_l_inner_joint2": 0.0,
+      "idx35_gripper_l_outer_joint2": 0.0,
+      "idx36_gripper_l_right_support_joint": 0.0,
+      "idx61_arm_r_joint1": -1.3016596,
+      "idx62_arm_r_joint2": -0.34969469,
+      "idx63_arm_r_joint3": 1.26587354,
+      "idx64_arm_r_joint4": -1.78645893,
+      "idx65_arm_r_joint5": 1.13306412,
+      "idx66_arm_r_joint6": -0.24670486,
+      "idx67_arm_r_joint7": 1.07063398,
+      "idx71_gripper_r_inner_joint1": -0.785,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx73_gripper_r_left_support_joint": 0.0,
+      "idx74_gripper_r_inner_joint2": 0.0,
+      "idx75_gripper_r_outer_joint2": 0.0,
+      "idx76_gripper_r_right_support_joint": 0.0,
+      "idx111_chassis_lwheel_front_joint1": null,
+      "idx121_chassis_lwheel_rear_joint1": null,
+      "idx131_chassis_rwheel_front_joint1": null,
+      "idx141_chassis_rwheel_rear_joint1": null,
+      "idx112_chassis_lwheel_front_joint2": null,
+      "idx122_chassis_lwheel_rear_joint2": null,
+      "idx132_chassis_rwheel_front_joint2": null,
+      "idx142_chassis_rwheel_rear_joint2": null
+    },
+    "robot_cfg": "G2_crsB_90D.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "position": [
+        -0.7,
+        0.0,
+        0
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.01,
+          0.01,
+          0
+        ]
+      }
+    },
+    "gripper_anchor_link": {
+      "left": "/G2/gripper_l_center_link",
+      "right": "/G2/gripper_r_center_link"
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/G2/head_link3/head_front_Camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": []
+  },
+  "backend": "gpu",
+  "physics_frequency": 360,
+  "enable_deformable": true
+}

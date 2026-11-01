@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "benchmark_supermarket_shelf_b5d59c44" (
+            prepend payload = @../../../assets/objects/benchmark/supermarket_shelf/benchmark_supermarket_shelf_006/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0, 0, 0, 1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.4, 0, 0.943)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "genie_beverage_bottle_9ad32949" (
+            prepend payload = @../../../assets/objects/genie/beverage_bottle/genie_beverage_bottle_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.319, -0.055, 1.431)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

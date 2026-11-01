@@ -446,7 +446,9 @@ documents this restriction because host catalog inspection does not compose USD.
 and import name match; deploy and shell completion use `geniesim_scene_agent`.
 The peer owns its scene/asset tool commands and bundles its skills/examples in
 wheels. Default bootstrap and the shared tier-1 container install remain unchanged.
-See the scene agent guide.
+See [the scene-agent guide](../geniesim_scene_agent/AGENTS.md).
+Its independent image builder reuses `_module_image.py` and shared mirror
+presets from the checkout; its runtime dependencies stay in its own environment.
 
 The scene agent optionally consults `_env.assets_path()` for external assets,
 then locates the installed asset package without importing it, and falls back

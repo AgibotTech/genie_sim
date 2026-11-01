@@ -1,0 +1,32 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_1f608579" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_medicine_bottle_4bff908e" (
+            prepend payload = @../../../assets/objects/benchmark/medicine_bottle/benchmark_medicine_bottle_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.374893, 0, 0, 0.927068)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.047, -0.158, 0.787)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

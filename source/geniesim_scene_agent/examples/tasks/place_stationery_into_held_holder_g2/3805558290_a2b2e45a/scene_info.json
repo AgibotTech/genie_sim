@@ -1,0 +1,212 @@
+{
+  "scene_id": "place_stationery_into_held_holder_g2",
+  "seed": 3805558290,
+  "layout": {
+    "table_648f991e": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_bc7fe66e",
+        "place_stationery_into_held_pen_holder_7634584e",
+        "table_648f991e"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_stationery_7e539af3": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.05,
+        -0.083,
+        0.772
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.597474,
+        0.801888
+      ],
+      "scale": [
+        1.45,
+        1.45,
+        1.0
+      ],
+      "tags": [
+        "root_scene_bc7fe66e",
+        "place_stationery_into_held_pen_holder_7634584e",
+        "benchmark_stationery_7e539af3"
+      ],
+      "keywords": [
+        "pen_holder",
+        "stationery",
+        "container",
+        "target_container",
+        "POSITION_TAG_right"
+      ],
+      "description": {
+        "semantic_name": [
+          "pen_holder"
+        ],
+        "full_description": [
+          "A black cylindrical pen holder with a mesh body, smooth solid rim at the top, and a flat solid base."
+        ]
+      }
+    },
+    "benchmark_toy_926a5d44": {
+      "usd": "benchmark_toy_024",
+      "xyz": [
+        -0.052,
+        0.104,
+        0.76
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.574657,
+        0.818395
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_bc7fe66e",
+        "place_stationery_into_held_pen_holder_7634584e",
+        "benchmark_toy_926a5d44"
+      ],
+      "keywords": [
+        "stationery_item_to_place",
+        "stationery",
+        "figurine",
+        "on_desk",
+        "to_place",
+        "POSITION_TAG_left"
+      ],
+      "description": {
+        "semantic_name": [
+          "bunny-themed figurine toy"
+        ],
+        "full_description": [
+          "A small seated figurine with a white bunny-ear hood, pink top featuring a bear face emblem, and white ruffled pants, made of smooth matte material."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_bc7fe66e"
+        },
+        {
+          "id": "place_stationery_into_held_pen_holder_7634584e"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_648f991e"
+        },
+        {
+          "tags": [
+            "pen_holder",
+            "stationery",
+            "container",
+            "target_container",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_stationery_7e539af3"
+        },
+        {
+          "tags": [
+            "stationery_item_to_place",
+            "stationery",
+            "figurine",
+            "on_desk",
+            "to_place",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_toy_926a5d44"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_bc7fe66e",
+          "target": "place_stationery_into_held_pen_holder_7634584e"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_7634584e",
+          "target": "table_648f991e"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_7634584e",
+          "target": "benchmark_stationery_7e539af3"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_7634584e",
+          "target": "benchmark_toy_926a5d44"
+        }
+      ]
+    }
+  },
+  "task_name": "place_stationery_into_held_holder_g2",
+  "english_task_name": "Place stationery into a holder held by the other hand",
+  "instance_id": "3805558290_a2b2e45a"
+}

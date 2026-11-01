@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_164c4052" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_cad80d72" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.768207, 0, 0, -0.640202)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.07, 0.147, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_beverage_bottle_1538be29" (
+            prepend payload = @../../../assets/objects/benchmark/beverage_bottle/benchmark_beverage_bottle_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.324645, 0, 0, 0.945836)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.156, -0.061, 0.823)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_5c3693b8" (
+            prepend payload = @../../../assets/objects/benchmark/cup/benchmark_cup_043/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.964509, 0, 0, -0.264049)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.172, 0.239, 0.801)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_toy_plane_ee2b5560" (
+            prepend payload = @../../../assets/objects/benchmark/toy_plane/benchmark_toy_plane_029/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.283734, 0, 0, 0.958903)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.006, -0.019, 0.793)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

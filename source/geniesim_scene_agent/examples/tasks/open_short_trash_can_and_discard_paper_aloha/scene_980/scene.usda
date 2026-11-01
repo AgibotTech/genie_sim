@@ -1,0 +1,60 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_47e352a8" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_trash_can__short_ecea09ff" (
+            prepend payload = @../../../assets/objects/benchmark/trash_can/benchmark_trash_can_015_short/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.044994, 0, 0, 0.998987)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.055, 0.024, 0.8505559511848587)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    def PhysicsFixedJoint "TableAnchor"
+                    {
+                        rel physics:body1 = </World/Objects/benchmark_trash_can__short_ecea09ff/entity/body>
+                        point3f physics:localPos0 = (0.055, 0.024, 0.85055596)
+                        quatf physics:localRot0 = (-0.031815708, -0.031815417, 0.7063873, 0.70639366)
+                    }
+                }
+            }
+        }
+
+        def Xform "benchmark_trash_889fbac1" (
+            prepend payload = @../../../assets/objects/benchmark/trash/benchmark_trash_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.992523, 0, 0, 0.1220576)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.14339843450031564, -0.1785434558578001, 0.7671608088266788)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.005
+            }
+        }
+    }
+}

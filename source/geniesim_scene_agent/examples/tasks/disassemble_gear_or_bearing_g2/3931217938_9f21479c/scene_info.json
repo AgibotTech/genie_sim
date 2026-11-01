@@ -1,0 +1,189 @@
+{
+  "scene_id": "disassemble_gear_or_bearing_g2",
+  "seed": 3931217938,
+  "layout": {
+    "table_189a028f": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_eb2b1bf1",
+        "table_with_gearbox_and_mounted_part_21cd7eb1",
+        "table_189a028f"
+      ],
+      "keywords": [
+        "main_table",
+        "furniture",
+        "table_000"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_gearbox_9c1c23b3": {
+      "usd": "benchmark_gearbox_000",
+      "xyz": [
+        0.023,
+        0.109,
+        0.886
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.871019,
+        0.49125
+      ],
+      "tags": [
+        "root_scene_eb2b1bf1",
+        "table_with_gearbox_and_mounted_part_21cd7eb1",
+        "benchmark_gearbox_9c1c23b3"
+      ],
+      "keywords": [
+        "gearbox_center",
+        "mechanical_part",
+        "fixed"
+      ],
+      "description": {
+        "semantic_name": [
+          "gearbox"
+        ],
+        "full_description": [
+          "A metallic gray circular base with three mounted spur gears of varying sizes and two cylindrical shafts, all exhibiting a machined metal finish."
+        ]
+      }
+    },
+    "benchmark_gear_da736dc8": {
+      "usd": "benchmark_gear_000",
+      "xyz": [
+        0.071,
+        0.067,
+        0.903
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.689313,
+        0.724464
+      ],
+      "tags": [
+        "root_scene_eb2b1bf1",
+        "table_with_gearbox_and_mounted_part_21cd7eb1",
+        "benchmark_gear_da736dc8"
+      ],
+      "keywords": [
+        "mounted_benchmark_gear_000",
+        "mechanical",
+        "on_cylinder",
+        "back_cylinder"
+      ],
+      "description": {
+        "semantic_name": [
+          "gear"
+        ],
+        "full_description": [
+          "A metallic gray circular gear with evenly spaced straight teeth, a central bore with a keyway slot, and a smooth machined surface."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_eb2b1bf1"
+        },
+        {
+          "id": "table_with_gearbox_and_mounted_part_21cd7eb1"
+        },
+        {
+          "tags": [
+            "main_table",
+            "furniture",
+            "table_000"
+          ],
+          "id": "table_189a028f"
+        },
+        {
+          "tags": [
+            "gearbox_center",
+            "mechanical_part",
+            "fixed"
+          ],
+          "id": "benchmark_gearbox_9c1c23b3"
+        },
+        {
+          "tags": [
+            "mounted_benchmark_gear_000",
+            "mechanical",
+            "on_cylinder",
+            "back_cylinder"
+          ],
+          "id": "benchmark_gear_da736dc8"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_eb2b1bf1",
+          "target": "table_with_gearbox_and_mounted_part_21cd7eb1"
+        },
+        {
+          "source": "table_with_gearbox_and_mounted_part_21cd7eb1",
+          "target": "table_189a028f"
+        },
+        {
+          "source": "table_with_gearbox_and_mounted_part_21cd7eb1",
+          "target": "benchmark_gearbox_9c1c23b3"
+        },
+        {
+          "source": "table_with_gearbox_and_mounted_part_21cd7eb1",
+          "target": "benchmark_gear_da736dc8"
+        }
+      ]
+    }
+  },
+  "task_name": "disassemble_gear_or_bearing_g2",
+  "english_task_name": "Disassemble a gear or bearing",
+  "instance_id": "3931217938_9f21479c"
+}

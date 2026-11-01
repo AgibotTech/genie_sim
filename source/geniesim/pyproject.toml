@@ -19,9 +19,9 @@ classifiers = [
 # Meta-package: ships no code of its own. Required deps cover the
 # **tier-1** peers — everything you need for the canonical CLI + RT
 # Engine + benchmark flow. **Tier-2** peers (`geniesim_teleop`,
-# `geniesim_generator`) are gated behind extras so a default
+# `geniesim_scene_agent`) are gated behind extras so a default
 # ``pip install -e source/geniesim/`` doesn't drag in their heavy
-# (VR / LLM / CUDA-ML) stacks.
+# (VR / scene authoring / CUDA-ML) stacks.
 # Modelled on Isaac Sim's ``isaacsim`` umbrella.
 dependencies = [
     "geniesim_cli",
@@ -33,13 +33,12 @@ dependencies = [
 [project.optional-dependencies]
 # Tier-2 peers — opt-in via ``pip install -e "source/geniesim/[<extra>]"``.
 teleop = ["geniesim_teleop"]
-generator = ["geniesim_generator"]
+scene_agent = ["geniesim_scene_agent[scene]"]
 world = ["geniesim_world"]
 # Aggregator extras — pull in everything tier-2.
-all = ["geniesim_teleop", "geniesim_generator", "geniesim_world"]
-# Back-compat alias for the old `full` extra (used to mean generator only;
-# now matches `all`). Prefer `[all]` in new docs.
-full = ["geniesim_teleop", "geniesim_generator", "geniesim_world"]
+all = ["geniesim_teleop", "geniesim_scene_agent[scene]", "geniesim_world"]
+# Alias for `all`. Prefer `[all]` in new docs.
+full = ["geniesim_teleop", "geniesim_scene_agent[scene]", "geniesim_world"]
 
 [project.urls]
 Homepage = "https://github.com/AgibotTech/genie_sim"

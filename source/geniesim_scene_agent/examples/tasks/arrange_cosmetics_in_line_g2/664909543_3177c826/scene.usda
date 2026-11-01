@@ -1,0 +1,62 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_06810cc0" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cosmetics_6e47dcf1" (
+            prepend payload = @../../../assets/objects/benchmark/cosmetics/benchmark_cosmetics_008/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.862719, 0, 0, -0.505683)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.103, 0.171, 0.805)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cosmetics_fb501e24" (
+            prepend payload = @../../../assets/objects/benchmark/cosmetics/benchmark_cosmetics_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.755881, 0, 0, -0.654708)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.103, -0.16, 0.824)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cosmetics_3ba18d1e" (
+            prepend payload = @../../../assets/objects/benchmark/cosmetics/benchmark_cosmetics_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.843908, 0, 0, 0.536487)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.006, -0.174, 0.753)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cosmetics_2bfdb8a6" (
+            prepend payload = @../../../assets/objects/benchmark/cosmetics/benchmark_cosmetics_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.767534, 0, 0, -0.641008)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.094, -0.071, 0.791)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -85,7 +85,6 @@ _ANNOTATIONS: dict[str, dict] = {
     "geniesim_ros": {"note": "⚡ RT Engine"},
     "geniesim_teleop": {"note": "🎮 VR / Pico"},
     "geniesim_world": {"status": "leaf", "note": "🌍 pano → 3D world (own env)"},
-    "geniesim_generator": {"note": "🏗️ scene gen (optional extra)"},
     "geniesim_scene_agent": {"note": "🏗️ scene gen (optional extra)"},
 }
 

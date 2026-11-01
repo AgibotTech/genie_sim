@@ -1,0 +1,157 @@
+{
+  "scene_id": "open_trash_can_g1",
+  "seed": 2315916732,
+  "layout": {
+    "table_dd229ee0": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_da97af02",
+        "table_with_trash_can_5f97b9a5",
+        "place_trash_can_on_table_f13b9641",
+        "table_dd229ee0"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_trash_can_7a49606e": {
+      "usd": "benchmark_trash_can_015",
+      "xyz": [
+        0.118,
+        -0.093,
+        0.995
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.997847,
+        0.065578
+      ],
+      "tags": [
+        "root_scene_da97af02",
+        "table_with_trash_can_5f97b9a5",
+        "place_trash_can_on_table_f13b9641",
+        "trash_can_6a0258d7",
+        "benchmark_trash_can_7a49606e"
+      ],
+      "keywords": [
+        "trash_can",
+        "black",
+        "cylinder",
+        "waste_container"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_da97af02"
+        },
+        {
+          "id": "table_with_trash_can_5f97b9a5"
+        },
+        {
+          "id": "place_trash_can_on_table_f13b9641"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_dd229ee0"
+        },
+        {
+          "id": "trash_can_6a0258d7"
+        },
+        {
+          "tags": [
+            "trash_can",
+            "black",
+            "cylinder",
+            "waste_container"
+          ],
+          "id": "benchmark_trash_can_7a49606e"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_da97af02",
+          "target": "table_with_trash_can_5f97b9a5"
+        },
+        {
+          "source": "table_with_trash_can_5f97b9a5",
+          "target": "place_trash_can_on_table_f13b9641"
+        },
+        {
+          "source": "place_trash_can_on_table_f13b9641",
+          "target": "table_dd229ee0"
+        },
+        {
+          "source": "place_trash_can_on_table_f13b9641",
+          "target": "trash_can_6a0258d7"
+        },
+        {
+          "source": "trash_can_6a0258d7",
+          "target": "benchmark_trash_can_7a49606e"
+        }
+      ]
+    }
+  },
+  "task_name": "open_trash_can_g1",
+  "english_task_name": "Open a trash can",
+  "instance_id": "2315916732_872e3622"
+}

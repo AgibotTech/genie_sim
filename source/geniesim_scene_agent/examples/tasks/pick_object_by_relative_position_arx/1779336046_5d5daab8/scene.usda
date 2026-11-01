@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_7f13b476" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_rubik_cube_7756887b" (
+            prepend payload = @../../../assets/objects/benchmark/rubik_cube/benchmark_rubik_cube_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.06, 0, 0, 0.998198)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.143, -0.034, 0.794)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_rubik_cube_54a28824" (
+            prepend payload = @../../../assets/objects/benchmark/rubik_cube/benchmark_rubik_cube_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.898772, 0, 0, 0.438416)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.015, -0.237, 0.794)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_mouse_0ad2e45f" (
+            prepend payload = @../../../assets/objects/benchmark/mouse/benchmark_mouse_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.707686, 0, 0, -0.706527)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.09, 0.25, 0.78)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

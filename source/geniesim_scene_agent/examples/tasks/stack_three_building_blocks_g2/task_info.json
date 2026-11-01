@@ -1,0 +1,140 @@
+{
+  "task_name": "stack_three_building_blocks_g2",
+  "task_description": {
+    "english_task_name": "Stack three building blocks",
+    "init_scene_text": "table_with_3_building_blocks",
+    "task_name": "Stack three building blocks"
+  },
+  "robot": {
+    "init_arm_pose_noise": {
+      ".*_arm_.*": {
+        "noise_type": "uniform",
+        "low": -0.05,
+        "high": 0.05
+      },
+      "idx01_body_joint1": {
+        "noise_type": "uniform",
+        "low": -0.1,
+        "high": 0.1
+      },
+      "idx02_body_joint2": {
+        "noise_type": "uniform",
+        "low": -0.1,
+        "high": 0.1
+      }
+    },
+    "init_arm_pose": {
+      "idx21_arm_l_joint1": 0.739033,
+      "idx61_arm_r_joint1": -0.739033,
+      "idx05_body_joint5": 0.0,
+      "idx11_head_joint1": 0.0,
+      "idx22_arm_l_joint2": -0.717023,
+      "idx62_arm_r_joint2": -0.717023,
+      "idx04_body_joint4": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx23_arm_l_joint3": -1.524419,
+      "idx63_arm_r_joint3": 1.524419,
+      "idx03_body_joint3": 0.10025,
+      "idx13_head_joint3": 0.11464,
+      "idx24_arm_l_joint4": -1.537612,
+      "idx64_arm_r_joint4": -1.537612,
+      "idx02_body_joint2": 1.2172,
+      "idx25_arm_l_joint5": 0.27811,
+      "idx65_arm_r_joint5": -0.27811,
+      "idx01_body_joint1": -0.83423,
+      "idx26_arm_l_joint6": -0.925845,
+      "idx66_arm_r_joint6": -0.925845,
+      "idx27_arm_l_joint7": -0.839257,
+      "idx67_arm_r_joint7": 0.839257,
+      "idx111_chassis_lwheel_front_joint1": null,
+      "idx121_chassis_lwheel_rear_joint1": null,
+      "idx131_chassis_rwheel_front_joint1": null,
+      "idx141_chassis_rwheel_rear_joint1": null,
+      "idx112_chassis_lwheel_front_joint2": null,
+      "idx122_chassis_lwheel_rear_joint2": null,
+      "idx132_chassis_rwheel_front_joint2": null,
+      "idx142_chassis_rwheel_rear_joint2": null,
+      "idx31_gripper_l_inner_joint1": null,
+      "idx41_gripper_l_outer_joint1": 0.85,
+      "idx71_gripper_r_inner_joint1": null,
+      "idx81_gripper_r_outer_joint1": 0.85,
+      "idx32_gripper_l_inner_joint3": null,
+      "idx42_gripper_l_outer_joint3": null,
+      "idx72_gripper_r_inner_joint3": null,
+      "idx82_gripper_r_outer_joint3": null,
+      "idx33_gripper_l_inner_joint4": null,
+      "idx43_gripper_l_outer_joint4": null,
+      "idx73_gripper_r_inner_joint4": null,
+      "idx83_gripper_r_outer_joint4": null,
+      "idx39_gripper_l_inner_joint0": null,
+      "idx49_gripper_l_outer_joint0": null,
+      "idx79_gripper_r_inner_joint0": null,
+      "idx89_gripper_r_outer_joint0": null
+    },
+    "robot_cfg": "G2_omnipicker_fixed_dual.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "position": [
+        -0.7,
+        0.0,
+        0
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.01,
+          0.01,
+          0
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/G2/head_link3/head_front_Camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": [
+      {
+        "params": {
+          "camera": "head",
+          "downsample_ratio": 0.2,
+          "gripper": "right",
+          "out_view_allow_time": 0.2
+        },
+        "result_code": 4,
+        "rule_name": "is_gripper_in_view"
+      },
+      {
+        "params": {
+          "camera": "head",
+          "downsample_ratio": 0.2,
+          "gripper": "left",
+          "out_view_allow_time": 0.2
+        },
+        "result_code": 4,
+        "rule_name": "is_gripper_in_view"
+      },
+      {
+        "params": {
+          "tolerance": 0.01
+        },
+        "result_code": 6,
+        "rule_name": "is_body_stable"
+      },
+      {
+        "params": {},
+        "result_code": 5,
+        "rule_name": "is_crs_bound_valid_g2"
+      }
+    ]
+  }
+}

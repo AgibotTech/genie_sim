@@ -1,0 +1,184 @@
+{
+  "scene_id": "shake_cup_g2",
+  "seed": 2270388071,
+  "layout": {
+    "table_9a28c110": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_a7142b2e",
+        "table_with_random_cup_f26bb256",
+        "place_cup_on_table_4d6dd67f",
+        "table_9a28c110"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_cup_283d2014": {
+      "usd": "benchmark_cup_043",
+      "xyz": [
+        0.052,
+        -0.203,
+        0.801
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.441843,
+        0.897092
+      ],
+      "tags": [
+        "root_scene_a7142b2e",
+        "table_with_random_cup_f26bb256",
+        "place_cup_on_table_4d6dd67f",
+        "random_cup_cb058046",
+        "benchmark_cup_283d2014"
+      ],
+      "keywords": [
+        "cup",
+        "random_selection",
+        "benchmark_cup_043"
+      ],
+      "description": {
+        "semantic_name": [
+          "cup"
+        ],
+        "object_category": [
+          "kitchen",
+          "cup"
+        ],
+        "color": "white",
+        "shape": "complex-shaped",
+        "materials": [
+          "ceramic"
+        ],
+        "dimensions": [
+          0.12438757717609406,
+          0.06310572847723961,
+          0.09321336448192596
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "octagonal",
+          "ceramic",
+          "modern",
+          "functional",
+          "minimalist"
+        ],
+        "full_description": [
+          "A white, geometrically faceted cup with a single handle and octagonal profile."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_a7142b2e"
+        },
+        {
+          "id": "table_with_random_cup_f26bb256"
+        },
+        {
+          "id": "place_cup_on_table_4d6dd67f"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_9a28c110"
+        },
+        {
+          "id": "random_cup_cb058046"
+        },
+        {
+          "tags": [
+            "cup",
+            "random_selection",
+            "benchmark_cup_043"
+          ],
+          "id": "benchmark_cup_283d2014"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_a7142b2e",
+          "target": "table_with_random_cup_f26bb256"
+        },
+        {
+          "source": "table_with_random_cup_f26bb256",
+          "target": "place_cup_on_table_4d6dd67f"
+        },
+        {
+          "source": "place_cup_on_table_4d6dd67f",
+          "target": "table_9a28c110"
+        },
+        {
+          "source": "place_cup_on_table_4d6dd67f",
+          "target": "random_cup_cb058046"
+        },
+        {
+          "source": "random_cup_cb058046",
+          "target": "benchmark_cup_283d2014"
+        }
+      ]
+    }
+  },
+  "task_name": "shake_cup_g2",
+  "english_task_name": "Shake a cup",
+  "instance_id": "2270388071_a7e32264"
+}

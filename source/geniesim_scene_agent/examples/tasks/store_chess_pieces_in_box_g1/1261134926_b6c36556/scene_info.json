@@ -1,0 +1,191 @@
+{
+  "scene_id": "store_chess_pieces_in_box_g1",
+  "seed": 1261134926,
+  "layout": {
+    "table_ba6d2056": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_54486d94",
+        "chessboard_scene_3130862f",
+        "table_ba6d2056"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workplace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_chessboard_f5c0543d": {
+      "usd": "benchmark_chessboard_001",
+      "xyz": [
+        -0.098,
+        -0.061,
+        0.739
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.503989,
+        0.86371
+      ],
+      "tags": [
+        "root_scene_54486d94",
+        "chessboard_scene_3130862f",
+        "benchmark_chessboard_f5c0543d"
+      ],
+      "keywords": [
+        "chessboard",
+        "container",
+        "wooden"
+      ],
+      "description": {
+        "semantic_name": [
+          "chessboard"
+        ],
+        "full_description": [
+          "A rectangular chessboard with a dark matte frame surrounding a light wood-grain playing surface."
+        ]
+      }
+    },
+    "benchmark_chess_b96157a6": {
+      "usd": "benchmark_chess_007",
+      "xyz": [
+        -0.186,
+        0.23,
+        0.78
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.717554,
+        -0.696503
+      ],
+      "tags": [
+        "root_scene_54486d94",
+        "chessboard_scene_3130862f",
+        "benchmark_chess_b96157a6"
+      ],
+      "keywords": [
+        "chess_piece",
+        "target",
+        "white",
+        "highlighted",
+        "position_x_-0.070_y_-0.054"
+      ],
+      "description": {
+        "semantic_name": [
+          "rook"
+        ],
+        "full_description": [
+          "A matte black chess rook with a cylindrical base, slender neck, and a crown-like top featuring four evenly spaced merlons."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_54486d94"
+        },
+        {
+          "id": "chessboard_scene_3130862f"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workplace"
+          ],
+          "id": "table_ba6d2056"
+        },
+        {
+          "tags": [
+            "chessboard",
+            "container",
+            "wooden"
+          ],
+          "id": "benchmark_chessboard_f5c0543d"
+        },
+        {
+          "tags": [
+            "chess_piece",
+            "target",
+            "white",
+            "highlighted",
+            "position_x_-0.070_y_-0.054"
+          ],
+          "id": "benchmark_chess_b96157a6"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_54486d94",
+          "target": "chessboard_scene_3130862f"
+        },
+        {
+          "source": "chessboard_scene_3130862f",
+          "target": "table_ba6d2056"
+        },
+        {
+          "source": "chessboard_scene_3130862f",
+          "target": "benchmark_chessboard_f5c0543d"
+        },
+        {
+          "source": "chessboard_scene_3130862f",
+          "target": "benchmark_chess_b96157a6"
+        }
+      ]
+    }
+  },
+  "task_name": "store_chess_pieces_in_box_g1",
+  "english_task_name": "Store chess pieces in a box",
+  "instance_id": "1261134926_b6c36556"
+}

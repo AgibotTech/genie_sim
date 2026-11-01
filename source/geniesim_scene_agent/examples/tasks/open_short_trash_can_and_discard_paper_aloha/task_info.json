@@ -1,0 +1,62 @@
+{
+  "task_name": "open_short_trash_can_and_discard_paper_aloha",
+  "task_description": {
+    "english_task_name": "Open a short trash can and discard a paper ball",
+    "task_name": "Open a short trash can and discard a paper ball",
+    "init_scene_text": "A short pedal trash can and a crumpled paper ball on a table."
+  },
+  "robot": {
+    "init_arm_pose": {
+      "arm_fl_joint1": -0.18,
+      "arm_fl_joint2": 1.35,
+      "arm_fl_joint3": -0.84,
+      "arm_fl_joint4": 0.0,
+      "arm_fl_joint5": 0.0,
+      "arm_fl_joint6": 0.0,
+      "arm_fr_joint1": 0.18,
+      "arm_fr_joint2": 1.35,
+      "arm_fr_joint3": -0.84,
+      "arm_fr_joint4": 0.0,
+      "arm_fr_joint5": 0.0,
+      "arm_fr_joint6": 0.0,
+      "gripper_fl_active_joint": 0.04,
+      "gripper_fl_passive_joint": -0.04,
+      "gripper_fr_active_joint": 0.04,
+      "gripper_fr_passive_joint": -0.04
+    },
+    "robot_cfg": "Aloha.json",
+    "robot_id": "Aloha",
+    "robot_init_pose": {
+      "position": [
+        -0.7,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.03,
+          0.03,
+          0.03
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/Aloha/base_link/head_camera",
+      "/Aloha/arm_fl_end_link/hand_left_camera",
+      "/Aloha/arm_fr_end_link/hand_right_camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": []
+  }
+}

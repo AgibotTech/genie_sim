@@ -21,7 +21,7 @@ installs in topological order.
 | `geniesim/` | umbrella (`geniesim`) | [README](geniesim/README.md) | — | — |
 | `geniesim_cli/` | `geniesim_cli` — owns the `geniesim` console script | [README](geniesim_cli/README.md) | [AGENTS](geniesim_cli/AGENTS.md) | — |
 | `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (direct Isaac Sim evaluation) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
-| `geniesim_generator/` | `geniesim_generator` — LLM-driven scene generation (gated) | [README](geniesim_generator/README.md) | [AGENTS](geniesim_generator/AGENTS.md) | [skills/](geniesim_generator/skills/) |
+| `geniesim_scene_agent/` | `geniesim_scene_agent` — Asset search, scene authoring, and task skills (optional) | [README](geniesim_scene_agent/README.md) | [AGENTS](geniesim_scene_agent/AGENTS.md) | [skills/](geniesim_scene_agent/skills/) |
 | `geniesim_ros/` | `geniesim_ros` — Genie Sim RT Engine (ROS 2 workspace) | [README](geniesim_ros/README.md) | [AGENTS](geniesim_ros/AGENTS.md) | [skills/](geniesim_ros/skills/) |
 | `geniesim_teleop/` | `geniesim_teleop` — VR / Pico teleop bridge | [README](geniesim_teleop/README.md) | [AGENTS](geniesim_teleop/AGENTS.md) | [skills/](geniesim_teleop/skills/) |
 | `geniesim_world/` | `geniesim_world` — multimodal spatial world model (pano → 3D) | [README](geniesim_world/README.md) | [AGENTS](geniesim_world/AGENTS.md) | [skills/](geniesim_world/skills/) |
@@ -51,7 +51,7 @@ Source of truth, in evaluation order:
 1. **`source/geniesim_*/pyproject.toml`** — every peer with a `[project]` table is enumerated by globbing `source/geniesim*/pyproject.toml`. Sibling modules that don't match the `geniesim_*` glob (`agent2act`, `rlinf_geniesim`, `data_collection`, `scene_reconstruction`, `external`) are deliberately out of scope.
 2. **`[build-system].requires`** → emitted as **build edges** (`-->|build|`). External-only requirements (`setuptools`, `wheel`) produce no edges; the edge fires when a peer needs *another peer* at build time.
 3. **`[project].dependencies`** → emitted as **runtime/exec edges** (`==>|exec|`), with one special case: when the source peer carries `role: umbrella` in `_ANNOTATIONS`, its `[project].dependencies` are reclassified as **build edges** (`-->|build|`). The umbrella ships no code beyond `__version__`, so those deps are packaging declarations ("install these alongside me"), not runtime imports.
-4. **`[project.optional-dependencies]`** → emitted as **extra edges** (`-.->|[X] extra|`). Edges with the same `(src, dst)` collapse — `geniesim[generator,full]` becomes one labelled edge.
+4. **`[project.optional-dependencies]`** → emitted as **extra edges** (`-.->|[X] extra|`). Edges with the same `(src, dst)` collapse — `geniesim[scene_agent,full]` becomes one labelled edge.
 5. **`_ANNOTATIONS`** in [`source/geniesim_cli/src/geniesim_cli/commands/tool.py`](geniesim_cli/src/geniesim_cli/commands/tool.py) — the only hand-edited input. Carries `status` (legacy / leaf / placeholder), `role` (umbrella / cli), `note` (short label), `refactor_target` (planned merge target), and `requires_agents` (exempt from the docs audit).
 6. **`refactor_target`** in `_ANNOTATIONS` → emitted as a **refactor edge** (`-.->|refactor: layer atop|`).
 
@@ -84,7 +84,7 @@ don't cross-reference them as if they were peer distributions.
 | Directory | Description |
 |---|---|
 | `agent2act/` | LLM-to-action runtime and CoRobot WebSocket service; own uv environment — see [README.md](./agent2act/README.md) and [AGENTS.md](./agent2act/AGENTS.md) |
-| `data_collection/` | Data collection client/server, ROS nodes, aimdk protocol — see [AGENTS.md](./data_collection/AGENTS.md) |
+| `data_collection/` | Independent Isaac Sim 5.1 / cuRobo v2 collection and replay — see [AGENTS.md](./data_collection/AGENTS.md) |
 | `rlinf_geniesim/` | RL training pipeline (RLinf, human-in-the-loop, distributed) — see [README.md](./rlinf_geniesim/README.md) |
 | `scene_reconstruction/` | 3D reconstruction pipeline (Dockerfile, third-party deps) |
 | `external/` | Vendored third-party code (ml-sharp, DA360, …) |

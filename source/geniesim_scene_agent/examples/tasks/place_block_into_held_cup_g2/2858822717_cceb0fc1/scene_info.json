@@ -1,0 +1,255 @@
+{
+  "scene_id": "place_block_into_held_cup_g2",
+  "seed": 2858822717,
+  "layout": {
+    "table_14619fb0": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_28f7ed85",
+        "place_block_into_held_cup_fa2a5a77",
+        "table_14619fb0"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_cup_c05cdb36": {
+      "usd": "benchmark_cup_107",
+      "xyz": [
+        -0.006,
+        0.128,
+        0.779
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.270271,
+        0.962784
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_28f7ed85",
+        "place_block_into_held_cup_fa2a5a77",
+        "benchmark_cup_c05cdb36"
+      ],
+      "keywords": [
+        "cup_107",
+        "cup",
+        "container",
+        "target_container"
+      ],
+      "description": {
+        "semantic_name": [
+          "cup"
+        ],
+        "object_category": [
+          "container",
+          "drinkware"
+        ],
+        "color": "white",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "printed surface"
+        ],
+        "dimensions": [
+          0.07612596824765205,
+          0.09395996853709221,
+          0.07612748816609383
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "white",
+          "printed",
+          "cylindrical",
+          "plastic",
+          "decorative",
+          "lightweight",
+          "everyday"
+        ],
+        "full_description": [
+          "A white paper cup with black line drawings and yellow accents depicting various household items."
+        ]
+      }
+    },
+    "benchmark_building_blocks_f9b9a419": {
+      "usd": "benchmark_building_blocks_007",
+      "xyz": [
+        -0.01,
+        -0.081,
+        0.752
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.343897,
+        0.939007
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_28f7ed85",
+        "place_block_into_held_cup_fa2a5a77",
+        "benchmark_building_blocks_f9b9a419"
+      ],
+      "keywords": [
+        "building_blocks",
+        "block",
+        "toy",
+        "on_desk",
+        "to_place"
+      ],
+      "description": {
+        "semantic_name": [
+          "orange cross block"
+        ],
+        "object_category": [
+          "toy",
+          "building block"
+        ],
+        "color": "orange",
+        "shape": "complex-shaped",
+        "materials": [
+          "plastic"
+        ],
+        "dimensions": [
+          0.05,
+          0.05,
+          0.05
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "small",
+          "orange",
+          "geometric",
+          "complex",
+          "rigid"
+        ],
+        "full_description": [
+          "An orange, matte-finished, 3D cross-shaped block with a central vertical bar and perpendicular arms."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_28f7ed85"
+        },
+        {
+          "id": "place_block_into_held_cup_fa2a5a77"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_14619fb0"
+        },
+        {
+          "tags": [
+            "cup_107",
+            "cup",
+            "container",
+            "target_container"
+          ],
+          "id": "benchmark_cup_c05cdb36"
+        },
+        {
+          "tags": [
+            "building_blocks",
+            "block",
+            "toy",
+            "on_desk",
+            "to_place"
+          ],
+          "id": "benchmark_building_blocks_f9b9a419"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_28f7ed85",
+          "target": "place_block_into_held_cup_fa2a5a77"
+        },
+        {
+          "source": "place_block_into_held_cup_fa2a5a77",
+          "target": "table_14619fb0"
+        },
+        {
+          "source": "place_block_into_held_cup_fa2a5a77",
+          "target": "benchmark_cup_c05cdb36"
+        },
+        {
+          "source": "place_block_into_held_cup_fa2a5a77",
+          "target": "benchmark_building_blocks_f9b9a419"
+        }
+      ]
+    }
+  },
+  "task_name": "place_block_into_held_cup_g2",
+  "english_task_name": "Place a block into a cup held by the other hand",
+  "instance_id": "2858822717_cceb0fc1"
+}

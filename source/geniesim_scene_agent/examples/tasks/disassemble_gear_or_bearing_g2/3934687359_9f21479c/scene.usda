@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_b4c1e311" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_gearbox_75c9eb4e" (
+            prepend payload = @../../../assets/objects/benchmark/gearbox/benchmark_gearbox_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.692377, 0, 0, 0.721536)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.071, -0.117, 0.886)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bearing_f95001b0" (
+            prepend payload = @../../../assets/objects/benchmark/bearing/benchmark_bearing_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.993915, 0, 0, 0.110153)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.012, -0.139, 0.888)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

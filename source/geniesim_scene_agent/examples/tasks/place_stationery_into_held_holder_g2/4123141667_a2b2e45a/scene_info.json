@@ -1,0 +1,237 @@
+{
+  "scene_id": "place_stationery_into_held_holder_g2",
+  "seed": 4123141667,
+  "layout": {
+    "table_b5744580": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_5865b914",
+        "place_stationery_into_held_pen_holder_e67f2ff1",
+        "table_b5744580"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_stationery_b206bfe0": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        0.001,
+        0.091,
+        0.772
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.819796,
+        -0.572656
+      ],
+      "scale": [
+        1.45,
+        1.45,
+        1.0
+      ],
+      "tags": [
+        "root_scene_5865b914",
+        "place_stationery_into_held_pen_holder_e67f2ff1",
+        "benchmark_stationery_b206bfe0"
+      ],
+      "keywords": [
+        "pen_holder",
+        "stationery",
+        "container",
+        "target_container",
+        "POSITION_TAG_left"
+      ],
+      "description": {
+        "semantic_name": [
+          "pen_holder"
+        ],
+        "full_description": [
+          "A black cylindrical pen holder with a mesh body, smooth solid rim at the top, and a flat solid base."
+        ]
+      }
+    },
+    "benchmark_stationery_98b13e12": {
+      "usd": "benchmark_stationery_007",
+      "xyz": [
+        0.02,
+        -0.086,
+        0.792
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.753269,
+        0.657712
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_5865b914",
+        "place_stationery_into_held_pen_holder_e67f2ff1",
+        "benchmark_stationery_98b13e12"
+      ],
+      "keywords": [
+        "stationery_item_to_place",
+        "stationery",
+        "glue_stick",
+        "on_desk",
+        "to_place",
+        "POSITION_TAG_right"
+      ],
+      "description": {
+        "semantic_name": [
+          "glue stick"
+        ],
+        "object_category": [
+          "stationery",
+          "glue_stick"
+        ],
+        "color": "blue",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "adhesive"
+        ],
+        "dimensions": [
+          0.0218630563467741,
+          0.11405719444155693,
+          0.02186071965843439
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "blue",
+          "cylindrical",
+          "plastic",
+          "white-capped",
+          "textured",
+          "stationery",
+          "glue-stick"
+        ],
+        "full_description": [
+          "A blue cylindrical glue stick with a white cap and textured pattern, labeled 'COOL GLUE STICK'."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_5865b914"
+        },
+        {
+          "id": "place_stationery_into_held_pen_holder_e67f2ff1"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace"
+          ],
+          "id": "table_b5744580"
+        },
+        {
+          "tags": [
+            "pen_holder",
+            "stationery",
+            "container",
+            "target_container",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_stationery_b206bfe0"
+        },
+        {
+          "tags": [
+            "stationery_item_to_place",
+            "stationery",
+            "glue_stick",
+            "on_desk",
+            "to_place",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_stationery_98b13e12"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_5865b914",
+          "target": "place_stationery_into_held_pen_holder_e67f2ff1"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_e67f2ff1",
+          "target": "table_b5744580"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_e67f2ff1",
+          "target": "benchmark_stationery_b206bfe0"
+        },
+        {
+          "source": "place_stationery_into_held_pen_holder_e67f2ff1",
+          "target": "benchmark_stationery_98b13e12"
+        }
+      ]
+    }
+  },
+  "task_name": "place_stationery_into_held_holder_g2",
+  "english_task_name": "Place stationery into a holder held by the other hand",
+  "instance_id": "4123141667_a2b2e45a"
+}

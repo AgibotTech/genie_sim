@@ -1,0 +1,216 @@
+{
+  "scene_id": "fold_double_layer_t_shirt_g2",
+  "seed": 1780785630,
+  "layout": {
+    "table_64958fe9": {
+      "usd": "table_000",
+      "xyz": [
+        0.056,
+        0.007,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_9f9aa724",
+        "cloth_fold_tshirt_scene_7027e179",
+        "table_64958fe9"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood",
+        "rectangular",
+        "furniture"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "table__collision_proxy_3b6f14ad": {
+      "usd": "table_000_collision_proxy",
+      "xyz": [
+        0.056,
+        0.007,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_9f9aa724",
+        "cloth_fold_tshirt_scene_7027e179",
+        "table__collision_proxy_3b6f14ad"
+      ],
+      "keywords": [
+        "table_collision_proxy",
+        "motion_gen_obstacle",
+        "collision_proxy"
+      ],
+      "description": {
+        "semantic_name": [
+          "table collision proxy"
+        ],
+        "object_category": [
+          "furniture",
+          "table",
+          "collision_proxy"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.5836153,
+          0.9726922,
+          0.1
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "invisible",
+          "rectangular",
+          "static",
+          "collision",
+          "proxy"
+        ],
+        "full_description": [
+          "An invisible rectangular collision proxy for the white table surface."
+        ]
+      }
+    },
+    "cloth_d04b3fc7": {
+      "usd": "cloth_001",
+      "xyz": [
+        0.056,
+        0.007,
+        0.743
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.725301,
+        0.688432
+      ],
+      "tags": [
+        "root_scene_9f9aa724",
+        "cloth_fold_tshirt_scene_7027e179",
+        "cloth_d04b3fc7"
+      ],
+      "keywords": [
+        "target_cloth",
+        "cloth",
+        "tshirt",
+        "fem",
+        "deformable",
+        "double_layer",
+        "fold_target"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_9f9aa724"
+        },
+        {
+          "id": "cloth_fold_tshirt_scene_7027e179"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood",
+            "rectangular",
+            "furniture"
+          ],
+          "id": "table_64958fe9"
+        },
+        {
+          "tags": [
+            "table_collision_proxy",
+            "motion_gen_obstacle",
+            "collision_proxy"
+          ],
+          "id": "table__collision_proxy_3b6f14ad"
+        },
+        {
+          "tags": [
+            "target_cloth",
+            "cloth",
+            "tshirt",
+            "fem",
+            "deformable",
+            "double_layer",
+            "fold_target"
+          ],
+          "id": "cloth_d04b3fc7"
+        }
+      ],
+      "links": [
+        {
+          "source": "root_scene_9f9aa724",
+          "target": "cloth_fold_tshirt_scene_7027e179"
+        },
+        {
+          "source": "cloth_fold_tshirt_scene_7027e179",
+          "target": "table_64958fe9"
+        },
+        {
+          "source": "cloth_fold_tshirt_scene_7027e179",
+          "target": "table__collision_proxy_3b6f14ad"
+        },
+        {
+          "source": "cloth_fold_tshirt_scene_7027e179",
+          "target": "cloth_d04b3fc7"
+        }
+      ]
+    }
+  },
+  "task_name": "fold_double_layer_t_shirt_g2",
+  "english_task_name": "Fold a double-layer T-shirt with both arms",
+  "instance_id": "1780785630_de8f8c1b"
+}

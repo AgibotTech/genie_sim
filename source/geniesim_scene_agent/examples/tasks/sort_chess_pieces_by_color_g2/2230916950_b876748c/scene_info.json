@@ -1,0 +1,165 @@
+{
+  "scene_id": "sort_chess_pieces_by_color_g2",
+  "seed": 2230916950,
+  "layout": {
+    "table_a90d1a7f": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_05575e2b",
+        "sort_chess_by_color_94edf0d4",
+        "table_a90d1a7f"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_chess_8054931c": {
+      "usd": "benchmark_chess_004",
+      "xyz": [
+        0.032,
+        -0.014,
+        0.779
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.999566,
+        0.029452
+      ],
+      "tags": [
+        "root_scene_05575e2b",
+        "sort_chess_by_color_94edf0d4",
+        "create_scattered_pieces_a0a9a4f7",
+        "benchmark_chess_8054931c"
+      ],
+      "keywords": [
+        "chess_queen_white_w3",
+        "queen_white",
+        "white",
+        "chess_piece",
+        "queen",
+        "value_9",
+        "scattered",
+        "on_desk",
+        "right",
+        "sortable_by_color"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_pawn"
+        ],
+        "full_description": [
+          "A light-colored wooden chess pawn with a spherical head, decorative collar, cylindrical neck, and flared base."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_05575e2b"
+        },
+        {
+          "id": "sort_chess_by_color_94edf0d4"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood"
+          ],
+          "id": "table_a90d1a7f"
+        },
+        {
+          "id": "create_scattered_pieces_a0a9a4f7"
+        },
+        {
+          "tags": [
+            "chess_queen_white_w3",
+            "queen_white",
+            "white",
+            "chess_piece",
+            "queen",
+            "value_9",
+            "scattered",
+            "on_desk",
+            "right",
+            "sortable_by_color"
+          ],
+          "id": "benchmark_chess_8054931c"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_05575e2b",
+          "target": "sort_chess_by_color_94edf0d4"
+        },
+        {
+          "source": "sort_chess_by_color_94edf0d4",
+          "target": "table_a90d1a7f"
+        },
+        {
+          "source": "sort_chess_by_color_94edf0d4",
+          "target": "create_scattered_pieces_a0a9a4f7"
+        },
+        {
+          "source": "create_scattered_pieces_a0a9a4f7",
+          "target": "benchmark_chess_8054931c"
+        }
+      ]
+    }
+  },
+  "task_name": "sort_chess_pieces_by_color_g2",
+  "english_task_name": "Sort chess pieces by color",
+  "instance_id": "2230916950_b876748c"
+}

@@ -24,7 +24,7 @@ installs in topological order.
 | 🧞 [`geniesim_cli/`](geniesim_cli/) | CLI dispatcher — the `geniesim` console script | [AGENTS.md](geniesim_cli/AGENTS.md) | — |
 | 🌐 [`geniesim/`](geniesim/) | Umbrella meta-package — pulls in every peer | — | — |
 | 🧪 [`geniesim_benchmark/`](geniesim_benchmark/) | Benchmark tasks, scoring, LLM eval configs *(legacy stack — Isaac Sim direct; will be refactored onto `geniesim_ros`)* | [README.md](geniesim_benchmark/README.md) | [run-benchmark](geniesim_benchmark/skills/run-benchmark/SKILL.md), [check-inference](geniesim_benchmark/skills/check-inference/SKILL.md) |
-| 🏗️ [`geniesim_generator/`](geniesim_generator/) | Scene generation, procedural layout, LLM scene language | [AGENTS.md](geniesim_generator/AGENTS.md) | [generate-scene](geniesim_generator/skills/generate-scene/SKILL.md), [search-assets](geniesim_generator/skills/search-assets/SKILL.md), [deploy-generator](geniesim_generator/skills/deploy-generator/SKILL.md) |
+| 🏗️ [`geniesim_scene_agent/`](geniesim_scene_agent/) | Asset search, scene authoring, and task orchestration | [AGENTS.md](geniesim_scene_agent/AGENTS.md) | [geniesim-scene-generation](geniesim_scene_agent/skills/geniesim-scene-generation/SKILL.md), [geniesim-asset-search](geniesim_scene_agent/skills/geniesim-asset-search/SKILL.md), [scene-to-data](geniesim_scene_agent/skills/geniesim-scene-to-data/SKILL.md) |
 | ⚡ [`geniesim_ros/`](geniesim_ros/) | **Genie Sim RT Engine** — realtime interactive ROS 2 simulation | [README.md](geniesim_ros/README.md) · [AGENTS.md](geniesim_ros/AGENTS.md) | [build-workspace](geniesim_ros/skills/build-workspace/SKILL.md), [launch-scene](geniesim_ros/skills/launch-scene/SKILL.md), [moveit-wbc](geniesim_ros/skills/moveit-wbc/SKILL.md), [add-robot](geniesim_ros/skills/add-robot/SKILL.md), [teleop-bridge](geniesim_ros/skills/teleop-bridge/SKILL.md), [record-episode](geniesim_ros/skills/record-episode/SKILL.md), [debug-physics](geniesim_ros/skills/debug-physics/SKILL.md), [material-override](geniesim_ros/skills/material-override/SKILL.md) |
 | 🎮 [`geniesim_teleop/`](geniesim_teleop/) | VR / Pico teleoperation bridge | [AGENTS.md](geniesim_teleop/AGENTS.md) | [run-teleop](geniesim_teleop/skills/run-teleop/SKILL.md) |
 | 🌍 [`geniesim_world/`](geniesim_world/) | Multimodal spatial world model (panorama → 3D world) | [README.md](geniesim_world/README.md) · [AGENTS.md](geniesim_world/AGENTS.md) | [generate-world](geniesim_world/skills/generate-world/SKILL.md) |
@@ -52,7 +52,7 @@ geniesim_cli      → install + docker
 Side branches:
 
 - **Author a new scene from a panorama** → `geniesim_world`
-- **Synthesise scenes / search assets via LLM** → `geniesim_generator`
+- **Synthesise scenes / search assets via LLM** → `geniesim_scene_agent`
 - **Train an RL policy in the loop** → `rlinf_geniesim`
 - **Connect LLM planning to robot actions** → [`agent2act`](agent2act/README.md)
 
@@ -76,8 +76,8 @@ graph TD
   geniesim["<b>geniesim</b><br/>meta-package"]
   geniesim_cli["<b>geniesim_cli</b><br/>console script"]
   geniesim_benchmark["<b>geniesim_benchmark</b><br/>Isaac Sim direct"]
-  geniesim_generator["<b>geniesim_generator</b><br/>🏗️ scene gen (optional extra)"]
   geniesim_ros["<b>geniesim_ros</b><br/>⚡ RT Engine"]
+  geniesim_scene_agent["<b>geniesim_scene_agent</b><br/>🏗️ scene gen (optional extra)"]
   geniesim_teleop["<b>geniesim_teleop</b><br/>🎮 VR / Pico"]
   geniesim_world["<b>geniesim_world</b><br/>🌍 pano → 3D world (own env)"]
 
@@ -85,12 +85,11 @@ graph TD
   geniesim -->|build| geniesim_benchmark
   geniesim -->|build| geniesim_ros
   geniesim_benchmark ==>|exec| geniesim_cli
-  geniesim_generator ==>|exec| geniesim_cli
   geniesim_ros ==>|exec| geniesim_cli
   geniesim_teleop ==>|exec| geniesim_cli
   geniesim_teleop ==>|exec| geniesim_ros
   geniesim -."[teleop,all,full] extra".-> geniesim_teleop
-  geniesim -."[generator,all,full] extra".-> geniesim_generator
+  geniesim -."[scene_agent,all,full] extra".-> geniesim_scene_agent
   geniesim -."[world,all,full] extra".-> geniesim_world
 
   classDef legacy fill:#fff3cd,stroke:#856404,color:#856404
@@ -115,7 +114,7 @@ others are active out-of-band collaborations.
 | Directory | Description |
 |---|---|
 | [`agent2act/`](agent2act/README.md) | LLM-to-action runtime with motion/policy/auto execution, CoRobot WebSocket service, and a separate uv environment |
-| [`data_collection/`](data_collection/) | Data collection client/server, ROS nodes, aimdk protocol |
+| [`data_collection/`](data_collection/) | Independent Isaac Sim 5.1 / cuRobo v2 collection and replay |
 | 🎓 [`rlinf_geniesim/`](rlinf_geniesim/) | RL training (RLinf, human-in-the-loop, distributed) |
 | [`scene_reconstruction/`](scene_reconstruction/) | 3D reconstruction pipeline (Dockerfile, third-party deps) |
 | [`external/`](external/) | Vendored third-party code (ml-sharp, DA360, …) |

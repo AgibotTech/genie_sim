@@ -1,0 +1,159 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "keywords": [
+        "writing_table",
+        "table",
+        "workspace",
+        "center"
+      ],
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "keywords": [
+        "paper",
+        "writing_surface",
+        "kinematic",
+        "on_table"
+      ],
+      "xyz": [
+        -0.09937977482521797,
+        0.0,
+        0.8325559144722151
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "keywords": [
+        "pen_holder",
+        "dynamic",
+        "non_kinematic",
+        "table_side"
+      ],
+      "xyz": [
+        -0.10495161224569885,
+        -0.23131635225325234,
+        0.8746148016648981
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "keywords": [
+        "writing_pen",
+        "pen",
+        "inside_pen_holder",
+        "dynamic"
+      ],
+      "xyz": [
+        -0.10495161224569885,
+        -0.23131635225325234,
+        0.9126148016648982
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "write_uppercase_letter_with_pen_g2"
+        },
+        {
+          "id": "table",
+          "tags": [
+            "table",
+            "center"
+          ]
+        },
+        {
+          "id": "paper",
+          "tags": [
+            "paper",
+            "kinematic"
+          ]
+        },
+        {
+          "id": "pen_holder",
+          "tags": [
+            "pen_holder",
+            "dynamic"
+          ]
+        },
+        {
+          "id": "pen",
+          "tags": [
+            "benchmark_pen_009",
+            "inside_pen_holder",
+            "dynamic"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "source": "write_uppercase_letter_with_pen_g2",
+          "target": "table"
+        },
+        {
+          "source": "write_uppercase_letter_with_pen_g2",
+          "target": "paper"
+        },
+        {
+          "source": "write_uppercase_letter_with_pen_g2",
+          "target": "pen_holder"
+        },
+        {
+          "source": "write_uppercase_letter_with_pen_g2",
+          "target": "pen"
+        }
+      ]
+    }
+  },
+  "scene_id": "write_uppercase_letter_with_pen_g2",
+  "seed": 0,
+  "instance_id": "8",
+  "task_name": "write_uppercase_letter_with_pen_g2",
+  "english_task_name": "Write an uppercase letter with a pen",
+  "target_letter": "I",
+  "task_description": {
+    "task_name": "Pick up the pen and write an uppercase letter I on the paper",
+    "english_task_name": "Pick up the pen and write an uppercase letter I on the paper",
+    "init_scene_text": "A pen stands in a holder beside a sheet of paper on a writing desk."
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink"
+  ]
+}

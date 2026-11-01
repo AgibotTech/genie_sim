@@ -48,7 +48,6 @@ _EMOJI: dict[str, str] = {
     "geniesim": "📦",
     "geniesim_cli": "🧞",
     "geniesim_benchmark": "🧪",
-    "geniesim_generator": "🎨",
     "geniesim_scene_agent": "🎨",
     "geniesim_ros": "📡",
     "geniesim_teleop": "🎮",

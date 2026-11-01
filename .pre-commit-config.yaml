@@ -1,4 +1,6 @@
-exclude: ^(source/data_collection/|source/scene_reconstruction/patch/|source/scene_reconstruction/third_party/)
+# Scene examples are an imported corpus with byte-level manifest checksums.
+# Validate their inventory/hashes with examples/validate.py instead of autoformatting.
+exclude: ^(source/geniesim_scene_agent/examples/|source/data_collection/|source/scene_reconstruction/patch/|source/scene_reconstruction/third_party/)
 repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 25.12.0 # Use the latest Black version
@@ -19,7 +21,7 @@ repos:
     hooks:
       - id: insert-license
         files: ^.*\.py$
-        exclude: ^source/(geniesim_generator/src/geniesim_generator/scene_language/|geniesim_benchmark/src/geniesim_benchmark/app/controllers/parallel_gripper\.py$|scene_reconstruction/third_party/)
+        exclude: ^source/(geniesim_benchmark/src/geniesim_benchmark/app/controllers/parallel_gripper\.py$|scene_reconstruction/third_party/)
         args:
           - --license-filepath
           - .github/LICENSE_HEADER.txt
@@ -42,7 +44,6 @@ repos:
       - id: mixed-line-ending
       - id: detect-private-key
       - id: debug-statements
-        exclude: ^source/geniesim_generator/src/geniesim_generator/scene_language
       - id: check-merge-conflict
       - id: check-docstring-first
         exclude: LLM_RESULT\.py$

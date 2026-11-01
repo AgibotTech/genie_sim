@@ -1,0 +1,249 @@
+{
+  "scene_id": "place_object_at_relative_position_aloha",
+  "seed": 3650269533,
+  "layout": {
+    "table_42e0a497": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_8f83e406",
+        "table_with_random_objects_3789eff3",
+        "place_random_objects_on_desk_bba60464",
+        "table_42e0a497"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_medicine_bottle_45575d28": {
+      "usd": "benchmark_medicine_bottle_000",
+      "xyz": [
+        0.046,
+        0.179,
+        0.842
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.072091,
+        0.997398
+      ],
+      "tags": [
+        "root_scene_8f83e406",
+        "table_with_random_objects_3789eff3",
+        "place_random_objects_on_desk_bba60464",
+        "benchmark_medicine_bottle_45575d28"
+      ],
+      "keywords": [
+        "medicine bottle",
+        "benchmark_medicine_bottle_000",
+        "on_desk",
+        "right"
+      ],
+      "description": {
+        "semantic_name": [
+          "medicine_bottle"
+        ],
+        "object_category": [
+          "container",
+          "medicine"
+        ],
+        "color": "colorful",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "paper"
+        ],
+        "dimensions": [
+          0.06152497100830078,
+          0.11030638122558593,
+          0.06207268714904785
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "white",
+          "yellow",
+          "packaged",
+          "small"
+        ],
+        "full_description": [
+          "A white plastic bottle with a bright yellow label featuring black text, including 'Glucosamine HCl Mega', and a white cap."
+        ]
+      }
+    },
+    "benchmark_apple_f4558bd1": {
+      "usd": "benchmark_apple_002",
+      "xyz": [
+        -0.054,
+        -0.021,
+        0.827
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.108257,
+        0.994123
+      ],
+      "tags": [
+        "root_scene_8f83e406",
+        "table_with_random_objects_3789eff3",
+        "place_random_objects_on_desk_bba60464",
+        "benchmark_apple_f4558bd1"
+      ],
+      "keywords": [
+        "apple",
+        "benchmark_apple_002",
+        "on_desk",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "apple"
+        ],
+        "object_category": [
+          "food",
+          "fruit"
+        ],
+        "color": "red",
+        "shape": "round",
+        "materials": [
+          "fruit flesh",
+          "skin"
+        ],
+        "dimensions": [
+          0.093,
+          0.0945,
+          0.0917
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "red",
+          "ripe",
+          "smooth",
+          "natural"
+        ],
+        "full_description": [
+          "A red and yellow apple with a glossy surface and a short brown stem."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_8f83e406"
+        },
+        {
+          "id": "table_with_random_objects_3789eff3"
+        },
+        {
+          "id": "place_random_objects_on_desk_bba60464"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_42e0a497"
+        },
+        {
+          "tags": [
+            "medicine bottle",
+            "benchmark_medicine_bottle_000",
+            "on_desk",
+            "right"
+          ],
+          "id": "benchmark_medicine_bottle_45575d28"
+        },
+        {
+          "tags": [
+            "apple",
+            "benchmark_apple_002",
+            "on_desk",
+            "left"
+          ],
+          "id": "benchmark_apple_f4558bd1"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_8f83e406",
+          "target": "table_with_random_objects_3789eff3"
+        },
+        {
+          "source": "table_with_random_objects_3789eff3",
+          "target": "place_random_objects_on_desk_bba60464"
+        },
+        {
+          "source": "place_random_objects_on_desk_bba60464",
+          "target": "table_42e0a497"
+        },
+        {
+          "source": "place_random_objects_on_desk_bba60464",
+          "target": "benchmark_medicine_bottle_45575d28"
+        },
+        {
+          "source": "place_random_objects_on_desk_bba60464",
+          "target": "benchmark_apple_f4558bd1"
+        }
+      ]
+    }
+  },
+  "task_name": "place_object_at_relative_position_aloha",
+  "english_task_name": "Place an object at a relative position",
+  "instance_id": "3650269533_5ab08bfe"
+}

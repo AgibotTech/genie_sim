@@ -1,0 +1,192 @@
+{
+  "scene_id": "move_beverage_from_top_to_middle_shelf_g2",
+  "seed": 636551613,
+  "layout": {
+    "benchmark_supermarket_shelf_45e4d67f": {
+      "usd": "benchmark_supermarket_shelf_006",
+      "xyz": [
+        0.4,
+        0.0,
+        0.943
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_138bd829",
+        "shelf_beverage_top_to_middle_265f7724",
+        "benchmark_supermarket_shelf_45e4d67f"
+      ],
+      "keywords": [
+        "target_shelf",
+        "shelf",
+        "storage_furniture",
+        "supermarket_display",
+        "wood",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "supermarket_shelf"
+        ],
+        "object_category": [
+          "furniture",
+          "storage"
+        ],
+        "color": "brown",
+        "shape": "rectangular",
+        "materials": [
+          "wood",
+          "metal"
+        ],
+        "dimensions": [
+          0.36687761545181274,
+          1.8872956037521362,
+          1.0509772896766663
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "sturdy",
+          "organized",
+          "tiered",
+          "functional",
+          "modern"
+        ],
+        "full_description": [
+          "A multi-tiered shelf with light wood-colored surfaces and black metal framing."
+        ]
+      }
+    },
+    "benchmark_beverage_bottle_4be17acc": {
+      "usd": "benchmark_beverage_bottle_001",
+      "xyz": [
+        0.332,
+        -0.011,
+        1.403
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_138bd829",
+        "shelf_beverage_top_to_middle_265f7724",
+        "benchmark_beverage_bottle_4be17acc"
+      ],
+      "keywords": [
+        "target_beverage",
+        "beverage",
+        "bottle",
+        "drink",
+        "container",
+        "on_top_layer",
+        "target",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "Coca-Cola can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "red",
+        "shape": "cylindrical",
+        "materials": [
+          "metal",
+          "plastic"
+        ],
+        "dimensions": [
+          0.06459999829530716,
+          0.11520000547170639,
+          0.06460000947117805
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "red",
+          "metallic",
+          "beverage",
+          "portable"
+        ],
+        "full_description": [
+          "A red aluminum beverage can with white 'Coca-Cola' script logo and Chinese characters on its surface."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_138bd829"
+        },
+        {
+          "id": "shelf_beverage_top_to_middle_265f7724"
+        },
+        {
+          "tags": [
+            "target_shelf",
+            "shelf",
+            "storage_furniture",
+            "supermarket_display",
+            "wood",
+            "left"
+          ],
+          "id": "benchmark_supermarket_shelf_45e4d67f"
+        },
+        {
+          "tags": [
+            "target_beverage",
+            "beverage",
+            "bottle",
+            "drink",
+            "container",
+            "on_top_layer",
+            "target",
+            "left"
+          ],
+          "id": "benchmark_beverage_bottle_4be17acc"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_138bd829",
+          "target": "shelf_beverage_top_to_middle_265f7724"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_265f7724",
+          "target": "benchmark_supermarket_shelf_45e4d67f"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_265f7724",
+          "target": "benchmark_beverage_bottle_4be17acc"
+        }
+      ]
+    }
+  },
+  "task_name": "move_beverage_from_top_to_middle_shelf_g2",
+  "english_task_name": "Move a beverage from the top shelf to the middle shelf",
+  "instance_id": "636551613_8064ca9b"
+}

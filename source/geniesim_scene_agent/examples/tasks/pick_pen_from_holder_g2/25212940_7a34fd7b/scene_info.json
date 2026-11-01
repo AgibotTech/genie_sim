@@ -1,0 +1,227 @@
+{
+  "scene_id": "pick_pen_from_holder_g2",
+  "seed": 25212940,
+  "layout": {
+    "table_0155e7b0": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_f0713854",
+        "desk_with_pen_holder_c9e05b2e",
+        "place_pen_holder_on_table_0e437bfc",
+        "table_0155e7b0"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_stationery_0217248f": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.085,
+        0.129,
+        0.805
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.910905,
+        -0.412617
+      ],
+      "tags": [
+        "root_scene_f0713854",
+        "desk_with_pen_holder_c9e05b2e",
+        "place_pen_holder_on_table_0e437bfc",
+        "benchmark_stationery_0217248f"
+      ],
+      "keywords": [
+        "pen_holder",
+        "stationery",
+        "container",
+        "cylinder"
+      ],
+      "description": {}
+    },
+    "benchmark_pen_7b08dfcd": {
+      "usd": "benchmark_pen_005",
+      "xyz": [
+        -0.085,
+        0.119,
+        0.855
+      ],
+      "xyzw": [
+        0.707107,
+        0.0,
+        0.0,
+        0.707107
+      ],
+      "tags": [
+        "root_scene_f0713854",
+        "desk_with_pen_holder_c9e05b2e",
+        "place_pen_holder_on_table_0e437bfc",
+        "pen_in_holder_b31f6c2f",
+        "benchmark_pen_7b08dfcd"
+      ],
+      "keywords": [
+        "pen",
+        "writing_tool",
+        "cylinder",
+        "long"
+      ],
+      "description": {
+        "semantic_name": [
+          "highlighter"
+        ],
+        "object_category": [
+          "writing_instruments",
+          "pen"
+        ],
+        "color": "green",
+        "shape": "cylindrical",
+        "materials": [
+          "plastic",
+          "ink"
+        ],
+        "dimensions": [
+          0.019767053425312042,
+          0.14499999582767487,
+          0.018000000156462193
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "elongated",
+          "smooth",
+          "cylindrical",
+          "green",
+          "writing"
+        ],
+        "full_description": [
+          "A bright green plastic highlighter with a translucent body and white cap, featuring printed text and measurement markings."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_f0713854"
+        },
+        {
+          "id": "desk_with_pen_holder_c9e05b2e"
+        },
+        {
+          "id": "place_pen_holder_on_table_0e437bfc"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_0155e7b0"
+        },
+        {
+          "tags": [
+            "pen_holder",
+            "stationery",
+            "container",
+            "cylinder"
+          ],
+          "id": "benchmark_stationery_0217248f"
+        },
+        {
+          "id": "pen_in_holder_b31f6c2f"
+        },
+        {
+          "tags": [
+            "pen",
+            "writing_tool",
+            "cylinder",
+            "long"
+          ],
+          "id": "benchmark_pen_7b08dfcd"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_f0713854",
+          "target": "desk_with_pen_holder_c9e05b2e"
+        },
+        {
+          "source": "desk_with_pen_holder_c9e05b2e",
+          "target": "place_pen_holder_on_table_0e437bfc"
+        },
+        {
+          "source": "place_pen_holder_on_table_0e437bfc",
+          "target": "table_0155e7b0"
+        },
+        {
+          "source": "place_pen_holder_on_table_0e437bfc",
+          "target": "benchmark_stationery_0217248f"
+        },
+        {
+          "source": "place_pen_holder_on_table_0e437bfc",
+          "target": "pen_in_holder_b31f6c2f"
+        },
+        {
+          "source": "pen_in_holder_b31f6c2f",
+          "target": "benchmark_pen_7b08dfcd"
+        }
+      ]
+    }
+  },
+  "task_name": "pick_pen_from_holder_g2",
+  "english_task_name": "Pick a pen from its holder",
+  "instance_id": "25212940_7a34fd7b"
+}

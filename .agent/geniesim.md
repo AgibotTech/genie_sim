@@ -24,5 +24,5 @@ This file is a 30-second pointer. Do not duplicate content here that lives at th
 
 - The umbrella ships **no SDK code** beyond `__version__`. Heavy runtime deps belong in the peer that needs them.
 - Adding a new required peer means updating `pyproject.toml` `dependencies` **and** the `_STATUS_DISTRIBUTIONS` / `_INIT_TARGETS` tables in [`source/geniesim_cli/src/geniesim_cli/cli.py`](../source/geniesim_cli/src/geniesim_cli/cli.py) in the same diff. The CLI's `status` / `bootstrap` verbs are the test surface.
-- Optional peers go behind `[project.optional-dependencies]` extras (`[generator]`, `[full]`, …) and the `extras` field of the relevant `_STATUS_DISTRIBUTIONS` entry.
+- Optional peers go behind `[project.optional-dependencies]` extras (`[scene_agent]`, `[full]`, …) and the `extras` field of the relevant `_STATUS_DISTRIBUTIONS` entry.
 - The umbrella is **not on PyPI** — never suggest `pip install geniesim`. Always redirect through `geniesim bootstrap` (which installs editable from the local checkout).

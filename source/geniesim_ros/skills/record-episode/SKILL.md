@@ -190,10 +190,9 @@ ros2 bag play ./runs/<dir> --clock
   `manifest.json` (under `assets/scenes/<scene>/`) alongside the
   bag — it records the exact USD + robot variant the bag was
   captured against.
-- For dataset-scale recording, the `geniesim_generator` skills
-  (`generate-scene`, `search-assets`) plus the benchmark
-  `record=true` flag are the closer fit — they write
-  episode-indexed artifacts, not raw bags.
+- For automated episode collection, use the `geniesim_scene_agent`
+  scene and task skills with `geniesim data-collection run`. See the
+  [collection guide](../../../data_collection/README.md) for episode outputs.
 
 ## Resources
 

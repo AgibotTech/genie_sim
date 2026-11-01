@@ -1,0 +1,197 @@
+{
+  "scene_id": "put_cap_on_pen_g2",
+  "seed": 3306742919,
+  "layout": {
+    "table_4e4a06f9": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_f88ce4f8",
+        "put_the_cap_on_the_pen_new_66e595db",
+        "table_4e4a06f9"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_pen_24742ed9": {
+      "usd": "benchmark_pen_011",
+      "xyz": [
+        -0.142,
+        -0.09,
+        0.741
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.755904,
+        -0.654683
+      ],
+      "tags": [
+        "root_scene_f88ce4f8",
+        "put_the_cap_on_the_pen_new_66e595db",
+        "benchmark_pen_24742ed9"
+      ],
+      "keywords": [
+        "target_pen",
+        "pen",
+        "marker_pen",
+        "stationery",
+        "writing_tool",
+        "target",
+        "graspable",
+        "rod",
+        "POSITION_TAG_right"
+      ],
+      "description": {}
+    },
+    "benchmark_cap_w_99053f9c": {
+      "usd": "benchmark_cap_w009",
+      "xyz": [
+        -0.062,
+        0.081,
+        0.742
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.646893,
+        0.76258
+      ],
+      "tags": [
+        "root_scene_f88ce4f8",
+        "put_the_cap_on_the_pen_new_66e595db",
+        "benchmark_cap_w_99053f9c"
+      ],
+      "keywords": [
+        "target_cap",
+        "cap",
+        "pen_cap",
+        "stationery",
+        "target",
+        "graspable",
+        "rod",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_f88ce4f8"
+        },
+        {
+          "id": "put_the_cap_on_the_pen_new_66e595db"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace",
+            "desktop_with_legs"
+          ],
+          "id": "table_4e4a06f9"
+        },
+        {
+          "tags": [
+            "target_pen",
+            "pen",
+            "marker_pen",
+            "stationery",
+            "writing_tool",
+            "target",
+            "graspable",
+            "rod",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_pen_24742ed9"
+        },
+        {
+          "tags": [
+            "target_cap",
+            "cap",
+            "pen_cap",
+            "stationery",
+            "target",
+            "graspable",
+            "rod",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_cap_w_99053f9c"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_f88ce4f8",
+          "target": "put_the_cap_on_the_pen_new_66e595db"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_66e595db",
+          "target": "table_4e4a06f9"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_66e595db",
+          "target": "benchmark_pen_24742ed9"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_66e595db",
+          "target": "benchmark_cap_w_99053f9c"
+        }
+      ]
+    }
+  },
+  "task_name": "put_cap_on_pen_g2",
+  "english_task_name": "Put a cap on a pen using both hands",
+  "instance_id": "3306742919_97771c6d"
+}

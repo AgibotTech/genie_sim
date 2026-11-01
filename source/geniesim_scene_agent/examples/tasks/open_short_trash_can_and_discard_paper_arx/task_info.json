@@ -1,0 +1,62 @@
+{
+  "task_name": "open_short_trash_can_and_discard_paper_arx",
+  "task_description": {
+    "english_task_name": "Open a short trash can and discard a paper ball",
+    "task_name": "Open a short trash can and discard a paper ball",
+    "init_scene_text": "A short pedal trash can and a crumpled paper ball on a table."
+  },
+  "robot": {
+    "init_arm_pose": {
+      "arm_l_joint1": -0.0002,
+      "arm_l_joint2": 0.9588,
+      "arm_l_joint3": 0.8536,
+      "arm_l_joint4": -0.5804,
+      "arm_l_joint5": -0.0002,
+      "arm_l_joint6": 0.0044,
+      "arm_r_joint1": -0.0002,
+      "arm_r_joint2": 0.9588,
+      "arm_r_joint3": 0.8536,
+      "arm_r_joint4": -0.5804,
+      "arm_r_joint5": -0.0002,
+      "arm_r_joint6": 0.0044,
+      "gripper_l_passive_joint": 0.044,
+      "gripper_r_passive_joint": 0.044,
+      "gripper_l_active_joint": 0.044,
+      "gripper_r_active_joint": 0.044
+    },
+    "robot_cfg": "ARX.json",
+    "robot_id": "ARX",
+    "robot_init_pose": {
+      "position": [
+        -0.4,
+        0.0,
+        0.95
+      ],
+      "quaternion": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "random": {
+        "delta_position": [
+          0.0,
+          0.0,
+          0
+        ]
+      }
+    }
+  },
+  "recording_setting": {
+    "camera_list": [
+      "/ARX/base_link/head_camera",
+      "/ARX/arm_l_end_link/hand_left_camera",
+      "/ARX/arm_r_end_link/hand_right_camera"
+    ],
+    "fps": 30,
+    "noised_probability": 0.0
+  },
+  "task_metric": {
+    "filter_rules": []
+  }
+}

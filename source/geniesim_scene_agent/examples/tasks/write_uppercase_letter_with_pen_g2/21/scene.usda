@@ -1,0 +1,300 @@
+#usda 1.0
+(
+    customLayerData = {
+        dictionary cameraSettings = {
+            dictionary Front = {
+                double3 position = (5, 0, 0)
+                double radius = 5
+            }
+            dictionary Perspective = {
+                double3 position = (-0.8074072512803736, -0.12157172373598799, 1.9662760756121542)
+                double3 target = (4.2777451144561205, -0.2454641128182639, -5.042709306964413)
+            }
+            dictionary Right = {
+                double3 position = (0, -5, 0)
+                double radius = 5
+            }
+            dictionary Top = {
+                double3 position = (0, 0, 5)
+                double radius = 5
+            }
+            string boundCamera = "/OmniverseKit_Persp"
+        }
+        dictionary omni_layer = {
+            string authoring_layer = "./scene.usda"
+        }
+        dictionary renderSettings = {
+        }
+    }
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def PhysicsScene "physicsScene" (
+        prepend apiSchemas = ["PhysxSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+    }
+
+    def Xform "Objects"
+    {
+        def Xform "table" (
+            delete payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+            prepend payload = @../../../assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </World/Objects/table/entity/Looks/ml_body_08> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                bool physics:kinematicEnabled = 1
+
+                over "body" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </World/Objects/table/entity/Looks/ml_part_00_05> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                }
+
+                over "part_00" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </World/Objects/table/entity/Looks/ml_part_00_18> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    token visibility = "inherited"
+
+                    over "visual"
+                    {
+                        bool physics:collisionEnabled = 0
+                    }
+                }
+            }
+        }
+
+        def Xform "paper" (
+            prepend payload = @../../../assets/objects/benchmark/paper/benchmark_paper_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.09937977482521797, 0, 0.8325559144722151)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </World/Looks/OmniPBR> (
+                    bindMaterialAs = "weakerThanDescendants"
+                )
+                bool physics:kinematicEnabled = 1
+
+                over "body" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </World/Looks/OmniPBR> (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                    bool physics:collisionEnabled = 0
+                }
+            }
+        }
+
+        def Xform "pen_holder" (
+            prepend payload = @../../../assets/objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.10495161224569885, -0.23131635225325234, 0.8746148016648981)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+
+                over "body"
+                {
+                    float3 xformOp:scale = (0.5, 1, 0.5)
+                }
+            }
+        }
+
+        def Xform "pen" (
+            prepend payload = @../../../assets/objects/benchmark/pen/benchmark_pen_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.10495161224569885, -0.23131635225325234, 0.9126148016648982)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 0
+            }
+        }
+
+        def Xform "Ink"
+        {
+            custom int ink:facesEnd = 0
+            custom int ink:indicesEnd = 0
+            custom double3 ink:lastDrawPoint = (0, 0, 0)
+            custom double ink:lastInkWidth = 0
+            custom int ink:lastSurfaceAxis = 2
+            custom double ink:lastSurfaceSign = 1
+            custom token ink:mode = "live"
+            custom int ink:pointsEnd = 0
+            custom bool ink:recordable = 1
+            custom int ink:revision = 0
+            custom bool ink:wasTouching = 0
+        }
+    }
+
+    def DistantLight "Sun"
+    {
+        float inputs:angle = 0.5
+        float inputs:intensity = 500
+        quatf xformOp:orient = (0.9238795, 0.3826834, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:orient"]
+    }
+
+    def DomeLight "Environment"
+    {
+        float inputs:intensity = 250
+    }
+
+    def Xform "GroundPlane"
+    {
+        token visibility = "invisible"
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Mesh "CollisionMesh"
+        {
+            uniform bool doubleSided = 0
+            int[] faceVertexCounts = [4]
+            int[] faceVertexIndices = [0, 1, 2, 3]
+            normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)]
+            point3f[] points = [(-25, -25, 0), (25, -25, 0), (25, 25, 0), (-25, 25, 0)]
+            color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)]
+            texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+                interpolation = "varying"
+            )
+        }
+
+        def Plane "CollisionPlane" (
+            prepend apiSchemas = ["PhysicsCollisionAPI"]
+        )
+        {
+            uniform token axis = "Z"
+            uniform token purpose = "guide"
+        }
+    }
+
+    def Scope "Looks"
+    {
+        def Material "OmniPBR"
+        {
+            token outputs:mdl:displacement.connect = </World/Looks/OmniPBR/Shader.outputs:out>
+            token outputs:mdl:surface.connect = </World/Looks/OmniPBR/Shader.outputs:out>
+            token outputs:mdl:volume.connect = </World/Looks/OmniPBR/Shader.outputs:out>
+
+            def Shader "Shader"
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mdl:sourceAsset = @OmniPBR.mdl@
+                uniform token info:mdl:sourceAsset:subIdentifier = "OmniPBR"
+                color3f inputs:diffuse_color_constant = (1, 0.99999, 0.99999)
+                token outputs:out (
+                    renderType = "material"
+                )
+            }
+        }
+    }
+}
+
+def "Render" (
+    hide_in_stage_window = true
+    no_delete = true
+)
+{
+    def "OmniverseKit"
+    {
+        def "HydraTextures" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            def RenderProduct "omni_kit_widget_viewport_ViewportTexture_0" (
+                prepend apiSchemas = ["OmniRtxSettingsCommonAdvancedAPI_1", "OmniRtxSettingsRtAdvancedAPI_1", "OmniRtxSettingsPtAdvancedAPI_1", "OmniRtxPostColorGradingAPI_1", "OmniRtxPostChromaticAberrationAPI_1", "OmniRtxPostBloomPhysicalAPI_1", "OmniRtxPostMatteObjectAPI_1", "OmniRtxPostCompositingAPI_1", "OmniRtxPostDofAPI_1", "OmniRtxPostMotionBlurAPI_1", "OmniRtxPostTvNoiseAPI_1", "OmniRtxPostTonemapIrayReinhardAPI_1", "OmniRtxPostDebugSettingsAPI_1", "OmniRtxDebugSettingsAPI_1"]
+                hide_in_stage_window = true
+                no_delete = true
+            )
+            {
+                rel camera = </OmniverseKit_Persp>
+                token omni:rtx:background:source:texture:textureMode = "repeatMirrored"
+                token omni:rtx:background:source:type = "domeLight"
+                bool omni:rtx:dlss:frameGeneration = 0
+                bool omni:rtx:material:db:nonVisualMaterialCSV:enabled = 0
+                bool omni:rtx:material:db:syncLoads = 1
+                token omni:rtx:post:dlss:execMode = "performance"
+                bool omni:rtx:post:registeredCompositing:invertColorCorrection = 1
+                bool omni:rtx:post:registeredCompositing:invertToneMap = 1
+                bool omni:rtx:pt:lightcache:cached:dontResolveConflicts = 1
+                int omni:rtx:pt:maxSamplesPerLaunch = 2073600
+                int omni:rtx:pt:mgpu:maxPixelsPerRegionExponent = 12
+                token omni:rtx:rendermode = "RealTimePathTracing"
+                color3f omni:rtx:rt:ambientLight:color = (0.1, 0.1, 0.1)
+                bool omni:rtx:rt:demoire = 0
+                bool omni:rtx:rt:ecoMode:enabled
+                bool omni:rtx:rt:lightcache:spatialCache:dontResolveConflicts = 1
+                bool omni:rtx:scene:hydra:materialSyncLoads = 1
+                bool omni:rtx:scene:hydra:mdlMaterialWarmup = 1
+                uint omni:rtx:viewTile:limit = 4294967295
+                rel orderedVars = </Render/Vars/LdrColor>
+                custom bool overrideClipRange = 0
+                uniform int2 resolution = (2560, 1440)
+            }
+        }
+    }
+
+    def RenderSettings "OmniverseGlobalRenderSettings" (
+        prepend apiSchemas = ["OmniRtxSettingsGlobalRtAdvancedAPI_1", "OmniRtxSettingsGlobalPtAdvancedAPI_1"]
+        no_delete = true
+    )
+    {
+        rel products = </Render/OmniverseKit/HydraTextures/omni_kit_widget_viewport_ViewportTexture_0>
+    }
+
+    def "Vars"
+    {
+        def RenderVar "LdrColor" (
+            hide_in_stage_window = true
+            no_delete = true
+        )
+        {
+            uniform string sourceName = "LdrColor"
+        }
+    }
+}

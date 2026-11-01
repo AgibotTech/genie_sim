@@ -92,7 +92,47 @@ def test_collection_environment_backed_override_is_not_duplicated(collection_cal
     assert not any(value.startswith("PIP_INDEX_URL=") for value in arguments)
 
 
-@pytest.mark.parametrize("recipe", [COLLECTION / "docker/Dockerfile"])
+def load_scene_builder():
+    script = SCENE / "docker/build_image.py"
+    assert script.is_file(), "Scene image builder must expose the shared mirror selection"
+    spec = importlib.util.spec_from_file_location("scene_image_builder", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_scene_vl_builder_reuses_presets_and_keeps_full_parent_override(monkeypatch):
+    builder = load_scene_builder()
+    calls = []
+    monkeypatch.setattr(
+        builder.subprocess,
+        "run",
+        lambda cmd, **kw: calls.append((cmd, {**kw, "env": {"DOCKER_BUILDKIT": kw["env"]["DOCKER_BUILDKIT"]}}))
+        or SimpleNamespace(returncode=0),
+    )
+    assert builder.main(["--target", "vl", "--china", "--build-arg", "ISAACSIM_IMAGE=parent:local"]) == 0
+    command, kwargs = calls[0]
+    assert command[command.index("--target") + 1] == "vl"
+    assert command[command.index("-t") + 1].endswith(":vl")
+    assert "ISAACSIM_IMAGE=parent:local" in build_arguments(command)
+    assert "PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple" in build_arguments(command)
+    assert "--china" not in command
+    assert f"geniesim_mirrors={ROOT / 'docker'}" in command
+    assert kwargs["cwd"] == str(SCENE)
+
+
+def test_scene_dry_run_is_available_without_installing_cli(tmp_path):
+    script = SCENE / "docker/build_image.py"
+    assert script.is_file(), "Scene image builder is missing"
+    result = subprocess.run(
+        ["python3", str(script), "--mirrors=upstream", "--dry-run"], cwd=str(tmp_path), text=True, capture_output=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert "PIP_INDEX_URL=https://pypi.org/simple" in result.stdout
+    assert "--target runtime" in result.stdout
+
+
+@pytest.mark.parametrize("recipe", [COLLECTION / "docker/Dockerfile", SCENE / "docker/Dockerfile.5.1"])
 def test_module_recipes_persist_mirrors_before_dependencies(recipe):
     text = recipe.read_text()
     assert "ARG APT_MIRROR\n" in text

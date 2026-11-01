@@ -1,0 +1,46 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_54967388" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_microwave_oven_6cd2f2f1" (
+            prepend payload = @../../../assets/objects/benchmark/microwave_oven/benchmark_microwave_oven_003/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                over "body"
+                {
+                    def PhysicsFixedJoint "FixedJoint"
+                    {
+                        rel physics:body1 = </World/Objects/benchmark_microwave_oven_6cd2f2f1/entity/body>
+                    }
+                }
+            }
+            quatf xformOp:orient = (-0.013527, 0, 0, 0.999909)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.049, 0.001, 0.874)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

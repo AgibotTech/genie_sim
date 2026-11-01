@@ -1,0 +1,250 @@
+{
+  "scene_id": "move_king_out_of_check_g2",
+  "seed": 2211061446,
+  "layout": {
+    "table_14f4e137": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_072fd1dc",
+        "chessboard_with_pieces_on_table_c80bedec",
+        "table_14f4e137"
+      ],
+      "keywords": [
+        "dining_table",
+        "table",
+        "wood",
+        "four_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_chessboard_73807605": {
+      "usd": "benchmark_chessboard_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.767
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_072fd1dc",
+        "chessboard_with_pieces_on_table_c80bedec",
+        "benchmark_chessboard_73807605"
+      ],
+      "keywords": [
+        "chessboard",
+        "brown",
+        "square",
+        "game_board",
+        "centered_on_desk"
+      ],
+      "description": {
+        "semantic_name": [
+          "chessboard"
+        ],
+        "full_description": [
+          "A square wooden chessboard with alternating light beige and dark brown squares, bordered by a dark frame marked with alphanumeric coordinates."
+        ]
+      }
+    },
+    "benchmark_chess_9547da27": {
+      "usd": "benchmark_chess_005",
+      "xyz": [
+        -0.075,
+        0.175,
+        0.858
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.996754,
+        0.080502
+      ],
+      "tags": [
+        "root_scene_072fd1dc",
+        "chessboard_with_pieces_on_table_c80bedec",
+        "create_chess_pieces_520e0cf9",
+        "benchmark_chess_9547da27"
+      ],
+      "keywords": [
+        "king_white",
+        "white",
+        "chess_piece",
+        "position_A3"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_king"
+        ],
+        "full_description": [
+          "A cream-colored wooden chess king with a cross-topped crown, bulbous body, and flared base, viewed from multiple rotation angles."
+        ]
+      }
+    },
+    "benchmark_chess_ac5b8ae6": {
+      "usd": "benchmark_chess_011",
+      "xyz": [
+        -0.125,
+        0.025,
+        0.858
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.964602,
+        -0.263708
+      ],
+      "tags": [
+        "root_scene_072fd1dc",
+        "chessboard_with_pieces_on_table_c80bedec",
+        "create_chess_pieces_520e0cf9",
+        "benchmark_chess_ac5b8ae6"
+      ],
+      "keywords": [
+        "king_black",
+        "black",
+        "chess_piece",
+        "position_D2"
+      ],
+      "description": {
+        "semantic_name": [
+          "chess_king"
+        ],
+        "full_description": [
+          "A matte black chess king piece with a cylindrical base, slender stem, bulbous crown, and a cross-shaped finial on top."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_072fd1dc"
+        },
+        {
+          "id": "chessboard_with_pieces_on_table_c80bedec"
+        },
+        {
+          "tags": [
+            "dining_table",
+            "table",
+            "wood",
+            "four_legs"
+          ],
+          "id": "table_14f4e137"
+        },
+        {
+          "tags": [
+            "chessboard",
+            "brown",
+            "square",
+            "game_board",
+            "centered_on_desk"
+          ],
+          "id": "benchmark_chessboard_73807605"
+        },
+        {
+          "id": "create_chess_pieces_520e0cf9"
+        },
+        {
+          "tags": [
+            "king_white",
+            "white",
+            "chess_piece",
+            "position_A3"
+          ],
+          "id": "benchmark_chess_9547da27"
+        },
+        {
+          "tags": [
+            "king_black",
+            "black",
+            "chess_piece",
+            "position_D2"
+          ],
+          "id": "benchmark_chess_ac5b8ae6"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_072fd1dc",
+          "target": "chessboard_with_pieces_on_table_c80bedec"
+        },
+        {
+          "source": "chessboard_with_pieces_on_table_c80bedec",
+          "target": "table_14f4e137"
+        },
+        {
+          "source": "chessboard_with_pieces_on_table_c80bedec",
+          "target": "benchmark_chessboard_73807605"
+        },
+        {
+          "source": "chessboard_with_pieces_on_table_c80bedec",
+          "target": "create_chess_pieces_520e0cf9"
+        },
+        {
+          "source": "create_chess_pieces_520e0cf9",
+          "target": "benchmark_chess_9547da27"
+        },
+        {
+          "source": "create_chess_pieces_520e0cf9",
+          "target": "benchmark_chess_ac5b8ae6"
+        }
+      ]
+    }
+  },
+  "task_name": "move_king_out_of_check_g2",
+  "english_task_name": "Move the king out of check",
+  "instance_id": "2211061446_17bb57ba"
+}

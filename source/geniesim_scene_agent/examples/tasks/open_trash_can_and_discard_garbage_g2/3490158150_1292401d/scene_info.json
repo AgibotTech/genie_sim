@@ -1,0 +1,243 @@
+{
+  "scene_id": "open_trash_can_and_discard_garbage_g2",
+  "seed": 3490158150,
+  "layout": {
+    "table_c1baa61a": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_633b6981",
+        "table_with_trash_can_and_trash_4375cafd",
+        "place_trash_on_table_1e67986a",
+        "place_trash_can_on_table_1911fb85",
+        "table_c1baa61a"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_trash_can_834b4f04": {
+      "usd": "benchmark_trash_can_015",
+      "xyz": [
+        0.006,
+        -0.006,
+        0.995
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.999831,
+        0.01837
+      ],
+      "tags": [
+        "root_scene_633b6981",
+        "table_with_trash_can_and_trash_4375cafd",
+        "place_trash_on_table_1e67986a",
+        "trash_can_468727a9",
+        "benchmark_trash_can_834b4f04"
+      ],
+      "keywords": [
+        "trash_can",
+        "black",
+        "cylinder",
+        "waste_container"
+      ],
+      "description": {}
+    },
+    "benchmark_trash_b0a41a2f": {
+      "usd": "benchmark_trash_024",
+      "xyz": [
+        0.064,
+        -0.194,
+        0.827
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_633b6981",
+        "table_with_trash_can_and_trash_4375cafd",
+        "place_trash_on_table_1e67986a",
+        "trash_item_377ff076",
+        "benchmark_trash_b0a41a2f"
+      ],
+      "keywords": [
+        "trash",
+        "waste",
+        "litter",
+        "on_table"
+      ],
+      "description": {
+        "semantic_name": [
+          "fried_chicken_leg"
+        ],
+        "object_category": [
+          "food",
+          "chicken"
+        ],
+        "color": "colorful",
+        "shape": "complex-shaped",
+        "materials": [
+          "meat",
+          "skin"
+        ],
+        "dimensions": [
+          0.04657691717147827,
+          0.04692403972148895,
+          0.10380174219608307
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "crispy",
+          "irregular",
+          "savory",
+          "golden",
+          "juicy"
+        ],
+        "full_description": [
+          "A golden-brown, crispy fried chicken leg with a textured, irregular surface."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_633b6981"
+        },
+        {
+          "id": "table_with_trash_can_and_trash_4375cafd"
+        },
+        {
+          "id": "place_trash_on_table_1e67986a"
+        },
+        {
+          "id": "place_trash_can_on_table_1911fb85"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_c1baa61a"
+        },
+        {
+          "id": "trash_can_468727a9"
+        },
+        {
+          "tags": [
+            "trash_can",
+            "black",
+            "cylinder",
+            "waste_container"
+          ],
+          "id": "benchmark_trash_can_834b4f04"
+        },
+        {
+          "id": "trash_item_377ff076"
+        },
+        {
+          "tags": [
+            "trash",
+            "waste",
+            "litter",
+            "on_table"
+          ],
+          "id": "benchmark_trash_b0a41a2f"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_633b6981",
+          "target": "table_with_trash_can_and_trash_4375cafd"
+        },
+        {
+          "source": "table_with_trash_can_and_trash_4375cafd",
+          "target": "place_trash_on_table_1e67986a"
+        },
+        {
+          "source": "place_trash_on_table_1e67986a",
+          "target": "place_trash_can_on_table_1911fb85"
+        },
+        {
+          "source": "place_trash_on_table_1e67986a",
+          "target": "trash_can_468727a9"
+        },
+        {
+          "source": "place_trash_on_table_1e67986a",
+          "target": "trash_item_377ff076"
+        },
+        {
+          "source": "place_trash_can_on_table_1911fb85",
+          "target": "table_c1baa61a"
+        },
+        {
+          "source": "trash_can_468727a9",
+          "target": "benchmark_trash_can_834b4f04"
+        },
+        {
+          "source": "trash_item_377ff076",
+          "target": "benchmark_trash_b0a41a2f"
+        }
+      ]
+    }
+  },
+  "task_name": "open_trash_can_and_discard_garbage_g2",
+  "english_task_name": "Open a trash can and discard garbage",
+  "instance_id": "3490158150_1292401d"
+}

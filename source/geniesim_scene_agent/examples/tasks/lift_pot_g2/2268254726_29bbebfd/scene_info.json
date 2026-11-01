@@ -1,0 +1,179 @@
+{
+  "scene_id": "lift_pot_g2",
+  "seed": 2268254726,
+  "layout": {
+    "table_c424a50a": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_13205052",
+        "table_with_pot_3f015b0e",
+        "pot_on_table_5118c22e",
+        "table_c424a50a"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "furniture",
+        "ground_level"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_pot_f6fdf360": {
+      "usd": "benchmark_pot_001",
+      "xyz": [
+        -0.132,
+        -0.001,
+        0.901
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.679484,
+        0.73369
+      ],
+      "tags": [
+        "root_scene_13205052",
+        "table_with_pot_3f015b0e",
+        "pot_on_table_5118c22e",
+        "benchmark_pot_f6fdf360"
+      ],
+      "keywords": [
+        "pot",
+        "kitchenware",
+        "cooking_pot",
+        "on_table"
+      ],
+      "description": {
+        "semantic_name": [
+          "pot"
+        ],
+        "object_category": [
+          "kitchen",
+          "cookware"
+        ],
+        "color": "red",
+        "shape": "round",
+        "materials": [
+          "ceramic",
+          "plastic"
+        ],
+        "dimensions": [
+          0.35802990198135376,
+          0.16946850463773847,
+          0.2770000547170639
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "round",
+          "red",
+          "ceramic",
+          "kitchen",
+          "cooking"
+        ],
+        "full_description": [
+          "A glossy red pot with a black knobbed lid and two side handles."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_13205052"
+        },
+        {
+          "id": "table_with_pot_3f015b0e"
+        },
+        {
+          "id": "pot_on_table_5118c22e"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "furniture",
+            "ground_level"
+          ],
+          "id": "table_c424a50a"
+        },
+        {
+          "tags": [
+            "pot",
+            "kitchenware",
+            "cooking_pot",
+            "on_table"
+          ],
+          "id": "benchmark_pot_f6fdf360"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_13205052",
+          "target": "table_with_pot_3f015b0e"
+        },
+        {
+          "source": "table_with_pot_3f015b0e",
+          "target": "pot_on_table_5118c22e"
+        },
+        {
+          "source": "pot_on_table_5118c22e",
+          "target": "table_c424a50a"
+        },
+        {
+          "source": "pot_on_table_5118c22e",
+          "target": "benchmark_pot_f6fdf360"
+        }
+      ]
+    }
+  },
+  "task_name": "lift_pot_g2",
+  "english_task_name": "Lift a pot",
+  "instance_id": "2268254726_29bbebfd"
+}

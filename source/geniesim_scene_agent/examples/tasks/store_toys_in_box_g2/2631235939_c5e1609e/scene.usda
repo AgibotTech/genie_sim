@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_9d9ba271" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_storage_box_9422c1bd" (
+            prepend payload = @../../../assets/objects/benchmark/storage_box/benchmark_storage_box_004/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.999973, 0, 0, -0.007353)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.009, 0.026, 0.915)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_chess_b751b4c8" (
+            prepend payload = @../../../assets/objects/benchmark/chess/benchmark_chess_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.99951, 0, 0, 0.03129)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.221, -0.227, 0.898)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_rubik_cube_90d3cb7a" (
+            prepend payload = @../../../assets/objects/benchmark/rubik_cube/benchmark_rubik_cube_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.995717, 0, 0, 0.092452)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.234, 0.229, 0.894)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geniesim_scene_agent"
+dynamic = ["version"]
+description = "Skill-driven GenieSim asset search, scene generation, and task orchestration tools"
+requires-python = ">=3.10,<3.13"
+license = {text = "MPL-2.0"}
+dependencies = ["numpy", "Pillow"]
+
+[project.optional-dependencies]
+usd = ["usd-core"]
+scene = ["usd-core"]
+vl = ["torch", "torchvision", "transformers", "qwen-vl-utils"]
+
+[project.scripts]
+geniesim-scene-agent = "geniesim_scene_agent.__main__:main"
+scene-assets = "scene_agent_assets.__main__:main"
+scene-scenes = "scene_agent_scene.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}

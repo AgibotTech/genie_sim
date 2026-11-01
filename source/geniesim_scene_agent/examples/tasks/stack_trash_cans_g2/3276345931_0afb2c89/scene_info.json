@@ -1,0 +1,183 @@
+{
+  "scene_id": "stack_trash_cans_g2",
+  "seed": 3276345931,
+  "layout": {
+    "table_045749bb": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_e37e86e4",
+        "stack_trash_cans_5d2a8061",
+        "table_045749bb"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "white",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_trash_can_8c31036d": {
+      "usd": "benchmark_trash_can_013",
+      "xyz": [
+        -0.033,
+        0.071,
+        0.94
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.059273,
+        0.998242
+      ],
+      "tags": [
+        "root_scene_e37e86e4",
+        "stack_trash_cans_5d2a8061",
+        "benchmark_trash_can_8c31036d"
+      ],
+      "keywords": [
+        "inner_trash_can_left",
+        "gray",
+        "cylinder",
+        "small",
+        "position_left"
+      ],
+      "description": {}
+    },
+    "benchmark_trash_can_58917936": {
+      "usd": "benchmark_trash_can_013",
+      "xyz": [
+        -0.128,
+        -0.196,
+        0.94
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.997612,
+        0.069064
+      ],
+      "tags": [
+        "root_scene_e37e86e4",
+        "stack_trash_cans_5d2a8061",
+        "benchmark_trash_can_58917936"
+      ],
+      "keywords": [
+        "outer_trash_can_right",
+        "gray",
+        "cylinder",
+        "small",
+        "position_right"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_e37e86e4"
+        },
+        {
+          "id": "stack_trash_cans_5d2a8061"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "white",
+            "desktop_with_legs"
+          ],
+          "id": "table_045749bb"
+        },
+        {
+          "tags": [
+            "inner_trash_can_left",
+            "gray",
+            "cylinder",
+            "small",
+            "position_left"
+          ],
+          "id": "benchmark_trash_can_8c31036d"
+        },
+        {
+          "tags": [
+            "outer_trash_can_right",
+            "gray",
+            "cylinder",
+            "small",
+            "position_right"
+          ],
+          "id": "benchmark_trash_can_58917936"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_e37e86e4",
+          "target": "stack_trash_cans_5d2a8061"
+        },
+        {
+          "source": "stack_trash_cans_5d2a8061",
+          "target": "table_045749bb"
+        },
+        {
+          "source": "stack_trash_cans_5d2a8061",
+          "target": "benchmark_trash_can_8c31036d"
+        },
+        {
+          "source": "stack_trash_cans_5d2a8061",
+          "target": "benchmark_trash_can_58917936"
+        }
+      ]
+    }
+  },
+  "task_name": "stack_trash_cans_g2",
+  "english_task_name": "Stack trash cans",
+  "instance_id": "3276345931_0afb2c89"
+}

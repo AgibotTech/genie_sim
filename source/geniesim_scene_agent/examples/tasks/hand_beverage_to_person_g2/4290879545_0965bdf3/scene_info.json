@@ -1,0 +1,237 @@
+{
+  "scene_id": "hand_beverage_to_person_g2",
+  "seed": 4290879545,
+  "layout": {
+    "table_1d24355c": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_70192723",
+        "table_with_water_and_person_087399c0",
+        "place_person_in_front_of_table_5c316447",
+        "place_water_bottle_on_table_1492437b",
+        "table_1d24355c"
+      ],
+      "keywords": [
+        "dining_table",
+        "table",
+        "wooden",
+        "four_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_beverage_bottle_bb59e54e": {
+      "usd": "benchmark_beverage_bottle_008",
+      "xyz": [
+        -0.112,
+        0.226,
+        0.951
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_70192723",
+        "table_with_water_and_person_087399c0",
+        "place_person_in_front_of_table_5c316447",
+        "place_water_bottle_on_table_1492437b",
+        "benchmark_beverage_bottle_bb59e54e"
+      ],
+      "keywords": [
+        "water_bottle",
+        "transparent",
+        "cylinder",
+        "drinking",
+        "on_table"
+      ],
+      "description": {
+        "semantic_name": [
+          "beverage_bottle"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "orange",
+        "shape": "complex-shaped",
+        "materials": [
+          "plastic",
+          "label"
+        ],
+        "dimensions": [
+          0.04871850088238716,
+          0.16691981256008148,
+          0.05984169989824295
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "packaged",
+          "portable",
+          "labeled"
+        ],
+        "full_description": [
+          "A rectangular orange plastic bottle with a white cap and a label featuring Chinese text and an orange slice image."
+        ]
+      }
+    },
+    "benchmark_character_fed6f1fa": {
+      "usd": "benchmark_character_012",
+      "xyz": [
+        0.75,
+        0.133,
+        0.823
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "tags": [
+        "root_scene_70192723",
+        "table_with_water_and_person_087399c0",
+        "place_person_in_front_of_table_5c316447",
+        "benchmark_character_fed6f1fa"
+      ],
+      "keywords": [
+        "person",
+        "human",
+        "sitting",
+        "in_front_of_table"
+      ],
+      "description": {
+        "semantic_name": [
+          "character"
+        ],
+        "full_description": [
+          "A walking human character with black hair, wearing a maroon jacket, blue scarf, gray trousers, black shoes, and a yellow backpack."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_70192723"
+        },
+        {
+          "id": "table_with_water_and_person_087399c0"
+        },
+        {
+          "id": "place_person_in_front_of_table_5c316447"
+        },
+        {
+          "id": "place_water_bottle_on_table_1492437b"
+        },
+        {
+          "tags": [
+            "dining_table",
+            "table",
+            "wooden",
+            "four_legs"
+          ],
+          "id": "table_1d24355c"
+        },
+        {
+          "tags": [
+            "water_bottle",
+            "transparent",
+            "cylinder",
+            "drinking",
+            "on_table"
+          ],
+          "id": "benchmark_beverage_bottle_bb59e54e"
+        },
+        {
+          "tags": [
+            "person",
+            "human",
+            "sitting",
+            "in_front_of_table"
+          ],
+          "id": "benchmark_character_fed6f1fa"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_70192723",
+          "target": "table_with_water_and_person_087399c0"
+        },
+        {
+          "source": "table_with_water_and_person_087399c0",
+          "target": "place_person_in_front_of_table_5c316447"
+        },
+        {
+          "source": "place_person_in_front_of_table_5c316447",
+          "target": "place_water_bottle_on_table_1492437b"
+        },
+        {
+          "source": "place_person_in_front_of_table_5c316447",
+          "target": "benchmark_character_fed6f1fa"
+        },
+        {
+          "source": "place_water_bottle_on_table_1492437b",
+          "target": "table_1d24355c"
+        },
+        {
+          "source": "place_water_bottle_on_table_1492437b",
+          "target": "benchmark_beverage_bottle_bb59e54e"
+        }
+      ]
+    }
+  },
+  "task_name": "hand_beverage_to_person_g2",
+  "english_task_name": "Hand a beverage to a person",
+  "instance_id": "4290879545_0965bdf3"
+}

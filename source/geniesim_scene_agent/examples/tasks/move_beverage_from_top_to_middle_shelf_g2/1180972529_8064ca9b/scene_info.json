@@ -1,0 +1,193 @@
+{
+  "scene_id": "move_beverage_from_top_to_middle_shelf_g2",
+  "seed": 1180972529,
+  "layout": {
+    "benchmark_supermarket_shelf_5fa565b6": {
+      "usd": "benchmark_supermarket_shelf_006",
+      "xyz": [
+        0.4,
+        0.0,
+        0.943
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_56849703",
+        "shelf_beverage_top_to_middle_67e55e1f",
+        "benchmark_supermarket_shelf_5fa565b6"
+      ],
+      "keywords": [
+        "target_shelf",
+        "shelf",
+        "storage_furniture",
+        "supermarket_display",
+        "wood",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "supermarket_shelf"
+        ],
+        "object_category": [
+          "furniture",
+          "storage"
+        ],
+        "color": "brown",
+        "shape": "rectangular",
+        "materials": [
+          "wood",
+          "metal"
+        ],
+        "dimensions": [
+          0.36687761545181274,
+          1.8872956037521362,
+          1.0509772896766663
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "sturdy",
+          "organized",
+          "tiered",
+          "functional",
+          "modern"
+        ],
+        "full_description": [
+          "A multi-tiered shelf with light wood-colored surfaces and black metal framing."
+        ]
+      }
+    },
+    "benchmark_beverage_bottle_c0acece1": {
+      "usd": "benchmark_beverage_bottle_003",
+      "xyz": [
+        0.298,
+        0.015,
+        1.404
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_56849703",
+        "shelf_beverage_top_to_middle_67e55e1f",
+        "benchmark_beverage_bottle_c0acece1"
+      ],
+      "keywords": [
+        "target_beverage",
+        "beverage",
+        "bottle",
+        "drink",
+        "container",
+        "on_top_layer",
+        "target",
+        "left"
+      ],
+      "description": {
+        "semantic_name": [
+          "can"
+        ],
+        "object_category": [
+          "container",
+          "beverage can"
+        ],
+        "color": "orange",
+        "shape": "cylindrical",
+        "materials": [
+          "aluminum",
+          "plastic",
+          "printed label"
+        ],
+        "dimensions": [
+          0.06648768615722657,
+          0.1158542938232422,
+          0.06647872543334961
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "metallic",
+          "printed",
+          "beverage"
+        ],
+        "full_description": [
+          "An orange aluminum soda can with a silver top and bottom, featuring the Fanta logo and branding."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_56849703"
+        },
+        {
+          "id": "shelf_beverage_top_to_middle_67e55e1f"
+        },
+        {
+          "tags": [
+            "target_shelf",
+            "shelf",
+            "storage_furniture",
+            "supermarket_display",
+            "wood",
+            "left"
+          ],
+          "id": "benchmark_supermarket_shelf_5fa565b6"
+        },
+        {
+          "tags": [
+            "target_beverage",
+            "beverage",
+            "bottle",
+            "drink",
+            "container",
+            "on_top_layer",
+            "target",
+            "left"
+          ],
+          "id": "benchmark_beverage_bottle_c0acece1"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_56849703",
+          "target": "shelf_beverage_top_to_middle_67e55e1f"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_67e55e1f",
+          "target": "benchmark_supermarket_shelf_5fa565b6"
+        },
+        {
+          "source": "shelf_beverage_top_to_middle_67e55e1f",
+          "target": "benchmark_beverage_bottle_c0acece1"
+        }
+      ]
+    }
+  },
+  "task_name": "move_beverage_from_top_to_middle_shelf_g2",
+  "english_task_name": "Move a beverage from the top shelf to the middle shelf",
+  "instance_id": "1180972529_8064ca9b"
+}

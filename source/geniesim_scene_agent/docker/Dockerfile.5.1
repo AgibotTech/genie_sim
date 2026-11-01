@@ -1,0 +1,64 @@
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+
+# Build from the module root, including after moving it into a monorepo.
+# docker build -f docker/Dockerfile.5.1 \
+#   --build-context geniesim_mirrors=../../docker \
+#   -t registry.agibot.com/genie-sim/geniesim4-scene-agent:latest .
+ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
+ARG ISAACSIM_IMAGE=${ISAACSIM_REGISTRY}/isaac-sim:5.1.0
+FROM ${ISAACSIM_IMAGE} AS mirrors
+
+USER root
+ARG APT_MIRROR
+ARG PIP_INDEX_URL
+ENV PIP_CONFIG_FILE=/etc/pip.conf
+COPY --from=geniesim_mirrors configure_mirrors.py /usr/local/bin/geniesim-configure-mirrors
+RUN chmod +x /usr/local/bin/geniesim-configure-mirrors \
+    && /isaac-sim/python.sh /usr/local/bin/geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
+
+FROM mirrors AS base
+
+# Offline USD authoring has its own environment. Do not install usd-core
+# into the Isaac Sim interpreter or replace its bundled dependencies.
+RUN /isaac-sim/python.sh -m venv /opt/scene-agent-venv
+
+ENV PATH=/opt/scene-agent-venv/bin:${PATH} \
+    ISAACSIM_PYTHON=/isaac-sim/python.sh \
+    GENIESIM_ASSETS=/assets \
+    GENIESIM_SCENE_LIBRARY=/opt/scene-agent/examples/tasks \
+    SCENE_AGENT_CACHE=/workspace/cache \
+    SCENE_AGENT_OUTPUT=/workspace/output \
+    SCENE_AGENT_MODEL_DIR=/models \
+    QWEN3_VL_MODEL=/models/Qwen3-VL-Embedding-2B \
+    HOME=/tmp/scene-agent-home \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /opt/scene-agent
+COPY --chown=isaac-sim:isaac-sim . /opt/scene-agent/
+RUN python -m pip install --no-cache-dir \
+        -c docker/constraints.txt -e '.[scene]' && \
+    python -c 'from pxr import Usd, UsdGeom, UsdPhysics; from scene_agent_scene import SceneBuilder' && \
+    chmod +x docker/entrypoint.sh && \
+    mkdir -p /workspace/cache /workspace/output /models /tmp/scene-agent-home && \
+    chown -R isaac-sim:isaac-sim /opt/scene-agent /workspace /models /tmp/scene-agent-home && \
+    ln -s /workspace/cache .cache && \
+    ln -s /models .models && \
+    ln -s /assets examples/assets
+
+USER isaac-sim
+ENTRYPOINT ["/opt/scene-agent/docker/entrypoint.sh"]
+CMD ["bash"]
+
+# Optional local GPU retrieval. No weights or vector index are built here.
+FROM base AS vl
+USER root
+RUN python -m pip install --no-cache-dir \
+        -c docker/constraints.txt -e '.[vl]' && \
+    python -c 'from scene_agent_assets.qwen3_vl_embedding import Qwen3VLEmbedder; from qwen_vl_utils.vision_process import process_vision_info'
+USER isaac-sim
+
+# The default target contains the CPU tools and Isaac Sim renderer.
+FROM base AS runtime

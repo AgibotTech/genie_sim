@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_8a8c4a36" (
+            prepend payload = @../../../assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.365)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_toiletries_e0556202" (
+            prepend payload = @../../../assets/objects/benchmark/toiletries/benchmark_toiletries_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.968228, 0, 0, 0.250069)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.055, 0.025, 0.835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_toiletries_8bc76ec2" (
+            prepend payload = @../../../assets/objects/benchmark/toiletries/benchmark_toiletries_009/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.113351, 0, 0, 0.993555)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.115, -0.245, 0.835)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_mouse_d15334bd" (
+            prepend payload = @../../../assets/objects/benchmark/mouse/benchmark_mouse_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.958106, 0, 0, -0.286413)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.171, 0.078, 0.78)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

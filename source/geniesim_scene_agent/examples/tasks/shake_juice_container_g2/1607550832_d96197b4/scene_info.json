@@ -1,0 +1,189 @@
+{
+  "scene_id": "shake_juice_container_g2",
+  "seed": 1607550832,
+  "layout": {
+    "table_1f1d8a0c": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_8c8cb1bb",
+        "table_with_juice_bottle_babfed53",
+        "place_bottle_on_table_5159bcbc",
+        "table_1f1d8a0c"
+      ],
+      "keywords": [
+        "workspace_table",
+        "table",
+        "wood",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_beverage_bottle_51c24e2c": {
+      "usd": "benchmark_beverage_bottle_008",
+      "xyz": [
+        -0.025,
+        0.077,
+        0.851
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.962534,
+        0.27116
+      ],
+      "tags": [
+        "root_scene_8c8cb1bb",
+        "table_with_juice_bottle_babfed53",
+        "place_bottle_on_table_5159bcbc",
+        "juice_bottle_c61eb19b",
+        "benchmark_beverage_bottle_51c24e2c"
+      ],
+      "keywords": [
+        "juice_bottle",
+        "beverage",
+        "bottle",
+        "glass",
+        "transparent"
+      ],
+      "description": {
+        "semantic_name": [
+          "beverage_bottle"
+        ],
+        "object_category": [
+          "container",
+          "beverage"
+        ],
+        "color": "orange",
+        "shape": "complex-shaped",
+        "materials": [
+          "plastic",
+          "label"
+        ],
+        "dimensions": [
+          0.04871850088238716,
+          0.16691981256008148,
+          0.05984169989824295
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "cylindrical",
+          "orange",
+          "packaged",
+          "portable",
+          "labeled"
+        ],
+        "full_description": [
+          "A rectangular orange plastic bottle with a white cap and a label featuring Chinese text and an orange slice image."
+        ]
+      }
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_8c8cb1bb"
+        },
+        {
+          "id": "table_with_juice_bottle_babfed53"
+        },
+        {
+          "id": "place_bottle_on_table_5159bcbc"
+        },
+        {
+          "tags": [
+            "workspace_table",
+            "table",
+            "wood",
+            "desktop_with_legs"
+          ],
+          "id": "table_1f1d8a0c"
+        },
+        {
+          "id": "juice_bottle_c61eb19b"
+        },
+        {
+          "tags": [
+            "juice_bottle",
+            "beverage",
+            "bottle",
+            "glass",
+            "transparent"
+          ],
+          "id": "benchmark_beverage_bottle_51c24e2c"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_8c8cb1bb",
+          "target": "table_with_juice_bottle_babfed53"
+        },
+        {
+          "source": "table_with_juice_bottle_babfed53",
+          "target": "place_bottle_on_table_5159bcbc"
+        },
+        {
+          "source": "place_bottle_on_table_5159bcbc",
+          "target": "table_1f1d8a0c"
+        },
+        {
+          "source": "place_bottle_on_table_5159bcbc",
+          "target": "juice_bottle_c61eb19b"
+        },
+        {
+          "source": "juice_bottle_c61eb19b",
+          "target": "benchmark_beverage_bottle_51c24e2c"
+        }
+      ]
+    }
+  },
+  "task_name": "shake_juice_container_g2",
+  "english_task_name": "Shake a juice container",
+  "instance_id": "1607550832_d96197b4"
+}
