@@ -164,6 +164,11 @@ render_ovrtx:
   render backends; not a substitute for `/tf` (which `robot_state_publisher`
   publishes with URDF-style frame names for general ROS consumers).
 
+The default camera optical-frame TF contract is incomplete. See the
+[README camera TF limitation](README.md#camera-tf-limitation) for current
+backend behavior and spatial RGB-D acceptance requirements. An existing parent
+link in `frame_id` does not establish the camera's calibrated optical frame.
+
 ---
 
 ## Routing rules

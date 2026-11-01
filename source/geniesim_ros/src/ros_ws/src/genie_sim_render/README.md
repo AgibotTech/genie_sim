@@ -47,6 +47,39 @@ pytest can still run when `BUILD_TESTING` is enabled.
 - `/tf_scene` — per-body render transforms; absolute prim paths are used
   directly, while MuJoCo body names resolve through the manifest map
 
+## Camera TF limitation
+
+**The default camera interface does not establish a valid optical-frame TF
+chain for RGB-D conversion into robot or world coordinates.** Image reception
+and image-only visual inputs remain usable when the configured view is valid;
+they do not establish spatial RGB-D acceptance.
+
+The standalone `render_ovrtx` node writes the camera USD path into the RGB,
+depth and CameraInfo `header.frame_id`. That path is not published as a camera
+frame in the robot TF tree, so camera-to-robot/world tf2 queries fail. The
+node's existing TF broadcasters publish lidar transforms, not camera mounts.
+`/tf_scene` is an internal render transport, not a substitute for camera TF.
+
+`render_isaacsim` uses the manifest `frame_id`, but that alone does not provide
+a calibrated camera TF. Some scenes name the parent robot link rather than
+a camera optical frame. Simply replacing a USD path with that parent link
+would misrepresent the camera's position and axes.
+
+Spatial RGB-D acceptance requires all of the following:
+
+- RGB, depth and CameraInfo identify the same camera optical frame.
+- That frame connects to the actual parent robot link with the calibrated
+  mount transform, including the conversion from USD camera axes (looks -Z,
+  +Y up) to ROS optical axes (+Z forward, +Y down). A fixed mount follows its
+  parent through the robot's existing TF chain.
+- tf2 resolves the optical frame into robot and world coordinates at image
+  timestamps, including during head and chassis motion.
+- A known object's RGB-D reconstruction agrees with its robot/world pose;
+  a successful lookup alone does not validate calibration.
+
+FR3/UR5 identity-extrinsic viewpoints are a separate configuration limitation:
+valid TF cannot make a monochrome RGB image or all-zero depth a usable view.
+
 ## First-run warmup
 
 OVRtx compiles shaders on first run; this can take 30–90 s with no
