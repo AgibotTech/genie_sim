@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def "benchmark_whiteboard_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/whiteboard/benchmark_whiteboard_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.9733998073591903, -0.5656605218408381, 0.8720996086974213)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:rigidBodyEnabled = 0
+
+                def Xform "WritingSurface" (
+                    prepend references = @/geniesim_assets/objects/benchmark/handwriting/benchmark_text_006/Aligned.usd@
+                )
+                {
+                    matrix4d xformOp:transform:surface = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (0.0059, 0.46985, -0.00005, 1) )
+                    uniform token[] xformOpOrder = ["xformOp:transform:surface"]
+                }
+            }
+        }
+        def "benchmark_blackboard_eraser_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/blackboard_eraser/benchmark_blackboard_eraser_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.733952494, 0, 0, 0.679200807)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.7165614022593191, 0, 0.7250491638188907)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                prepend apiSchemas = ["OmniScriptingAPI"]
+            )
+            {
+                custom string eraser:boardRelativePath = "../../benchmark_whiteboard_000/entity/WritingSurface"
+                custom matrix4d eraser:contactTransform = ( (6.617444900424222e-24, 0, 0.9999999999999999, 0), (1, 5.048709793414476e-29, 0, 0), (-1.0097419586828951e-28, 1, 0, 0), (3.308724529140074e-24, -0.02058870531618595, 0, 1) )
+                custom bool eraser:demoEnabled = 0
+                custom double eraser:elapsedTime = 0
+                custom double eraser:erasedFraction = 0
+                custom double eraser:measuredTiltDegrees = 0
+                custom double2 eraser:padHalfSize = (0.054, 0.023)
+                custom int eraser:physicsSteps = 0
+                custom int eraser:remainingCells = 43097
+                custom bool eraser:touching = 0
+                custom asset[] omni:scripting:scripts = [@/geniesim_assets/objects/benchmark/blackboard_eraser/benchmark_blackboard_eraser_000/scripts/blackboard_eraser.py@]
+            }
+        }
+    }
+}

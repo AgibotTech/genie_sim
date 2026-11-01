@@ -4,5 +4,35 @@
       "instruction": "Place fruits into corresponding storage boxes by type"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_lemon_f2a1a63d|left_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_lemon_f2a1a63d|right_gripper"
+          }
+        ]
+      },
+      "instruction": "Pick up the lemon on the table",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "Inside": "benchmark_lemon_f2a1a63d|benchmark_storage_box_e3aa4d62|1"
+          },
+          {
+            "Onfloor": "benchmark_lemon_f2a1a63d|0"
+          }
+        ]
+      },
+      "instruction": "Sort the held lemon into the corresponding storage basket on the table",
+      "step_out": 600
+    }
+  ],
   "task_id": "sort_fruit"
 }

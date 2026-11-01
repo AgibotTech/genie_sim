@@ -1,0 +1,34 @@
+{
+  "instructions": [
+    {
+      "instruction": "Use the left hand to pick the upright coin from the red coin tray, move it above the blue money box slot, and drop it inside.",
+      "target": {
+        "id1": "benchmark_coin_w_7b7b5cd9",
+        "id2": "benchmark_money_box_33650c2f"
+      },
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        }
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "benchmark_coin_w_7b7b5cd9|left_gripper"
+      },
+      "instruction": "Pick up the upright coin from the coin tray with the left gripper",
+      "step_out": 450
+    },
+    {
+      "checker": {
+        "Inside": "benchmark_coin_w_7b7b5cd9|benchmark_money_box_33650c2f|{\"scale\":[1,1,1],\"height_from_bottom\":0.04}"
+      },
+      "instruction": "Move the coin above the money box slot and drop it inside",
+      "step_out": 450
+    }
+  ],
+  "task_id": "insert_coin_into_money_box"
+}

@@ -1,0 +1,66 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "keycap_puller_000/entity/body|left_gripper"
+                            },
+                            {
+                                "PickUpOnGripper": "keycap_puller_000/entity/body|right_gripper"
+                            },
+                            {
+                                "StepOut": 900
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "LiftUp": "keyboard_000/entity/part_11|0.02"
+                            },
+                            {
+                                "StepOut": 900
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PlaceOnRivet": "replacement_keycap_000|keyboard_000|0,0,0.0098|0.7514643412634372,0.0,0.0,-0.6597737065157329|0.02|0.02|0.3|0.02|15"
+                            },
+                            {
+                                "StepOut": 2700
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "keyboard_keycap_swap_g2_omnipicker",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 5
+                        },
+                        {
+                            "checker": "LiftUp",
+                            "points": 20
+                        },
+                        {
+                            "checker": "PlaceOnRivet",
+                            "points": 25
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

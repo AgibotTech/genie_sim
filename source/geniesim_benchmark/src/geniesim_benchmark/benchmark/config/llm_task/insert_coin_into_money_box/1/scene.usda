@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_2a37eda0" (
+            prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_box_98b25bf6" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin_box/benchmark_coin_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.190808995377, 0, 0, 0.981627183448)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.139809740904, -0.323095449993, 0.743365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_w_ac41e5e2" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin/benchmark_coin_w000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.395404642576, 0.586222540831, 0.395408228767, -0.586217224136)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.0702709338267, -0.295, 0.758365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_money_box_adb0fca9" (
+            prepend payload = @/geniesim_assets/objects/benchmark/money_box/benchmark_money_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.987688340595, 0, 0, 0.15643446504)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.08, 0.04, 0.826)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}
+

@@ -1,0 +1,125 @@
+{
+  "scene_id": "insert_straw_into_milk_tea_cup",
+  "seed": 3,
+  "layout": {
+    "table_000": {
+      "usd": "table_000",
+      "keywords": [
+        "table",
+        "workspace",
+        "fixed"
+      ],
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "benchmark_cup_132": {
+      "usd": "benchmark_cup_132",
+      "keywords": [
+        "milk_tea_cup",
+        "lid",
+        "straw_hole",
+        "dynamic",
+        "POSITION_TAG_center"
+      ],
+      "xyz": [
+        -0.082,
+        -0.024,
+        0.802
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    "benchmark_straw_001": {
+      "usd": "benchmark_straw_001",
+      "keywords": [
+        "straw",
+        "tabletop",
+        "dynamic",
+        "right_hand"
+      ],
+      "xyz": [
+        -0.08669003200441971,
+        -0.18610373692505153,
+        0.7245136496637545
+      ],
+      "xyzw": [
+        -0.0,
+        -0.0,
+        -0.9965994529396042,
+        0.0823986067872633
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "entity_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "body_scale": [
+        1.3020833730697632,
+        1,
+        1.3020833730697632
+      ],
+      "lowpoly_scale": [
+        1.3020833730697632,
+        1,
+        1.3020833730697632
+      ]
+    }
+  },
+  "source_data_alignment": {
+    "dataset_id": 127868,
+    "task_id": 109601,
+    "dataset_dir": "replay_2813346_insert_straw_into_milk_tea_cup_g2_90d",
+    "reference_episode_index": 476,
+    "reference_episode_id": 31485517,
+    "reference_video": "videos/observation.images.top_head/chunk-000/file-476.mp4",
+    "camera": "observation.images.top_head",
+    "frame_index": 0,
+    "layout_method": "Approximate top-head first-frame alignment using scene-scale offsets; the replay has no object poses. The original cup spacing is retained while each pair follows the measured forward/backward and lateral placement variation.",
+    "arm_assignment": "right straw",
+    "reference_table_appearance": "light textured surface",
+    "source_cup_asset_status": "The cloud asset overlay identifies benchmark_cup_105_fixed as the paper cup copy made for this task; the replay metadata does not separately record asset IDs.",
+    "insertion_checker_status": "Sustained physical sharp-tip containment in the moving cup and current full-section passage through the actual lid opening; see checker_condition.",
+    "measured_cup_centers_px": {
+      "paper_cup": [
+        410.5,
+        257.5
+      ],
+      "milk_tea_cup": [
+        349.0,
+        256.0
+      ]
+    }
+  },
+  "experimental_condition": {
+    "version": "tabletop-thick-straw-rigid-v3.2",
+    "paper_cup_removed": true,
+    "diameter_m": 0.0125,
+    "original_length_m": 0.15054312348365784,
+    "long_axis_world_yaw_deg": -80.54709774257317,
+    "sample_seed": 30,
+    "checker_condition": "straw-tip-opening-continuous-v3.2",
+    "tip_marker": "benchmark_straw_001/entity/body/InsertionTip",
+    "point_tolerance_m": 1e-06,
+    "opening_tolerance_m": 1e-05,
+    "hold_seconds": 1.0
+  }
+}

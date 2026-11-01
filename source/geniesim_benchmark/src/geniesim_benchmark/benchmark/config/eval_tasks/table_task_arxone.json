@@ -1,0 +1,124 @@
+{
+  "generalization": {
+    "material": {
+      "enable": false,
+      "num": 0
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/robot/base_link/head_camera",
+      "/robot/arm_l_end_link/hand_left_camera",
+      "/robot/arm_r_end_link/hand_right_camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "right",
+    "robot_cfg": "arx.json",
+    "robot_id": "arx",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -0.4,
+          0.0,
+          0.95
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          -4.03,
+          -0.032,
+          0.80621
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_extra": {
+        "position": [
+          -4.56,
+          0.01,
+          1.12314
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_ground": {
+        "position": [
+          -4,
+          -0.07,
+          0.5
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0.9,
+          1,
+          1
+        ]
+      }
+    },
+    "scene_id": "gm_supermarket_01/workspace_00",
+    "scene_info_dir": "/background/home/home_b_aligned/",
+    "scene_usd": "/background/home/home_b_aligned/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "table_task_arxone"
+}

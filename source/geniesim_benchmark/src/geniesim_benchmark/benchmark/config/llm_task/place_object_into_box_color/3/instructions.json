@@ -32,5 +32,39 @@
       "template_key": "place_object_into_box_color"
     }
   ],
-  "scene_id": "desktop_items"
+  "scene_id": "desktop_items",
+  "subtask_steps": [
+    [
+      {
+        "checker": {
+          "PickUpOnGripper": "apple_cacf6046|right_gripper"
+        },
+        "instruction": "Right arm picks up the apple on the table",
+        "step_out": 200
+      },
+      {
+        "checker": {
+          "Inside": "apple_cacf6046|benchmark_storage_box_69a0b87f|0.8"
+        },
+        "instruction": "Place the object into the black storage box",
+        "step_out": 200
+      }
+    ],
+    [
+      {
+        "checker": {
+          "PickUpOnGripper": "apple_cacf6046|right_gripper"
+        },
+        "instruction": "Right arm picks up the apple on the table",
+        "step_out": 200
+      },
+      {
+        "checker": {
+          "Inside": "apple_cacf6046|benchmark_storage_box_d2539fe4|0.8"
+        },
+        "instruction": "Place the object into the gray storage box",
+        "step_out": 200
+      }
+    ]
+  ]
 }

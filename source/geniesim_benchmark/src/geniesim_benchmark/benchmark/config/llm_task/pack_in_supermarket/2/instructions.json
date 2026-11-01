@@ -4,5 +4,28 @@
       "instruction": "Pack objects on the desk"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_apple_3e8be7d8|right_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_apple_3e8be7d8|left_gripper"
+          }
+        ]
+      },
+      "instruction": "Pick up the apple on the table",
+      "step_out": 200
+    },
+    {
+      "checker": {
+        "Inside": "benchmark_apple_3e8be7d8|benchmark_handbag_f6455d45|1.0"
+      },
+      "instruction": "Put the apple into the handbag",
+      "step_out": 400
+    }
+  ],
   "task_id": "pack_in_supermarket_2"
 }

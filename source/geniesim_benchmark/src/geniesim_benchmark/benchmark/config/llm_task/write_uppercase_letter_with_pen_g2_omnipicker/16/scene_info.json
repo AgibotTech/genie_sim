@@ -1,0 +1,312 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.22,
+        0.0004,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/table/benchmark_table_019/Aligned.usda"
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "xyz": [
+        0.023433276675131325,
+        0.004273074025272032,
+        0.8325046575220938
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.05889178974259093,
+        0.9982643723487854
+      ],
+      "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        0.02,
+        -0.1996,
+        0.8718060575671304
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda"
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "xyz": [
+        0.02,
+        -0.1996,
+        0.9070046575220938
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/pen/benchmark_pen_009/Aligned.usda"
+    },
+    "Ink": {
+      "usd": "Ink",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink",
+    "/World/Objects/paper/entity/writing_template_A"
+  ],
+  "writing_contract": {
+    "grasp_index": 46,
+    "T_pen_tcp": [
+      [
+        -0.8660254037844384,
+        0.0,
+        0.5000000000000003,
+        -0.002499999999998142
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.03840777570972542
+      ],
+      [
+        -0.5000000000000003,
+        0.0,
+        -0.8660254037844384,
+        0.004330475358678083
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "pen_tip_local": [
+      0,
+      -0.07184357772142377,
+      -6.515861400178732e-07
+    ],
+    "paper_size_m": [
+      0.18,
+      0.12,
+      0.001
+    ],
+    "target_tip_gap_m": 0.002,
+    "lift_m": 0.05,
+    "glyph_width_m": 0.06,
+    "glyph_height_m": 0.08,
+    "stroke_point_spacing_m": 0.002,
+    "robot_base_world": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        -0.7
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_pose_solver": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.7
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.01
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.8325046575220938
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "ink_contact_distance_m": 0.005,
+    "ink_root": "/World/Objects/Ink",
+    "ink_mesh": "/World/Objects/Ink/strokes",
+    "ink_control": "/World/Objects/pen/entity",
+    "pen_actor": "/World/Objects/pen/entity",
+    "paper_actor": "/World/Objects/paper/entity",
+    "initialization_uses_explicit_actual_usd_bounds": true,
+    "gripper_initial_open_fraction": 0.95,
+    "closed_chain_auxiliary_joint3_joint4": "not commanded during initialization; original asset constraints own them",
+    "pick_lift_m": 0.1
+  },
+  "host_physics_contract": {
+    "source_definitions": [],
+    "host_scene_path": "/physicsScene",
+    "physics_hz": 60,
+    "gravity_direction": [
+      0,
+      0,
+      -1
+    ],
+    "gravity_magnitude": 9.81,
+    "expected_physics_index_delta_per_step": 1,
+    "source_physics_scene_removed": "/World/physicsScene",
+    "removed_source_gravity_only": {
+      "physics:gravityDirection": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "physics:gravityMagnitude": 9.8100004196167
+    },
+    "actual_runtime_single_step_validation_pending": true
+  },
+  "copybook": {
+    "target_letter": "A",
+    "guide_prim": "/World/Objects/paper/entity/writing_template_A",
+    "target_sha256": "8781aae8e29454bffb22bd2729c8fd803a360d0d502b689d4494b388f0333b92",
+    "gray_geometry_authored_in_scene": true,
+    "visual_only": true,
+    "overlap_metrics": [
+      "iou",
+      "dice",
+      "target_coverage",
+      "ink_precision"
+    ]
+  },
+  "scene_id": "write_uppercase_letter_with_pen_g2_omnipicker_16",
+  "task_name": "trace_copybook_a_g2_op_20261023",
+  "target_letter": "A",
+  "generalization": {
+    "method": "bounded_xy_convex_hull_nonincreasing_edge_overhang",
+    "source_instance": 6,
+    "source_scene_sha256": "f5c8a77907a2545453d465b0f075bcc75f2a9d8c2cd9c26371317e549b7bfe11",
+    "translations_m": {
+      "paper": [
+        0.00040031390505114814,
+        0.003986186382132991,
+        0.0
+      ]
+    },
+    "z_and_orientations_preserved": true,
+    "source_group_convex_hull": "paper",
+    "grasp_and_robot_initial_state_preserved": true,
+    "source_table_edge_overhang_m": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "authored_scene_state": {
+    "guide_origin_world_m": [
+      0.023433276675131325,
+      0.004273074025272032,
+      0.8330246575220938
+    ],
+    "paper_translation_world_m": [
+      0.023433276675131325,
+      0.004273074025272032,
+      0.8325046575220938
+    ],
+    "writing_contract_frame": "Source grasp calibration is retained; authored paper and guide transforms are recorded separately.",
+    "paper_root_world_column": [
+      [
+        0.9930635142018289,
+        0.11757915104776835,
+        0.0,
+        0.023433276675131325
+      ],
+      [
+        -0.11757915104776835,
+        0.9930635142018289,
+        0.0,
+        0.004273074025272032
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.8325046575220938
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_entity_world_column": [
+      [
+        0.9930635142018289,
+        0.11757915104776835,
+        0.0,
+        0.023433276675131325
+      ],
+      [
+        -0.11757915104776835,
+        0.9930635142018289,
+        0.0,
+        0.004273074025272032
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.8325046575220938
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  }
+}

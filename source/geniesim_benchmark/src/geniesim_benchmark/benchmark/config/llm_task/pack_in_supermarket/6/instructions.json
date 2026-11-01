@@ -4,5 +4,28 @@
       "instruction": "Pack objects on the desk"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_beverage_bottle_ed1393db|right_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_beverage_bottle_ed1393db|left_gripper"
+          }
+        ]
+      },
+      "instruction": "Pick up the beverage bottle on the table",
+      "step_out": 200
+    },
+    {
+      "checker": {
+        "Inside": "benchmark_beverage_bottle_ed1393db|benchmark_handbag_642ab35b|1.0"
+      },
+      "instruction": "Put the beverage bottle into the handbag",
+      "step_out": 400
+    }
+  ],
   "task_id": "pack_in_supermarket_6"
 }

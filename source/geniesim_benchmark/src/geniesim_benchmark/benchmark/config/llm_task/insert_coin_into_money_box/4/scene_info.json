@@ -1,0 +1,233 @@
+{
+  "scene_id": "insert_coin_into_money_box",
+  "seed": 2812904811,
+  "layout": {
+    "table_fc467d1e": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_630d85d7",
+        "insert_coin_into_money_box_63e19d8e",
+        "table_fc467d1e"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace_table",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_coin_box_acaceec6": {
+      "usd": "benchmark_coin_box_000",
+      "xyz": [
+        0.11910083607784841,
+        -0.22617457281774894,
+        0.7433657685144641
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9455185755993167,
+        0.32556815445715676
+      ],
+      "tags": [
+        "root_scene_630d85d7",
+        "insert_coin_into_money_box_63e19d8e",
+        "benchmark_coin_box_acaceec6"
+      ],
+      "keywords": [
+        "coin_box",
+        "coin_tray",
+        "container",
+        "POSITION_TAG_right"
+      ],
+      "description": {}
+    },
+    "benchmark_coin_w_7c897996": {
+      "usd": "benchmark_coin_w000",
+      "xyz": [
+        0.05999999999999999,
+        -0.18,
+        0.7583657685144641
+      ],
+      "xyzw": [
+        0.635547652704496,
+        0.3099737342057473,
+        -0.6355418886495138,
+        0.30997092285593364
+      ],
+      "tags": [
+        "root_scene_630d85d7",
+        "insert_coin_into_money_box_63e19d8e",
+        "benchmark_coin_w_7c897996"
+      ],
+      "keywords": [
+        "coin_target",
+        "coin",
+        "target",
+        "currency",
+        "in_cell",
+        "POSITION_TAG_right"
+      ],
+      "description": {}
+    },
+    "benchmark_money_box_87d750df": {
+      "usd": "benchmark_money_box_000",
+      "xyz": [
+        -0.1,
+        -0.025,
+        0.826
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.5877852522924731,
+        0.8090169943749475
+      ],
+      "tags": [
+        "root_scene_630d85d7",
+        "insert_coin_into_money_box_63e19d8e",
+        "benchmark_money_box_87d750df"
+      ],
+      "keywords": [
+        "money_box",
+        "piggy_bank",
+        "container",
+        "POSITION_TAG_center"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_630d85d7"
+        },
+        {
+          "id": "insert_coin_into_money_box_63e19d8e"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace_table",
+            "desktop_with_legs"
+          ],
+          "id": "table_fc467d1e"
+        },
+        {
+          "tags": [
+            "coin_box",
+            "coin_tray",
+            "container",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_coin_box_acaceec6"
+        },
+        {
+          "tags": [
+            "coin_target",
+            "coin",
+            "target",
+            "currency",
+            "in_cell",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_coin_w_7c897996"
+        },
+        {
+          "tags": [
+            "money_box",
+            "piggy_bank",
+            "container",
+            "POSITION_TAG_center"
+          ],
+          "id": "benchmark_money_box_87d750df"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_630d85d7",
+          "target": "insert_coin_into_money_box_63e19d8e"
+        },
+        {
+          "source": "insert_coin_into_money_box_63e19d8e",
+          "target": "table_fc467d1e"
+        },
+        {
+          "source": "insert_coin_into_money_box_63e19d8e",
+          "target": "benchmark_coin_box_acaceec6"
+        },
+        {
+          "source": "insert_coin_into_money_box_63e19d8e",
+          "target": "benchmark_coin_w_7c897996"
+        },
+        {
+          "source": "insert_coin_into_money_box_63e19d8e",
+          "target": "benchmark_money_box_87d750df"
+        }
+      ]
+    }
+  },
+  "data_alignment": {
+    "dataset_id": 123998,
+    "task_id": 108858,
+    "camera": "observation.images.top_head",
+    "reference_episode_indices": [
+      2,
+      5,
+      7,
+      8,
+      9
+    ],
+    "layout_method": "Authored coin-pose generalization from the original layout; original dataset identifiers retained as provenance; simulator preview pending",
+    "arm_assignment": "right coin"
+  }
+}

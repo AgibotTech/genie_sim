@@ -1,0 +1,67 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "LiftUp": "benchmark_delivery_plate_000|0.05"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "ChassisAtTarget": "[-0.3997,-1.6017,0]|[0.5,0.35,180]"
+                  },
+                  {
+                    "Ontop": "benchmark_tissue_000|benchmark_delivery_plate_000|active|0.8"
+                  },
+                  {
+                    "Ontop": "benchmark_tissue_000_01|benchmark_delivery_plate_000|active|0.8"
+                  }
+                ]
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "sending_food",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "LiftUp",
+              "points": 10
+            },
+            {
+              "checker": "ChassisAtTarget",
+              "points": 10
+            },
+            {
+              "checker": "Ontop",
+              "points": 15
+            },
+            {
+              "checker": "Ontop",
+              "points": 15
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

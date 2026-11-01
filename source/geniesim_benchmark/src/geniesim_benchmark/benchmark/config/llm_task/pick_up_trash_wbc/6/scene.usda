@@ -1,0 +1,84 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+def "benchmark_trash_can_015" (
+            prepend payload = @/geniesim_assets/objects/benchmark/trash_can/benchmark_trash_can_015/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.781286, 0, 0, 0.62417321)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.156875041, -1.373853198, 0.169332509)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:rigidBodyEnabled = 0
+                quatf xformOp:orient = (0.70710677, 0.70710677, -0.000061706705, 0.000061706705)
+
+                over "body"
+                {
+                    over "visual"
+                    {
+                        quatf xformOp:orient = (1, 0, 0, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    def PhysicsFixedJoint "FixedJoint"
+                    {
+                        rel physics:body1 = </World/Objects/benchmark_trash_can_015/entity/body>
+                        float physics:breakForce = 3.4028235e38
+                        float physics:breakTorque = 3.4028235e38
+                        point3f physics:localPos0 = (0.1568750, -1.3738532, 0.11763635)
+                        point3f physics:localPos1 = (0, 0, 0)
+                        quatf physics:localRot0 = (0.55241411, 0.55249114, 0.44130889, 0.44140532)
+                        quatf physics:localRot1 = (1, 0, 0, 0)
+                    }
+                }
+
+                over "part_00"
+                {
+                }
+
+                over "part_01"
+                {
+                }
+            }
+        }
+        def "benchmark_trash_021" (
+            prepend payload = @/geniesim_assets/objects/benchmark/trash/benchmark_trash_021/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.64281185, 0, 0, 0.7660241)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.224979869, -0.003515796, 0.105043805)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+        def "benchmark_trash_031" (
+            prepend payload = @/geniesim_assets/objects/benchmark/trash/benchmark_trash_031/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.94556671, 0, 0, 0.32542834)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.470998191, -0.549559842, 0.078804621)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+    }
+}

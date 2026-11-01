@@ -1,0 +1,152 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitSome_2": [
+                  {
+                    "Ontop": "benchmark_carton_061_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_062_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_063_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_064_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  }
+                ]
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "Ontop": "benchmark_carton_061_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_062_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_063_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  },
+                  {
+                    "Ontop": "benchmark_carton_064_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
+                  }
+                ]
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "InBBox": "benchmark_luggage_cart_002|-0.343,2.75,0.50|5.10,1.50,1.60"
+              },
+              {
+                "StepOut": 3600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "InBBox": "benchmark_carton_061_00|-1.7846,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_062_00|-1.7846,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_063_00|1.0985,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_064_00|1.0985,3.5568,0.93|2.09,0.82,0.20"
+                  }
+                ]
+              },
+              {
+                "StepOut": 6000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "transport_cartons_to_table_wbc",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "Ontop",
+              "points": 1.25
+            },
+            {
+              "checker": "InBBox",
+              "points": 20
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

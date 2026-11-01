@@ -1,0 +1,100 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Stack": "[benchmark_bowl_49f1b563,benchmark_bowl_2c87db14,benchmark_bowl_702ca6b3]|[0.05,0.05]"
+              },
+              {
+                "Onfloor": "benchmark_bowl_49f1b563|0"
+              },
+              {
+                "Onfloor": "benchmark_bowl_2c87db14|0"
+              },
+              {
+                "Onfloor": "benchmark_bowl_702ca6b3|0"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "stack_bowls_wuji",
+    "ScoringByRobot": {
+      "G2_crsB_wuji": {
+        "Acts": [
+          {
+            "ActionList": [
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "PickUpOnGripper": "benchmark_bowl_49f1b563,benchmark_bowl_2c87db14,benchmark_bowl_702ca6b3|left_gripper"
+                  },
+                  {
+                    "PickUpOnGripper": "benchmark_bowl_49f1b563,benchmark_bowl_2c87db14,benchmark_bowl_702ca6b3|right_gripper"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_49f1b563|0"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_2c87db14|0"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_702ca6b3|0"
+                  },
+                  {
+                    "StepOut": 600
+                  }
+                ]
+              },
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "Stack": "[benchmark_bowl_49f1b563,benchmark_bowl_2c87db14,benchmark_bowl_702ca6b3]|[0.05,0.05]"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_49f1b563|0"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_2c87db14|0"
+                  },
+                  {
+                    "Onfloor": "benchmark_bowl_702ca6b3|0"
+                  },
+                  {
+                    "StepOut": 1800
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "ScoreLayout": "stack_bowls_pickup",
+        "ScoreCheckers": [
+          {
+            "PolicyDispatchBudget": {
+              "steps": [
+                {
+                  "checker": "PickUpOnGripper",
+                  "points": 10
+                },
+                {
+                  "checker": "Stack",
+                  "points": 40
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

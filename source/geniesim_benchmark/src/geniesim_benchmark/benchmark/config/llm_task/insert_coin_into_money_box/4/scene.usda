@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_fc467d1e" (
+            prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_box_acaceec6" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin_box/benchmark_coin_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.325568154457, 0, 0, 0.945518575599)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.119100836078, -0.226174572818, 0.743365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_w_7c897996" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin/benchmark_coin_w000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.309970922856, 0.635547652704, 0.309973734206, -0.63554188865)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.06, -0.18, 0.758365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_money_box_87d750df" (
+            prepend payload = @/geniesim_assets/objects/benchmark/money_box/benchmark_money_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.809016994375, 0, 0, 0.587785252292)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.1, -0.025, 0.826)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}
+

@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_4a23c1ba" (
+            prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_box_6b586239" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin_box/benchmark_coin_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.0523359552026, 0, 0, 0.998629534809)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.16629334048, 0.262160315573, 0.743365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_w_7b7b5cd9" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin/benchmark_coin_w000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.47314223147, 0.525487295897, 0.473146516227, -0.525482544746)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.0917042035495, 0.27, 0.758365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_money_box_33650c2f" (
+            prepend payload = @/geniesim_assets/objects/benchmark/money_box/benchmark_money_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.891006524188, 0, 0, 0.45399049974)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.08, 0.015, 0.826)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}
+

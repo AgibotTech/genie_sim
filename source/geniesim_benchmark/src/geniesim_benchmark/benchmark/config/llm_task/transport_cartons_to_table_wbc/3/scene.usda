@@ -1,0 +1,96 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def "benchmark_luggage_cart_002" (
+            prepend payload = @/geniesim_assets/objects/benchmark/luggage_cart/benchmark_luggage_cart_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (6.123234e-17, 0, 0, -1)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.97638380742317, -4.506719982712462, 0.4779315618)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                }
+
+                over "part_00"
+                {
+                }
+
+                over "part_01"
+                {
+                }
+
+                over "part_04"
+                {
+                }
+
+                over "part_03"
+                {
+                }
+
+                over "part_05"
+                {
+                }
+
+                over "part_02"
+                {
+                }
+
+                over "PhysicsMaterial"
+                {
+                    float physics:density = 1
+                    float physics:dynamicFriction = 0.8
+                    float physics:staticFriction = 0.8
+                }
+            }
+        }
+        def "benchmark_carton_061_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_061/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.0982543522, 0, 0, 0.995161335)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-3.4554318433213629, -6.2125839934307514, 1.29543761717853)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+        def "benchmark_carton_062_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_062/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.632968172, 0, 0, -0.774177818)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-3.9701807224842023, -6.2322188738739248, 1.29543761717853)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+        def "benchmark_carton_063_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_063/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.738881439, 0, 0, 0.673835454)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-4.1204220336222637, -6.2152164557670204, 1.29543761717853)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+        def "benchmark_carton_064_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_064/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.336787919, 0, 0, -0.941580532)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-4.4093655523388682, -6.1379453937773913, 1.29543761717853)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

@@ -1,0 +1,373 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "xyz": [
+        -0.02100000000000002,
+        -0.018,
+        0.5194953424779063
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/table/benchmark_table_019/Aligned.usda"
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "xyz": [
+        -0.23375160496718886,
+        0.008580260130858582,
+        0.985
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.012816538331773339,
+        0.9999178647994995
+      ],
+      "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.241,
+        -0.143,
+        1.0243014000450366
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda"
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "xyz": [
+        -0.241,
+        -0.143,
+        1.0595
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/pen/benchmark_pen_009/Aligned.usda"
+    },
+    "Ink": {
+      "usd": "Ink",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink",
+    "/World/Objects/paper/entity/writing_template_A"
+  ],
+  "writing_contract": {
+    "grasp_index": 20,
+    "T_pen_tcp": [
+      [
+        -0.49999999999999967,
+        0.0,
+        0.8660254037844388,
+        0.010392304845415125
+      ],
+      [
+        0.0,
+        0.9999999999999999,
+        0.0,
+        0.04040777570972542
+      ],
+      [
+        -0.8660254037844388,
+        0.0,
+        -0.49999999999999967,
+        -0.005999651660244105
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "pen_tip_local": [
+      0,
+      -0.07184357772142377,
+      -6.515861400178732e-07
+    ],
+    "paper_size_m": [
+      0.18,
+      0.12,
+      0.001
+    ],
+    "target_tip_gap_m": 0.002,
+    "lift_m": 0.05,
+    "glyph_width_m": 0.06,
+    "glyph_height_m": 0.08,
+    "stroke_point_spacing_m": 0.002,
+    "robot_base_world": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.15000000596046448
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_pose_solver": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.47
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.02
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.8249999940395355
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "ink_contact_distance_m": 0.005,
+    "ink_root": "/World/Objects/Ink",
+    "ink_mesh": "/World/Objects/Ink/strokes",
+    "ink_control": "/World/Objects/pen/entity",
+    "pen_actor": "/World/Objects/pen/entity",
+    "paper_actor": "/World/Objects/paper/entity",
+    "initial_pen_cpu_grasp": {
+      "pen_entity_pose_solver": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.45999999999999996
+        ],
+        [
+          0.0,
+          9.069511300197064e-06,
+          -0.999999999958872,
+          -0.13
+        ],
+        [
+          0.0,
+          0.999999999958872,
+          9.069511300197064e-06,
+          0.8994999940395356
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "grasp_tcp_solver": [
+        [
+          -0.49999999999999967,
+          0.0,
+          0.8660254037844388,
+          0.4703923048454151
+        ],
+        [
+          0.866025403748821,
+          9.069511300197062e-06,
+          0.49999999997943567,
+          -0.12400009069535985
+        ],
+        [
+          -7.854427185880694e-06,
+          0.9999999999588719,
+          -4.534755650098529e-06,
+          0.9279077153341841
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "joint_solution": [
+        1.081780889507949,
+        0.7852588434255982,
+        -0.44221635043054436,
+        1.1858219627591213,
+        -0.6082846985752469,
+        -1.112150318235442
+      ]
+    },
+    "initialization_uses_explicit_actual_usd_bounds": true,
+    "gripper_initial_open_fraction": 0.9,
+    "pick_lift_m": 0.1
+  },
+  "host_physics_contract": {
+    "source_definitions": [],
+    "host_scene_path": "/physicsScene",
+    "physics_hz": 240,
+    "gravity_direction": [
+      0,
+      0,
+      -1
+    ],
+    "gravity_magnitude": 9.81,
+    "expected_physics_index_delta_per_step": 1,
+    "source_physics_scene_removed": "/World/physicsScene",
+    "removed_source_gravity_only": {
+      "physics:gravityDirection": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "physics:gravityMagnitude": 9.8100004196167
+    },
+    "actual_runtime_single_step_validation_pending": true
+  },
+  "copybook": {
+    "target_letter": "A",
+    "guide_prim": "/World/Objects/paper/entity/writing_template_A",
+    "target_sha256": "8781aae8e29454bffb22bd2729c8fd803a360d0d502b689d4494b388f0333b92",
+    "gray_geometry_authored_in_scene": true,
+    "visual_only": true,
+    "overlap_metrics": [
+      "iou",
+      "dice",
+      "target_coverage",
+      "ink_precision"
+    ]
+  },
+  "scene_id": "write_uppercase_letter_with_pen_agilex_16",
+  "task_name": "trace_copybook_a_aloha_20261023",
+  "target_letter": "A",
+  "generalization": {
+    "method": "bounded_xy_convex_hull_nonincreasing_edge_overhang",
+    "source_instance": 6,
+    "source_scene_sha256": "902f080128daf872728961a7036fb013d412c17587eeba35f9bdc07784e6797c",
+    "translations_m": {
+      "paper": [
+        0.00010395584540887973,
+        0.0004890738003669028,
+        0.0
+      ]
+    },
+    "z_and_orientations_preserved": true,
+    "source_group_convex_hull": "paper",
+    "grasp_and_robot_initial_state_preserved": true,
+    "source_table_edge_overhang_m": [
+      0.004363809908619953,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "authored_scene_state": {
+    "guide_origin_world_m": [
+      -0.23375160496718886,
+      0.008580260130858582,
+      0.98552
+    ],
+    "paper_translation_world_m": [
+      -0.23375160496718886,
+      0.008580260130858582,
+      0.985
+    ],
+    "writing_contract_frame": "Source grasp calibration is retained; authored paper and guide transforms are recorded separately.",
+    "paper_root_world_column": [
+      [
+        0.9996714726903804,
+        -0.025630971285655474,
+        0.0,
+        -0.23375160496718886
+      ],
+      [
+        0.025630971285655474,
+        0.9996714726903804,
+        0.0,
+        0.008580260130858582
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.985
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_entity_world_column": [
+      [
+        0.9996714726903804,
+        -0.025630971285655474,
+        0.0,
+        -0.23375160496718886
+      ],
+      [
+        0.025630971285655474,
+        0.9996714726903804,
+        0.0,
+        0.008580260130858582
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.985
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  }
+}

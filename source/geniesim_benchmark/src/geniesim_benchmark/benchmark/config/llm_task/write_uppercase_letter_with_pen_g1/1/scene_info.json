@@ -1,0 +1,274 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.21999999999999997,
+        0.0,
+        0.4349953424779062
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "keywords": [
+        "table",
+        "writing_table"
+      ],
+      "asset_path": "objects/benchmark/table/benchmark_table_019/Aligned.usda"
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "xyz": [
+        0.08334228003035249,
+        -0.15916215454449473,
+        0.9005
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.01318330732154107,
+        0.9999130964279175
+      ],
+      "keywords": [
+        "paper",
+        "writing_surface"
+      ],
+      "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        0.010000000000000009,
+        -0.24,
+        0.9398014000450365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "keywords": [
+        "pen_holder",
+        "writing_pen_holder"
+      ],
+      "asset_path": "objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda"
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "xyz": [
+        0.010000000000000009,
+        -0.24,
+        0.975
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "keywords": [
+        "pen",
+        "writing_pen"
+      ],
+      "asset_path": "objects/benchmark/pen/benchmark_pen_009/Aligned.usda"
+    },
+    "Ink": {
+      "usd": "Ink",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink",
+    "/World/Objects/paper/entity/writing_template"
+  ],
+  "writing_contract": {
+    "grasp_index": 46,
+    "T_pen_tcp": [
+      [
+        -0.8660254037844384,
+        0.0,
+        0.5000000000000003,
+        0.005000000000001862
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.042407775709725426
+      ],
+      [
+        -0.5000000000000003,
+        0.0,
+        -0.8660254037844384,
+        -0.008659905698088492
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "pen_tip_local": [
+      0,
+      -0.07184357772142377,
+      -6.515861400178732e-07
+    ],
+    "paper_size_m": [
+      0.18,
+      0.12,
+      0.001
+    ],
+    "target_tip_gap_m": 0.003,
+    "lift_m": 0.05,
+    "glyph_width_m": 0.06,
+    "glyph_height_m": 0.08,
+    "stroke_point_spacing_m": 0.002,
+    "robot_base_world": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_pose_solver": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.84
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        -0.15
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.9005
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "ink_contact_distance_m": 0.005,
+    "ink_root": "/World/Objects/Ink",
+    "ink_mesh": "/World/Objects/Ink/strokes",
+    "ink_control": "/World/Objects/pen/entity",
+    "pen_actor": "/World/Objects/pen/entity",
+    "paper_actor": "/World/Objects/paper/entity",
+    "initialization_uses_explicit_actual_usd_bounds": true,
+    "gripper_initial_open_fraction": 1.0,
+    "closed_chain_auxiliary_joint3_joint4": "not commanded during initialization; original asset constraints own them",
+    "pick_lift_m": 0.1,
+    "first_pregrasp_hover_m": 0.1,
+    "grasp_axis_height_adjustment_m": 0.004,
+    "grasp_description": "Same15mmTCPinsertion; task-localstaticangularcontactconfirmationand1mradpreload, actualsourcepad-depth>=10mm gate",
+    "additional_TCP_insertion_depth_m": 0.015,
+    "pregrasp_description": "Standardinit unchanged; openfingers. First40mmworldZraise, continuousCartesianmove toabove-penhover, thendescend. Allfingertip/sourcepen geometry checkedwith>=1mmgap beforeintentionalclosure.",
+    "target_letter": "B",
+    "stroke_count": 2
+  },
+  "host_physics_contract": {
+    "source_definitions": [],
+    "host_scene_path": "/physicsScene",
+    "physics_hz": 60,
+    "gravity_direction": [
+      0,
+      0,
+      -1
+    ],
+    "gravity_magnitude": 9.81,
+    "expected_physics_index_delta_per_step": 1
+  },
+  "copybook": {
+    "target_letter": "B",
+    "guide_prim": "/World/Objects/paper/entity/writing_template",
+    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "gray_geometry_authored_in_scene": true,
+    "visual_only": true,
+    "overlap_metrics": [
+      "iou",
+      "dice",
+      "target_coverage",
+      "ink_precision"
+    ],
+    "physical_validation": "pending new physical trial"
+  },
+  "scene_id": "trace_copybook_b_g1_op_20261023_scene_000013",
+  "task_name": "trace_copybook_b_g1_op_20261023",
+  "target_letter": "B",
+  "physical_validation": {
+    "passed": false,
+    "status": "new layout; physical trial pending"
+  },
+  "validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
+  "generalization": {
+    "batch": "writing_generalization_4000_20261023",
+    "seed": 20261023,
+    "robot": "G1_OP",
+    "anchor": "G1_OP/v11/B",
+    "jitter_xy_m_yaw_deg": [
+      -0.0006577199696474555,
+      0.0008378454555052661,
+      -1.4893569359982468
+    ],
+    "anchor_variation": {
+      "paper_xy_m": [
+        0.004,
+        -0.01
+      ],
+      "paper_yaw_deg": 3,
+      "holder_xy_m": [
+        0,
+        0
+      ]
+    },
+    "accepted_attempt": 0,
+    "source_scene_sha256": "829381409d5a2b8ff9ed79c7827a8c067bf74b0ff99a439c1bb6af96e9aea506",
+    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "initial_robot_joints_unchanged": true,
+    "paper_height_unchanged": true,
+    "physical_success": false,
+    "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
+  }
+}

@@ -1,0 +1,143 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+def "benchmark_table_019_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.7085753212313891, 0.2057524237887433, 0.25654085323902814)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:rigidBodyEnabled = 0
+
+                over "part_00"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["PhysxConvexHullCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "convexHull"
+                    }
+                }
+            }
+        }
+def "benchmark_tissue_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/tissue/benchmark_tissue_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.949525089, 0, 0, -0.313691097)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.68537418315633669, 0.048325349886786113, 0.77136594880096143)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                prepend apiSchemas = ["PhysxRigidBodyAPI"]
+            )
+            {
+                float physics:mass = 0.1
+                float physxRigidBody:angularDamping = 0.2
+                float physxRigidBody:linearDamping = 0.1
+                float physxRigidBody:maxDepenetrationVelocity = 0.2
+                int physxRigidBody:solverPositionIterationCount = 64
+                int physxRigidBody:solverVelocityIterationCount = 8
+
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["PhysxCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "convexHull"
+                        float physxCollision:contactOffset = 0.002
+                        float physxCollision:restOffset = 0
+                    }
+                }
+            }
+        }
+def "benchmark_tissue_000_01" (
+            prepend payload = @/geniesim_assets/objects/benchmark/tissue/benchmark_tissue_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.949525089, 0, 0, -0.313691097)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.77069906119085974, 0.16336789880821007, 0.77136594880096143)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity" (
+                prepend apiSchemas = ["PhysxRigidBodyAPI"]
+            )
+            {
+                float physics:mass = 0.1
+                float physxRigidBody:angularDamping = 0.2
+                float physxRigidBody:linearDamping = 0.1
+                float physxRigidBody:maxDepenetrationVelocity = 0.2
+                int physxRigidBody:solverPositionIterationCount = 64
+                int physxRigidBody:solverVelocityIterationCount = 8
+
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["PhysxCollisionAPI", "PhysxConvexHullCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "convexHull"
+                        float physxCollision:contactOffset = 0.002
+                        float physxCollision:restOffset = 0
+                    }
+                }
+            }
+        }
+def "benchmark_delivery_plate_000" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            prepend payload = @/geniesim_assets/objects/benchmark/delivery_plate/benchmark_delivery_plate_000/Aligned.usda@
+        )
+        {
+            rel material:binding = None (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            quatf xformOp:orient = (0.893228732, 0, 0, 0.449602527)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.72800440432865887, 0.10076210542213659, 0.74342203864843226)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    over "visual" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        rel material:binding = </World/Objects/benchmark_delivery_plate_000/entity/Looks/ml_body_01> (
+                            bindMaterialAs = "weakerThanDescendants"
+                        )
+                    }
+                }
+            }
+
+            over "lowpoly"
+            {
+                over "bbox" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = None (
+                        bindMaterialAs = "weakerThanDescendants"
+                    )
+                }
+            }
+        }
+    }
+}

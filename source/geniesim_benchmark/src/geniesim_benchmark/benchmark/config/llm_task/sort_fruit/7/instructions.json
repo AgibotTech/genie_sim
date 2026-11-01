@@ -4,5 +4,35 @@
       "instruction": "Place fruits into corresponding storage boxes by type"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_green_apple_49770faf|left_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_green_apple_49770faf|right_gripper"
+          }
+        ]
+      },
+      "instruction": "Pick up the green apple on the table",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "Inside": "benchmark_green_apple_49770faf|benchmark_storage_box_76399b64|1"
+          },
+          {
+            "Onfloor": "benchmark_green_apple_49770faf|0"
+          }
+        ]
+      },
+      "instruction": "Sort the held green apple into the corresponding storage basket on the table",
+      "step_out": 600
+    }
+  ],
   "task_id": "sort_fruit"
 }

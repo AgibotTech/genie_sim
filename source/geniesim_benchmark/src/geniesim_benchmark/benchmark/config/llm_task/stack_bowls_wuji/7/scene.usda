@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_5d09e4b6" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.265)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_49f1b563" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.806458, 0, 0, -0.591291)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.041, 0.277, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_2c87db14" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.434103, 0, 0, 0.900863)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.179, -0.178, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_702ca6b3" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.39593, 0, 0, 0.918281)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.199, -0.238, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+    }
+}

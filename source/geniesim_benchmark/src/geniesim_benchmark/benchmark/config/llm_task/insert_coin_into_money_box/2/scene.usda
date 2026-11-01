@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_66bd0be2" (
+            prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_box_ead312fe" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin_box/benchmark_coin_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.731353701619, 0, 0, 0.681998360062)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.125231687639, -0.294817307118, 0.743365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_coin_w_099a722d" (
+            prepend payload = @/geniesim_assets/objects/benchmark/coin/benchmark_coin_w000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.0246807634883, 0.706679123523, -0.0246809872736, -0.706672714315)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.12, -0.22, 0.758365768514)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_money_box_a7a80a13" (
+            prepend payload = @/geniesim_assets/objects/benchmark/money_box/benchmark_money_box_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.951056516295, 0, 0, 0.309016994375)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.09, -0.015, 0.826)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}
+

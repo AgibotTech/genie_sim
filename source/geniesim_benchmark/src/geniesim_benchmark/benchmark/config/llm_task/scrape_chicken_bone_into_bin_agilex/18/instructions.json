@@ -1,0 +1,47 @@
+{
+  "instructions": [
+    {
+      "instruction": "Pick up the scraper and sweep the chicken bone and the apple core on the table into the trash can",
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "right"
+        }
+      },
+      "target": {
+        "id1": "trash_bone_000",
+        "id2": "trash_can_000"
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "scraper_000|any_gripper"
+      },
+      "instruction": "right gripper picks up the scraper by its handle",
+      "step_out": 450
+    },
+    {
+      "checker": {
+        "MixedRules": {
+          "check_interval": 1,
+          "mode": "and",
+          "rules": [
+            {
+              "name": "Inside",
+              "params": "trash_bone_000|trash_can_000|1.0"
+            },
+            {
+              "name": "Inside",
+              "params": "trash_apple_000|trash_can_000|1.0"
+            }
+          ]
+        }
+      },
+      "instruction": "right gripper sweeps the chicken bone and the apple core across the table into the trash can",
+      "step_out": 900
+    }
+  ],
+  "task_id": "scrape_chicken_bone_into_bin_agilex"
+}

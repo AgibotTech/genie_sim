@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_2a664c07" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.265)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_3fbda181" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.260462, 0, 0, 0.965484)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.134, -0.265, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_6b4beca8" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.508336, 0, 0, 0.861159)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.156, 0.179, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_f7c985f6" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.598932, 0, 0, 0.8008)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.131, 0.195, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+    }
+}

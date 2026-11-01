@@ -1,0 +1,49 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_network_device_001/entity/body|left_gripper"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PlugInserted": "benchmark_network_device_001|EthernetAttachJoint"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "insert_ethernet_cable",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "PlugInserted",
+              "points": 40
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Erased": "benchmark_blackboard_eraser_000/entity|1.0"
+              },
+              {
+                "Onfloor": "benchmark_blackboard_eraser_000/entity/body|0"
+              },
+              {
+                "StepOut": 6000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "clean_the_blackboard",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "Erased",
+              "points": 50
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

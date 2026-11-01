@@ -1,0 +1,85 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "LiftUp": "/Workspace/Objects/benchmark_carton_006/entity|0.05"
+              },
+              {
+                "Onfloor": "benchmark_carton_006|0"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetSuccessFirst": [
+              {
+                "MixedRules": {
+                  "check_interval": 1,
+                  "mode": "and",
+                  "rules": [
+                    {
+                      "name": "RelativePosition",
+                      "params": "benchmark_carton_006|table_7643d40d|leftof"
+                    },
+                    {
+                      "name": "Ontop",
+                      "params": "benchmark_carton_006|table_7643d40d"
+                    }
+                  ],
+                  "strict": true,
+                  "carry_distance": {
+                    "active_obj": "benchmark_carton_006",
+                    "surface_obj": "table_7643d40d",
+                    "direction": "leftof",
+                    "reference_frame": "/genie/base_link",
+                    "distance_fraction": 0.3333333333333333,
+                    "z_tolerance": 0.02
+                  }
+                }
+              },
+              {
+                "OnSurface": {
+                  "active_obj": "benchmark_carton_006",
+                  "surface_obj": "table_7643d40d",
+                  "z_tolerance": 0.02,
+                  "confirm_checks": 2
+                }
+              },
+              {
+                "Onfloor": "benchmark_carton_006|0"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_up_a_package",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "LiftUp",
+              "points": 15
+            },
+            {
+              "checker": "MixedRules",
+              "points": 35
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

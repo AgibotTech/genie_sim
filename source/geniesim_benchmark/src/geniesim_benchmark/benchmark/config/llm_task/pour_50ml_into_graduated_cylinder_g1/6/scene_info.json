@@ -1,0 +1,164 @@
+{
+  "task_name": "pour_50ml_g1_generalized",
+  "scene_id": "g1_left_0332",
+  "robot": {
+    "init_arm_pose": {
+      "idx01_body_joint1": 0.42,
+      "idx02_body_joint2": 0.8726646991494927,
+      "idx11_head_joint1": 0,
+      "idx12_head_joint2": 0.4363296423945109,
+      "idx21_arm_l_joint1": -1.0743441581726074,
+      "idx61_arm_r_joint1": 1.0743441581726074,
+      "idx22_arm_l_joint2": 0.6110641360282898,
+      "idx62_arm_r_joint2": -0.6110466122627258,
+      "idx23_arm_l_joint3": 0.2795839011669159,
+      "idx63_arm_r_joint3": -0.2795839011669159,
+      "idx24_arm_l_joint4": -1.2839884757995603,
+      "idx64_arm_r_joint4": 1.283866286277771,
+      "idx25_arm_l_joint5": 0.7304918766021729,
+      "idx65_arm_r_joint5": -0.7303872108459473,
+      "idx26_arm_l_joint6": 1.4953428506851196,
+      "idx66_arm_r_joint6": -1.4952731132507324,
+      "idx27_arm_l_joint7": -0.18755260109901428,
+      "idx67_arm_r_joint7": 0.18760496377944944,
+      "idx41_gripper_l_outer_joint1": 0.7853981633974483,
+      "idx81_gripper_r_outer_joint1": 0.7853981633974483,
+      "idx31_gripper_l_inner_joint1": -0.7853981633974483,
+      "idx71_gripper_r_inner_joint1": -0.7853981633974483
+    },
+    "robot_cfg": "G1_omnipicker_fixed_dual.json",
+    "robot_id": "G1",
+    "robot_init_pose": {
+      "position": [
+        -0.65,
+        0,
+        0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "init_arm_pose_noise": {}
+  },
+  "layout": {
+    "jug": {
+      "usd": "benchmark_measuring_jug_001",
+      "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
+      "xyz": [
+        -0.01719455504354106,
+        0.2557528469745704,
+        0.72991943359375
+      ],
+      "xyzw": [
+        2.9032816564600454e-06,
+        5.058001145268945e-06,
+        -0.5017117166145184,
+        0.8650348856420189
+      ],
+      "prim_path": "/World/Objects/jug"
+    },
+    "cylinder": {
+      "usd": "benchmark_graduated_cylinder_001",
+      "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
+      "xyz": [
+        0.09333094981660583,
+        0.21807549460845913,
+        0.7299213409423828
+      ],
+      "xyzw": [
+        9.7541163443687e-08,
+        -1.5631908726110922e-07,
+        -0.5993699585913453,
+        0.8004721436366009
+      ],
+      "prim_path": "/World/Objects/cylinder"
+    },
+    "table": {
+      "usd": "benchmark_pour_table_001",
+      "asset_path": "objects/benchmark/table/benchmark_pour_table_001/Aligned.usda",
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "prim_path": "/World/Objects/table"
+    },
+    "liquid": {
+      "prim_path": "/World/Objects/liquid",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "inline_geometry": true,
+      "source_asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
+      "initial_world_frame_baked": true
+    }
+  },
+  "active_arm": "left",
+  "layout_type": "short_diagonal",
+  "layout_sample": {
+    "arm": "left",
+    "layout_type": "short_diagonal",
+    "sample": 32,
+    "offsets": [
+      0.028506751061277237,
+      0.005308269239417128,
+      -0.020836305278662162,
+      -0.02259435782976108
+    ],
+    "yaw_deg": 0.22683259289026036,
+    "applied_offset_scale": 0.8
+  },
+  "physics_hz": 240,
+  "recording_hz": 30,
+  "validation": {
+    "static_table_support": true,
+    "table_edge_margin_m": {
+      "jug": 0.14247580298850276,
+      "cylinder": 0.13220491076994692
+    },
+    "physics_passed": false,
+    "full_kinematic_route": "pending_remote",
+    "source": "new_scene_not_previous_success"
+  },
+  "original_fluid_parameters": true,
+  "original_liquid_asset_layout": {
+    "usd": "shared",
+    "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
+    "xyz": [
+      -0.13118395798779076,
+      0.011967640670392965,
+      2.3072186938755124e-08
+    ],
+    "xyzw": [
+      2.630836224955821e-08,
+      4.5359823241747865e-08,
+      0.8650358074833503,
+      0.5017101272364605
+    ],
+    "prim_path": "/World/Objects/liquid"
+  },
+  "initialization_bake": {
+    "fluid_world_frame_identity": true,
+    "physics_in_scene_usda": true,
+    "script_required_for_initial_liquid": false,
+    "physical_parameters_unchanged": true,
+    "particle_world_positions_preserved": true
+  }
+}

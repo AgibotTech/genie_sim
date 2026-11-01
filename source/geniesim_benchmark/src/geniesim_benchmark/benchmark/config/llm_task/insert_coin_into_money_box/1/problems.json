@@ -1,0 +1,49 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_coin_w_ac41e5e2|right_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Inside": "benchmark_coin_w_ac41e5e2|benchmark_money_box_adb0fca9|{\"scale\":[1,1,1],\"height_from_bottom\":0.04}"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "insert_coin_into_money_box",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 20
+            },
+            {
+              "checker": "Inside",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "pen|right_gripper"
+                            },
+                            {
+                                "StepOut": 1200
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "InkOverlap": "Ink/strokes|paper/entity/writing_template_T|0.85|0.002|0|0.0025|0.00075|0.0004|1.2|0.001"
+                            },
+                            {
+                                "StepOut": 1200
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "write_uppercase_letter_with_pen_g1",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 10
+                        },
+                        {
+                            "checker": "InkOverlap",
+                            "points": 40
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

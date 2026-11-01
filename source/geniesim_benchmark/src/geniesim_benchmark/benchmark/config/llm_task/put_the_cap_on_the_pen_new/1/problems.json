@@ -1,0 +1,77 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_pen_3a0061b5|left_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_cap_w_1f5b99ae|right_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PlugInserted": "benchmark_cap_w_1f5b99ae|PenAttachJoint"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Ontop": "benchmark_pen_3a0061b5|table_415e08af"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "put_the_cap_on_the_pen_new",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "PlugInserted",
+              "points": 20
+            },
+            {
+              "checker": "Ontop",
+              "points": 20
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

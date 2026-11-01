@@ -1,0 +1,218 @@
+{
+  "condition_id": "bearing-gearing-shaft-section-seat5mm-20261022",
+  "robot_configuration": {
+    "robot_base_pose": {
+      "position": [
+        0.7,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "initial_joint_state": {
+      "body_state": [
+        -0.8029,
+        1.5048,
+        -0.3419,
+        0,
+        0
+      ],
+      "head_state": [
+        0,
+        -0.001,
+        0.45
+      ],
+      "init_arm": [
+        0.5264,
+        -0.5189,
+        -1.0938,
+        -1.5954,
+        -1.1488,
+        0.3386,
+        -1.1805,
+        -0.5252,
+        -0.5194,
+        1.0943,
+        -1.5958,
+        1.1483,
+        0.3393,
+        1.1809
+      ],
+      "init_hand": [
+        0,
+        0
+      ]
+    },
+    "robot_is_injected_by_benchmark_runtime": true,
+    "instruction": "Assemble the gear onto the central gear shaft.",
+    "initial_state_source": "mount_part_90d-initial-state.json",
+    "base_pose_source": "opposite-base-pose.json"
+  },
+  "scene_id": "install_bearing_shaft_seat5mm_17",
+  "task_name": "install_bearing_shaft_seat5mm",
+  "seed": 2026103317,
+  "layout": {
+    "table_02148680": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/table/Aligned.usda",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "table_02148680"
+      ],
+      "keywords": [
+        "table"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ]
+      },
+      "asset_path": "objects/benchmark/gearing_20261020/assets/table/Aligned.usda"
+    },
+    "Aligned": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda",
+      "xyz": [
+        -0.02597765421668234,
+        0.013805805469701917,
+        0.8180391994687565
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9990482330322266,
+        0.04361938685178757
+      ],
+      "tags": [
+        "Aligned"
+      ],
+      "keywords": [
+        "gearbox central shaft and support disc"
+      ],
+      "description": {
+        "semantic_name": [
+          "gearbox central shaft and support disc"
+        ]
+      },
+      "asset_path": "objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda"
+    },
+    "Aligned_02": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda",
+      "xyz": [
+        0.23902234578331766,
+        0.2688058054697019,
+        0.7430340638288921
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.5,
+        -0.8660253882408142
+      ],
+      "tags": [
+        "Aligned_02"
+      ],
+      "keywords": [
+        "loose gear"
+      ],
+      "description": {
+        "semantic_name": [
+          "loose gear"
+        ]
+      },
+      "asset_path": "objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda"
+    }
+  },
+  "native_placement_target": {
+    "active": "Aligned_02",
+    "passive": "Aligned",
+    "world_root_position_m": [
+      -0.025624755340051274,
+      0.017569390338464518,
+      0.7655846594991846
+    ],
+    "world_root_quaternion_wxyz": [
+      0.04361938736533601,
+      0.0,
+      0.0,
+      0.9990482215818578
+    ],
+    "entity_world_quaternion_wxyz": [
+      0.030843564597231896,
+      0.030843564597231896,
+      0.706433772212892,
+      0.706433772212892
+    ],
+    "world_position_difference_m": [
+      0.00035289887663106714,
+      0.0037635848687626,
+      -0.052454539969571834
+    ],
+    "basis": "central shaft collision-AABB XY center; gear collision bottom on support-disc top",
+    "final_height_tolerance_m": 0.005,
+    "height_boundary_inclusive": true
+  },
+  "generalization": {
+    "version": "fine_xy_translation_v1",
+    "instance_id": 17,
+    "source_instance": 7,
+    "source_scene_sha256": "ed673d61dfdf1f7cbe785bf3be36f6d9a20ce7df900bc0bc6f1a55ef22e592ab",
+    "source_scene_info_sha256": "5e3f4dca7d647dd4b8f1966da1afb0aa605471b0e1818357a653419124d3b91c",
+    "source_problem_sha256": "8a55f641a3ef288759e67a8910c5fe79d65917238ba5fee412531038c6dfa0a5",
+    "seed": 2026103317,
+    "world_xy_translation_m": [
+      0.004022345783317657,
+      0.013805805469701917
+    ],
+    "group_prims": [
+      "Aligned",
+      "Aligned_02"
+    ],
+    "fixed_prims": [
+      "table_02148680"
+    ],
+    "orientation_and_height": "source instance unchanged",
+    "robot_initialization": "shared task configuration unchanged"
+  },
+  "validation_level": "static_geometry",
+  "static_geometry": {
+    "world_xy_within_source_task_origin_envelope": true,
+    "world_xy_within_source_semantic_role_envelopes": true,
+    "all_object_relative_transforms_preserved": true,
+    "fixed_support_transforms_preserved": true,
+    "all_mesh_vertical_bounds_preserved": true,
+    "nonzero_translation_m": 0.01437983067590939,
+    "table_support": {
+      "table_prim": "table_02148680",
+      "baseline_xy_edge_margin_m": [
+        0.022729276271024612,
+        0.20339334711667362
+      ],
+      "minimum_xy_edge_margin_m": [
+        0.001,
+        0.001
+      ],
+      "generated_xy_edge_margin_m": [
+        0.018706930487706885,
+        0.18958754164697172
+      ]
+    },
+    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
+    "ik_execution": "not_run",
+    "physics_execution": "not_run",
+    "unresolved_file_dependencies": []
+  }
+}

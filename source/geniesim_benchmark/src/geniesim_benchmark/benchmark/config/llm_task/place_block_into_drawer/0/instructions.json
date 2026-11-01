@@ -5,5 +5,42 @@
       "instruction": "Open the drawer and place items inside"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PushPull": "iros_drawer_cabinet_3eb4e98c|0.1|0.15|0"
+      },
+      "instruction": "Pull open the drawer",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_building_blocks_98f3984e|left_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_building_blocks_98f3984e|right_gripper"
+          }
+        ]
+      },
+      "instruction": "Grab the blocks on the cabinet",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "Inside": "benchmark_building_blocks_98f3984e|iros_drawer_cabinet_3eb4e98c|1"
+      },
+      "instruction": "Put the blocks into the drawer",
+      "step_out": 900
+    },
+    {
+      "checker": {
+        "PushPull": "iros_drawer_cabinet_3eb4e98c|0.0|0.03|0"
+      },
+      "instruction": "Close the drawer",
+      "step_out": 300
+    }
+  ],
   "task_id": "place_block_into_drawer_10"
 }

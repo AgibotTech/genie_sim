@@ -3,5 +3,28 @@
     {
       "instruction": "Right hand passes the chips to the left hand"
     }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "chip_e7n8o9p0|right_gripper"
+      },
+      "instruction": "Right arm picks up the yellow canned chips on the table",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "StableGrasp": "chip_e7n8o9p0|left_gripper|0.1|0.1|0.5"
+      },
+      "instruction": "Right arm passes the yellow canned chips to the left arm",
+      "step_out": 600
+    },
+    {
+      "checker": {
+        "Upright": "chip_e7n8o9p0|5.0"
+      },
+      "instruction": "Left arm places the yellow canned chips on the table",
+      "step_out": 300
+    }
   ]
 }

@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_48fb3ac4" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.265)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_06399dab" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.015054, 0, 0, 0.999887)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.04, -0.197, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_f36406ff" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.337554, 0, 0, 0.941306)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.171, 0.117, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_52f9677e" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.951537, 0, 0, 0.307535)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.127, 0.163, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+    }
+}

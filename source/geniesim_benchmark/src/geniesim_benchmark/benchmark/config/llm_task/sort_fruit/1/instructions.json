@@ -4,5 +4,35 @@
       "instruction": "Place fruits into corresponding storage boxes by type"
     }
   ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "PickUpOnGripper": "benchmark_peach_64921f61|left_gripper"
+          },
+          {
+            "PickUpOnGripper": "benchmark_peach_64921f61|right_gripper"
+          }
+        ]
+      },
+      "instruction": "Pick up the peach on the table",
+      "step_out": 300
+    },
+    {
+      "checker": {
+        "ActionSetWaitAny": [
+          {
+            "Inside": "benchmark_peach_64921f61|benchmark_storage_box_a14ece85|1"
+          },
+          {
+            "Onfloor": "benchmark_peach_64921f61|0"
+          }
+        ]
+      },
+      "instruction": "Sort the held peach into the corresponding storage basket on the table",
+      "step_out": 600
+    }
+  ],
   "task_id": "sort_fruit"
 }

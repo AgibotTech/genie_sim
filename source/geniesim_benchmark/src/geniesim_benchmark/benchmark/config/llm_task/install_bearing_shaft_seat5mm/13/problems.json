@@ -1,0 +1,134 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "Aligned_02|right_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ShaftInserted": {
+                  "object": "Aligned_02",
+                  "reference": "Aligned",
+                  "hole": [
+                    [
+                      0.00039508,
+                      -0.01061512,
+                      -0.0001343
+                    ],
+                    [
+                      0.00039508,
+                      0.01057383,
+                      -0.0001343
+                    ]
+                  ],
+                  "shaft": [
+                    [
+                      0.000349155,
+                      -0.06307128,
+                      0.003779844
+                    ],
+                    [
+                      0.000349155,
+                      0.0864304,
+                      0.003779844
+                    ]
+                  ],
+                  "hole_radius": 0.0165,
+                  "shaft_radius": 0.01576,
+                  "min_overlap": 0.003,
+                  "max_angle": 0.08726646259971647,
+                  "radial_tolerance": 0.0015,
+                  "shaft_sections": [
+                    {
+                      "start_m": 0.0,
+                      "end_m": 0.0827,
+                      "radius_m": 0.015757
+                    },
+                    {
+                      "start_m": 0.082698,
+                      "end_m": 0.086142,
+                      "radius_m": 0.015757
+                    },
+                    {
+                      "start_m": 0.08614,
+                      "end_m": 0.11617,
+                      "radius_m": 0.014495
+                    },
+                    {
+                      "start_m": 0.116168,
+                      "end_m": 0.118088,
+                      "radius_m": 0.014495
+                    },
+                    {
+                      "start_m": 0.118086,
+                      "end_m": 0.14950168,
+                      "radius_m": 0.014086
+                    }
+                  ]
+                }
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PlaceOnRivet": {
+                  "active_obj": "Aligned_02",
+                  "passive_obj": "Aligned",
+                  "target_rel_pos": "0.003415915151,-0.001618839500,-0.052454539970",
+                  "target_quat": "0.596367810529,0.596367810529,0.379928196591,0.379928196591",
+                  "xy_tol": 0.02,
+                  "z_tol": 0.005,
+                  "orient_tol": 3.141593,
+                  "still_thresh": 0.02,
+                  "still_steps": 10,
+                  "z_inclusive": true
+                }
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "install_bearing_shaft_seat5mm",
+    "ScoreLayout": "install_bearing_shaft_progress",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "ShaftInserted",
+              "points": 15
+            },
+            {
+              "checker": "PlaceOnRivet",
+              "points": 25
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

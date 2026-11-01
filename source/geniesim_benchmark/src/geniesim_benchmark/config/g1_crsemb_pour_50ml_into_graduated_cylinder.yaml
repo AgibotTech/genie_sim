@@ -1,0 +1,29 @@
+app:
+  physics_step: 240
+  rendering_step: 30
+  enable_rate_limit: true
+  enable_ros: false
+  # The delivered package requires 240 Hz physics (STARTUP.md) and the liquid is
+  # a PBD particle system, which only simulates under PhysX GPU dynamics.
+  enable_gpu_dynamics: true
+  # Render only the frames a consumer actually reads. api_core gates
+  # world.step(render=...) on a request refcount (api_core.py:231-312) and the
+  # benchmark already holds a request exactly while policy.need_infer() is true
+  # (task_benchmark.py:985), so the only rendered frames are the observation
+  # feeding each inference plus the post-reset frame. Path tracing three cameras
+  # per step is what makes this task crawl; particle dynamics are unaffected.
+  on_demand_render: true
+  # Path tracing is the delivered package's recommended renderer for this task
+  # (STARTUP.md section 3): the liquid is glass-like and raytraced lighting
+  # leaves the stream and the meniscus hard to read. The string is Isaac's
+  # renderer name, passed straight to SimulationApp (app_launcher.py:239).
+  render_mode: PathTracing
+benchmark:
+  task_name: pour_50ml_g1
+  platform: G1
+  sub_task_name: pour_50ml_into_graduated_cylinder_g1
+  num_instances: 20
+  seed: 1
+  model_arc: corobot
+  num_episode: 1
+  record: false

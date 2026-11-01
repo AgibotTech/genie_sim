@@ -68,6 +68,9 @@ geniesim benchmark robots             # show robot counts
 geniesim benchmark list --robot=g2op --category=if
 ```
 
+The [task suite inventory](../../docs/benchmark-task-suites.md) describes fine,
+dexterous, whole-body, and cross-embodiment task resources.
+
 ### Batch-evaluate a sweep
 
 ```bash

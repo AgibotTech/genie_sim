@@ -1,0 +1,57 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_58d18c06" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.265)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_41644131" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.652752, 0, 0, 0.757572)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.043, -0.233, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_7e835b1c" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.69323, 0, 0, 0.720717)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.05, 0.201, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_bowl_48eb4a19" (
+            prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.972106, 0, 0, -0.234541)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.196, -0.089, 0.901)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+    }
+}

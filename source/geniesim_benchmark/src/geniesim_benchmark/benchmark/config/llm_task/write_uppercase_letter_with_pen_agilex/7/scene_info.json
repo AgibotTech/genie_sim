@@ -1,0 +1,415 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "xyz": [
+        -0.02100000000000002,
+        -0.018,
+        0.5194953424779063
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/table/benchmark_table_019/Aligned.usda"
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "xyz": [
+        -0.2424410678289528,
+        0.003978472864643482,
+        0.985
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.04319246379181137,
+        0.9990667700767517
+      ],
+      "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.241,
+        -0.143,
+        1.0243014000450366
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda"
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "xyz": [
+        -0.241,
+        -0.143,
+        1.0595
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/pen/benchmark_pen_009/Aligned.usda"
+    },
+    "Ink": {
+      "usd": "Ink",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink",
+    "/World/Objects/paper/entity/writing_template"
+  ],
+  "writing_contract": {
+    "reference_report": "aloha_01",
+    "grasp_index": 20,
+    "T_pen_tcp": [
+      [
+        -0.49999999999999967,
+        0.0,
+        0.8660254037844388,
+        0.010392304845415125
+      ],
+      [
+        0.0,
+        0.9999999999999999,
+        0.0,
+        0.04040777570972542
+      ],
+      [
+        -0.8660254037844388,
+        0.0,
+        -0.49999999999999967,
+        -0.005999651660244105
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "pen_tip_local": [
+      0,
+      -0.07184357772142377,
+      -6.515861400178732e-07
+    ],
+    "paper_size_m": [
+      0.18,
+      0.12,
+      0.001
+    ],
+    "target_tip_gap_m": 0.002,
+    "lift_m": 0.05,
+    "glyph_width_m": 0.06,
+    "glyph_height_m": 0.08,
+    "stroke_point_spacing_m": 0.002,
+    "robot_base_world": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.15000000596046448
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "paper_pose_solver": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.47
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.02
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.8249999940395355
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "ink_contact_distance_m": 0.005,
+    "ink_root": "/World/Objects/Ink",
+    "ink_mesh": "/World/Objects/Ink/strokes",
+    "ink_control": "/World/Objects/pen/entity",
+    "pen_actor": "/World/Objects/pen/entity",
+    "paper_actor": "/World/Objects/paper/entity",
+    "initial_pen_cpu_grasp": {
+      "pen_entity_pose_solver": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.45999999999999996
+        ],
+        [
+          0.0,
+          9.069511300197064e-06,
+          -0.999999999958872,
+          -0.13
+        ],
+        [
+          0.0,
+          0.999999999958872,
+          9.069511300197064e-06,
+          0.8994999940395356
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "grasp_tcp_solver": [
+        [
+          -0.49999999999999967,
+          0.0,
+          0.8660254037844388,
+          0.4703923048454151
+        ],
+        [
+          0.866025403748821,
+          9.069511300197062e-06,
+          0.49999999997943567,
+          -0.12400009069535985
+        ],
+        [
+          -7.854427185880694e-06,
+          0.9999999999588719,
+          -4.534755650098529e-06,
+          0.9279077153341841
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "joint_solution": [
+        1.081780889507949,
+        0.7852588434255982,
+        -0.44221635043054436,
+        1.1858219627591213,
+        -0.6082846985752469,
+        -1.112150318235442
+      ],
+      "cpu_ik_pass": true
+    },
+    "initialization_uses_explicit_actual_usd_bounds": true,
+    "gripper_initial_open_fraction": 0.9,
+    "pick_lift_m": 0.1,
+    "grasp_provenance": {
+      "original_index": 13,
+      "pen_axis_azimuth_delta_deg": 105,
+      "selected_original_144_index": 20,
+      "body_axial_height_unchanged": true,
+      "tcp_depth_m": 0.012
+    },
+    "preload_ramp_candidate": {
+      "parent": "round009_preload200240/package",
+      "only_control_change": "same fixed200um final preload command applied monotonically in maximum5um increments; each increment original3controlticks with original eachtick guards and closure_pose_hold",
+      "real_trial32_extra_command_m": 0.000173528842926386,
+      "old_control_tick_increment_m": 5.78429476421287e-05,
+      "new_control_tick_increment_max_m": 1.6666666666666669e-06,
+      "original_final_target_and_all_acceptance_and_caps_unchanged": true,
+      "reference_never_reset": true,
+      "physical_success": false,
+      "regression_tests": 33
+    },
+    "writing_feedback_candidate": {
+      "parent": "round009_preload200_ramp240/package",
+      "only_policy_behavior_change": "servo_tip preserves original10-command prefix and fresh final read then bounded6D actualtip feedback identical to ARX V1",
+      "position_step_m": 0.0005,
+      "position_total_m": 0.004,
+      "rotation_step_rad": 0.004,
+      "rotation_total_rad": 0.04,
+      "initial_gain": 0.25,
+      "fallback_measurement_budget": 25,
+      "strictIK_and_originaltip_slip_ink_gates_unchanged": true,
+      "baseline_trial33_physical_grasp": true,
+      "baseline_trial33_ink_accepted": false,
+      "candidate_physical_success": false,
+      "test_count": 41
+    },
+    "parent_A_current_CPU_validation": {
+      "physical_success": false,
+      "source": "actual trial29 stable009 pen/base/q/holder; full source closure to original6mm minimum; 200um sibling reuses identical geometry and code",
+      "path_samples": 1886,
+      "strict_ik_failure": null,
+      "robot_shape_count": 47,
+      "source_robot_geometry_flags": 0,
+      "nominal_tip_above_rim_m": 0.01695728156344023,
+      "source_bilateral_driver_m": 0.007349999999999177,
+      "audited_minimum_driver_m": 0.005999999999999138,
+      "pen_source_samples": 1285,
+      "initial_seated_pen_source_intersecting_rows": 516,
+      "carried_pen_source_intersecting_rows": 0,
+      "pose_envelope_samples": 402,
+      "pose_envelope_flags": 0,
+      "min_robot_clearance_m": {
+        "table": 0.01923748870827752,
+        "holder": 0.018265231799908636,
+        "open_robot_pen": 0.02579946727386279,
+        "carried_nonfinger_pen": 0.0534796871154721
+      },
+      "tests": 33,
+      "source_seated_support_contact_is_not_cooked_force_or_grasp_proof": true
+    },
+    "parent_A_current_writing_CPU_validation": {
+      "passed": true,
+      "physical_success": false,
+      "source": "actual33 closed_grasp relative transform; firstpoint measured qactual-qheld constant loadedFK plant; actual base/native limits; unchanged33 scene/grip/ramp",
+      "full_A_points": 103,
+      "commands": 1876,
+      "strict_solves": 1876,
+      "strict_max_dp_m": 5.647502985291464e-08,
+      "strict_max_da_rad": 2.2710954028935193e-07,
+      "max_servo_branch_rad": 0.014285141391270462,
+      "all_robot_shapes": 47,
+      "dense_geometry_samples": 5681,
+      "min_clearance_m": {
+        "table": 0.0192415714781983,
+        "holder": 0.028788451093365704,
+        "nonfinger_pen": 0.05301070969120057,
+        "held_pen_table": 0.0023155985717885985,
+        "held_pen_holder": 0.09074986554751761
+      },
+      "maximum_final_tip_error_m": 0.0014997544441062135,
+      "maximum_final_orientation_rad": 0.007054047339341959,
+      "maximum_feedback_position_bias_m": 0.0012875705004078892,
+      "maximum_feedback_rotation_bias_rad": 0.005988198952701251,
+      "actual_joint_offset_rad": [
+        0.0005485604639972053,
+        0.0008361356817601084,
+        0.0005605161382183921,
+        0.005359453680842785,
+        -0.006606138527477379,
+        -0.011252340214294332
+      ],
+      "elapsed_s": 92.07630158914253,
+      "limitation": "No force/contact/ink proof. Original current strictIK/.18 servo branch/tip1.5mm/.02rad/relative slip remain unchanged; inherited open approach/grasp/extraction evidence documented separately."
+    }
+  },
+  "host_physics_contract": {
+    "source_definitions": [],
+    "host_scene_path": "/physicsScene",
+    "physics_hz": 240,
+    "gravity_direction": [
+      0,
+      0,
+      -1
+    ],
+    "gravity_magnitude": 9.81,
+    "expected_physics_index_delta_per_step": 1,
+    "source_physics_scene_removed": "/World/physicsScene",
+    "removed_source_gravity_only": {
+      "physics:gravityDirection": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "physics:gravityMagnitude": 9.8100004196167
+    },
+    "actual_runtime_single_step_validation_pending": true
+  },
+  "copybook": {
+    "target_letter": "B",
+    "guide_prim": "/World/Objects/paper/entity/writing_template",
+    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "gray_geometry_authored_in_scene": true,
+    "visual_only": true,
+    "overlap_metrics": [
+      "iou",
+      "dice",
+      "target_coverage",
+      "ink_precision"
+    ],
+    "physical_validation": "pending new physical trial"
+  },
+  "scene_id": "trace_copybook_b_aloha_20261023_scene_000092",
+  "task_name": "trace_copybook_b_aloha_20261023",
+  "target_letter": "B",
+  "physical_validation": {
+    "passed": false,
+    "status": "new layout; physical trial pending"
+  },
+  "validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
+  "generalization": {
+    "batch": "writing_generalization_4000_20261023",
+    "seed": 20261023,
+    "robot": "ALOHA",
+    "anchor": "ALOHA/v07/B",
+    "jitter_xy_m_yaw_deg": [
+      -0.004441067828952805,
+      -0.004021527135356518,
+      1.9510467075122517
+    ],
+    "anchor_variation": {
+      "paper_xy_m": [
+        -0.012,
+        0.006
+      ],
+      "paper_yaw_deg": 3,
+      "holder_xy_m": [
+        0,
+        0
+      ]
+    },
+    "accepted_attempt": 0,
+    "source_scene_sha256": "2d853133b6a1c815bf46fa9570c1d7eb9224e1a4a93bd55d1b98036124185a11",
+    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "initial_robot_joints_unchanged": true,
+    "paper_height_unchanged": true,
+    "physical_success": false,
+    "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
+  }
+}

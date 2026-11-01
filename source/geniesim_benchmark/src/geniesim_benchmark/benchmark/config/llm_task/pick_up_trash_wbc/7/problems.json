@@ -1,0 +1,136 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "benchmark_trash_021|0.9"
+              },
+              {
+                "RobotNearObject": "benchmark_trash_031|0.9"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_trash_021,benchmark_trash_031|left_gripper"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "RobotNearObject": "benchmark_trash_021|0.9"
+                  },
+                  {
+                    "RobotNearObject": "benchmark_trash_031|0.9"
+                  }
+                ]
+              },
+              {
+                "StepOut": 750
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_trash_021,benchmark_trash_031|right_gripper"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "benchmark_trash_can_015|1.0"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PushPull": "benchmark_trash_can_015|0.01|1|0"
+              },
+              {
+                "StepOut": 300
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "Inside": "benchmark_trash_021|/Workspace/Objects/benchmark_trash_can_015/entity/body|{\"scale\": [0.6, 0.56, 1.0], \"height_from_bottom\": 0.16}"
+                  },
+                  {
+                    "Inside": "benchmark_trash_031|/Workspace/Objects/benchmark_trash_can_015/entity/body|{\"scale\": [0.6, 0.56, 1.0], \"height_from_bottom\": 0.16}"
+                  }
+                ]
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "pick_up_trash_wbc",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
+              "checker": "PushPull",
+              "points": 10
+            },
+            {
+              "checker": "Inside",
+              "points": 15
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

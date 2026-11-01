@@ -1,0 +1,33 @@
+{
+  "instructions": [
+    {
+      "instruction": "Use the left hand to insert the purple five-pointed star block into the matching five-pointed star hole of the shape sorter box.",
+      "target": {
+        "id1": "benchmark_building_blocks_35570a3b"
+      },
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        }
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "benchmark_building_blocks_35570a3b|left_gripper"
+      },
+      "instruction": "Pick up the purple five-pointed star block with the left gripper",
+      "step_out": 600
+    },
+    {
+      "checker": {
+        "InBBox": "benchmark_building_blocks_35570a3b|0.0165366326435,0.042252864589,0.744|0.16,0.16,0.16"
+      },
+      "instruction": "Insert the purple five-pointed star block through the matching five-pointed star hole into the shape sorter box",
+      "step_out": 900
+    }
+  ],
+  "task_id": "insert_building_block"
+}

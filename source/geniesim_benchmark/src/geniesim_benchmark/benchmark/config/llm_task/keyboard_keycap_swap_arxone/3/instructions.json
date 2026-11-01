@@ -1,0 +1,45 @@
+{
+    "instructions": [
+        {
+            "instruction": "Pick up the puller, pull the numpad One keycap off the keyboard, and install the green One keycap in its place",
+            "gripper": {
+                "1": {
+                    "handover": false,
+                    "side": "left"
+                },
+                "2": {
+                    "handover": false,
+                    "side": "right"
+                }
+            },
+            "target": {
+                "id1": "replacement_keycap_000",
+                "id2": "keyboard_000"
+            }
+        }
+    ],
+    "subtask_steps": [
+        {
+            "checker": {
+                "PickUpOnGripper": "keycap_puller_000/entity/body|any_gripper"
+            },
+            "instruction": "either gripper picks up the keycap puller by its handle",
+            "step_out": 900
+        },
+        {
+            "checker": {
+                "LiftUp": "keyboard_000/entity/part_11|0.02"
+            },
+            "instruction": "lowers the puller onto the numpad One keycap and pulls it straight off",
+            "step_out": 900
+        },
+        {
+            "checker": {
+                "PlaceOnRivet": "replacement_keycap_000|keyboard_000|0,0,0.0098|0.7114105172490616,0.0,0.0,-0.7027766899573595|0.02|0.02|0.3|0.02|15"
+            },
+            "instruction": "places the green One keycap onto the empty numpad socket and releases it",
+            "step_out": 2700
+        }
+    ],
+    "task_id": "keyboard_keycap_swap_arxone"
+}

@@ -1,0 +1,201 @@
+{
+  "scene_id": "hang_cups_on_cup_tree_g2_op",
+  "seed": 4052664496241438263,
+  "layout": {
+    "table_a46cf4e5": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_0b0065a9",
+        "hang_cups_on_cup_tree_g2_op_e2d025c0",
+        "table_a46cf4e5"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace",
+        "POSITION_TAG_center"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_cup_holder_ce22b96e": {
+      "usd": "benchmark_cup_holder_000",
+      "xyz": [
+        0.15303591918926895,
+        0.02807769532248572,
+        0.907
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.28855281585299375,
+        0.9574639797210693
+      ],
+      "tags": [
+        "root_scene_0b0065a9",
+        "hang_cups_on_cup_tree_g2_op_e2d025c0",
+        "benchmark_cup_holder_ce22b96e"
+      ],
+      "keywords": [
+        "cup_tree",
+        "cup_holder",
+        "target_placement",
+        "back",
+        "unmovable",
+        "POSITION_TAG_center"
+      ],
+      "description": {}
+    },
+    "benchmark_cup_c4ed9ae9": {
+      "usd": "benchmark_cup_124",
+      "xyz": [
+        -0.08596408081073108,
+        0.2390776953224857,
+        0.777
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.29246905928640915,
+        0.9562749862670898
+      ],
+      "tags": [
+        "root_scene_0b0065a9",
+        "hang_cups_on_cup_tree_g2_op_e2d025c0",
+        "benchmark_cup_c4ed9ae9"
+      ],
+      "keywords": [
+        "cup_hang_0",
+        "cup",
+        "mug",
+        "handled",
+        "graspable",
+        "front",
+        "task_side_left",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_0b0065a9"
+        },
+        {
+          "id": "hang_cups_on_cup_tree_g2_op_e2d025c0"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace",
+            "POSITION_TAG_center"
+          ],
+          "id": "table_a46cf4e5"
+        },
+        {
+          "tags": [
+            "cup_tree",
+            "cup_holder",
+            "target_placement",
+            "back",
+            "unmovable",
+            "POSITION_TAG_center"
+          ],
+          "id": "benchmark_cup_holder_ce22b96e"
+        },
+        {
+          "tags": [
+            "cup_hang_0",
+            "cup",
+            "mug",
+            "handled",
+            "graspable",
+            "front",
+            "task_side_left",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_cup_c4ed9ae9"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_0b0065a9",
+          "target": "hang_cups_on_cup_tree_g2_op_e2d025c0"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_g2_op_e2d025c0",
+          "target": "table_a46cf4e5"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_g2_op_e2d025c0",
+          "target": "benchmark_cup_holder_ce22b96e"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_g2_op_e2d025c0",
+          "target": "benchmark_cup_c4ed9ae9"
+        }
+      ]
+    }
+  },
+  "generalization": {
+    "method": "coupled_horizontal_translation",
+    "source_instance": 4,
+    "source_scene_sha256": "cd0f227ca4fadde3b74463483753cbfb1667ddca44472d1c27ea17a15c6633b0",
+    "seed": 4052664496241438263,
+    "translation_m": [
+      0.01303591918926893,
+      -0.0019223046775142822,
+      0.0
+    ],
+    "fixed_support": "table",
+    "validation_level": "static_geometry"
+  }
+}

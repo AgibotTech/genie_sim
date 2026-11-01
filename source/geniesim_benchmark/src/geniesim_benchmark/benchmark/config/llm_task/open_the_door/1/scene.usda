@@ -1,0 +1,76 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def "benchmark_door_002" (
+            active = true
+            prepend payload = @/geniesim_assets/objects/benchmark/door/benchmark_door_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0, -0.70710677)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.3114520782656376, -0.9378764608815309, 1.0065818015236023)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "part_00"
+                {
+                    over "RevoluteJoint"
+                    {
+                        float physics:lowerLimit = 0
+                        float physics:upperLimit = 95
+                    }
+                }
+
+                over "body"
+                {
+                    def PhysicsFixedJoint "FixedJoint"
+                    {
+                        rel physics:body1 = </World/Objects/benchmark_door_002/entity/body>
+                        float physics:breakForce = 3.4028235e38
+                        float physics:breakTorque = 3.4028235e38
+                        point3f physics:localPos0 = (1.7531477, -0.5961315, 1.0109718)
+                        point3f physics:localPos1 = (0, 0, 0)
+                        quatf physics:localRot0 = (-0.50000226, -0.49999774, 0.49999774, 0.50000226)
+                        quatf physics:localRot1 = (1, 0, 0, 0)
+                    }
+                }
+
+                over "part_01"
+                {
+                    over "Cube"
+                    {
+                        token visibility = "invisible"
+                    }
+                }
+
+                over "Looks"
+                {
+                    over "ml_body"
+                    {
+                        over "ml_body"
+                        {
+                            float inputs:albedo_add = 0.16
+                        }
+                    }
+
+                    over "ml_part_00"
+                    {
+                        over "ml_body"
+                        {
+                            float inputs:albedo_add = 0.26999998
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

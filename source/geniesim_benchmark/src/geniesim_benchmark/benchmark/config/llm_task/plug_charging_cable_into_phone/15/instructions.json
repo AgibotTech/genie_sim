@@ -1,0 +1,63 @@
+{
+  "instructions": [
+    {
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        },
+        "2": {
+          "handover": false,
+          "side": "right"
+        }
+      },
+      "instruction": "plug the charging cable into the phone",
+      "target": {
+        "id1": "benchmark_phone_79f2af4c",
+        "id2": "benchmark_plug_82801d4e"
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "benchmark_phone_79f2af4c|left_gripper"
+      },
+      "instruction": "left arm picks up the phone",
+      "step_out": 450
+    },
+    {
+      "_todo": "intentionally unscored: the data generation script marks this pre-align step skip_check, so scoring it would be stricter than the training data. Insertion is scored by PlugInserted on the final step.",
+      "checker": {},
+      "instruction": "left arm moves the phone hole to the plug pre-alignment pose",
+      "step_out": 600
+    },
+    {
+      "checker": {
+        "PickUpOnGripper": "/Workspace/Objects/benchmark_plug_82801d4e/entity/body|right_gripper"
+      },
+      "instruction": "right arm picks up the plug",
+      "step_out": 450
+    },
+    {
+      "_todo": "intentionally unscored: the data generation script marks this pre-align step skip_check, so scoring it would be stricter than the training data. Insertion is scored by PlugInserted on the final step.",
+      "checker": {},
+      "instruction": "right arm moves the plug into pre-alignment with the phone hole",
+      "step_out": 600
+    },
+    {
+      "_todo": "intentionally unscored: the data generation script marks this pre-align step skip_check, so scoring it would be stricter than the training data. Insertion is scored by PlugInserted on the final step.",
+      "checker": {},
+      "instruction": "right arm align: move plug 2cm behind the hole along -Y",
+      "step_out": 600
+    },
+    {
+      "checker": {
+        "PlugInserted": "benchmark_plug_82801d4e"
+      },
+      "instruction": "right arm inserts the plug into the phone hole",
+      "step_out": 600
+    }
+  ],
+  "task_id": "plug_charging_cable_into_phone"
+}

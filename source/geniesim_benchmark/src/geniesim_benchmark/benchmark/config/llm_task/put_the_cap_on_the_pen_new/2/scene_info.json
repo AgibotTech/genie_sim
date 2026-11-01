@@ -1,0 +1,208 @@
+{
+  "scene_id": "put_the_cap_on_the_pen_new",
+  "seed": 2043365018,
+  "layout": {
+    "table_8bfc282b": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_60c3dad4",
+        "put_the_cap_on_the_pen_new_0b983a53",
+        "table_8bfc282b"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_pen_d9a6de54": {
+      "usd": "benchmark_pen_012",
+      "xyz": [
+        -0.089,
+        0.1,
+        0.741
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.750214,
+        0.661195
+      ],
+      "tags": [
+        "root_scene_60c3dad4",
+        "put_the_cap_on_the_pen_new_0b983a53",
+        "benchmark_pen_d9a6de54"
+      ],
+      "keywords": [
+        "target_pen",
+        "pen",
+        "marker_pen",
+        "stationery",
+        "writing_tool",
+        "target",
+        "graspable",
+        "rod",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    },
+    "benchmark_cap_w_a1b1c0a9": {
+      "usd": "benchmark_cap_w008",
+      "xyz": [
+        -0.074,
+        -0.06,
+        0.742
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.636707,
+        0.771106
+      ],
+      "tags": [
+        "root_scene_60c3dad4",
+        "put_the_cap_on_the_pen_new_0b983a53",
+        "benchmark_cap_w_a1b1c0a9"
+      ],
+      "keywords": [
+        "target_cap",
+        "cap",
+        "pen_cap",
+        "stationery",
+        "target",
+        "graspable",
+        "rod",
+        "POSITION_TAG_right"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_60c3dad4"
+        },
+        {
+          "id": "put_the_cap_on_the_pen_new_0b983a53"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace",
+            "desktop_with_legs"
+          ],
+          "id": "table_8bfc282b"
+        },
+        {
+          "tags": [
+            "target_pen",
+            "pen",
+            "marker_pen",
+            "stationery",
+            "writing_tool",
+            "target",
+            "graspable",
+            "rod",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_pen_d9a6de54"
+        },
+        {
+          "tags": [
+            "target_cap",
+            "cap",
+            "pen_cap",
+            "stationery",
+            "target",
+            "graspable",
+            "rod",
+            "POSITION_TAG_right"
+          ],
+          "id": "benchmark_cap_w_a1b1c0a9"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_60c3dad4",
+          "target": "put_the_cap_on_the_pen_new_0b983a53"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_0b983a53",
+          "target": "table_8bfc282b"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_0b983a53",
+          "target": "benchmark_pen_d9a6de54"
+        },
+        {
+          "source": "put_the_cap_on_the_pen_new_0b983a53",
+          "target": "benchmark_cap_w_a1b1c0a9"
+        }
+      ]
+    }
+  },
+  "data_alignment": {
+    "dataset_id": 123997,
+    "task_id": 108857,
+    "camera": "observation.images.top_head",
+    "reference_episode_indices": [
+      5,
+      7,
+      12,
+      19,
+      23
+    ],
+    "layout_method": "Existing asset variants and poses retained after visual comparison with same-side replay initial frames; not a one-to-one episode reconstruction",
+    "arm_assignment": "left pen, right cap"
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "scene_id": "hang_cups_on_cup_tree_aloha",
+  "seed": 791958456,
+  "layout": {
+    "table_8dd8deb9": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_100a84bd",
+        "hang_cups_on_cup_tree_aloha_9bd48d29",
+        "table_8dd8deb9"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace",
+        "POSITION_TAG_center"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_cup_holder_f0de813c": {
+      "usd": "benchmark_cup_holder_000",
+      "xyz": [
+        -0.1,
+        0.004,
+        0.907
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.633138,
+        0.774039
+      ],
+      "tags": [
+        "root_scene_100a84bd",
+        "hang_cups_on_cup_tree_aloha_9bd48d29",
+        "benchmark_cup_holder_f0de813c"
+      ],
+      "keywords": [
+        "cup_tree",
+        "cup_holder",
+        "target_placement",
+        "unmovable",
+        "POSITION_TAG_center"
+      ],
+      "description": {}
+    },
+    "benchmark_cup_c5140cb0": {
+      "usd": "benchmark_cup_118",
+      "xyz": [
+        -0.11,
+        0.211,
+        0.77
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.363287,
+        0.931677
+      ],
+      "tags": [
+        "root_scene_100a84bd",
+        "hang_cups_on_cup_tree_aloha_9bd48d29",
+        "benchmark_cup_c5140cb0"
+      ],
+      "keywords": [
+        "cup_hang_0",
+        "cup",
+        "mug",
+        "handled",
+        "graspable",
+        "front",
+        "task_side_left",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_100a84bd"
+        },
+        {
+          "id": "hang_cups_on_cup_tree_aloha_9bd48d29"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace",
+            "POSITION_TAG_center"
+          ],
+          "id": "table_8dd8deb9"
+        },
+        {
+          "tags": [
+            "cup_tree",
+            "cup_holder",
+            "target_placement",
+            "unmovable",
+            "POSITION_TAG_center"
+          ],
+          "id": "benchmark_cup_holder_f0de813c"
+        },
+        {
+          "tags": [
+            "cup_hang_0",
+            "cup",
+            "mug",
+            "handled",
+            "graspable",
+            "front",
+            "task_side_left",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_cup_c5140cb0"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_100a84bd",
+          "target": "hang_cups_on_cup_tree_aloha_9bd48d29"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_aloha_9bd48d29",
+          "target": "table_8dd8deb9"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_aloha_9bd48d29",
+          "target": "benchmark_cup_holder_f0de813c"
+        },
+        {
+          "source": "hang_cups_on_cup_tree_aloha_9bd48d29",
+          "target": "benchmark_cup_c5140cb0"
+        }
+      ]
+    }
+  }
+}

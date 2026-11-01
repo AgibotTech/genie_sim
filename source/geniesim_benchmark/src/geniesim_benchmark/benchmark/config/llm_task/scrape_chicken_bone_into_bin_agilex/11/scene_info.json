@@ -1,0 +1,233 @@
+{
+  "scene_id": 257,
+  "seed": 12601474053159663857,
+  "layout": {
+    "table_000": {
+      "usd": "table_000",
+      "xyz": [
+        -0.0814100895712132,
+        0.0003540098789905771,
+        0.36898350805056324
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene",
+        "table_000"
+      ],
+      "keywords": [
+        "table",
+        "workspace_table"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/edited/table_000/Aligned.usda",
+      "physics": {
+        "kinematic": true,
+        "mass_kg": 200.0
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "authored_requested_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "usd_quatf_rotation_quantization_rad": 0.0
+    },
+    "scraper_000": {
+      "usd": "benchmark_scraper_000",
+      "xyz": [
+        -0.04961968019790948,
+        0.18331953689745525,
+        0.7395740086084565
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.953830596700345,
+        0.30034512281417847
+      ],
+      "tags": [
+        "root_scene",
+        "scraper_000"
+      ],
+      "keywords": [
+        "scraper",
+        "on_table"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/benchmark/scraper/benchmark_scraper_000/Aligned.usda",
+      "physics": {
+        "kinematic": false,
+        "mass_kg": 0.05
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "authored_requested_xyzw": [
+        0.0,
+        0.0,
+        0.953830596356868,
+        0.30034512390498674
+      ],
+      "usd_quatf_rotation_quantization_rad": 2.287215972174294e-09
+    },
+    "trash_bone_000": {
+      "usd": "benchmark_trash_014",
+      "xyz": [
+        -0.26614092456940364,
+        -0.29434625753843324,
+        0.7500642036273376
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9673927987115839,
+        0.2532808184623719
+      ],
+      "tags": [
+        "root_scene",
+        "trash_bone_000"
+      ],
+      "keywords": [
+        "trash",
+        "chicken_bone",
+        "on_table"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
+      "physics": {
+        "kinematic": false,
+        "mass_kg": 0.01
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "authored_requested_xyzw": [
+        0.0,
+        0.0,
+        0.9673928008468664,
+        0.25328081030677213
+      ],
+      "usd_quatf_rotation_quantization_rad": 1.6860989160427664e-08
+    },
+    "trash_can_000": {
+      "usd": "benchmark_trash_can_017",
+      "xyz": [
+        -0.4626926998679316,
+        0.1284223533607752,
+        0.6337266059341223
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        6.123233995736766e-17
+      ],
+      "tags": [
+        "root_scene",
+        "trash_can_000"
+      ],
+      "keywords": [
+        "trash_can",
+        "collection_bin",
+        "below_table_edge",
+        "kinematic"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/benchmark/trash_can/benchmark_trash_can_017/Aligned.usda",
+      "physics": {
+        "kinematic": true,
+        "mass_kg": null
+      },
+      "placement_contract": {
+        "allowed_translation_axes": [
+          "y"
+        ],
+        "preserve_x_z_orientation_scale": true,
+        "kinematic": true,
+        "full_outer_mesh_within_table_lateral_bounds": true,
+        "minimum_side_margin_m": 0.01
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "authored_requested_xyzw": [
+        0.0,
+        0.0,
+        1.0,
+        6.123234e-17
+      ],
+      "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {},
+      "nodes": [
+        {
+          "id": "root_scene"
+        },
+        {
+          "id": "table_000"
+        },
+        {
+          "id": "scraper_000"
+        },
+        {
+          "id": "trash_bone_000"
+        },
+        {
+          "id": "trash_can_000"
+        }
+      ],
+      "links": [
+        {
+          "source": "root_scene",
+          "target": "table_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "scraper_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_bone_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_can_000"
+        }
+      ]
+    }
+  },
+  "generalization": {
+    "method": "coupled_horizontal_translation",
+    "source_instance": 1,
+    "source_scene_sha256": "4abd7089b00f37337ee8ce06d747fdfd9862ace2210482b4c336b2bc89fa9081",
+    "seed": 12601474053159663857,
+    "translation_m": [
+      0.0,
+      -0.011075495688143273,
+      0.0
+    ],
+    "fixed_support": "table",
+    "validation_level": "static_geometry"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "scene_id": "insert_ethernet_cable_14",
+  "task_name": "insert_ethernet_cable",
+  "seed": 2026103114,
+  "layout": {
+    "table_000": {
+      "usd": "table_000",
+      "keywords": [
+        "table",
+        "workspace",
+        "fixed"
+      ],
+      "xyz": [
+        0.0,
+        0.0,
+        0.365
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/edited/table_000/Aligned.usda"
+    },
+    "benchmark_network_device_000": {
+      "usd": "benchmark_network_device_000",
+      "keywords": [
+        "ethernet_router",
+        "network_device",
+        "kinematic"
+      ],
+      "xyz": [
+        0.10633173665805504,
+        0.038669726436432565,
+        0.7626195690004007
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.3833133280277252,
+        0.9236183762550354
+      ],
+      "asset_path": "objects/benchmark/network_device/benchmark_network_device_000/Aligned.usda"
+    },
+    "benchmark_network_device_001": {
+      "usd": "benchmark_network_device_001",
+      "keywords": [
+        "ethernet_plug",
+        "network_cable",
+        "dynamic",
+        "POSITION_TAG_right",
+        "right_hand"
+      ],
+      "xyz": [
+        -0.17549715985428424,
+        -0.1284240468264477,
+        0.7435275175948746
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.23074862360954285,
+        0.9730134010314941
+      ],
+      "asset_path": "objects/benchmark/network_device/benchmark_network_device_001/Aligned.usda"
+    }
+  },
+  "ethernet_sample": {
+    "router_x": 0.10633172613571153,
+    "router_y": 0.03866971588537136,
+    "router_yaw_offset_deg": 45.07813837353875,
+    "router_yaw_noise_deg": 0.07813837353874575,
+    "plug_x": -0.1765637988368355,
+    "plug_y": -0.12896009586998,
+    "plug_yaw_deg": 26.682300176532408,
+    "plug_yaw_noise_deg": -18.317699823467585
+  },
+  "generalization": {
+    "version": "fine_xy_translation_v1",
+    "instance_id": 14,
+    "source_instance": 5,
+    "source_scene_sha256": "d06854bdf20f2253f1b80183e9779d271092ba2bbe07d840f3a19c46f0143edc",
+    "source_scene_info_sha256": "095aa2e5a9508560f660aafde1ad19b0fe92c136b7fcc75003ea6b6f4ef93b91",
+    "source_problem_sha256": "af1659167347e31110a75c8708993450f3a02bd010293c25958c3b84308cfb7b",
+    "seed": 2026103114,
+    "world_xy_translation_m": [
+      0.0005793753016501814,
+      0.009903694510085019
+    ],
+    "group_prims": [
+      "benchmark_network_device_000",
+      "benchmark_network_device_001"
+    ],
+    "fixed_prims": [
+      "table_000"
+    ],
+    "orientation_and_height": "source instance unchanged",
+    "robot_initialization": "shared task configuration unchanged"
+  },
+  "validation_level": "static_geometry",
+  "static_geometry": {
+    "world_xy_within_source_task_origin_envelope": true,
+    "world_xy_within_source_semantic_role_envelopes": true,
+    "all_object_relative_transforms_preserved": true,
+    "fixed_support_transforms_preserved": true,
+    "all_mesh_vertical_bounds_preserved": true,
+    "nonzero_translation_m": 0.009920627031052542,
+    "table_support": {
+      "table_prim": "table_000",
+      "baseline_xy_edge_margin_m": [
+        -0.7916358487279962,
+        -0.1055672429569624
+      ],
+      "minimum_xy_edge_margin_m": [
+        -0.7916358487279962,
+        -0.1055672429569624
+      ],
+      "generated_xy_edge_margin_m": [
+        -0.7910564734263461,
+        -0.09566354844687741
+      ]
+    },
+    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
+    "ik_execution": "not_run",
+    "physics_execution": "not_run",
+    "unresolved_file_dependencies": []
+  }
+}

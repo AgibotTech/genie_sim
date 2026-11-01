@@ -1,0 +1,104 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "PickUpOnGripper": "benchmark_cup_115|left_gripper"
+                  },
+                  {
+                    "PickUpOnGripper": "benchmark_cup_115|right_gripper"
+                  }
+                ]
+              },
+              {
+                "Onfloor": "benchmark_cup_115|0"
+              },
+              {
+                "Onfloor": "benchmark_cup_131|0"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "Ontop": "benchmark_cup_115|benchmark_cup_131"
+              },
+              {
+                "Onfloor": "benchmark_cup_115|0"
+              },
+              {
+                "Onfloor": "benchmark_cup_131|0"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "MixedRules": {
+                  "mode": "and",
+                  "rules": [
+                    {
+                      "name": "Stack",
+                      "params": "[benchmark_cup_131,benchmark_cup_115]|[0.005,0.005]"
+                    },
+                    {
+                      "name": "Upright",
+                      "params": "benchmark_cup_115|15|false"
+                    },
+                    {
+                      "name": "Upright",
+                      "params": "benchmark_cup_131|15|false"
+                    }
+                  ]
+                }
+              },
+              {
+                "Onfloor": "benchmark_cup_115|0"
+              },
+              {
+                "Onfloor": "benchmark_cup_131|0"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "cover_cup_lid",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "Ontop",
+              "points": 15
+            },
+            {
+              "checker": "MixedRules",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

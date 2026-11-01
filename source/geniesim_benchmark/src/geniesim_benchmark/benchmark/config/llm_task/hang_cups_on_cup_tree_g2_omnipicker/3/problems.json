@@ -1,0 +1,52 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "benchmark_cup_a26f738f|left_gripper"
+                            },
+                            {
+                                "PickUpOnGripper": "benchmark_cup_a26f738f|right_gripper"
+                            },
+                            {
+                                "StepOut": 450
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "Hang": "benchmark_cup_a26f738f|0.825|8|0.01"
+                            },
+                            {
+                                "StepOut": 750
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "hang_cups_on_cup_tree_g2_omnipicker",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 10
+                        },
+                        {
+                            "checker": "Hang",
+                            "points": 40
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

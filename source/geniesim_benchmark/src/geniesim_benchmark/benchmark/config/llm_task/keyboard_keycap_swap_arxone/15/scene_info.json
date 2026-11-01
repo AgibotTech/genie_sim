@@ -1,0 +1,206 @@
+{
+  "scene_id": "keyboard_keycap_swap_arx",
+  "seed": 9438986250954706313,
+  "layout": {
+    "table_000": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.36747046645785236
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene",
+        "table_000"
+      ],
+      "keywords": [
+        "table",
+        "workspace_table"
+      ],
+      "description": {},
+      "asset": "objects/edited/table_000/Aligned.usda",
+      "source_prim": "/World/objects/Table"
+    },
+    "keyboard_000": {
+      "usd": "benchmark_keyboard_002",
+      "xyz": [
+        -0.12390955006866022,
+        -0.08816685090493961,
+        0.7443891222416303
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.6570839812398311,
+        0.7538173794746399
+      ],
+      "tags": [
+        "root_scene",
+        "keyboard_000"
+      ],
+      "keywords": [
+        "keyboard",
+        "numpad",
+        "target_keyboard"
+      ],
+      "description": {},
+      "asset": "objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda",
+      "source_prim": "/World/objects/Keyboard",
+      "states": {
+        "target_key": "One",
+        "target_part": "part_11",
+        "detachable_parts": [
+          "part_11"
+        ]
+      }
+    },
+    "keycap_puller_000": {
+      "usd": "benchmark_keycap_puller_003",
+      "xyz": [
+        -0.08554580924097782,
+        0.16565637738918396,
+        0.7432891217007136
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.6861960019200899,
+        0.7274166941642761
+      ],
+      "tags": [
+        "root_scene",
+        "keycap_puller_000"
+      ],
+      "keywords": [
+        "keycap_puller",
+        "dual_claw",
+        "tool"
+      ],
+      "description": {},
+      "asset": "objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda",
+      "source_prim": "/World/objects/Puller"
+    },
+    "replacement_keycap_000": {
+      "usd": "benchmark_keycap_002",
+      "xyz": [
+        -0.17262442771005945,
+        -0.2477659159659647,
+        0.7353891221634257
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.7021472970593551,
+        0.7120317220687866
+      ],
+      "tags": [
+        "root_scene",
+        "replacement_keycap_000"
+      ],
+      "keywords": [
+        "keycap",
+        "replacement",
+        "green",
+        "one"
+      ],
+      "description": {},
+      "asset": "objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda",
+      "source_prim": "/World/objects/NewKeycap"
+    },
+    "puller_holder_000": {
+      "usd": "benchmark_keycap_swap_fixture_001",
+      "xyz": [
+        -0.07600928293769213,
+        0.05103112761514436,
+        0.7323891221373175
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        -0.6861960019200899,
+        0.7274166941642761
+      ],
+      "tags": [
+        "root_scene",
+        "puller_holder_000"
+      ],
+      "keywords": [
+        "tool_rack",
+        "puller_holder",
+        "stationary"
+      ],
+      "description": {},
+      "asset": "objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda",
+      "source_prim": "/World/objects/PullerHolder",
+      "asset_subprim": "/World/entity/body/ToolRack"
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {},
+      "nodes": [
+        {
+          "id": "root_scene"
+        },
+        {
+          "id": "table_000"
+        },
+        {
+          "id": "keyboard_000"
+        },
+        {
+          "id": "keycap_puller_000"
+        },
+        {
+          "id": "replacement_keycap_000"
+        },
+        {
+          "id": "puller_holder_000"
+        }
+      ],
+      "links": [
+        {
+          "source": "root_scene",
+          "target": "table_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "keyboard_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "keycap_puller_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "replacement_keycap_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "puller_holder_000"
+        }
+      ]
+    }
+  },
+  "generalization": {
+    "method": "coupled_horizontal_translation",
+    "source_instance": 5,
+    "source_scene_sha256": "5c1b3938943292e2fb372cc8e82814523f24b041dc99c754bcb43dfed9c3f2b4",
+    "seed": 9438986250954706313,
+    "translation_m": [
+      0.0046822775165244745,
+      0.006027622666530393,
+      0.0
+    ],
+    "fixed_support": "table",
+    "validation_level": "static_geometry"
+  }
+}

@@ -1,0 +1,1217 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    framesPerSecond = 60
+    metersPerUnit = 1
+    timeCodesPerSecond = 60
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def Xform "table_000" (
+            prepend references = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.36747046645785236)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
+        }
+
+        def Xform "keyboard_000" (
+            prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.6506541, 0, 0, 0.75937426)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.146481968046709, -0.11680813197111543, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "part_02"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_02>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_05"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_05>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_09"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_09>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_00"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_00>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_06"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_06>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_12"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_12>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_04"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_04>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_03"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_03>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_10"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_10>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_07"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_07>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_13"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_13>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_08"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_08>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_01"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_01>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_11"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 1
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom string inputs:script = """\"\"\"Self-contained keycap release, aligned installation, and Stop reset.\"\"\"
+
+import math
+
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
+
+
+def configure_detachable_key(stage, keyboard_path, target_path):
+    \"\"\"Select one releasable key through metadata, preserving all joint drives.\"\"\"
+    keyboard = stage.GetPrimAtPath(keyboard_path)
+    if not keyboard.IsValid():
+        raise ValueError(f'Keyboard missing at {keyboard_path}')
+    keys = [p for p in Usd.PrimRange(keyboard)
+            if p.GetAttribute('userProperties:releaseFraction').Get() is not None]
+    target = Sdf.Path(target_path)
+    if not any(p.GetPath() == target for p in keys):
+        raise ValueError(f'Target {target_path} is not a mechanical key in {keyboard_path}')
+    for key in keys:
+        key.CreateAttribute('userProperties:allowDetach', Sdf.ValueTypeNames.Bool).Set(key.GetPath() == target)
+
+
+class SimulationResetState:
+    \"\"\"Capture this asset's bodies and joints before Play; restore them on Stop.\"\"\"
+
+    def __init__(self, stage, root_path):
+        self.stage = stage
+        self.root_path = root_path
+        self.generation = 0
+        self._timeline_subscription = None
+        self._was_stopped = True
+        self.capture_initial()
+
+    def capture_initial(self):
+        self._initial_attributes = []
+        for prim in Usd.PrimRange(self.stage.GetPrimAtPath(self.root_path)):
+            self._capture_prim(prim)
+
+    def _capture_prim(self, prim):
+        attributes = []
+        if prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            xform = UsdGeom.Xformable(prim)
+            attributes = [op.GetAttr() for op in xform.GetOrderedXformOps()]
+            attributes.append(xform.GetXformOpOrderAttr())
+            body = UsdPhysics.RigidBodyAPI(prim)
+            attributes.extend((body.GetVelocityAttr(), body.GetAngularVelocityAttr(),
+                               body.GetKinematicEnabledAttr(), body.GetRigidBodyEnabledAttr()))
+        if prim.IsA(UsdPhysics.Joint):
+            attributes.append(UsdPhysics.Joint(prim).GetJointEnabledAttr())
+            attributes.extend(a for a in prim.GetAttributes() if a.GetName().startswith(\"drive:\")
+                              and a.GetName().endswith((\":targetPosition\", \":targetVelocity\")))
+        permission = prim.GetAttribute('userProperties:allowDetach')
+        if permission and permission.Get() is not None:
+            attributes.append(permission)
+        for attr in attributes:
+            value = attr.Get()
+            if value is not None:
+                self._initial_attributes.append((str(prim.GetPath()), attr.GetName(), attr.GetTypeName(), value))
+
+    def restore(self):
+        self.generation += 1
+        for path, name, kind, value in self._initial_attributes:
+            prim = self.stage.GetPrimAtPath(path)
+            if prim.IsValid():
+                prim.CreateAttribute(name, kind).Set(value)
+        self._after_restore()
+
+    def _after_restore(self):
+        pass
+
+    def attach_timeline(self):
+        import omni.timeline
+        timeline = omni.timeline.get_timeline_interface()
+        self._was_stopped = timeline.is_stopped()
+
+        def on_event(event):
+            if event.type == int(omni.timeline.TimelineEventType.STOP):
+                self.restore()
+                self._was_stopped = True
+            elif event.type == int(omni.timeline.TimelineEventType.PLAY) and self._was_stopped:
+                self.capture_initial()
+                self._after_restore()
+                self._was_stopped = False
+
+        self._timeline_subscription = timeline.get_timeline_event_stream().create_subscription_to_pop(on_event)
+        return self
+
+    def close(self):
+        self.generation += 1
+        self._timeline_subscription = None
+
+
+class KeycapAutoDetach(SimulationResetState):
+    \"\"\"Release the original cap; keep an aligned installed replacement connected.\"\"\"
+
+    def __init__(self, stage, key_path, joint_path=None):
+        self.joint_path = joint_path or f\"{key_path}/KeyTravel\"
+        super().__init__(stage, key_path)
+        root = stage.GetPrimAtPath(key_path)
+        self.joint = UsdPhysics.PrismaticJoint(stage.GetPrimAtPath(self.joint_path))
+        if not root.IsValid() or not self.joint.GetPrim().IsValid():
+            raise ValueError(f\"Mechanical key or KeyTravel joint missing at {key_path}\")
+        self.base = stage.GetPrimAtPath(self.joint.GetBody0Rel().GetTargets()[0])
+        self.cap = stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
+        lower = float(self.joint.GetLowerLimitAttr().Get())
+        upper = float(self.joint.GetUpperLimitAttr().Get())
+        fraction = float(root.GetAttribute(\"userProperties:releaseFraction\").Get())
+        if not lower < upper or not 0 < fraction <= 1:
+            raise ValueError(\"Invalid travel limits or release fraction\")
+        self.threshold = lower + fraction * (upper - lower)
+        self.upper = upper
+        self.rest = float(UsdPhysics.DriveAPI(self.joint.GetPrim(), \"linear\").GetTargetPositionAttr().Get())
+        self.xy_tolerance = float(root.GetAttribute(\"userProperties:attachXYTolerance\").Get())
+        self.z_tolerance = float(root.GetAttribute(\"userProperties:attachZTolerance\").Get())
+        self.angle_tolerance = float(root.GetAttribute(\"userProperties:attachAngleDegrees\").Get())
+        self.confirm_frames = int(root.GetAttribute(\"userProperties:attachConfirmFrames\").Get())
+        self.compatibility = root.GetAttribute(\"userProperties:keycapCompatibility\").Get()
+        self.detached = not bool(self.joint.GetJointEnabledAttr().Get())
+        self.previous_travel = self.travel()
+        self.pending = False
+        self.pending_attachment = None
+        self._blocked_caps = set()
+        self._candidate_path = None
+        self._candidate_frames = 0
+
+    def capture_initial(self):
+        super().capture_initial()
+        # Replacement caps are siblings in user scenes. Preserve their initial
+        # poses as well as the original joint binding for Stop after a swap.
+        self._external_initial_attributes = {}
+        self._installed_caps = set()
+        for prim in self.stage.Traverse():
+            if prim.GetAttribute(\"userProperties:keycapCompatibility\").Get() and prim.HasAPI(UsdPhysics.RigidBodyAPI):
+                if not prim.GetPath().HasPrefix(self.stage.GetPrimAtPath(self.root_path).GetPath()):
+                    start = len(self._initial_attributes)
+                    self._capture_prim(prim)
+                    self._external_initial_attributes[str(prim.GetPath())] = self._initial_attributes[start:]
+                    del self._initial_attributes[start:]
+        joint = UsdPhysics.Joint(self.stage.GetPrimAtPath(self.joint_path))
+        self._initial_joint_targets = joint.GetBody1Rel().GetTargets()
+
+    def restore(self):
+        self.joint.GetBody1Rel().SetTargets(self._initial_joint_targets)
+        self.cap = self.stage.GetPrimAtPath(self._initial_joint_targets[0])
+        for path in self._installed_caps:
+            for prim_path, name, kind, value in self._external_initial_attributes.get(path, []):
+                prim = self.stage.GetPrimAtPath(prim_path)
+                if prim.IsValid():
+                    prim.CreateAttribute(name, kind).Set(value)
+        super().restore()
+
+    def travel(self):
+        cache = UsdGeom.XformCache()
+        base_matrix = cache.GetLocalToWorldTransform(self.base)
+        cap_matrix = cache.GetLocalToWorldTransform(self.cap)
+        anchor0 = base_matrix.Transform(Gf.Vec3d(self.joint.GetLocalPos0Attr().Get()))
+        anchor1 = cap_matrix.Transform(Gf.Vec3d(self.joint.GetLocalPos1Attr().Get()))
+        axis = base_matrix.TransformDir(Gf.Vec3d(0, 0, 1)).GetNormalized()
+        return Gf.Dot(anchor1 - anchor0, axis)
+
+    def update(self, defer=False):
+        if self.pending:
+            return False
+        if self.detached:
+            return self._update_attachment(defer)
+        if not self.joint.GetJointEnabledAttr().Get():
+            self.detached = True
+            return False
+        current = self.travel()
+        crossed_up = self.previous_travel < self.threshold <= current
+        self.previous_travel = current
+        if not crossed_up or not self.release_allowed():
+            return False
+        if defer:
+            self.pending = True
+        else:
+            self.commit_release()
+        return True
+
+    def release_allowed(self):
+        # The removable original cap and a successfully installed replacement
+        # have different task contracts. Keep the replacement's travel spring,
+        # but never release its binding through the original cap's threshold.
+        # commit_release also checks this, covering a deferred stale callback.
+        if str(self.cap.GetPath()) in self._installed_caps:
+            return False
+        value = self.stage.GetPrimAtPath(self.root_path).GetAttribute('userProperties:allowDetach').Get()
+        return value is None or bool(value)
+
+    def _alignment(self, cap):
+        cache = UsdGeom.XformCache()
+        base = cache.GetLocalToWorldTransform(self.base)
+        relative = cache.GetLocalToWorldTransform(cap) * base.GetInverse()
+        offset = relative.Transform(Gf.Vec3d(self.joint.GetLocalPos1Attr().Get())) - Gf.Vec3d(self.joint.GetLocalPos0Attr().Get())
+        quaternion = relative.ExtractRotationQuat()
+        angle = math.degrees(2 * math.acos(min(1.0, abs(float(quaternion.GetReal())))))
+        return math.hypot(offset[0], offset[1]), float(offset[2]), angle
+
+    def _eligible(self, cap):
+        if not cap.IsValid() or not cap.HasAPI(UsdPhysics.RigidBodyAPI):
+            return False
+        if cap.GetAttribute(\"userProperties:keycapCompatibility\").Get() != self.compatibility:
+            return False
+        body = UsdPhysics.RigidBodyAPI(cap)
+        if not body.GetRigidBodyEnabledAttr().Get() or body.GetKinematicEnabledAttr().Get():
+            return False
+        path = cap.GetPath()
+        for prim in self.stage.Traverse():
+            if prim.IsA(UsdPhysics.Joint) and prim != self.joint.GetPrim():
+                joint = UsdPhysics.Joint(prim)
+                if joint.GetJointEnabledAttr().Get() and path in (joint.GetBody0Rel().GetTargets() + joint.GetBody1Rel().GetTargets()):
+                    return False
+        xy, z, angle = self._alignment(cap)
+        return xy <= self.xy_tolerance and -self.z_tolerance <= z <= self.rest + self.z_tolerance and angle <= self.angle_tolerance
+
+    def _update_attachment(self, defer):
+        if self.joint.GetJointEnabledAttr().Get():
+            self.cap = self.stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
+            self.detached = False
+            self.previous_travel = self.travel()
+            return False
+        for path in list(self._blocked_caps):
+            cap = self.stage.GetPrimAtPath(path)
+            if not cap.IsValid():
+                self._blocked_caps.remove(path)
+            else:
+                xy, z, _ = self._alignment(cap)
+                if xy > 3 * self.xy_tolerance or z > self.upper + 0.001:
+                    self._blocked_caps.remove(path)
+        candidate = None
+        for prim in self.stage.Traverse():
+            path = str(prim.GetPath())
+            if path not in self._blocked_caps and self._eligible(prim):
+                candidate = path
+                break
+        if candidate != self._candidate_path:
+            self._candidate_path = candidate
+            self._candidate_frames = 0
+        self._candidate_frames = self._candidate_frames + 1 if candidate else 0
+        if self._candidate_frames < self.confirm_frames:
+            return False
+        self.pending_attachment = candidate
+        self.pending = True
+        if not defer:
+            return self.commit_pending()
+        return True
+
+    def commit_pending(self, generation=None):
+        \"\"\"Apply release or installation outside the PhysX step; recheck installation.\"\"\"
+        if generation is not None and (generation != self.generation or not self.pending):
+            return False
+        if self.pending_attachment is None:
+            return self.commit_release(generation)
+        cap = self.stage.GetPrimAtPath(self.pending_attachment)
+        self.pending_attachment = None
+        self.pending = False
+        self._candidate_path = None
+        self._candidate_frames = 0
+        if not self.detached or self.joint.GetJointEnabledAttr().Get() or not self._eligible(cap):
+            return False
+        path = str(cap.GetPath())
+        if path not in self._external_initial_attributes and not cap.GetPath().HasPrefix(self.base.GetPath().GetParentPath()):
+            start = len(self._initial_attributes)
+            self._capture_prim(cap)
+            self._external_initial_attributes[path] = self._initial_attributes[start:]
+            del self._initial_attributes[start:]
+        self._installed_caps.add(path)
+        self.joint.GetBody1Rel().SetTargets([cap.GetPath()])
+        self.joint.GetJointEnabledAttr().Set(True)
+        self.cap = cap
+        self.detached = False
+        self.previous_travel = self.travel()
+        return True
+
+    def commit_release(self, generation=None):
+        \"\"\"Call from a safe app update, never inside the physics step.\"\"\"
+        if generation is not None and (generation != self.generation or not self.pending):
+            return False
+        if not self.joint.GetPrim().IsValid():
+            self.pending = False
+            return False
+        if not self.release_allowed():
+            self.pending = False
+            self.previous_travel = self.travel()
+            return False
+        self.joint.GetJointEnabledAttr().Set(False)
+        self.detached = True
+        self._blocked_caps.add(str(self.cap.GetPath()))
+        self.pending = False
+        return True
+
+    def _after_restore(self):
+        self.cap = self.stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
+        self.detached = not bool(self.joint.GetJointEnabledAttr().Get())
+        self.pending = False
+        self.pending_attachment = None
+        self._blocked_caps = set()
+        self._candidate_path = None
+        self._candidate_frames = 0
+        self._installed_caps = set()
+        self.previous_travel = self.travel()
+
+
+import asyncio
+import omni.kit.app
+import omni.usd
+import omni.timeline
+from pxr import Sdf
+
+def compute(db):
+    state = db.per_instance_state
+    if not hasattr(state, \"controller\"):
+        stage = omni.usd.get_context().get_stage()
+        cap_path = Sdf.Path(str(db.node.get_prim_path())).GetParentPath().GetParentPath()
+        cap = stage.GetPrimAtPath(cap_path)
+        key_path = cap.GetRelationship(\"userProperties:keyControllerRoot\").GetTargets()[0]
+        joint_path = cap.GetRelationship(\"userProperties:keyTravelJoint\").GetTargets()[0]
+        state.controller = KeycapAutoDetach(stage, str(key_path), joint_path=str(joint_path)).attach_timeline()
+    controller = state.controller
+    if omni.timeline.get_timeline_interface().is_playing() and controller.update(defer=True):
+        generation = controller.generation
+        async def release_next_update():
+            await omni.kit.app.get_app().next_update_async()
+            controller.commit_pending(generation=generation)
+        asyncio.ensure_future(release_next_update())
+    return True
+
+def cleanup(db):
+    controller = getattr(db.per_instance_state, \"controller\", None)
+    if controller is not None:
+        controller.close()
+"""
+                            custom token inputs:scriptPath
+                            custom bool inputs:usePath = 0
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_11>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_15"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_15>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_16"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_16>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+
+                over "part_14"
+                {
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    custom bool userProperties:allowDetach = 0
+
+                    over "AutoDetachGraph"
+                    {
+                        int2 fileFormatVersion = (1, 9)
+
+                        over "Tick"
+                        {
+                            custom double outputs:absoluteSimTime
+                            custom double outputs:deltaSeconds
+                            custom double outputs:frame
+                            custom bool outputs:isPlaying
+                            custom double outputs:time
+                            custom double outputs:timeSinceStart
+                            custom double state:accumulatedSeconds
+                            custom uint state:frameCount
+                        }
+
+                        over "Release"
+                        {
+                            custom token inputs:scriptPath
+                        }
+                    }
+
+                    over "PrismaticJoint"
+                    {
+                        float drive:linear:physics:targetPosition = 0.0048
+                        float drive:linear:physics:targetVelocity = 0
+                        rel physics:body1 = </World/Objects/keyboard_000/entity/part_14>
+                        bool physics:jointEnabled = 1
+                        quatf physics:localRot1 = (1, 0, 0, 3.4228542e-8)
+                    }
+                }
+            }
+        }
+
+        def Xform "keycap_puller_000" (
+            prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.7478502, 0, 0, -0.66386753)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.1097813292455689, 0.16940999587790523, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "ResetGraph"
+                {
+                    int2 fileFormatVersion = (1, 9)
+
+                    over "Tick"
+                    {
+                        custom double outputs:absoluteSimTime
+                        custom double outputs:deltaSeconds
+                        custom double outputs:frame
+                        custom bool outputs:isPlaying
+                        custom double outputs:time
+                        custom double outputs:timeSinceStart
+                        custom double state:accumulatedSeconds
+                        custom uint state:frameCount
+                    }
+
+                    over "Release"
+                    {
+                        custom token inputs:scriptPath
+                    }
+                }
+
+                over "body"
+                {
+                    vector3f physics:angularVelocity = (0, 0, 0)
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    vector3f physics:velocity = (0, 0, 0)
+                    custom bool physxRigidBody:enableCCD = 1
+                    double3 xformOp:translate = (0, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                over "part_00"
+                {
+                    vector3f physics:angularVelocity = (0, 0, 0)
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    vector3f physics:velocity = (0, 0, 0)
+
+                    over "RevoluteJoint"
+                    {
+                        float drive:angular:physics:targetPosition = 0
+                        float drive:angular:physics:targetVelocity = 0
+                        bool physics:jointEnabled = 1
+                    }
+                }
+
+                over "part_01"
+                {
+                    vector3f physics:angularVelocity = (0, 0, 0)
+                    bool physics:kinematicEnabled = 0
+                    bool physics:rigidBodyEnabled = 1
+                    vector3f physics:velocity = (0, 0, 0)
+
+                    over "RevoluteJoint"
+                    {
+                        float drive:angular:physics:targetPosition = 0
+                        float drive:angular:physics:targetVelocity = 0
+                        bool physics:jointEnabled = 1
+                    }
+                }
+            }
+        }
+
+        def Xform "replacement_keycap_000" (
+            prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.71754116, 0, 0, -0.69651616)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.1638160701621197, -0.2737161657736945, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                def "Materials"
+                {
+                    def Material "Green"
+                    {
+                        token outputs:surface.connect = </World/Objects/replacement_keycap_000/entity/Materials/Green/Surface.outputs:surface>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.1, 0.65, 0.48)
+                            float inputs:metallic = 0
+                            float inputs:roughness = 0.35
+                            token outputs:surface
+                        }
+                    }
+
+                    def Material "Legend"
+                    {
+                        token outputs:surface.connect = </World/Objects/replacement_keycap_000/entity/Materials/Legend/Surface.outputs:surface>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.07, 0.09, 0.11)
+                            float inputs:metallic = 0
+                            float inputs:roughness = 0.6
+                            token outputs:surface
+                        }
+                    }
+                }
+
+                over "body" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </World/Objects/replacement_keycap_000/entity/Materials/Green>
+
+                    def Mesh "Legend" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        uniform bool doubleSided = 1
+                        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195]
+                        rel material:binding = </World/Objects/replacement_keycap_000/entity/Materials/Legend>
+                        point3f[] points = [(-0.0004745098, 0.0019411765, 0.00806), (0.0003882353, 0.0019411765, 0.00806), (0.0003882353, 0.002027451, 0.00806), (-0.0004745098, 0.002027451, 0.00806), (-0.00090588233, 0.001854902, 0.00806), (0.0003882353, 0.001854902, 0.00806), (0.0003882353, 0.0019411765, 0.00806), (-0.00090588233, 0.0019411765, 0.00806), (-0.0011647058, 0.0017686274, 0.00806), (0.0003882353, 0.0017686274, 0.00806), (0.0003882353, 0.001854902, 0.00806), (-0.0011647058, 0.001854902, 0.00806), (-0.0011647058, 0.001682353, 0.00806), (0.0003882353, 0.001682353, 0.00806), (0.0003882353, 0.0017686274, 0.00806), (-0.0011647058, 0.0017686274, 0.00806), (-0.0011647058, 0.0015960784, 0.00806), (0.0003882353, 0.0015960784, 0.00806), (0.0003882353, 0.001682353, 0.00806), (-0.0011647058, 0.001682353, 0.00806), (-0.0011647058, 0.0015098039, 0.00806), (-0.0004745098, 0.0015098039, 0.00806), (-0.0004745098, 0.0015960784, 0.00806), (-0.0011647058, 0.0015960784, 0.00806), (-0.00021568628, 0.0015098039, 0.00806), (0.0003882353, 0.0015098039, 0.00806), (0.0003882353, 0.0015960784, 0.00806), (-0.00021568628, 0.0015960784, 0.00806), (-0.0011647058, 0.0014235295, 0.00806), (-0.00090588233, 0.0014235295, 0.00806), (-0.00090588233, 0.0015098039, 0.00806), (-0.0011647058, 0.0015098039, 0.00806), (-0.00021568628, 0.0014235295, 0.00806), (0.0003882353, 0.0014235295, 0.00806), (0.0003882353, 0.0015098039, 0.00806), (-0.00021568628, 0.0015098039, 0.00806), (-0.00021568628, 0.0013372549, 0.00806), (0.0003882353, 0.0013372549, 0.00806), (0.0003882353, 0.0014235295, 0.00806), (-0.00021568628, 0.0014235295, 0.00806), (-0.00021568628, 0.0012509804, 0.00806), (0.0003882353, 0.0012509804, 0.00806), (0.0003882353, 0.0013372549, 0.00806), (-0.00021568628, 0.0013372549, 0.00806), (-0.00021568628, 0.0011647058, 0.00806), (0.0003882353, 0.0011647058, 0.00806), (0.0003882353, 0.0012509804, 0.00806), (-0.00021568628, 0.0012509804, 0.00806), (-0.00021568628, 0.0010784314, 0.00806), (0.0003882353, 0.0010784314, 0.00806), (0.0003882353, 0.0011647058, 0.00806), (-0.00021568628, 0.0011647058, 0.00806), (-0.00021568628, 0.0009921569, 0.00806), (0.0003882353, 0.0009921569, 0.00806), (0.0003882353, 0.0010784314, 0.00806), (-0.00021568628, 0.0010784314, 0.00806), (-0.00021568628, 0.00090588233, 0.00806), (0.0003882353, 0.00090588233, 0.00806), (0.0003882353, 0.0009921569, 0.00806), (-0.00021568628, 0.0009921569, 0.00806), (-0.00021568628, 0.00081960787, 0.00806), (0.0003882353, 0.00081960787, 0.00806), (0.0003882353, 0.00090588233, 0.00806), (-0.00021568628, 0.00090588233, 0.00806), (-0.00021568628, 0.00073333335, 0.00806), (0.0003882353, 0.00073333335, 0.00806), (0.0003882353, 0.00081960787, 0.00806), (-0.00021568628, 0.00081960787, 0.00806), (-0.00021568628, 0.0006470588, 0.00806), (0.0003882353, 0.0006470588, 0.00806), (0.0003882353, 0.00073333335, 0.00806), (-0.00021568628, 0.00073333335, 0.00806), (-0.00021568628, 0.0005607843, 0.00806), (0.0003882353, 0.0005607843, 0.00806), (0.0003882353, 0.0006470588, 0.00806), (-0.00021568628, 0.0006470588, 0.00806), (-0.00021568628, 0.0004745098, 0.00806), (0.0003882353, 0.0004745098, 0.00806), (0.0003882353, 0.0005607843, 0.00806), (-0.00021568628, 0.0005607843, 0.00806), (-0.00021568628, 0.0003882353, 0.00806), (0.0003882353, 0.0003882353, 0.00806), (0.0003882353, 0.0004745098, 0.00806), (-0.00021568628, 0.0004745098, 0.00806), (-0.00021568628, 0.0003019608, 0.00806), (0.0003882353, 0.0003019608, 0.00806), (0.0003882353, 0.0003882353, 0.00806), (-0.00021568628, 0.0003882353, 0.00806), (-0.00021568628, 0.00021568628, 0.00806), (0.0003882353, 0.00021568628, 0.00806), (0.0003882353, 0.0003019608, 0.00806), (-0.00021568628, 0.0003019608, 0.00806), (-0.00021568628, 0.00012941177, 0.00806), (0.0003882353, 0.00012941177, 0.00806), (0.0003882353, 0.00021568628, 0.00806), (-0.00021568628, 0.00021568628, 0.00806), (-0.00021568628, 0.000043137254, 0.00806), (0.0003882353, 0.000043137254, 0.00806), (0.0003882353, 0.00012941177, 0.00806), (-0.00021568628, 0.00012941177, 0.00806), (-0.00021568628, -0.000043137254, 0.00806), (0.0003882353, -0.000043137254, 0.00806), (0.0003882353, 0.000043137254, 0.00806), (-0.00021568628, 0.000043137254, 0.00806), (-0.00021568628, -0.00012941177, 0.00806), (0.0003882353, -0.00012941177, 0.00806), (0.0003882353, -0.000043137254, 0.00806), (-0.00021568628, -0.000043137254, 0.00806), (-0.00021568628, -0.00021568628, 0.00806), (0.0003882353, -0.00021568628, 0.00806), (0.0003882353, -0.00012941177, 0.00806), (-0.00021568628, -0.00012941177, 0.00806), (-0.00021568628, -0.0003019608, 0.00806), (0.0003882353, -0.0003019608, 0.00806), (0.0003882353, -0.00021568628, 0.00806), (-0.00021568628, -0.00021568628, 0.00806), (-0.00021568628, -0.0003882353, 0.00806), (0.0003882353, -0.0003882353, 0.00806), (0.0003882353, -0.0003019608, 0.00806), (-0.00021568628, -0.0003019608, 0.00806), (-0.00021568628, -0.0004745098, 0.00806), (0.0003882353, -0.0004745098, 0.00806), (0.0003882353, -0.0003882353, 0.00806), (-0.00021568628, -0.0003882353, 0.00806), (-0.00021568628, -0.0005607843, 0.00806), (0.0003882353, -0.0005607843, 0.00806), (0.0003882353, -0.0004745098, 0.00806), (-0.00021568628, -0.0004745098, 0.00806), (-0.00021568628, -0.0006470588, 0.00806), (0.0003882353, -0.0006470588, 0.00806), (0.0003882353, -0.0005607843, 0.00806), (-0.00021568628, -0.0005607843, 0.00806), (-0.00021568628, -0.00073333335, 0.00806), (0.0003882353, -0.00073333335, 0.00806), (0.0003882353, -0.0006470588, 0.00806), (-0.00021568628, -0.0006470588, 0.00806), (-0.00021568628, -0.00081960787, 0.00806), (0.0003882353, -0.00081960787, 0.00806), (0.0003882353, -0.00073333335, 0.00806), (-0.00021568628, -0.00073333335, 0.00806), (-0.00021568628, -0.00090588233, 0.00806), (0.0003882353, -0.00090588233, 0.00806), (0.0003882353, -0.00081960787, 0.00806), (-0.00021568628, -0.00081960787, 0.00806), (-0.00021568628, -0.0009921569, 0.00806), (0.0003882353, -0.0009921569, 0.00806), (0.0003882353, -0.00090588233, 0.00806), (-0.00021568628, -0.00090588233, 0.00806), (-0.00021568628, -0.0010784314, 0.00806), (0.0003882353, -0.0010784314, 0.00806), (0.0003882353, -0.0009921569, 0.00806), (-0.00021568628, -0.0009921569, 0.00806), (-0.00021568628, -0.0011647058, 0.00806), (0.0003882353, -0.0011647058, 0.00806), (0.0003882353, -0.0010784314, 0.00806), (-0.00021568628, -0.0010784314, 0.00806), (-0.00021568628, -0.0012509804, 0.00806), (0.0003882353, -0.0012509804, 0.00806), (0.0003882353, -0.0011647058, 0.00806), (-0.00021568628, -0.0011647058, 0.00806), (-0.00021568628, -0.0013372549, 0.00806), (0.0003882353, -0.0013372549, 0.00806), (0.0003882353, -0.0012509804, 0.00806), (-0.00021568628, -0.0012509804, 0.00806), (-0.00021568628, -0.0014235295, 0.00806), (0.0003882353, -0.0014235295, 0.00806), (0.0003882353, -0.0013372549, 0.00806), (-0.00021568628, -0.0013372549, 0.00806), (-0.00021568628, -0.0015098039, 0.00806), (0.0003882353, -0.0015098039, 0.00806), (0.0003882353, -0.0014235295, 0.00806), (-0.00021568628, -0.0014235295, 0.00806), (-0.00021568628, -0.0015960784, 0.00806), (0.0003882353, -0.0015960784, 0.00806), (0.0003882353, -0.0015098039, 0.00806), (-0.00021568628, -0.0015098039, 0.00806), (-0.0010784314, -0.001682353, 0.00806), (0.0012509804, -0.001682353, 0.00806), (0.0012509804, -0.0015960784, 0.00806), (-0.0010784314, -0.0015960784, 0.00806), (-0.0010784314, -0.0017686274, 0.00806), (0.0012509804, -0.0017686274, 0.00806), (0.0012509804, -0.001682353, 0.00806), (-0.0010784314, -0.001682353, 0.00806), (-0.0010784314, -0.001854902, 0.00806), (0.0012509804, -0.001854902, 0.00806), (0.0012509804, -0.0017686274, 0.00806), (-0.0010784314, -0.0017686274, 0.00806), (-0.0010784314, -0.0019411765, 0.00806), (0.0012509804, -0.0019411765, 0.00806), (0.0012509804, -0.001854902, 0.00806), (-0.0010784314, -0.001854902, 0.00806), (-0.0010784314, -0.002027451, 0.00806), (0.0012509804, -0.002027451, 0.00806), (0.0012509804, -0.0019411765, 0.00806), (-0.0010784314, -0.0019411765, 0.00806)]
+                        color3f[] primvars:displayColor = [(0.07, 0.09, 0.11)]
+                        uniform token subdivisionScheme = "none"
+                    }
+
+                    def Cube "TableRestCollision" (
+                        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysxCollisionAPI"]
+                    )
+                    {
+                        bool physics:collisionEnabled = 1
+                        custom float physxCollision:contactOffset = 0.00015
+                        custom float physxCollision:restOffset = 0
+                        color3f[] primvars:displayColor = [(0.1, 0.65, 0.48)]
+                        double size = 1
+                        token visibility = "invisible"
+                        float3 xformOp:scale = (0.012, 0.012, 0.003)
+                        double3 xformOp:translate = (0, 0, -0.0015)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def Xform "puller_holder_000"
+        {
+            quatf xformOp:orient = (0.7478502, 0, 0, -0.66386753)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.09332751734064017, 0.05557166624552065, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            def Xform "entity" (
+                prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>
+            )
+            {
+                uniform token[] xformOpOrder = []
+
+                over "Floor"
+                {
+                    token visibility = "inherited"
+                }
+
+                over "PostLeft"
+                {
+                    token visibility = "inherited"
+                }
+
+                over "PostRight"
+                {
+                    token visibility = "inherited"
+                }
+            }
+        }
+    }
+
+    def PhysicsScene "PhysicsScene" (
+        prepend apiSchemas = ["PhysxSceneAPI", "NewtonSceneAPI"]
+    )
+    {
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.81
+        custom bool physxScene:enableCCD = 1
+        custom bool physxScene:enableGPUDynamics = 0
+        custom uint physxScene:timeStepsPerSecond = 60
+    }
+}
+

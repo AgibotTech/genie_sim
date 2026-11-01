@@ -1,0 +1,61 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "scraper_000|left_gripper"
+                            },
+                            {
+                                "PickUpOnGripper": "scraper_000|right_gripper"
+                            },
+                            {
+                                "StepOut": 450
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "MixedRules": {
+                                    "check_interval": 1,
+                                    "mode": "and",
+                                    "rules": [
+                                        {
+                                            "name": "Inside",
+                                            "params": "trash_bone_000|trash_can_000|1.0"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "StepOut": 900
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "scrape_chicken_bone_into_bin_g1",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 15
+                        },
+                        {
+                            "checker": "MixedRules",
+                            "points": 35
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

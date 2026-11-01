@@ -2,11 +2,76 @@
   "problem1": {
     "Acts": [
       {
-        "ActionList": []
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/Workspace/Objects/benchmark_scissors_004/entity/body|right_gripper"
+              },
+              {
+                "Onfloor": "/Workspace/Objects/benchmark_scissors_004/entity/body|0"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ScissorsHandleInserted": {
+                  "object": "benchmark_scissors_004"
+                }
+              },
+              {
+                "Onfloor": "/Workspace/Objects/benchmark_scissors_004/entity/body|0"
+              },
+              {
+                "StepOut": 1200
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ScissorsHandleActuated": {
+                  "object": "benchmark_scissors_004"
+                }
+              },
+              {
+                "Onfloor": "/Workspace/Objects/benchmark_scissors_004/entity/body|0"
+              },
+              {
+                "StepOut": 1200
+              }
+            ]
+          }
+        ]
       }
     ],
     "Init": [],
     "Objects": [],
-    "Problem": "take_the_scissors"
+    "Problem": "take_the_scissors",
+    "ScoreLayout": "take_the_scissors",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "ScissorsHandleInserted",
+              "points": 20
+            },
+            {
+              "checker": "ScissorsHandleActuated",
+              "points": 25
+            }
+          ]
+        }
+      }
+    ]
   }
 }

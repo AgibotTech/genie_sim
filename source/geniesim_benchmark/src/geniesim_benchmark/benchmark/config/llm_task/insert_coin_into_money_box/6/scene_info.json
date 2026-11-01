@@ -1,0 +1,233 @@
+{
+  "scene_id": "insert_coin_into_money_box",
+  "seed": 3590739608,
+  "layout": {
+    "table_bd0bc5e7": {
+      "usd": "table_000",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "root_scene_a896d11d",
+        "insert_coin_into_money_box_995ff2d9",
+        "table_bd0bc5e7"
+      ],
+      "keywords": [
+        "table",
+        "furniture",
+        "workspace_table",
+        "desktop_with_legs"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ],
+        "object_category": [
+          "furniture",
+          "table"
+        ],
+        "color": "white",
+        "shape": "rectangular",
+        "materials": [
+          "plastic",
+          "metal"
+        ],
+        "dimensions": [
+          0.1687,
+          0.0668,
+          0.0668
+        ],
+        "unit": "m",
+        "descriptive_terms": [
+          "simple",
+          "modern",
+          "compact",
+          "stable",
+          "functional"
+        ],
+        "full_description": [
+          "A white rectangular table with a flat top and four slender legs, viewed from multiple angles."
+        ]
+      }
+    },
+    "benchmark_coin_box_189449ce": {
+      "usd": "benchmark_coin_box_000",
+      "xyz": [
+        -0.013174533253880169,
+        0.1659506682270003,
+        0.743365768514
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9723699210217148,
+        0.23344536125659934
+      ],
+      "tags": [
+        "root_scene_a896d11d",
+        "insert_coin_into_money_box_995ff2d9",
+        "benchmark_coin_box_189449ce"
+      ],
+      "keywords": [
+        "coin_box",
+        "coin_tray",
+        "container",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    },
+    "benchmark_coin_w_6c0dd522": {
+      "usd": "benchmark_coin_w000",
+      "xyz": [
+        -0.08,
+        0.2,
+        0.758365768514
+      ],
+      "xyzw": [
+        0.6029120659700644,
+        0.3694611815529098,
+        -0.6029066135422559,
+        0.36945783437389096
+      ],
+      "tags": [
+        "root_scene_a896d11d",
+        "insert_coin_into_money_box_995ff2d9",
+        "benchmark_coin_w_6c0dd522"
+      ],
+      "keywords": [
+        "coin_target",
+        "coin",
+        "target",
+        "currency",
+        "in_cell",
+        "POSITION_TAG_left"
+      ],
+      "description": {}
+    },
+    "benchmark_money_box_7af6ae2a": {
+      "usd": "benchmark_money_box_000",
+      "xyz": [
+        0.1,
+        -0.035,
+        0.826
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.8090169943749475,
+        0.5877852522924731
+      ],
+      "tags": [
+        "root_scene_a896d11d",
+        "insert_coin_into_money_box_995ff2d9",
+        "benchmark_money_box_7af6ae2a"
+      ],
+      "keywords": [
+        "money_box",
+        "piggy_bank",
+        "container",
+        "POSITION_TAG_center"
+      ],
+      "description": {}
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {
+        "rankdir": "LR"
+      },
+      "nodes": [
+        {
+          "id": "root_scene_a896d11d"
+        },
+        {
+          "id": "insert_coin_into_money_box_995ff2d9"
+        },
+        {
+          "tags": [
+            "table",
+            "furniture",
+            "workspace_table",
+            "desktop_with_legs"
+          ],
+          "id": "table_bd0bc5e7"
+        },
+        {
+          "tags": [
+            "coin_box",
+            "coin_tray",
+            "container",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_coin_box_189449ce"
+        },
+        {
+          "tags": [
+            "coin_target",
+            "coin",
+            "target",
+            "currency",
+            "in_cell",
+            "POSITION_TAG_left"
+          ],
+          "id": "benchmark_coin_w_6c0dd522"
+        },
+        {
+          "tags": [
+            "money_box",
+            "piggy_bank",
+            "container",
+            "POSITION_TAG_center"
+          ],
+          "id": "benchmark_money_box_7af6ae2a"
+        }
+      ],
+      "edges": [
+        {
+          "source": "root_scene_a896d11d",
+          "target": "insert_coin_into_money_box_995ff2d9"
+        },
+        {
+          "source": "insert_coin_into_money_box_995ff2d9",
+          "target": "table_bd0bc5e7"
+        },
+        {
+          "source": "insert_coin_into_money_box_995ff2d9",
+          "target": "benchmark_coin_box_189449ce"
+        },
+        {
+          "source": "insert_coin_into_money_box_995ff2d9",
+          "target": "benchmark_coin_w_6c0dd522"
+        },
+        {
+          "source": "insert_coin_into_money_box_995ff2d9",
+          "target": "benchmark_money_box_7af6ae2a"
+        }
+      ]
+    }
+  },
+  "data_alignment": {
+    "dataset_id": 123998,
+    "task_id": 108858,
+    "camera": "observation.images.top_head",
+    "reference_episode_indices": [
+      0,
+      1,
+      3,
+      4,
+      6
+    ],
+    "layout_method": "All-upright coin-pose generalization; tilted cases3/6/9 replaced; Isaac head preview pending user review",
+    "arm_assignment": "left coin"
+  }
+}

@@ -1,0 +1,16 @@
+app:
+  enable_rate_limit: true
+  enable_ros: false
+  enable_gpu_dynamics: true
+benchmark:
+  task_name: table_task_g2_crsb_90d_room2_pen_cap_main
+  platform: g2_crsb_90d
+  sub_task_name: put_the_cap_on_the_pen_new
+  # Evaluate all scene instances 0..9.
+  seed: 30
+  num_instances: 20
+  model_arc: corobot
+  # Reduce grasp-contact disturbances while retaining GPU dynamics and mimic joints.
+  gripper_drive_max_force: 5.0
+  num_episode: 1
+  record: false

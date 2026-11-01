@@ -1,0 +1,142 @@
+{
+  "generalization": {
+    "material": {
+      "allowed_materials": [
+        "ml_body_11",
+        "ml_body_12"
+      ],
+      "enable": true,
+      "include_geom_subsets": true,
+      "num": 0,
+      "share_by_parent": true,
+      "targets": [
+        "table_8560d9be/entity/imagetostl_mesh1",
+        "table_2a37eda0/entity/imagetostl_mesh1",
+        "table_66bd0be2/entity/imagetostl_mesh1",
+        "table_4a23c1ba/entity/imagetostl_mesh1",
+        "table_fc467d1e/entity/imagetostl_mesh1",
+        "table_86c9be81/entity/imagetostl_mesh1",
+        "table_bd0bc5e7/entity/imagetostl_mesh1",
+        "table_a83d18c3/entity/imagetostl_mesh1",
+        "table_b98ee938/entity/imagetostl_mesh1",
+        "table_f0382eb1/entity/imagetostl_mesh1"
+      ]
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_camera_link/Left_Camera",
+      "/genie/gripper_r_camera_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 1
+  },
+  "robot": {
+    "arm": "dual",
+    "robot_cfg": "G2_crsB_90d.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -0.699354,
+          0.008331,
+          0.0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          -4.03,
+          -0.032,
+          0.80621
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_extra": {
+        "position": [
+          -4.56,
+          0.01,
+          1.12314
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_ground": {
+        "position": [
+          -4,
+          -0.07,
+          0.5
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0.9,
+          1,
+          1
+        ]
+      }
+    },
+    "scene_id": "gm_supermarket_01/workspace_00",
+    "scene_info_dir": "/background/room/room_2/",
+    "scene_usd": "/background/room/room_2/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "table_task_g2_crsb_90d_room2_coin_main"
+}

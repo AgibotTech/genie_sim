@@ -1,0 +1,63 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_phone_49363058|left_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "/Workspace/Objects/benchmark_plug_90715a96/entity/body|right_gripper"
+              },
+              {
+                "StepOut": 450
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PlugInserted": "benchmark_plug_90715a96"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "plug_charging_cable_into_phone",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "PlugInserted",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "generalization": {
+    "hdr_texture": {
+      "enable": true
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/Head_Front_Camera",
+      "/genie/hand_l_base_link/Left_Camera",
+      "/genie/hand_r_base_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "dual",
+    "robot_cfg": "G2_crsB_wuji.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -0.12014,
+          1.76047,
+          0.0
+        ],
+        "quaternion": [
+          0.70711,
+          0.0,
+          0.0,
+          0.70711
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          -0.12014,
+          2.6068,
+          0.94
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "take_the_book/workspace_00",
+    "scene_info_dir": "background/dexmanip/take_the_book/",
+    "scene_usd": "background/dexmanip/take_the_book/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "table_task_g2_crsB_wuji_take_the_book"
+}

@@ -1,0 +1,164 @@
+{
+  "generalization": {
+    "init_base": {
+      "enable": false,
+      "num": 0,
+      "x_thresh": 0.8,
+      "y_thresh": 2.25
+    },
+    "init_joint": {
+      "enable": false,
+      "num": 0,
+      "thresh": 0.1
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_camera_link/Left_Camera",
+      "/genie/gripper_r_camera_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "right",
+    "free_base": true,
+    "robot_cfg": "G2_crsB_90d_wbc.json",
+    "robot_id": "G2",
+    "robot_init_joints": {
+      "body": [
+        -0.5327,
+        0.8683,
+        0.0,
+        0,
+        0
+      ],
+      "head": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "left": [
+        0.5263913024,
+        -0.51888638662,
+        -1.0937978422,
+        -1.5954054692,
+        -1.1487757137,
+        0.33859387489,
+        -1.180540706
+      ],
+      "right": [
+        -0.52516957193,
+        -0.51940998539,
+        1.094321441,
+        -1.5957545351,
+        1.1482521149,
+        0.33929200659,
+        1.1808897719
+      ]
+    },
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -3.72214,
+          -5.20372,
+          0.05
+        ],
+        "quaternion": [
+          0.7,
+          0.0,
+          0.0,
+          -0.7
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_extra": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      },
+      "workspace_00_ground": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0.9,
+          1,
+          1
+        ]
+      }
+    },
+    "scene_id": "transport_cartons_to_table_wbc/workspace_00",
+    "scene_info_dir": "background/warehouse/warehouse_3/",
+    "scene_usd": "background/warehouse/warehouse_3/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "transport_cartons_to_table_wbc_g2_90d"
+}

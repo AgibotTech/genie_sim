@@ -1,0 +1,192 @@
+{
+  "version": "fine_xy_translation_v1",
+  "instance_count": 20,
+  "preserved_source_instances": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "generated_instances": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "source_revision": "4ab0d95e8dbbf434cc4a8469c95312a270aad009",
+  "source_substitutions": {},
+  "source_selection": "Preserve source models and pickup hands; when a source has no supported translation of at least 3 mm within all role envelopes, use a same-model, same-hand source with an available translation.",
+  "translation_unit": "m",
+  "source_task_xy_origin_envelope_m": [
+    [
+      -0.235,
+      -0.3
+    ],
+    [
+      0.24,
+      0.3
+    ]
+  ],
+  "semantic_role_xy_origin_envelopes_m": {
+    "Aligned": [
+      [
+        -0.035,
+        -0.065
+      ],
+      [
+        0.035,
+        0.065
+      ]
+    ],
+    "Aligned_02": [
+      [
+        -0.235,
+        -0.3
+      ],
+      [
+        0.24,
+        0.3
+      ]
+    ]
+  },
+  "maximum_group_translation_abs_m": [
+    0.02,
+    0.02
+  ],
+  "sampling": "NumPy default_rng(seed), uniform within the intersection of source semantic-role XY envelopes and fixed-table support bounds; reject group translations shorter than 3 mm",
+  "frozen": [
+    "source model identities",
+    "all orientations",
+    "all Z coordinates",
+    "table transforms",
+    "pairwise task-object transforms",
+    "robot initialization",
+    "instruction text",
+    "checker structure, parameters and budgets, except translated world InBBox centers"
+  ],
+  "validation_scope": "static USD composition, asset dependency resolution, metadata/target consistency, support and source-workspace envelopes; no physics or policy run",
+  "instances": [
+    {
+      "instance_id": 10,
+      "source_instance": 0,
+      "seed": 2026103310,
+      "world_xy_translation_m": [
+        0.01985947400955784,
+        0.00582061128368383
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 11,
+      "source_instance": 1,
+      "seed": 2026103311,
+      "world_xy_translation_m": [
+        -0.002734598708209076,
+        0.014301828806880735
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 12,
+      "source_instance": 2,
+      "seed": 2026103312,
+      "world_xy_translation_m": [
+        0.0032233989678272807,
+        0.0
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 13,
+      "source_instance": 3,
+      "seed": 2026103313,
+      "world_xy_translation_m": [
+        -0.0053164206805627265,
+        0.0
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 14,
+      "source_instance": 4,
+      "seed": 2026103314,
+      "world_xy_translation_m": [
+        0.008981836445688,
+        0.010572672528854254
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 15,
+      "source_instance": 5,
+      "seed": 2026103315,
+      "world_xy_translation_m": [
+        0.004276179715812055,
+        -0.014504009895841437
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 16,
+      "source_instance": 6,
+      "seed": 2026103316,
+      "world_xy_translation_m": [
+        -0.004173971405186095,
+        0.013694846224696142
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 17,
+      "source_instance": 7,
+      "seed": 2026103317,
+      "world_xy_translation_m": [
+        0.004022345783317657,
+        0.013805805469701917
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 18,
+      "source_instance": 8,
+      "seed": 2026103318,
+      "world_xy_translation_m": [
+        0.0033149698816734054,
+        -0.01835630364322297
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    },
+    {
+      "instance_id": 19,
+      "source_instance": 9,
+      "seed": 2026103319,
+      "world_xy_translation_m": [
+        0.008145377778099275,
+        0.011750015931842123
+      ],
+      "world_problem_target_paths_updated": [],
+      "world_instruction_target_paths_updated": []
+    }
+  ]
+}

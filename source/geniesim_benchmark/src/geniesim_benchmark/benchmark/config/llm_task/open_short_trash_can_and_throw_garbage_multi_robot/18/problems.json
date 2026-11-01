@@ -1,0 +1,63 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PushPull": "benchmark_trash_can__short_ecea09ff|0.01|1"
+                            },
+                            {
+                                "StepOut": 450
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "benchmark_trash_889fbac1|right_gripper"
+                            },
+                            {
+                                "StepOut": 450
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "Inside": "benchmark_trash_889fbac1|/Workspace/Objects/benchmark_trash_can__short_ecea09ff/entity/body|{\"frame\":\"reference_local\",\"lower\":[-0.04088657707,-0.117636591196,-0.041934913248],\"upper\":[0.061895172894,-0.022636591196,0.041935136765]}"
+                            },
+                            {
+                                "StepOut": 300
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "open_short_trash_can_and_throw_garbage_multi_robot",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PushPull",
+                            "points": 10
+                        },
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 10
+                        },
+                        {
+                            "checker": "Inside",
+                            "points": 30
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

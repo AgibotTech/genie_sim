@@ -1,0 +1,34 @@
+{
+  "instructions": [
+    {
+      "instruction": "Pour 50 ml of liquid into the graduated cylinder with the left arm",
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        }
+      },
+      "target": {
+        "id1": "jug",
+        "id2": "cylinder"
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "jug|left_gripper"
+      },
+      "instruction": "left gripper grasps the measuring jug by its handle",
+      "step_out": 6000
+    },
+    {
+      "checker": {
+        "PourVolume": "liquid/entity/Particles|cylinder|jug|10080|12320|22500|6|10|5.0"
+      },
+      "instruction": "slowly tilt the jug and pour liquid into the graduated cylinder until it holds 50 ml, then stop pouring",
+      "step_out": 18000
+    }
+  ],
+  "task_id": "pour_50ml_into_graduated_cylinder_arxone_16"
+}

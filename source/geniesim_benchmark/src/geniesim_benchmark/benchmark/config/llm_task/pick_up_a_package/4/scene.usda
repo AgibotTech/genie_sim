@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def Xform "table_7643d40d" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+
+                over "body"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-6.372680161348399e-14, -0.15402231329445076, -0.0000013969071077646333)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                over "part_00"
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-9.9253938401489e-14, -0.12992846746868975, -0.0000012878646975193059)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_carton_032" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_032/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.35144679777461235, 0.0, 0.0, 0.9362078553045636)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0315424200902272, 0.0058448594756926875, 0.8903312034136829)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

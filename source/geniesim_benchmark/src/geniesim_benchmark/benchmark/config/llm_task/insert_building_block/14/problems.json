@@ -1,0 +1,49 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_building_blocks_35570a3b|left_gripper"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "InBBox": "benchmark_building_blocks_35570a3b|0.0165366326435,0.042252864589,0.744|0.16,0.16,0.16"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "insert_building_block",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "InBBox",
+              "points": 40
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

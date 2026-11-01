@@ -1,0 +1,50 @@
+{
+    "instructions": [
+        {
+            "instruction": "Press the trash can pedal with the left gripper to open the lid, pick up the paper ball from the table with the right gripper, and drop it into the trash can.",
+            "gripper": {
+                "1": {
+                    "handover": false,
+                    "side": "left"
+                },
+                "2": {
+                    "handover": false,
+                    "side": "right"
+                }
+            },
+            "target": {
+                "id1": "benchmark_trash_can__short_ecea09ff",
+                "id2": "benchmark_trash_889fbac1"
+            }
+        }
+    ],
+    "subtask_steps": [
+        {
+            "checker": "passthrough",
+            "instruction": "left gripper moves over the trash can foot pedal",
+            "step_out": 600
+        },
+        {
+            "checker": {
+                "PushPull": "benchmark_trash_can__short_ecea09ff|0.01|1"
+            },
+            "instruction": "left gripper presses the pedal down to open the lid, and keeps holding it",
+            "step_out": 600
+        },
+        {
+            "checker": {
+                "PickUpOnGripper": "benchmark_trash_889fbac1|right_gripper"
+            },
+            "instruction": "right gripper grasps the paper ball from above and lifts it off the table",
+            "step_out": 600
+        },
+        {
+            "checker": {
+                "Inside": "benchmark_trash_889fbac1|/Workspace/Objects/benchmark_trash_can__short_ecea09ff/entity/body|{\"frame\":\"reference_local\",\"lower\":[-0.04088657707,-0.117636591196,-0.041934913248],\"upper\":[0.061895172894,-0.022636591196,0.041935136765]}"
+            },
+            "instruction": "right gripper carries the paper ball over the can and drops it inside",
+            "step_out": 1200
+        }
+    ],
+    "task_id": "open_short_trash_can_and_throw_garbage_multi_robot"
+}

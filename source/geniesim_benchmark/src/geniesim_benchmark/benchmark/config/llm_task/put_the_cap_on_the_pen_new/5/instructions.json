@@ -1,0 +1,52 @@
+{
+  "instructions": [
+    {
+      "instruction": "Use both hands to put the cap on the pen: pick up the pen with the left hand, pick up the cap with the right hand, align them, push the cap fully onto the pen, and place the capped pen back on the table.",
+      "target": {
+        "id1": "benchmark_pen_6a5c8104",
+        "id2": "benchmark_cap_w_b4ecf774"
+      },
+      "gripper": {
+        "1": {
+          "handover": false,
+          "side": "left"
+        },
+        "2": {
+          "handover": false,
+          "side": "right"
+        }
+      }
+    }
+  ],
+  "subtask_steps": [
+    {
+      "checker": {
+        "PickUpOnGripper": "benchmark_pen_6a5c8104|left_gripper"
+      },
+      "instruction": "Pick up the pen with the left gripper",
+      "step_out": 450
+    },
+    {
+      "checker": {
+        "PickUpOnGripper": "benchmark_cap_w_b4ecf774|right_gripper"
+      },
+      "instruction": "Pick up the pen cap with the right gripper",
+      "step_out": 450
+    },
+    {
+      "checker": {
+        "PlugInserted": "benchmark_cap_w_b4ecf774|PenAttachJoint"
+      },
+      "instruction": "Align the cap opening with the pen tip and push the cap fully onto the pen",
+      "step_out": 900
+    },
+    {
+      "checker": {
+        "Ontop": "benchmark_pen_6a5c8104|table_5c777404"
+      },
+      "instruction": "Place the capped pen back on the table with the left gripper",
+      "step_out": 300
+    }
+  ],
+  "task_id": "put_the_cap_on_the_pen_new"
+}

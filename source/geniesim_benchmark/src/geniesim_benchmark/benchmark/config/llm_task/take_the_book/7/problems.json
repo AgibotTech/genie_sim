@@ -1,0 +1,133 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "Rotated": "benchmark_book_005,benchmark_book_006,benchmark_book_007,benchmark_book_008,benchmark_book_011,benchmark_book_012,benchmark_book_013,benchmark_book_014,benchmark_book_026,benchmark_book_027,benchmark_book_028,benchmark_book_006_001|40|1,0,0"
+              },
+              {
+                "Onfloor": "benchmark_book_005|0"
+              },
+              {
+                "Onfloor": "benchmark_book_006|0"
+              },
+              {
+                "Onfloor": "benchmark_book_007|0"
+              },
+              {
+                "Onfloor": "benchmark_book_008|0"
+              },
+              {
+                "Onfloor": "benchmark_book_011|0"
+              },
+              {
+                "Onfloor": "benchmark_book_012|0"
+              },
+              {
+                "Onfloor": "benchmark_book_013|0"
+              },
+              {
+                "Onfloor": "benchmark_book_014|0"
+              },
+              {
+                "Onfloor": "benchmark_book_026|0"
+              },
+              {
+                "Onfloor": "benchmark_book_027|0"
+              },
+              {
+                "Onfloor": "benchmark_book_028|0"
+              },
+              {
+                "Onfloor": "benchmark_book_006_001|0"
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "MixedRules": {
+                  "mode": "and",
+                  "rules": [
+                    {
+                      "name": "InBBox",
+                      "params": "benchmark_book_005,benchmark_book_006,benchmark_book_007,benchmark_book_008,benchmark_book_011,benchmark_book_012,benchmark_book_013,benchmark_book_014,benchmark_book_026,benchmark_book_027,benchmark_book_028,benchmark_book_006_001|-0.10,2.32,1.11|0.8,0.28,0.28"
+                    },
+                    {
+                      "name": "StableGrasp",
+                      "params": "{@placeholder_str1}|right_gripper|0.15|0.02|0.1|0"
+                    }
+                  ]
+                }
+              },
+              {
+                "Onfloor": "benchmark_book_005|0"
+              },
+              {
+                "Onfloor": "benchmark_book_006|0"
+              },
+              {
+                "Onfloor": "benchmark_book_007|0"
+              },
+              {
+                "Onfloor": "benchmark_book_008|0"
+              },
+              {
+                "Onfloor": "benchmark_book_011|0"
+              },
+              {
+                "Onfloor": "benchmark_book_012|0"
+              },
+              {
+                "Onfloor": "benchmark_book_013|0"
+              },
+              {
+                "Onfloor": "benchmark_book_014|0"
+              },
+              {
+                "Onfloor": "benchmark_book_026|0"
+              },
+              {
+                "Onfloor": "benchmark_book_027|0"
+              },
+              {
+                "Onfloor": "benchmark_book_028|0"
+              },
+              {
+                "Onfloor": "benchmark_book_006_001|0"
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "take_the_book",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "Rotated",
+              "points": 20
+            },
+            {
+              "checker": "MixedRules",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

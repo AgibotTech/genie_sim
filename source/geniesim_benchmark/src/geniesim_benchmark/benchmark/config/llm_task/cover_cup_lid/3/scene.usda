@@ -1,0 +1,83 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def Xform "table_7643d40d" (
+            prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
+        )
+        {
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+
+                over "body"
+                {
+                    quatf xformOp:orient = (1, 0, 0, 0)
+                    float3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-6.372680161348399e-14, -0.15402231329445076, -0.0000013969071077646333)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+
+                over "part_00"
+                {
+                    quatd xformOp:orient = (1, 0, 0, 0)
+                    double3 xformOp:scale = (1, 1, 1)
+                    double3 xformOp:translate = (-9.9253938401489e-14, -0.12992846746868975, -0.0000012878646975193059)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                }
+            }
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_114" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_114/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.07403703330037535, 0.0, 0.0, -0.9972554926898518)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.9182537258114098, 0.10132901658502988, 0.8066190064852385)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+
+        def Xform "benchmark_cup_115" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_115/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.9840240572912574, 0.0, 0.0, -0.17803554328294127)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.8403214753164593, -0.10826750717438696, 0.7791975710909407)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body" (
+                    prepend apiSchemas = ["OmniScriptingAPI"]
+                )
+                {
+                    uniform asset[] omni:scripting:scripts = [@/geniesim_assets/background/common/py/cover_cup_lid.py@] (
+                        customData = {
+                            dictionary fileExts = {
+                                string "*.py" = "Python File"
+                            }
+                        }
+                    )
+                    float3 xformOp:scale = (1, 1, 1)
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def "World"
+{
+    def "Objects"
+    {
+        def Xform "table_2d911acb" (
+            prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0, 0.367)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_holder_9cb49a47" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup_holder/benchmark_cup_holder_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (-0.089927, 0, 0, 0.995948)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.07552826321685502, -0.006517137960096407, 0.907)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def Xform "benchmark_cup_7eb714cd" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_124/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.914483, 0, 0, 0.404624)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.07247173678314499, -0.2075171379600964, 0.777)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+    }
+}

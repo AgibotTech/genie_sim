@@ -1,0 +1,276 @@
+{
+  "scene_id": "install_bearing_gearing_03",
+  "condition_id": "bearing-gearing-shaft-section-seat5mm-20261022",
+  "seed": 1,
+  "layout": {
+    "table_02148680": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/table/Aligned.usda",
+      "xyz": [
+        0,
+        0,
+        0.367
+      ],
+      "xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "tags": [
+        "table_02148680"
+      ],
+      "keywords": [
+        "table"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ]
+      }
+    },
+    "Aligned": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda",
+      "xyz": [
+        0.03,
+        -0.065,
+        0.8180391994687565
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.537299633026123,
+        0.8433914184570312
+      ],
+      "tags": [
+        "Aligned"
+      ],
+      "keywords": [
+        "gearbox central shaft and support disc"
+      ],
+      "description": {
+        "semantic_name": [
+          "gearbox central shaft and support disc"
+        ]
+      }
+    },
+    "Aligned_02": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda",
+      "xyz": [
+        -0.01,
+        0.3,
+        0.7430340638288921
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9612616896629333,
+        0.27563735842704773
+      ],
+      "tags": [
+        "Aligned_02"
+      ],
+      "keywords": [
+        "loose gear"
+      ],
+      "description": {
+        "semantic_name": [
+          "loose gear"
+        ]
+      }
+    }
+  },
+  "source_package_layout": {
+    "scene_id": "scene_03",
+    "scene_file": "scene_03/scene.usda",
+    "scene_sha256": "04fc345ea2071dbded6af6e2c075be72afcff7ee3a3c8ad8dd6f074835de64f8",
+    "gear_direction_relative_to_fixture": "right",
+    "fixture_region": "left",
+    "fixture_depth": "back",
+    "gear": {
+      "prim": "/World/Objects/Aligned_02",
+      "yaw_world_deg": 148,
+      "translation_m": [
+        -0.01,
+        0.3,
+        0.7430340638288921
+      ],
+      "quaternion_wxyz": [
+        0.27563735842704773,
+        0.0,
+        0.0,
+        0.9612616896629333
+      ]
+    },
+    "fixture": {
+      "prim": "/World/Objects/Aligned",
+      "yaw_world_deg": 65,
+      "translation_m": [
+        0.03,
+        -0.065,
+        0.8180391994687565
+      ],
+      "quaternion_wxyz": [
+        0.8433914184570312,
+        0.0,
+        0.0,
+        0.537299633026123
+      ]
+    },
+    "z_adjustment_from_supplied_initial_m": {
+      "fixture": -0.013371652606824602,
+      "gear": -0.007932055626212353
+    },
+    "target": {
+      "shaft_prim": "/World/Objects/Aligned/entity/body/collider_002",
+      "support_prim": "/World/Objects/Aligned/entity/body/collider_004",
+      "shaft_bounds_m": [
+        [
+          0.017934059146758732,
+          -0.08192027426951404,
+          0.7549678101311721
+        ],
+        [
+          0.049212823884409215,
+          -0.05064187390451932,
+          0.9044697621056598
+        ]
+      ],
+      "shaft_axis_xy_world_m": [
+        0.033573441515583974,
+        -0.06628107408701668
+      ],
+      "shaft_top_world_z_m": 0.9044697621056598,
+      "support_top_world_z_m": 0.7549692513497885,
+      "axis_estimator": "XY center of exact transformed shaft-mesh AABB"
+    },
+    "static_validation": {
+      "passed": true,
+      "physics_and_api_schemas_unchanged": true,
+      "collision_bounds_m": {
+        "fixture": [
+          [
+            -0.11420495343542475,
+            -0.20920584850412108,
+            0.732418655679496
+          ],
+          [
+            0.17420614016339384,
+            0.07920514891942249,
+            0.9044697621056598
+          ]
+        ],
+        "gear": [
+          [
+            -0.041403531852194114,
+            0.26911001072658924,
+            0.732418655679496
+          ],
+          [
+            0.020771441469799326,
+            0.3313292375423618,
+            0.753649406687608
+          ]
+        ]
+      },
+      "table_edge_margin_m": {
+        "fixture": 0.12579387175753512,
+        "gear": 0.16867076245763812
+      },
+      "collision_bottom_gap_above_table_m": {
+        "fixture": 0.0004999999999999449,
+        "gear": 0.0004999999999999449
+      },
+      "gear_fixture_xy_aabb_clearance_m": 0.18990486180716676,
+      "not_preassembled": true,
+      "dependency_layer_count": 7,
+      "file_asset_dependency_count": 26,
+      "unresolved_file_dependencies": [],
+      "runtime_builtin_mdl_modules": [
+        "OmniPBR.mdl"
+      ]
+    }
+  },
+  "robot_configuration": {
+    "robot_base_pose": {
+      "position": [
+        0.7,
+        0,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "initial_joint_state": {
+      "body_state": [
+        -0.8029,
+        1.5048,
+        -0.3419,
+        0,
+        0
+      ],
+      "head_state": [
+        0,
+        -0.001,
+        0.45
+      ],
+      "init_arm": [
+        0.5264,
+        -0.5189,
+        -1.0938,
+        -1.5954,
+        -1.1488,
+        0.3386,
+        -1.1805,
+        -0.5252,
+        -0.5194,
+        1.0943,
+        -1.5958,
+        1.1483,
+        0.3393,
+        1.1809
+      ],
+      "init_hand": [
+        0,
+        0
+      ]
+    },
+    "robot_is_injected_by_benchmark_runtime": true,
+    "instruction": "Assemble the gear onto the central gear shaft.",
+    "initial_state_source": "mount_part_90d-initial-state.json",
+    "base_pose_source": "opposite-base-pose.json"
+  },
+  "native_placement_target": {
+    "active": "Aligned_02",
+    "passive": "Aligned",
+    "world_root_position_m": [
+      0.03341591515138546,
+      -0.06661883950046892,
+      0.7655846594991846
+    ],
+    "world_root_quaternion_wxyz": [
+      0.8433914458128857,
+      0.0,
+      0.0,
+      0.5372996083468239
+    ],
+    "entity_world_quaternion_wxyz": [
+      0.5963678105290181,
+      0.596367810529018,
+      0.3799281965909152,
+      0.3799281965909152
+    ],
+    "world_position_difference_m": [
+      0.0034159151513854583,
+      -0.0016188395004689132,
+      -0.052454539969571834
+    ],
+    "basis": "central shaft collision-AABB XY center; gear collision bottom on support-disc top",
+    "legacy_checker_thresholds_unchanged": false,
+    "final_height_tolerance_m": 0.005,
+    "height_boundary_inclusive": true
+  }
+}

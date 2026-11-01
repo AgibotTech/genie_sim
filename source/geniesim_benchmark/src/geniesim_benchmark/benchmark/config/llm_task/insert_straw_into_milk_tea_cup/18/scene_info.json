@@ -1,0 +1,154 @@
+{
+  "experimental_condition": {
+    "version": "tabletop-thick-straw-rigid-v3.2",
+    "paper_cup_removed": true,
+    "diameter_m": 0.0125,
+    "original_length_m": 0.15054312348365784,
+    "long_axis_world_yaw_deg": 115.54153971548742,
+    "sample_seed": 30,
+    "checker_condition": "straw-tip-opening-continuous-v3.2",
+    "tip_marker": "benchmark_straw_001/entity/body/InsertionTip",
+    "point_tolerance_m": 1e-06,
+    "opening_tolerance_m": 1e-05,
+    "hold_seconds": 1.0
+  },
+  "scene_id": "insert_straw_into_milk_tea_cup_18",
+  "task_name": "insert_straw_into_milk_tea_cup",
+  "seed": 2026103218,
+  "layout": {
+    "table_000": {
+      "usd": "table_000",
+      "keywords": [
+        "table",
+        "workspace",
+        "fixed"
+      ],
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/edited/table_000/Aligned.usda"
+    },
+    "benchmark_cup_132": {
+      "usd": "benchmark_cup_132",
+      "keywords": [
+        "milk_tea_cup",
+        "lid",
+        "straw_hole",
+        "dynamic",
+        "POSITION_TAG_center"
+      ],
+      "xyz": [
+        0.022039565179439686,
+        0.023059715669002757,
+        0.802
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/cup/benchmark_cup_132/Aligned.usda"
+    },
+    "benchmark_straw_001": {
+      "usd": "benchmark_straw_001",
+      "keywords": [
+        "straw",
+        "tabletop",
+        "dynamic",
+        "left_hand"
+      ],
+      "xyz": [
+        0.0571856764480637,
+        0.13053065667195768,
+        0.7245136496637545
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.22105097770690918,
+        0.9752622246742249
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "entity_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "body_scale": [
+        1.3020833730697632,
+        1,
+        1.3020833730697632
+      ],
+      "lowpoly_scale": [
+        1.3020833730697632,
+        1,
+        1.3020833730697632
+      ],
+      "asset_path": "objects/benchmark/straw/benchmark_straw_001/Aligned.usda"
+    }
+  },
+  "generalization": {
+    "version": "fine_xy_translation_v1",
+    "instance_id": 18,
+    "source_instance": 8,
+    "source_scene_sha256": "cc7d83424040c924dd172e3239c27c30678935889a331402e374338c4076fc7a",
+    "source_scene_info_sha256": "74c577ffaee18a552f3fd60ff4d1fa8a6ac1d49457a5cc9f179845f7423f1846",
+    "source_problem_sha256": "751704dd3e817c33f245c9d589628ec685c7f3c77252c1183d6375af26cf103a",
+    "seed": 2026103218,
+    "world_xy_translation_m": [
+      -0.015960434820560313,
+      -0.003940284330997242
+    ],
+    "group_prims": [
+      "benchmark_cup_132",
+      "benchmark_straw_001"
+    ],
+    "fixed_prims": [
+      "table_000"
+    ],
+    "orientation_and_height": "source instance unchanged",
+    "robot_initialization": "shared task configuration unchanged"
+  },
+  "validation_level": "static_geometry",
+  "static_geometry": {
+    "world_xy_within_source_task_origin_envelope": true,
+    "world_xy_within_source_semantic_role_envelopes": true,
+    "all_object_relative_transforms_preserved": true,
+    "fixed_support_transforms_preserved": true,
+    "all_mesh_vertical_bounds_preserved": true,
+    "nonzero_translation_m": 0.01643962652466462,
+    "table_support": {
+      "table_prim": "table_000",
+      "baseline_xy_edge_margin_m": [
+        0.1936391492845469,
+        0.28470889583357784
+      ],
+      "minimum_xy_edge_margin_m": [
+        0.001,
+        0.001
+      ],
+      "generated_xy_edge_margin_m": [
+        0.2095995841051072,
+        0.2886491801645751
+      ]
+    },
+    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
+    "ik_execution": "not_run",
+    "physics_execution": "not_run",
+    "unresolved_file_dependencies": []
+  }
+}

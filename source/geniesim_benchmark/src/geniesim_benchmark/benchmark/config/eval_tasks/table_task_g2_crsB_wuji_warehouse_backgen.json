@@ -1,0 +1,91 @@
+{
+  "generalization": {
+    "hdr_texture": {
+      "enable": true
+    },
+    "material": {
+      "enable": true,
+      "num": 0
+    }
+  },
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/Head_Front_Camera",
+      "/genie/hand_l_base_link/Left_Camera",
+      "/genie/hand_r_base_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 6
+  },
+  "robot": {
+    "arm": "dual",
+    "robot_cfg": "G2_crsB_wuji.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          0.22321,
+          0.0,
+          0.0
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          0.9469250329709877,
+          0.0,
+          0.2662672906124978
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "pick_up_a_package/workspace_00",
+    "scene_info_dir": "background/dexmanip/pick_up_a_package/",
+    "scene_usd": "background/dexmanip/pick_up_a_package/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "table_task_g2_crsB_wuji_warehouse_backgen"
+}

@@ -1,0 +1,88 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_plate_019_00,benchmark_plate_012_01|left_gripper"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_plate_019_00,benchmark_plate_012_01|right_gripper"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "benchmark_dish_rack_001|1.0"
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "InBBox": "benchmark_plate_019_00|-2.282621,1.746072,0.929955|0.35,0.35,0.3"
+                  },
+                  {
+                    "InBBox": "benchmark_plate_012_01|-2.282621,1.746072,0.929955|0.35,0.35,0.3"
+                  }
+                ]
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "put_the_plates_on_the_shelf",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 10
+            },
+            {
+              "checker": "InBBox",
+              "points": 15
+            },
+            {
+              "checker": "InBBox",
+              "points": 15
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

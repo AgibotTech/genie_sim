@@ -1,0 +1,49 @@
+{
+    "problem1": {
+        "Acts": [
+            {
+                "ActionList": [
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PickUpOnGripper": "jug|left_gripper"
+                            },
+                            {
+                                "StepOut": 6000
+                            }
+                        ]
+                    },
+                    {
+                        "ActionSetWaitAny": [
+                            {
+                                "PourVolume": "liquid/entity/Particles|cylinder|jug|10080|12320|22500|6|10|5.0"
+                            },
+                            {
+                                "StepOut": 18000
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "Init": [],
+        "Objects": [],
+        "Problem": "pour_50ml_into_graduated_cylinder_g2_omnipicker",
+        "ScoreCheckers": [
+            {
+                "PolicyDispatchBudget": {
+                    "steps": [
+                        {
+                            "checker": "PickUpOnGripper",
+                            "points": 10
+                        },
+                        {
+                            "checker": "PourVolume",
+                            "points": 40
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}

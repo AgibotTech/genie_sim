@@ -1,0 +1,458 @@
+{
+  "layout": {
+    "table": {
+      "usd": "benchmark_table_019",
+      "xyz": [
+        0.22300000000000003,
+        0.0,
+        0.5894953424779062
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/table/benchmark_table_019/Aligned.usda"
+    },
+    "paper": {
+      "usd": "benchmark_paper_000",
+      "xyz": [
+        0.05018222666628752,
+        0.005352792824417315,
+        1.055
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.02380671848174102,
+        0.999716579914093
+      ],
+      "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
+    },
+    "pen_holder": {
+      "usd": "benchmark_stationery_021",
+      "xyz": [
+        -0.009999999999999953,
+        -0.12,
+        1.0943014000450366
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/stationery/benchmark_stationery_021/Aligned.usda"
+    },
+    "pen": {
+      "usd": "benchmark_pen_009",
+      "xyz": [
+        -0.009999999999999953,
+        -0.12,
+        1.1295
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "asset_path": "objects/benchmark/pen/benchmark_pen_009/Aligned.usda"
+    },
+    "Ink": {
+      "usd": "Ink",
+      "xyz": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "auxiliary_prims": [
+    "/World/Objects/Ink",
+    "/World/Objects/paper/entity/writing_template"
+  ],
+  "writing_contract": {
+    "grasp_index": 102,
+    "T_pen_tcp": [
+      [
+        2.498001805406602e-16,
+        -0.25881904510252074,
+        0.9659258262890682,
+        0.0048296291314472006
+      ],
+      [
+        0.0,
+        -0.9659258262890681,
+        -0.2588190451025207,
+        0.05311368048421282
+      ],
+      [
+        1.0,
+        6.465304419397096e-17,
+        -2.4128844579589563e-16,
+        3.48339755889591e-07
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "pen_tip_local": [
+      0,
+      -0.07184357772142377,
+      -6.515861400178732e-07
+    ],
+    "paper_size_m": [
+      0.18,
+      0.12,
+      0.001
+    ],
+    "target_tip_gap_m": 0.002,
+    "lift_m": 0.05,
+    "glyph_width_m": 0.06,
+    "glyph_height_m": 0.08,
+    "stroke_point_spacing_m": 0.002,
+    "robot_base_world": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.014999999664723873
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.800000011920929
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "ink_contact_distance_m": 0.005,
+    "ink_root": "/World/Objects/Ink",
+    "ink_mesh": "/World/Objects/Ink/strokes",
+    "ink_control": "/World/Objects/pen/entity",
+    "pen_actor": "/World/Objects/pen/entity",
+    "paper_actor": "/World/Objects/paper/entity",
+    "initialization_uses_explicit_actual_usd_bounds": true,
+    "pick_lift_m": 0.1,
+    "gripper_initial_open_fraction": 1.0,
+    "pregrasp_extra_height_m": 0.064,
+    "paper_root_world": [
+      [
+        0.9988664803102623,
+        -0.04759994235908752,
+        0.0,
+        0.4651822266662875
+      ],
+      [
+        0.04759994235908752,
+        0.9988664803102623,
+        0.0,
+        0.005352792824417315
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.95
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "glyph_up_paper": [
+      1,
+      0,
+      0
+    ],
+    "glyph_right_paper": [
+      0,
+      -1,
+      0
+    ],
+    "glyph_frame": "paper entity local; upright glyph up is +X, right is -Y; paper yaw follows this scene",
+    "physics_hz": 240,
+    "reference_control_hz": 60,
+    "recording_hz": 30
+  },
+  "host_physics_contract": {
+    "source_definitions": [],
+    "host_scene_path": "/physicsScene",
+    "physics_hz": 240,
+    "gravity_direction": [
+      0,
+      0,
+      -1
+    ],
+    "gravity_magnitude": 9.81,
+    "expected_physics_index_delta_per_step": 1,
+    "source_physics_scene_removed": "/World/physicsScene",
+    "removed_source_gravity_only": {
+      "physics:gravityDirection": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "physics:gravityMagnitude": 9.8100004196167
+    },
+    "reference_control_hz": 60,
+    "recording_hz": 30,
+    "physical_substeps_per_control_step": 4,
+    "observed_control_step_physics_index_delta": 4,
+    "all_physical_substeps_observed": false
+  },
+  "copybook": {
+    "target_letter": "O",
+    "guide_prim": "/World/Objects/paper/entity/writing_template",
+    "target_sha256": "262f01871571032ecc011d9ecd2b8d00e9729b30bf243bad440167ebdade4af8",
+    "gray_geometry_authored_in_scene": true,
+    "visual_only": true,
+    "overlap_metrics": [
+      "iou",
+      "dice",
+      "target_coverage",
+      "ink_precision"
+    ],
+    "physical_validation": "pending new physical trial",
+    "policy_variant": "arx_upright_v1"
+  },
+  "scene_id": "trace_copybook_o_arx_upright_20261024_scene_000150",
+  "task_name": "trace_copybook_o_arx_upright_20261024",
+  "target_letter": "O",
+  "writing_robot": "arx",
+  "writing_variant": "arx_upright_v1",
+  "physical_validation": {
+    "passed": false,
+    "status": "new layout; physical trial pending"
+  },
+  "validation_level": "Strict nominal glyph IK/source geometry, original initial FOV and full-paper tabletop support passed; physical success pending",
+  "generalization": {
+    "batch": "arx_upright_generalization_1000_20261024",
+    "seed": 20261024,
+    "robot": "ARX",
+    "anchor": "coap/runs/arx_upright_B_20261024/cases/ARX/support_r15p60h16a64/O",
+    "jitter_xy_m_yaw_deg": [
+      0.005182226666287478,
+      0.005352792824417315,
+      2.7284303689221394
+    ],
+    "accepted_attempt": 0,
+    "source_scene_sha256": "1d0311bc07b5676f470740649e21e8dccf0d0c5c072486ec440496d3ce79a81d",
+    "target_sha256": "262f01871571032ecc011d9ecd2b8d00e9729b30bf243bad440167ebdade4af8",
+    "initial_robot_joints_unchanged": true,
+    "paper_height_unchanged": true,
+    "physical_success": false,
+    "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets",
+    "source_writing_contract_provenance": {
+      "original_scene_info_sha256": "968e1b048c3d3959ce63c3d8ea332839309cff92e1b9e17b78b2ef9ee4174339",
+      "original_contract": {
+        "reference_report": "arx_continuous_remote_02",
+        "grasp_index": 102,
+        "T_pen_tcp": [
+          [
+            2.498001805406602e-16,
+            -0.25881904510252074,
+            0.9659258262890682,
+            0.0048296291314472006
+          ],
+          [
+            0.0,
+            -0.9659258262890681,
+            -0.2588190451025207,
+            0.03711368048421282
+          ],
+          [
+            1.0,
+            6.465304419397096e-17,
+            -2.4128844579589563e-16,
+            3.48339755889591e-07
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "pen_tip_local": [
+          0,
+          -0.07184357772142377,
+          -6.515861400178732e-07
+        ],
+        "paper_size_m": [
+          0.18,
+          0.12,
+          0.001
+        ],
+        "target_tip_gap_m": 0.002,
+        "lift_m": 0.05,
+        "glyph_width_m": 0.06,
+        "glyph_height_m": 0.08,
+        "stroke_point_spacing_m": 0.002,
+        "robot_base_world": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            -4.656612873077393e-10
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            -1.4551915228366852e-11
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.8000000055879355
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "ink_contact_distance_m": 0.005,
+        "ink_root": "/World/Objects/Ink",
+        "ink_mesh": "/World/Objects/Ink/strokes",
+        "ink_control": "/World/Objects/pen/entity",
+        "pen_actor": "/World/Objects/pen/entity",
+        "paper_actor": "/World/Objects/paper/entity",
+        "initial_pen_cpu_grasp": {
+          "pen_entity_pose_solver": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.3900000004656613
+            ],
+            [
+              0.0,
+              9.069511300197064e-06,
+              -0.999999999958872,
+              -0.11999999998544808
+            ],
+            [
+              0.0,
+              0.999999999958872,
+              9.069511300197064e-06,
+              0.22449999441206447
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "grasp_tcp_solver": [
+            [
+              2.498001805406602e-16,
+              -0.25881904510252074,
+              0.9659258262890682,
+              0.3948296295971085
+            ],
+            [
+              -0.999999999958872,
+              -8.760475196745542e-06,
+              -2.3473622540222366e-06,
+              -0.12000001172225941
+            ],
+            [
+              9.069511300197064e-06,
+              -0.9659258262493415,
+              -0.258819045091876,
+              0.26161367489791015
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "joint_solution": [
+            0.4999415968487463,
+            1.3231278360901166,
+            1.1392870208689287,
+            -0.11248704653383261,
+            0.48142433185779204,
+            0.14043459856316012
+          ],
+          "cpu_ik_pass": true
+        },
+        "initialization_uses_explicit_actual_usd_bounds": true,
+        "grasp_provenance": {
+          "original_144_index": 102,
+          "old_base_index": 85,
+          "azimuth_delta_deg": -105,
+          "height_delta_m": 0.01,
+          "tcp_offset_z_m": -0.005,
+          "depth_pitch_candidate": true,
+          "old_tool_depth_m": -0.005,
+          "new_tool_depth_m": 0.005,
+          "local_tcp_x_pitch_deg": -15,
+          "scene_and_initial_state_preserved": true
+        },
+        "pick_lift_m": 0.1,
+        "gripper_initial_open_fraction": 1.000000005418604
+      },
+      "policy_config_sha256": "988d25a8d66c78779479265ac64076f41dfdc5097bbd6a3abd62602b70c50d6d",
+      "measured_reference_sha256": "63865546275760d607f4c2ad73a6f361a89943f71b8a5a650129c09231d7fc27",
+      "safe_approach_sha256": "0f3ba6b96131d6e524a98b75be96c8d02733dbac3016b8ab736dfab35ca547a0",
+      "corrected_current_fields": [
+        "T_pen_tcp",
+        "glyph_frame",
+        "glyph_right_paper",
+        "glyph_up_paper",
+        "grasp_provenance",
+        "gripper_initial_open_fraction",
+        "initial_pen_cpu_grasp",
+        "paper_root_world",
+        "physics_hz",
+        "pregrasp_extra_height_m",
+        "recording_hz",
+        "reference_control_hz",
+        "reference_report",
+        "robot_base_world"
+      ],
+      "scope": "Descriptive metadata correction only; scene geometry, robot initialization and screened target unchanged"
+    }
+  },
+  "timing_contract": {
+    "physics_hz": 240,
+    "reference_control_hz": 60,
+    "recording_hz": 30,
+    "physical_dt_s": 0.004166666666666667,
+    "control_dt_s": 0.016666666666666666,
+    "physical_substeps_per_control_step": 4,
+    "geometry_guard_observation_hz": 60
+  }
+}
