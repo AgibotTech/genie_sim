@@ -109,5 +109,15 @@ class BenchmarkRuntimeTests(unittest.TestCase):
 
 
 
+    def test_native_mujoco_backend_override_keeps_its_environment(self):
+        with patch.dict(os.environ, {"GENIESIM_PY_CMD": "omni_python"}):
+            cmd, env = benchmark._prepared_app_cmd(
+                CONFIGS / "g2op_crsemb_pour_50ml_into_graduated_cylinder.yaml",
+                ["--benchmark.backend=mujoco"], None,
+            )
+            self.assertTrue(cmd[1].endswith("scripts/run_mujoco.py"))
+            self.assertIsNone(env)
+
+
 if __name__ == "__main__":
     unittest.main()

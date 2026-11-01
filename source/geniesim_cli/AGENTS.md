@@ -469,7 +469,7 @@ symlinks cannot shadow source packages or break the generator.
 
 ## Newton benchmark dispatch
 
-`benchmark run` reads the task YAML `runtime` before selecting an interpreter: omitted/isaac selects bundled Isaac Sim 5.1 through `omni_python`; newton executes `geniesim_benchmark.newton.runner` with system Python 3.12, Isaac Sim 6.2, and a built ROS overlay. Generic container `GENIESIM_PY_CMD` defaults do not override the task runtime; a custom prepared interpreter path is retained. `--manifest` and task-runner options are forwarded. `benchmark generate-layouts` and `run-layouts` dispatch to the benchmark-owned Newton modules; the CLI imports no ROS, physics or rendering runtime. See Wuji evaluation.
+`benchmark run` reads the task YAML `runtime` before selecting an interpreter: omitted/isaac selects bundled Isaac Sim 5.1 through `omni_python`; newton executes `geniesim_benchmark.newton.runner` with system Python 3.12, Isaac Sim 6.2, and a built ROS overlay. Generic container `GENIESIM_PY_CMD` defaults do not override the task runtime; a custom prepared interpreter path is retained. `--manifest` and task-runner options are forwarded. `benchmark generate-layouts` and `run-layouts` dispatch to the benchmark-owned Newton modules; the CLI imports no ROS, physics or rendering runtime. Native MuJoCo entries select `benchmark.python` (or the CLI interpreter) and bypass unrelated Isaac/ROS bootstrap. Rubik rendering chooses its Isaac interpreter separately. See the benchmark runtime guides.
 
 ### Benchmark task categories
 

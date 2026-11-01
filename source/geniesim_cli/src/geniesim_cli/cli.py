@@ -269,7 +269,13 @@ def main(argv: list[str] | None = None) -> None:
     # `geniesim_assets`) aren't installed yet — offer to install them
     # before the user's command runs. Skipped for recovery verbs
     # (status / doctor / bootstrap / version / completion / env).
-    _ensure_bootstrap(cmd)
+    native_benchmark = False
+    if cmd == "benchmark":
+        from geniesim_cli.commands.benchmark import is_native_run
+
+        native_benchmark = is_native_run(sub_args)
+    if not native_benchmark:
+        _ensure_bootstrap(cmd)
 
     if cmd == "version":
         from geniesim_cli.commands import version as _m

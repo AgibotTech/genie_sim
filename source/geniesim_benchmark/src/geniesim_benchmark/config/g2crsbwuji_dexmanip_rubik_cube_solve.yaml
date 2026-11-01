@@ -1,0 +1,23 @@
+benchmark:
+  backend: mujoco
+  task_name: rubik_cube_solve_2turn
+  platform: g2_crsb_wuji
+  policy: websocket
+  num_episode: 10
+  num_instances: 1
+  seed: 0
+  output_dir: ""
+  record: true
+rubik:
+  package_root: ""  # Defaults to <assets-root>/mujoco/rubik_cube.
+  prompt: "Solve the Rubik's Cube"
+  timeout_seconds: 60.0
+  control_hz: 30.0
+  action_time_scale: 2.0
+  hand_controller: native
+  hand_target_tolerance: 0.05
+  inference_timeout_seconds: 60.0
+  hold_seconds: 0.0
+  alignment_degrees: 5.0
+  render: true
+  renderer: isaac

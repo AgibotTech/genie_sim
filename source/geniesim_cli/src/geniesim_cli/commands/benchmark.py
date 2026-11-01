@@ -29,6 +29,8 @@ system ``python3.12`` with Isaac 6.2 and ROS Jazzy. Generic
 ``GENIESIM_PY_CMD`` container defaults do not override this task selection.
 A custom prepared Python path still applies. Newton tasks load their built ROS
 overlay automatically before exec.
+Native MuJoCo tasks use ``benchmark.python`` or the CLI interpreter and bypass
+the Isaac and ROS bootstrap.
 """
 
 from __future__ import annotations
@@ -273,9 +275,42 @@ def _task_runtime(config_path: Path, forwarded: list[str]) -> str:
     return runtime_for_config(config_path, forwarded)
 
 
+def is_native_run(args: list[str]) -> bool:
+    """Identify explicit native runs before bootstrapping unrelated engines."""
+    if len(args) < 2 or args[0] != "run":
+        return False
+    _, arguments = _extract_flag(args[1:], "infer-host")
+    if not arguments:
+        return False
+    if importlib.util.find_spec("geniesim_benchmark") is None:
+        return False
+    from geniesim_benchmark.runtime import runtime_for_config
+
+    return runtime_for_config(_resolve_config(arguments[0]), arguments[1:]) == "mujoco"
+
+
+def _native_python(config_path: Path, forwarded: list[str]) -> str:
+    """Select a configured native interpreter without consulting Isaac wrappers."""
+    import yaml
+
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    override, _ = _extract_flag(forwarded, "benchmark.python")
+    interpreter = override if override is not None else config.get("benchmark", {}).get("python")
+    if interpreter is not None and (not isinstance(interpreter, str) or not interpreter):
+        raise ValueError("benchmark.python must be a nonempty interpreter path")
+    return interpreter or sys.executable or "python3"
+
+
 def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None) -> list[str]:
     runtime = _task_runtime(config_path, forwarded)
-    if runtime == "newton":
+    if runtime == "mujoco":
+        cmd = [
+            _native_python(config_path, forwarded),
+            str(_benchmark_root() / "scripts" / "run_mujoco.py"),
+            "--config",
+            str(config_path),
+        ]
+    elif runtime == "newton":
         cmd = [_rt_python_cmd(), "-m", f"geniesim_benchmark.{runtime}.runner", "--config", str(config_path)]
     elif runtime == "isaac":
         cmd = [_python_cmd(), str(_app_py()), "--config", str(config_path)]

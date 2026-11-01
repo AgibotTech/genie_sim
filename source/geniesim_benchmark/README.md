@@ -69,6 +69,16 @@ geniesim benchmark run g2crsbwuji_dexmanip_wok_flip --infer-host=localhost:8999
 The task selects its Python 3.12 / ROS / Newton runtime. Prepare the ROS overlay
 and asset package first; see the [runtime guide](docs/wuji-dexmanip-cli.md).
 
+### Native MuJoCo Rubik evaluation
+
+```bash
+geniesim benchmark run g2crsbwuji_dexmanip_rubik_cube_solve --infer-host=localhost:8999
+```
+
+Prepare the native model package and Python environment described in the
+[Rubik guide](docs/rubik_mujoco_benchmark.md). Physics and observation rendering
+use separate processes and interpreter settings.
+
 ### Discover tasks
 
 ```bash
