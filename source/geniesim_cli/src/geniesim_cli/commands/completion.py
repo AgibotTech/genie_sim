@@ -36,10 +36,14 @@ _geniesim_completions() {
                     fi ;;
             esac ;;
         data-collection)
-            if [[ "${#words[@]}" -eq 3 ]]; then
+            if [[ "${prev}" == --mirrors && "${words[2]}" == build ]]; then
+                COMPREPLY=($(compgen -W "upstream china" -- "${cur}"))
+            elif [[ "${#words[@]}" -eq 3 ]]; then
                 COMPREPLY=($(compgen -W "install config llm replay list tasks robots run build up into down" -- "${cur}"))
             elif [[ "${#words[@]}" -eq 4 && "${words[2]}" == "llm" ]]; then
                 COMPREPLY=($(compgen -W "list show run" -- "${cur}"))
+            elif [[ "${words[2]}" == build ]]; then
+                COMPREPLY=($(compgen -W "--china --mirrors --image --build-arg --dry-run --no-cache --progress" -- "${cur}"))
             fi ;;
         deploy)
             if [[ "${#words[@]}" -eq 3 ]]; then
@@ -158,10 +162,14 @@ _geniesim() {
                 _values 'profile' ${ros_build_profiles[@]}
             fi ;;
         data-collection)
-            if (( CURRENT == 3 )); then
+            if [[ "${words[CURRENT-1]}" == --mirrors && "${words[3]}" == build ]]; then
+                _values 'mirror preset' upstream china
+            elif (( CURRENT == 3 )); then
                 _values 'subcommand' install config llm replay list tasks robots run build up into down
             elif (( CURRENT == 4 )) && [[ "${words[3]}" == "llm" ]]; then
                 _values 'action' list show run
+            elif [[ "${words[3]}" == build ]]; then
+                _values 'option' --china --mirrors --image --build-arg --dry-run --no-cache --progress
             fi ;;
         deploy)
             if (( CURRENT == 3 )); then

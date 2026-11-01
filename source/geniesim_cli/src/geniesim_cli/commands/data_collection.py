@@ -25,12 +25,13 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-from geniesim_cli import _env
+from geniesim_cli import _env, _module_image
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
 
 # Path of the module relative to a repo checkout, plus a marker that
@@ -173,7 +174,7 @@ def _print_usage() -> None:
     print(f"  {CYAN}robots{RST}                                    🤖 Distinct robots + counts")
     print(f"  {CYAN}run{RST} {WHITE}<LLM_TASK>{RST} [--scene=ID] [--run-times=N] [--dry-run]")
     print(f"     {DIM}Default: collect an LLM task. Use --task-json PATH for a JSON job/template.{RST}")
-    print(f"  {CYAN}build{RST} [--image=TAG] [docker-build args...] 🔨 Build the collection/replay image")
+    print(f"  {CYAN}build{RST} [--image=TAG] [--mirrors NAME | --china] [docker-build args...] 🔨 Build the collection/replay image")
     print(f"  {CYAN}up{RST} [--container-name=N]                  🐳 Create + enter interactive GUI container")
     print(
         f"  {CYAN}into{RST} {DIM}/{RST} {CYAN}down{RST} [--container-name=N]         🐳 Enter running container / stop + remove"
@@ -506,23 +507,27 @@ def _do_install(args: list[str]) -> None:
 
 
 def _do_build(args: list[str]) -> None:
-    _ensure_docker()
     dry_run, args = _pop_flag(args, "--dry-run")
     image, args = _extract_flag(args, "image")
     image = image or os.environ.get("DATA_COLLECTION_IMAGE") or _DC_IMAGE
     dc_root = _dc_root()
     dockerfile = "docker/Dockerfile"
-    cmd = ["docker", "build", "-f", dockerfile, "-t", image]
-    cmd += [*args, "."]
+    try:
+        cmd, preset = _module_image.prepare_command(dc_root, dockerfile, image, args)
+    except (OSError, ValueError) as exc:
+        print(f"{RED}❌ {exc}{RST}")
+        sys.exit(2)
     print(f"{BOLD}{MAGENTA}🔨 geniesim data-collection build{RST}")
     print(f"   {DIM}Dockerfile:{RST} {CYAN}{dc_root / dockerfile}{RST}")
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
+    print(f"   {DIM}Mirrors:{RST}    {CYAN}{preset or 'inherit parent image (official base: upstream)'}{RST}")
     print()
-    print(f"   {YELLOW}$ (cd {dc_root} && {' '.join(cmd)}){RST}")
+    print(f"   {YELLOW}$ (cd {shlex.quote(str(dc_root))} && {shlex.join(cmd)}){RST}")
     print()
     if dry_run:
         print(f"{DIM}--dry-run: command only; not building.{RST}")
         return
+    _ensure_docker()
     env = dict(os.environ)
     env["DOCKER_BUILDKIT"] = "1"
     result = subprocess.run(cmd, cwd=str(dc_root), env=env)

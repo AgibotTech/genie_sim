@@ -14,33 +14,43 @@ sys.path.append(current_directory)
 
 
 # Sort based on joint movement cost
-def sorted_by_joint_pos_dist(robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score, joint_weights=None):
+def sorted_by_joint_pos_dist(
+    robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score, joint_weights=None
+):
 
     joint_names = robot.joint_names[arm]
     # ['idx61_arm_r_joint1', 'idx62_arm_r_joint2', ...]
 
-    # If no weights provided, use default equal weights (maintain original behavior)
+    # If no weights provided, use the tuned 7-DoF profile (root joints cost more to
+    # move than wrist joints). Only valid for 7-joint arms — ARX / Aloha have 6-joint
+    # arms, where broadcasting a 7-vector onto (N, 6) raises ValueError. Fall back to
+    # equal weights there so the cost degrades to plain Euclidean joint distance.
     if joint_weights is None:
-        joint_weights = [
-            2.0,  # joint1
-            1.8,  # joint2
-            1.6,  # joint3
-            1.4,  # joint4
-            1.2,  # joint5
-            1.0,  # joint6
-            0.8,  # joint7
-        ]
-    else:
-        # Ensure weight vector matches number of joints
-        assert len(joint_weights) == len(
-            joint_names
-        ), f"Weight count ({len(joint_weights)}) does not match joint count ({len(joint_names)})"
+        if len(joint_names) == 7:
+            joint_weights = [
+                2.0,  # joint1
+                1.8,  # joint2
+                1.6,  # joint3
+                1.4,  # joint4
+                1.2,  # joint5
+                1.0,  # joint6
+                0.8,  # joint7
+            ]
+        else:
+            joint_weights = [1.0] * len(joint_names)
+
+    # Ensure weight vector matches number of joints
+    assert len(joint_weights) == len(
+        joint_names
+    ), f"Weight count ({len(joint_weights)}) does not match joint count ({len(joint_names)})"
 
     target_joint_positions = []
     for ik_joint_position, ik_joint_name in zip(ik_joint_positions, ik_joint_names):
         temp_target_joint_positions = []
         for joint_name in joint_names:
-            temp_target_joint_positions.append(ik_joint_position[list(ik_joint_name).index(joint_name)])
+            temp_target_joint_positions.append(
+                ik_joint_position[list(ik_joint_name).index(joint_name)]
+            )
         target_joint_positions.append(np.array(temp_target_joint_positions))
     target_joint_positions = np.array(target_joint_positions)
 
@@ -99,7 +109,9 @@ def sorted_by_joint_pos_dist_and_grasp_pose(
     for ik_joint_position, ik_joint_name in zip(ik_joint_positions, ik_joint_names):
         temp_target_joint_positions = []
         for joint_name in joint_names:
-            temp_target_joint_positions.append(ik_joint_position[list(ik_joint_name).index(joint_name)])
+            temp_target_joint_positions.append(
+                ik_joint_position[list(ik_joint_name).index(joint_name)]
+            )
         target_joint_positions.append(np.array(temp_target_joint_positions))
     target_joint_positions = np.array(target_joint_positions)
 
@@ -112,7 +124,9 @@ def sorted_by_joint_pos_dist_and_grasp_pose(
     cur_joint_positions = np.array(cur_joint_positions)
 
     # Calculate joint movement distance (normalized)
-    joint_pos_dist = np.linalg.norm(target_joint_positions - cur_joint_positions[np.newaxis, :], axis=1)
+    joint_pos_dist = np.linalg.norm(
+        target_joint_positions - cur_joint_positions[np.newaxis, :], axis=1
+    )
     dist_mean = np.mean(joint_pos_dist)
     dist_std = np.std(joint_pos_dist)
     if dist_std > 1e-8:  # Avoid division by zero
@@ -136,7 +150,9 @@ def sorted_by_joint_pos_dist_and_grasp_pose(
 
 
 # Random downsampling
-def random_downsample(transforms: np.ndarray, downsample_num: int, replace: bool = False) -> np.ndarray:
+def random_downsample(
+    transforms: np.ndarray, downsample_num: int, replace: bool = False
+) -> np.ndarray:
     random_indices = None
     if transforms.shape[0] > downsample_num:
         random_indices = np.random.choice(
@@ -148,7 +164,9 @@ def random_downsample(transforms: np.ndarray, downsample_num: int, replace: bool
     return transforms, random_indices
 
 
-def filter_grasp_poses_with_humanlike_posture(grasp_poses: np.ndarray, grasp_widths: np.ndarray) -> tuple:
+def filter_grasp_poses_with_humanlike_posture(
+    grasp_poses: np.ndarray, grasp_widths: np.ndarray
+) -> tuple:
     mask = [pose[2, 1] > 0.0 and pose[0, 2] > 0 and pose[1, 2] > 0 for pose in grasp_poses]
     mask = np.array(mask)
     filtered_grasp_poses = grasp_poses[mask]
@@ -180,7 +198,9 @@ def get_corresponding_vector(input_vec: str | list) -> np.array:
         elif input_vec == "-z":
             input_vec_right = np.array([0.0, 0.0, -1.0])
         else:
-            raise ValueError(f"if type of input_vec is str, input_vec must in {input_vec_premitted}")
+            raise ValueError(
+                f"if type of input_vec is str, input_vec must in {input_vec_premitted}"
+            )
     elif isinstance(input_vec, list) and len(input_vec) == 3:
         # Ensure vector is numpy array and normalized
         input_vec_right = np.array(input_vec, dtype=np.float64)
@@ -292,6 +312,8 @@ def filter_grasp_pose_by_gripper_up_direction(
     filtered_poses = grasp_poses[mask]
     filtered_widths = grasp_widths[mask]
 
-    logger.info(f"Filtered grasp poses by gripper direction: {len(filtered_poses)}/{len(grasp_poses)}")
+    logger.info(
+        f"Filtered grasp poses by gripper direction: {len(filtered_poses)}/{len(grasp_poses)}"
+    )
 
     return filtered_poses, filtered_widths, mask

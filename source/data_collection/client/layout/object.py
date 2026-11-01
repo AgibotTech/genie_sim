@@ -5,12 +5,12 @@
 import json
 
 import os
-import pickle
 
 import numpy as np
 from grasp_nms import nms_grasp
 
 from common.base_utils.logger import logger
+from common.base_utils.pickle_compat import load_asset_pickle
 from common.base_utils.transform_utils import transform_coordinates_3d
 
 
@@ -129,15 +129,20 @@ class OmniObject:
             obj_info = obj_info
             interaction_info = obj_info["interaction"]
         else:
-            interaction_label_file = os.path.join(
-                os.environ.get("SIM_ASSETS"),
-                "interaction",
-                object_dir_base_name,
-                "interaction.json",
-            )
-            assert os.path.exists(interaction_label_file), f"interaction.json not found in {interaction_label_file}"
-            interaction_data = json.load(open(interaction_label_file))
-            interaction_info = interaction_data["interaction"]
+            if not is_key_object:
+                interaction_info = None
+            else:
+                interaction_label_file = os.path.join(
+                    os.environ.get("SIM_ASSETS"),
+                    "interaction",
+                    object_dir_base_name,
+                    "interaction.json",
+                )
+                assert os.path.exists(
+                    interaction_label_file
+                ), f"interaction.json not found in {interaction_label_file}"
+                interaction_data = json.load(open(interaction_label_file))
+                interaction_info = interaction_data["interaction"]
         if object_id is not None:
             obj_info["object_id"] = object_id
         obj = cls(
@@ -176,8 +181,10 @@ class OmniObject:
                                 if not os.path.exists(grasp_file):
                                     logger.info("Grasp file %s not found" % grasp_file)
                                     continue
-                                _data = pickle.load(open(grasp_file, "rb"))
+                                _data = load_asset_pickle(grasp_file)
                                 _data["grasp_pose"] = np.array(_data["grasp_pose"])
+                                if "width" not in _data:
+                                    _data["width"] = 0.02 * np.ones(_data["grasp_pose"].shape[0])
                                 _data["width"] = np.array(_data["width"])
 
                                 if _data["grasp_pose"].shape[0] == 0:
@@ -235,16 +242,23 @@ class OmniObject:
                                 rotation = grasp_group_array[:, 4 : 4 + 9]
                                 translation = grasp_group_array[:, 4 + 9 : 4 + 9 + 3]
                                 width = grasp_group_array[:, 1]
-                                grasp_data["grasp_pose"] = np.tile(np.eye(4), (grasp_group_array.shape[0], 1, 1))
+                                grasp_data["grasp_pose"] = np.tile(
+                                    np.eye(4), (grasp_group_array.shape[0], 1, 1)
+                                )
                                 grasp_data["grasp_pose"][:, :3, :3] = rotation.reshape(-1, 3, 3)
                                 grasp_data["grasp_pose"][:, :3, 3] = translation
                                 grasp_data["width"] = width
                                 # scale the pose
                                 if scale != 1.0:
-                                    grasp_data["grasp_pose"][:, :3, 3] = grasp_data["grasp_pose"][:, :3, 3] * scale
+                                    grasp_data["grasp_pose"][:, :3, 3] = (
+                                        grasp_data["grasp_pose"][:, :3, 3] * scale
+                                    )
                                     grasp_data["width"] = grasp_data["width"] * scale
 
-                                logger.info("Grasp num after NMS: %d/%d" % (grasp_data["grasp_pose"].shape[0], N_grasp))
+                                logger.info(
+                                    "Grasp num after NMS: %d/%d"
+                                    % (grasp_data["grasp_pose"].shape[0], N_grasp)
+                                )
 
                             action_info[grasp_part] = grasp_data
 

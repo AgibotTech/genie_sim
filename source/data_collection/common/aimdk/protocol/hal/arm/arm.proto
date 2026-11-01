@@ -46,6 +46,9 @@ message LinearMoveReq {
   double motion_run_ratio = 12;
   string gripper_action_timing = 13;
   bool from_current_pose = 14;
+  // Slowdown multiplier applied by trajectory resampling; zero defaults to 1.0.
+  // Accept fractional values; 1.5 means 1.5x duration, and values below 1 clamp to 1.
+  double slowdown_factor = 15;
 }
 
 /**

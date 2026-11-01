@@ -126,6 +126,7 @@ class Logger:
 # Create singleton instance and export as 'logger'
 logger = Logger()
 
+
 # Also export Logger class for backward compatibility if needed
 __all__ = ["logger", "Logger"]
 

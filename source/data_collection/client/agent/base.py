@@ -78,7 +78,7 @@ class BaseAgent(object):
         if init:
             for object_info in task_info["objects"]:
                 self.add_object(object_info)
-            time.sleep(1)
+            self.robot.client.run_step(30)
 
         self.task_info = task_info
         self.robot.target_object = task_info["target_object"]

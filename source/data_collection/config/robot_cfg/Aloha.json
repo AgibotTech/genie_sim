@@ -1,0 +1,140 @@
+{
+    "robot": {
+        "robot_name": "Aloha",
+        "base_prim_path": "/Aloha",
+        "recorded_pose_prim_path": "/Aloha/base_link",
+        "arm_base_prim_path": "/Aloha/arm_base_link",
+        "arm": "dual",
+        "urdf_name": "/Aloha/Aloha.urdf",
+        "robot_description": {
+            "right": "/Aloha/aloha_right.yaml",
+            "left": "/Aloha/aloha_left.yaml"
+        },
+        "robot_usd": "robot/aloha/robot.usda",
+        "initial_position": [],
+        "dof_nums": 6,
+        "joint_delta_time": 0.01,
+        "lock_joints": [
+            "gripper_fl_active_joint",
+            "gripper_fr_active_joint"
+        ],
+        "active_arm_joints": {
+            "left": [
+                "arm_fl_joint1",
+                "arm_fl_joint2",
+                "arm_fl_joint3",
+                "arm_fl_joint4",
+                "arm_fl_joint5",
+                "arm_fl_joint6"
+            ],
+            "right": [
+                "arm_fr_joint1",
+                "arm_fr_joint2",
+                "arm_fr_joint3",
+                "arm_fr_joint4",
+                "arm_fr_joint5",
+                "arm_fr_joint6"
+            ]
+        },
+        "init_joint_position": [
+            0.0, 1.57, -2.697, 0.0, 0.0, 0.0,
+            0.0, 1.57, -2.697, 0.0, 0.0, 0.0,
+            0.04, 0.04
+        ]
+    },
+    "camera": {
+        "/Aloha/base_link/head_camera": [
+            640,
+            480
+        ],
+        "/Aloha/arm_fl_end_link/hand_left_camera": [
+            640,
+            480
+        ],
+        "/Aloha/arm_fr_end_link/hand_right_camera": [
+            640,
+            480
+        ]
+    },
+    "gripper": {
+        "gripper_type": "linear",
+        "gripper_name": {
+            "left": "aloha_gripper",
+            "right": "aloha_gripper"
+        },
+        "max_force": 10,
+        "finger_names": {
+            "left": [
+                "gripper_fl_active_joint",
+                "gripper_fl_passive_joint"
+            ],
+            "right": [
+                "gripper_fr_active_joint",
+                "gripper_fr_passive_joint"
+            ]
+        },
+        "end_effector_name": {
+            "left": "gripper_l_center_link",
+            "right": "gripper_r_center_link"
+        },
+        "end_effector_prim_path": {
+            "left": "/Aloha/arm_fl_end_link",
+            "right": "/Aloha/arm_fr_end_link"
+        },
+        "end_effector_center_prim_path": {
+            "left": "/Aloha/gripper_fl_base_link/gripper_l_center_link",
+            "right": "/Aloha/gripper_fr_base_link/gripper_r_center_link"
+        },
+        "gripper_controll_joint": {
+            "left": "/Aloha/joints/gripper_fl_active_joint",
+            "right": "/Aloha/joints/gripper_fr_active_joint"
+        },
+        "opened_positions": {
+            "left": [
+                0.04,
+                -0.04
+            ],
+            "right": [
+                0.04,
+                -0.04
+            ]
+        },
+        "closed_velocities": {
+            "left": [
+                -1,
+                1
+            ],
+            "right": [
+                -1,
+                1
+            ]
+        }
+    },
+    "closed_positions": {
+        "left": [
+            0.0,
+            0.0
+        ],
+        "right": [
+            0.0,
+            0.0
+        ]
+    },
+    "curobo": {
+        "curobo_config_file": {
+            "right": "aloha_dual.yml",
+            "left": "aloha_dual.yml"
+        },
+        "curobo_urdf_path": "Aloha",
+        "curobo_urdf_name": "Aloha/Aloha.urdf"
+    },
+    "recording_config": {
+        "camera_list": [
+            "/Aloha/base_link/head_camera",
+            "/Aloha/arm_fl_end_link/hand_left_camera",
+            "/Aloha/arm_fr_end_link/hand_right_camera"
+        ],
+        "fps": 30,
+        "noised_probability": 0.0
+    }
+}

@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
 import asyncio
 from typing import Callable, List
@@ -72,6 +73,8 @@ class ParallelGripper(Gripper):
         self.gripper_type = gripper_type
         self.gripper_max_force = gripper_max_force
         self.robot_name = robot_name
+        self.pre_drive_finger_position = np.Infinity
+        self.n = 0
         return
 
     @property
@@ -148,7 +151,9 @@ class ParallelGripper(Gripper):
 
         # make sure that all gripper dof names were resolved
         if self._joint_dof_indicies[0] is None or self._joint_dof_indicies[1] is None:
-            raise Exception("Not all gripper dof names were resolved to dof handles and dof indices.")
+            raise Exception(
+                "Not all gripper dof names were resolved to dof handles and dof indices."
+            )
         self._articulation_apply_action_func = articulation_apply_action_func
         current_joint_positions = get_joint_positions_func()
         if self._default_state is None:
@@ -248,16 +253,24 @@ class ParallelGripper(Gripper):
         Returns:
             np.ndarray: joint positions of the left finger joint and the right finger joint respectively.
         """
-        return self._get_joint_positions_func(joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]])
+        return self._get_joint_positions_func(
+            joint_indices=[self._joint_dof_indicies[0], self._joint_dof_indicies[1]]
+        )
 
     def reset_stiffness(self):
         stage = omni.usd.get_context().get_stage()
         prim = stage.GetPrimAtPath(self._joint_control_prim)
-        logger.info(self._joint_control_prim)
+        # logger.info(self._joint_control_prim)
         if prim:
             drive = UsdPhysics.DriveAPI.Get(prim, self.gripper_type)
             if "G2" in self.robot_name:
                 drive.GetStiffnessAttr().Set(0)
+            elif "ARX" in self.robot_name:
+                drive.GetStiffnessAttr().Set(0)
+                drive.GetDampingAttr().Set(20)
+            elif "Aloha" in self.robot_name:
+                drive.GetStiffnessAttr().Set(0)
+                drive.GetDampingAttr().Set(20)
             else:
                 drive.GetStiffnessAttr().Set(500000)
 
@@ -312,24 +325,40 @@ class ParallelGripper(Gripper):
         else:
             raise Exception("action {} is not defined for ParallelGripper".format(action))
 
-        async def check_gripper_state():
-            pre_drive_finger_position = np.Infinity
-            n = 0
-            while True:
-                n += 1
-                current_joint_positions = self._get_joint_positions_func()
-                if current_joint_positions is None:
-                    break
-                current_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
-                distance = np.abs(current_finger_position - pre_drive_finger_position)
-                if distance <= 0.01 or n > 50:
-                    self.is_reached = True
-                    break
-                pre_drive_finger_position = current_finger_position
-                await asyncio.sleep(0.1)
+        self.pre_drive_finger_position = np.Infinity
+        self.n = 0
 
-        asyncio.ensure_future(check_gripper_state())
+        # async def check_gripper_state():
+        #     pre_drive_finger_position = np.Infinity
+        #     n = 0
+        #     while True:
+        #         n += 1
+        #         current_joint_positions = self._get_joint_positions_func()
+        #         if current_joint_positions is None:
+        #             break
+        #         current_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
+        #         distance = np.abs(current_finger_position - pre_drive_finger_position)
+        #         if distance <= 0.01 or n > 50:
+        #             self.is_reached = True
+        #             break
+        #         pre_drive_finger_position = current_finger_position
+        #         await asyncio.sleep(0.1)
+
+        # asyncio.ensure_future(check_gripper_state())
         return target_action
+
+    def check_gripper_state(self):
+        self.n += 1
+        current_joint_positions = self._get_joint_positions_func()
+        if current_joint_positions is None:
+            return False
+        current_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
+        distance = np.abs(current_finger_position - self.pre_drive_finger_position)
+        if distance <= 0.01 or self.n > 50:
+            self.is_reached = True
+            return True
+        self.pre_drive_finger_position = current_finger_position
+        return False
 
     def apply_action(self, control_actions: ArticulationAction) -> None:
         """Applies actions to all the joints of an articulation that corresponds to the ArticulationAction of the finger joints only.
@@ -340,18 +369,34 @@ class ParallelGripper(Gripper):
         joint_actions = ArticulationAction()
         if control_actions.joint_positions is not None:
             joint_actions.joint_positions = [None] * self._articulation_num_dofs
-            joint_actions.joint_positions[self._joint_dof_indicies[0]] = control_actions.joint_positions[0]
-            joint_actions.joint_positions[self._joint_dof_indicies[1]] = control_actions.joint_positions[1]
+            joint_actions.joint_positions[self._joint_dof_indicies[0]] = (
+                control_actions.joint_positions[0]
+            )
+            joint_actions.joint_positions[self._joint_dof_indicies[1]] = (
+                control_actions.joint_positions[1]
+            )
             if len(self._joint_prim_names) > 2:
-                joint_actions.joint_positions[self._joint_dof_indicies[2]] = control_actions.joint_positions[2]
-                joint_actions.joint_positions[self._joint_dof_indicies[3]] = control_actions.joint_positions[3]
+                joint_actions.joint_positions[self._joint_dof_indicies[2]] = (
+                    control_actions.joint_positions[2]
+                )
+                joint_actions.joint_positions[self._joint_dof_indicies[3]] = (
+                    control_actions.joint_positions[3]
+                )
         if control_actions.joint_velocities is not None:
             joint_actions.joint_velocities = [None] * self._articulation_num_dofs
-            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = control_actions.joint_velocities[0]
-            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = control_actions.joint_velocities[1]
+            joint_actions.joint_velocities[self._joint_dof_indicies[0]] = (
+                control_actions.joint_velocities[0]
+            )
+            joint_actions.joint_velocities[self._joint_dof_indicies[1]] = (
+                control_actions.joint_velocities[1]
+            )
         if control_actions.joint_efforts is not None:
             joint_actions.joint_efforts = [None] * self._articulation_num_dofs
-            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = control_actions.joint_efforts[0]
-            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = control_actions.joint_efforts[1]
+            joint_actions.joint_efforts[self._joint_dof_indicies[0]] = (
+                control_actions.joint_efforts[0]
+            )
+            joint_actions.joint_efforts[self._joint_dof_indicies[1]] = (
+                control_actions.joint_efforts[1]
+            )
         self._articulation_apply_action_func(control_actions=joint_actions)
         return

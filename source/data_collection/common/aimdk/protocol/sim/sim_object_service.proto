@@ -56,10 +56,18 @@ message SetTargetPointRsp {
     string msg = 1;
 }
 
+message DeactivateObjectReq {
+    string object_prim_path = 1;
+}
+message DeactivateObjectRsp {
+    bool success = 1;
+    string msg = 2;
+}
 
 service SimObjectService {
     rpc add_object(AddObjectReq) returns(AddObjectRsp);
     rpc get_object_pose(GetObjectPoseReq) returns(GetObjectPoseRsp);
     rpc set_target_point(SetTargetPointReq) returns(SetTargetPointRsp);
     rpc get_part_dof_joint(GetPartDofJointReq) returns(GetPartDofJointRsp);
+    rpc DeactivateObject(DeactivateObjectReq) returns(DeactivateObjectRsp);
 }

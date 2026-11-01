@@ -43,7 +43,9 @@ class RobotCfg(Robot):
         # init gripper
         self.gripper_type = robot_cfg["gripper"]["gripper_type"]
         self.gripper_max_force = robot_cfg["gripper"]["max_force"]
-        gripper_names = robot_cfg["gripper"].get("gripper_name", {"left": "omnipicker", "right": "omnipicker"})
+        gripper_names = robot_cfg["gripper"].get(
+            "gripper_name", {"left": "ctek_gripper_120s", "right": "ctek_gripper_120s"}
+        )
         self.left_gripper_name = gripper_names["left"]
         self.right_gripper_name = gripper_names["right"]
         if robot_cfg["robot"]["arm"] == "dual":
@@ -55,7 +57,9 @@ class RobotCfg(Robot):
             self.end_effector_name = robot_cfg["gripper"]["end_effector_name"]["left"]
         self.end_effector_prim_path = robot_cfg["gripper"]["end_effector_prim_path"]
         if "end_effector_center_prim_path" in robot_cfg["gripper"]:
-            self.end_effector_center_prim_path = robot_cfg["gripper"]["end_effector_center_prim_path"]
+            self.end_effector_center_prim_path = robot_cfg["gripper"][
+                "end_effector_center_prim_path"
+            ]
         else:
             self.end_effector_center_prim_path = self.end_effector_prim_path
         if "arm_base_prim_path" in robot_cfg["robot"]:

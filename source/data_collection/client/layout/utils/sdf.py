@@ -67,7 +67,9 @@ def compute_sdf_from_obj(obj_mes, bounds_max, bounds_min, resolution=2):  # 2mm
 
 # cost function
 def get_distance_with_sdf(collision_points, pose, sdf_func):
-    transformed_pcs = transform_points(collision_points, pose)  # Point coordinates under different poses
+    transformed_pcs = transform_points(
+        collision_points, pose
+    )  # Point coordinates under different poses
     transformed_pcs_flatten = transformed_pcs.reshape(-1, 3)  # [num_poses * num_points, 3]
     signed_distance = sdf_func(transformed_pcs_flatten)  # [num_poses * num_points]
     return signed_distance

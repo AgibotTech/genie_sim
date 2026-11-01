@@ -1,0 +1,104 @@
+# Lula robot_description for ARX, right-arm IK.
+
+api_version: 1.0
+
+cspace:
+    - arm_r_joint1
+    - arm_r_joint2
+    - arm_r_joint3
+    - arm_r_joint4
+    - arm_r_joint5
+    - arm_r_joint6
+
+default_q: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+]
+
+acceleration_limits: [
+    10, 10, 10, 10, 10, 10
+]
+
+jerk_limits: [
+    10000, 10000, 10000, 10000, 10000, 10000
+]
+
+cspace_to_urdf_rules:
+    - {name: arm_l_joint1, rule: fixed, value: 0.0}
+    - {name: arm_l_joint2, rule: fixed, value: 0.0}
+    - {name: arm_l_joint3, rule: fixed, value: 0.0}
+    - {name: arm_l_joint4, rule: fixed, value: 0.0}
+    - {name: arm_l_joint5, rule: fixed, value: 0.0}
+    - {name: arm_l_joint6, rule: fixed, value: 0.0}
+    - {name: gripper_l_active_joint, rule: fixed, value: 0.0}
+    - {name: gripper_l_passive_joint, rule: fixed, value: 0.0}
+    - {name: gripper_r_active_joint, rule: fixed, value: 0.0}
+    - {name: gripper_r_passive_joint, rule: fixed, value: 0.0}
+
+collision_spheres:
+  - base_link:
+    - "center": [0.0, 0.0, -0.027]
+      "radius": 0.1
+    - "center": [0.0, -0.22, -0.025]
+      "radius": 0.1
+    - "center": [0.0, 0.199, -0.03]
+      "radius": 0.1
+    - "center": [0.0, 0.0, 0.192]
+      "radius": 0.1
+  - arm_l_link2:
+    - "center": [0.0, 0.0, 0.0]
+      "radius": 0.05
+  - arm_l_link3:
+    - "center": [0.047, 0.0, 0.048]
+      "radius": 0.04
+  - arm_l_link6:
+    - "center": [0.039, 0.0, 0.0]
+      "radius": 0.035
+  - arm_r_link2:
+    - "center": [0.0, 0.0, 0.0]
+      "radius": 0.05
+    - "center": [-0.253, 0.0, -0.003]
+      "radius": 0.05
+    - "center": [-0.063, 0.0, -0.001]
+      "radius": 0.04
+    - "center": [-0.126, 0.0, -0.002]
+      "radius": 0.04
+    - "center": [-0.19, 0.0, -0.002]
+      "radius": 0.04
+  - arm_r_link3:
+    - "center": [0.047, 0.0, 0.048]
+      "radius": 0.04
+    - "center": [0.247, 0.0, 0.057]
+      "radius": 0.04
+    - "center": [0.097, 0.0, 0.05]
+      "radius": 0.03
+    - "center": [0.147, 0.0, 0.053]
+      "radius": 0.03
+    - "center": [0.197, 0.0, 0.055]
+      "radius": 0.03
+  - arm_r_link4:
+    - "center": [0.065, 0.0, 0.067]
+      "radius": 0.04
+  - arm_r_link5:
+    - "center": [0.0, 0.0, -0.088]
+      "radius": 0.04
+  - arm_r_link6:
+    - "center": [0.039, 0.0, 0.0]
+      "radius": 0.035
+    - "center": [0.033, 0.0, -0.123]
+      "radius": 0.03
+    - "center": [0.037, 0.0, -0.033]
+      "radius": 0.02
+    - "center": [0.036, 0.0, -0.064]
+      "radius": 0.02
+    - "center": [0.034, 0.0, -0.094]
+      "radius": 0.02
+  - gripper_r_active_link:
+    - "center": [0.0, 0.002, 0.0]
+      "radius": 0.015
+    - "center": [0.067, 0.021, 0.007]
+      "radius": 0.005
+  - gripper_r_passive_link:
+    - "center": [-0.0, -0.003, 0.0]
+      "radius": 0.015
+    - "center": [0.067, -0.022, 0.007]
+      "radius": 0.005

@@ -6,16 +6,14 @@ import os
 import sys
 
 import numpy as np
-
-try:
-    from cv_bridge import CvBridge
-except ImportError:  # real cv_bridge targets the system ROS Python, not IsaacSim's
-    from common.base_utils.cv_bridge_compat import CvBridge
+from cv_bridge import CvBridge
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
+from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import Image, JointState
 from std_msgs.msg import Header
+from tf2_msgs.msg import TFMessage
 
 from common.base_utils.logger import logger
 
@@ -83,14 +81,30 @@ class SimPubRosNode(Node):
 
         self._cur_step += 1
         if self._cur_step >= self._step_size:
+            # Reset unconditionally: publication success must not change the cadence.
+            # A callback failure or None message otherwise shifts this node relative
+            # to other topics, pairing object poses with the wrong joint states.
+            # At 30 fps / 60 Hz, a step is half a recorded frame (about 16.7 ms).
+            # A missing message is preferable to a persistent silent phase shift.
+            self._cur_step = 0
             try:
                 raw_msg = self._get_msg_callback()
                 msg = self.handle_msg(raw_msg)
                 if msg is not None:
                     self._publisher.publish(msg)
-                    self._cur_step = 0
+                else:
+                    logger.warning(
+                        f"handle_msg returned None, dropped one frame, node: {self.get_name()}, topic: {self._topic}"
+                    )
             except Exception as e:
-                logger.error(f"Error publishing message: {e}, node: :{self.get_name()}, topic: {self._topic}")
+                logger.error(
+                    f"Error publishing message: {e}, node: :{self.get_name()}, topic: {self._topic}"
+                )
+
+    def reset_publish_phase(self):
+        """Reset the publication phase at recording start.
+        The controller resets persistent and temporary nodes together to align topics."""
+        self._cur_step = 0
 
 
 class ImagePubRosNode(SimPubRosNode):
@@ -112,6 +126,32 @@ class ImagePubRosNode(SimPubRosNode):
         img = self._bridge.cv2_to_imgmsg(
             msg,
             encoding="rgb8",
+        )
+        img.header = self._header
+        img.header.frame_id = self._frame_id
+        img.header.stamp = self._header.stamp
+        return img
+
+
+class DepthImagePubRosNode(SimPubRosNode):
+    def __init__(
+        self,
+        topic,
+        get_msg_callback,
+        frame_id,
+        robot_name="G1_120s",
+        node_name="depth_image_pub_node",
+        step_size=1,
+    ):
+        super().__init__(Image, topic, get_msg_callback, frame_id, robot_name, node_name, step_size)
+        self._bridge = CvBridge()
+
+    def handle_msg(self, msg):
+        msg = msg.astype(np.float32)
+        msg = np.ascontiguousarray(msg)
+        img = self._bridge.cv2_to_imgmsg(
+            msg,
+            encoding="32FC1",
         )
         img.header = self._header
         img.header.frame_id = self._frame_id
@@ -144,6 +184,38 @@ class JointStatePubRosNode(SimPubRosNode):
         js.header = self._header
         js.position = msg.get("position", np.array([])).tolist()
         js.velocity = msg.get("velocity", np.array([])).tolist()
-        js.effort = msg.get("effort", np.array([])).tolist()
+        js.effort = msg.get("effort", np.array([])).tolist() 
         js.name = msg.get("joint_names", [])
         return js
+
+
+class TFPubRosNode(SimPubRosNode):
+    def __init__(
+        self,
+        topic,
+        get_msg_callback,
+        frame_id,
+        robot_name="G1_120s",
+        node_name="tf_pub_ros_node",
+        step_size=1,
+    ):
+        super().__init__(
+            TFMessage,
+            topic,
+            get_msg_callback,
+            frame_id,
+            robot_name,
+            node_name,
+            step_size,
+        )
+
+    def handle_msg(self, msg):
+        # msg should be a list of TransformStamped
+        if isinstance(msg, list):
+            tf_msg = TFMessage()
+            tf_msg.transforms = msg
+            # Update timestamps for all transforms
+            for tf in tf_msg.transforms:
+                tf.header.stamp = self._header.stamp
+            return tf_msg
+        return None

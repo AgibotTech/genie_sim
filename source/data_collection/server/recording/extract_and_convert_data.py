@@ -5,19 +5,21 @@
 import argparse
 import asyncio
 import json
-import sys
 
 from extract_ros_bag import RosExtrater
 from recording.sim_data_converter import SimDataConverter
 
 from common.base_utils.logger import logger
-from common.data_filter.check_collected_data import filter_folder_data
+from server.recording.task_result import evaluate_collection_metric
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract and convert data from ROS bag file")
     parser.add_argument("--path_to_save", type=str, help="Path to the ROS bag file")
     parser.add_argument("--task_info_path", type=str, help="Path to the task_info")
     parser.add_argument("--metric_config_path", type=str, help="Path to the metric config file")
+    parser.add_argument("--with_img", type=str, default="True", help="Whether to extract images")
+    parser.add_argument("--with_video", type=str, default="True", help="Whether to extract video")
+    parser.add_argument("--stage_failed", action="store_true", default=False, help="Whether the stage failed")
     args = parser.parse_args()
 
     # Extract data from ROS bag file
@@ -29,12 +31,13 @@ if __name__ == "__main__":
         task_info = json.load(f)
     gripper_names = task_info.get("gripper_names")
     robot_name = task_info.get("robot_name")
-    extract_ros = RosExtrater(bag_file=path_to_save, output_dir=path_to_save, task_info=task_info)
+    print("with_img", args.with_img)
+    extract_ros = RosExtrater(bag_file=path_to_save, output_dir=path_to_save, task_info=task_info, with_img=args.with_img == "True", with_video=args.with_video == "True")
     try:
         asyncio.run(extract_ros.extract())
-    except Exception as e:
-        logger.error(f"Error in extracting data{e}")
-        sys.exit()
+    except Exception:
+        logger.exception("Error in extracting data")
+        raise SystemExit(1)
 
     converter = SimDataConverter(
         path_to_save,
@@ -49,8 +52,9 @@ if __name__ == "__main__":
 
     with open(metric_config_path, "r") as f:
         metric_config_info = json.load(f)
-    data_valid, result_code, status = filter_folder_data(path_to_save, metric_config_info)
-    isSuccess = data_valid
+
+    data_valid, result_code, status = evaluate_collection_metric(path_to_save, metric_config_info)
+    isSuccess = data_valid and not args.stage_failed
     logger.info(f"Status: {status} (Result Code: {result_code})")
 
     result = {

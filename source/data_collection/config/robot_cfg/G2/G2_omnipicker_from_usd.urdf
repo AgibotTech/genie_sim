@@ -1,0 +1,426 @@
+<?xml version="1.0"?>
+<robot name="g2_omnipicker">
+  <link name="arm_base_link"/>
+  <link name="arm_l_end_link"/>
+  <link name="arm_l_link1"/>
+  <link name="arm_l_link2"/>
+  <link name="arm_l_link3"/>
+  <link name="arm_l_link4"/>
+  <link name="arm_l_link5"/>
+  <link name="arm_l_link6"/>
+  <link name="arm_l_link7"/>
+  <link name="arm_r_end_link"/>
+  <link name="arm_r_link1"/>
+  <link name="arm_r_link2"/>
+  <link name="arm_r_link3"/>
+  <link name="arm_r_link4"/>
+  <link name="arm_r_link5"/>
+  <link name="arm_r_link6"/>
+  <link name="arm_r_link7"/>
+  <link name="base_link"/>
+  <link name="body_link1"/>
+  <link name="body_link2"/>
+  <link name="body_link3"/>
+  <link name="body_link4"/>
+  <link name="body_link5"/>
+  <link name="chassis_link"/>
+  <link name="chassis_lwheel_front_link1"/>
+  <link name="chassis_lwheel_front_link2"/>
+  <link name="chassis_lwheel_rear_link1"/>
+  <link name="chassis_lwheel_rear_link2"/>
+  <link name="chassis_rwheel_front_link1"/>
+  <link name="chassis_rwheel_front_link2"/>
+  <link name="chassis_rwheel_rear_link1"/>
+  <link name="chassis_rwheel_rear_link2"/>
+  <link name="gripper_l_base_link"/>
+  <link name="gripper_l_center_link"/>
+  <link name="gripper_l_inner_link1"/>
+  <link name="gripper_l_inner_link2"/>
+  <link name="gripper_l_inner_link3"/>
+  <link name="gripper_l_inner_link4"/>
+  <link name="gripper_l_outer_link1"/>
+  <link name="gripper_l_outer_link2"/>
+  <link name="gripper_l_outer_link3"/>
+  <link name="gripper_l_outer_link4"/>
+  <link name="gripper_r_base_link"/>
+  <link name="gripper_r_center_link"/>
+  <link name="gripper_r_inner_link1"/>
+  <link name="gripper_r_inner_link2"/>
+  <link name="gripper_r_inner_link3"/>
+  <link name="gripper_r_inner_link4"/>
+  <link name="gripper_r_outer_link1"/>
+  <link name="gripper_r_outer_link2"/>
+  <link name="gripper_r_outer_link3"/>
+  <link name="gripper_r_outer_link4"/>
+  <link name="head_base_link"/>
+  <link name="head_link1"/>
+  <link name="head_link2"/>
+  <link name="head_link3"/>
+  <joint name="arm_l_end_joint" type="fixed">
+    <origin rpy="7.168545726e-06 -1.570792702 -3.141592582" xyz="0.08799999952 0 0"/>
+    <parent link="arm_l_link7"/>
+    <child link="arm_l_end_link"/>
+  </joint>
+  <joint name="arm_r_end_joint" type="fixed">
+    <origin rpy="-3.141592566 -1.570796327 0" xyz="0.08799999952 0 0"/>
+    <parent link="arm_r_link7"/>
+    <child link="arm_r_end_link"/>
+  </joint>
+  <joint name="idx01_body_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0.1019999981 0 0.1439999938"/>
+    <parent link="base_link"/>
+    <child link="body_link1"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-1.059999899" upper="0" velocity="10"/>
+  </joint>
+  <joint name="idx02_body_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.3600000143"/>
+    <parent link="body_link1"/>
+    <child link="body_link2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="0" upper="2.650000014" velocity="10"/>
+  </joint>
+  <joint name="idx03_body_joint3" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.3799999952"/>
+    <parent link="body_link2"/>
+    <child link="body_link3"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-1.909999826" upper="1.569999908" velocity="10"/>
+  </joint>
+  <joint name="idx04_body_joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="body_link3"/>
+    <child link="body_link4"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="100" lower="-0.4299999817" upper="0.4299999817" velocity="10"/>
+  </joint>
+  <joint name="idx05_body_joint5" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.1490000039"/>
+    <parent link="body_link4"/>
+    <child link="body_link5"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.049999886" upper="3.049999886" velocity="10"/>
+  </joint>
+  <joint name="idx100_chassis_base_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="chassis_link"/>
+  </joint>
+  <joint name="idx10_head_base_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.01300000027 0 0.4959999919"/>
+    <parent link="body_link5"/>
+    <child link="head_base_link"/>
+  </joint>
+  <joint name="idx111_chassis_lwheel_front_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0.2300000042 0.2179999948 0.1667499989"/>
+    <parent link="chassis_link"/>
+    <child link="chassis_lwheel_front_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.969999858" upper="2.969999858" velocity="10"/>
+  </joint>
+  <joint name="idx112_chassis_lwheel_front_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 -4.999999874e-05 -0.1367499977"/>
+    <parent link="chassis_lwheel_front_link1"/>
+    <child link="chassis_lwheel_front_link2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-inf" upper="inf" velocity="10"/>
+  </joint>
+  <joint name="idx11_head_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="-0.01300000027 0 0.4959999919"/>
+    <parent link="body_link5"/>
+    <child link="head_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.569999908" upper="1.569999908" velocity="10"/>
+  </joint>
+  <joint name="idx121_chassis_lwheel_rear_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="-0.2300000042 0.2179999948 0.1667499989"/>
+    <parent link="chassis_link"/>
+    <child link="chassis_lwheel_rear_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.969999858" upper="2.969999858" velocity="10"/>
+  </joint>
+  <joint name="idx122_chassis_lwheel_rear_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 -4.999999874e-05 -0.1367499977"/>
+    <parent link="chassis_lwheel_rear_link1"/>
+    <child link="chassis_lwheel_rear_link2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-inf" upper="inf" velocity="10"/>
+  </joint>
+  <joint name="idx12_head_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0.0333499983 0 0.0700000003"/>
+    <parent link="head_link1"/>
+    <child link="head_link2"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="100" lower="-0.3490000037" upper="0.3490000037" velocity="10"/>
+  </joint>
+  <joint name="idx131_chassis_rwheel_front_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0.2300000042 -0.2179999948 0.1667499989"/>
+    <parent link="chassis_link"/>
+    <child link="chassis_rwheel_front_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.969999858" upper="2.969999858" velocity="10"/>
+  </joint>
+  <joint name="idx132_chassis_rwheel_front_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 4.999999874e-05 -0.1367499977"/>
+    <parent link="chassis_rwheel_front_link1"/>
+    <child link="chassis_rwheel_front_link2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-inf" upper="inf" velocity="10"/>
+  </joint>
+  <joint name="idx13_head_joint3" type="revolute">
+    <origin rpy="0 0 0" xyz="-0.03034999967 0 0"/>
+    <parent link="head_link2"/>
+    <child link="head_link3"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-0.5229999638" upper="0.5229999638" velocity="10"/>
+  </joint>
+  <joint name="idx141_chassis_rwheel_rear_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="-0.2300000042 -0.2179999948 0.1667499989"/>
+    <parent link="chassis_link"/>
+    <child link="chassis_rwheel_rear_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.969999858" upper="2.969999858" velocity="10"/>
+  </joint>
+  <joint name="idx142_chassis_rwheel_rear_joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 4.999999874e-05 -0.1367499977"/>
+    <parent link="chassis_rwheel_rear_link1"/>
+    <child link="chassis_rwheel_rear_link2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="-inf" upper="inf" velocity="10"/>
+  </joint>
+  <joint name="idx20_arm_base_joint" type="fixed">
+    <origin rpy="-1.570796327 0 0" xyz="0 0 0.3084999919"/>
+    <parent link="body_link5"/>
+    <child link="arm_base_link"/>
+  </joint>
+  <joint name="idx21_arm_l_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.06899999827"/>
+    <parent link="arm_base_link"/>
+    <child link="arm_l_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx22_arm_l_joint2" type="revolute">
+    <origin rpy="1.570799951 0 0" xyz="0 0 0.1745000035"/>
+    <parent link="arm_l_link1"/>
+    <child link="arm_l_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.094399763" upper="2.094399763" velocity="10"/>
+  </joint>
+  <joint name="idx23_arm_l_joint3" type="revolute">
+    <origin rpy="-1.570799951 0 0" xyz="0 0 0"/>
+    <parent link="arm_l_link2"/>
+    <child link="arm_l_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx24_arm_l_joint4" type="revolute">
+    <origin rpy="1.570799951 0 0" xyz="0.01799999923 0 0.2870000005"/>
+    <parent link="arm_l_link3"/>
+    <child link="arm_l_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.530699719" upper="1.047199881" velocity="10"/>
+  </joint>
+  <joint name="idx25_arm_l_joint5" type="revolute">
+    <origin rpy="-1.570799951 0 0" xyz="-0.01799999923 0 0"/>
+    <parent link="arm_l_link4"/>
+    <child link="arm_l_link5"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx26_arm_l_joint6" type="revolute">
+    <origin rpy="1.570799951 0 0" xyz="0 0 0.3140000105"/>
+    <parent link="arm_l_link5"/>
+    <child link="arm_l_link6"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.047199881" upper="1.047199881" velocity="10"/>
+  </joint>
+  <joint name="idx27_arm_l_joint7" type="revolute">
+    <origin rpy="1.570799963 5.959803318e-08 1.570799963" xyz="0 0 0"/>
+    <parent link="arm_l_link6"/>
+    <child link="arm_l_link7"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.570799922" upper="1.570799922" velocity="10"/>
+  </joint>
+  <joint name="idx31_gripper_l_inner_joint1" type="revolute">
+    <origin rpy="-0.01314735198 -1.570796327 0" xyz="0 -0.0195000004 0.05649999902"/>
+    <parent link="gripper_l_base_link"/>
+    <child link="gripper_l_inner_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.7853981634" upper="0" velocity="10"/>
+  </joint>
+  <joint name="idx32_gripper_l_inner_joint3" type="revolute">
+    <origin rpy="-3.141592566 0 0" xyz="0.0308519993 -0.01855099946 0"/>
+    <parent link="gripper_l_inner_link1"/>
+    <child link="gripper_l_inner_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.1745329252" upper="0.1745329252" velocity="10"/>
+  </joint>
+  <joint name="idx33_gripper_l_inner_joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0.01811799966 -0.01573999971 0"/>
+    <parent link="gripper_l_inner_link3"/>
+    <child link="gripper_l_inner_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.03490658504" upper="0.03490658504" velocity="10"/>
+  </joint>
+  <joint name="idx39_gripper_l_inner_joint0" type="revolute">
+    <origin rpy="0 0 0" xyz="0 -0.009999999776 0"/>
+    <parent link="gripper_l_inner_link4"/>
+    <child link="gripper_l_inner_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.99999989" upper="1.99999989" velocity="10"/>
+  </joint>
+  <joint name="idx41_gripper_l_outer_joint1" type="revolute">
+    <origin rpy="-0.01314735198 -1.570796327 0" xyz="0 0.0195000004 0.05649999902"/>
+    <parent link="gripper_l_base_link"/>
+    <child link="gripper_l_outer_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="0" upper="0.7853981634" velocity="10"/>
+  </joint>
+  <joint name="idx42_gripper_l_outer_joint3" type="revolute">
+    <origin rpy="-3.141592566 0 0" xyz="0.0308519993 0.01855099946 0"/>
+    <parent link="gripper_l_outer_link1"/>
+    <child link="gripper_l_outer_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.1745329252" upper="0.1745329252" velocity="10"/>
+  </joint>
+  <joint name="idx43_gripper_l_outer_joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0.01811799966 0.01573999971 0"/>
+    <parent link="gripper_l_outer_link3"/>
+    <child link="gripper_l_outer_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.03490658504" upper="0.03490658504" velocity="10"/>
+  </joint>
+  <joint name="idx49_gripper_l_outer_joint0" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0.009999999776 0"/>
+    <parent link="gripper_l_outer_link4"/>
+    <child link="gripper_l_outer_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.99999989" upper="1.99999989" velocity="10"/>
+  </joint>
+  <joint name="idx51_ee_l_joint" type="fixed">
+    <origin rpy="0 0 1.570796327" xyz="0 0 0.005369999912"/>
+    <parent link="arm_l_end_link"/>
+    <child link="gripper_l_base_link"/>
+  </joint>
+  <joint name="idx52_gripper_l_center_joint" type="fixed">
+    <origin rpy="0 0 -1.570796327" xyz="0 0 0.1430799961"/>
+    <parent link="gripper_l_base_link"/>
+    <child link="gripper_l_center_link"/>
+  </joint>
+  <joint name="idx61_arm_r_joint1" type="revolute">
+    <origin rpy="-3.141592566 0 0" xyz="0 0 -0.06899999827"/>
+    <parent link="arm_base_link"/>
+    <child link="arm_r_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx62_arm_r_joint2" type="revolute">
+    <origin rpy="1.570796327 0 0" xyz="0 0 0.1745000035"/>
+    <parent link="arm_r_link1"/>
+    <child link="arm_r_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.094399763" upper="2.094399763" velocity="10"/>
+  </joint>
+  <joint name="idx63_arm_r_joint3" type="revolute">
+    <origin rpy="-1.570796327 0 0" xyz="0 0 0"/>
+    <parent link="arm_r_link2"/>
+    <child link="arm_r_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx64_arm_r_joint4" type="revolute">
+    <origin rpy="1.570796327 0 0" xyz="0.01799999923 0 0.2870000005"/>
+    <parent link="arm_r_link3"/>
+    <child link="arm_r_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-2.530699719" upper="1.047199881" velocity="10"/>
+  </joint>
+  <joint name="idx65_arm_r_joint5" type="revolute">
+    <origin rpy="-1.570796327 0 0" xyz="-0.01799999923 0 0"/>
+    <parent link="arm_r_link4"/>
+    <child link="arm_r_link5"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-3.106699651" upper="3.106699651" velocity="10"/>
+  </joint>
+  <joint name="idx66_arm_r_joint6" type="revolute">
+    <origin rpy="1.570796327 0 0" xyz="0 0 0.3140000105"/>
+    <parent link="arm_r_link5"/>
+    <child link="arm_r_link6"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.047199881" upper="1.047199881" velocity="10"/>
+  </joint>
+  <joint name="idx67_arm_r_joint7" type="revolute">
+    <origin rpy="1.570796327 0 1.570796327" xyz="0 0 0"/>
+    <parent link="arm_r_link6"/>
+    <child link="arm_r_link7"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.570799922" upper="1.570799922" velocity="10"/>
+  </joint>
+  <joint name="idx71_gripper_r_inner_joint1" type="revolute">
+    <origin rpy="-0.01314735198 -1.570796327 0" xyz="0 -0.0195000004 0.05649999902"/>
+    <parent link="gripper_r_base_link"/>
+    <child link="gripper_r_inner_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.7853981634" upper="0" velocity="10"/>
+  </joint>
+  <joint name="idx72_gripper_r_inner_joint3" type="revolute">
+    <origin rpy="-3.141592566 0 0" xyz="0.0308519993 -0.01855099946 0"/>
+    <parent link="gripper_r_inner_link1"/>
+    <child link="gripper_r_inner_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.1745329252" upper="0.1745329252" velocity="10"/>
+  </joint>
+  <joint name="idx73_gripper_r_inner_joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0.01811799966 -0.01573999971 0"/>
+    <parent link="gripper_r_inner_link3"/>
+    <child link="gripper_r_inner_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.03490658504" upper="0.03490658504" velocity="10"/>
+  </joint>
+  <joint name="idx79_gripper_r_inner_joint0" type="revolute">
+    <origin rpy="0 0 0" xyz="0 -0.009999999776 0"/>
+    <parent link="gripper_r_inner_link4"/>
+    <child link="gripper_r_inner_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.99999989" upper="1.99999989" velocity="10"/>
+  </joint>
+  <joint name="idx81_gripper_r_outer_joint1" type="revolute">
+    <origin rpy="-0.01314735198 -1.570796327 0" xyz="0 0.0195000004 0.05649999902"/>
+    <parent link="gripper_r_base_link"/>
+    <child link="gripper_r_outer_link1"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="0" upper="0.7853981634" velocity="10"/>
+  </joint>
+  <joint name="idx82_gripper_r_outer_joint3" type="revolute">
+    <origin rpy="-3.141592566 0 0" xyz="0.0308519993 0.01855099946 0"/>
+    <parent link="gripper_r_outer_link1"/>
+    <child link="gripper_r_outer_link3"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.1745329252" upper="0.1745329252" velocity="10"/>
+  </joint>
+  <joint name="idx83_gripper_r_outer_joint4" type="revolute">
+    <origin rpy="0 0 0" xyz="0.01811799966 0.01573999971 0"/>
+    <parent link="gripper_r_outer_link3"/>
+    <child link="gripper_r_outer_link4"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-0.03490658504" upper="0.03490658504" velocity="10"/>
+  </joint>
+  <joint name="idx89_gripper_r_outer_joint0" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0.009999999776 0"/>
+    <parent link="gripper_r_outer_link4"/>
+    <child link="gripper_r_outer_link2"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="100" lower="-1.99999989" upper="1.99999989" velocity="10"/>
+  </joint>
+  <joint name="idx91_ee_r_joint" type="fixed">
+    <origin rpy="0 0 1.570796327" xyz="0 0 0.005369999912"/>
+    <parent link="arm_r_end_link"/>
+    <child link="gripper_r_base_link"/>
+  </joint>
+  <joint name="idx92_gripper_r_center_joint" type="fixed">
+    <origin rpy="0 0 -1.570796327" xyz="0 0 0.1430799961"/>
+    <parent link="gripper_r_base_link"/>
+    <child link="gripper_r_center_link"/>
+  </joint>
+</robot>

@@ -540,7 +540,11 @@ def unit_vector(data, axis=None, out=None):
         None or np.array: If @out is not specified, will return normalized vector. Otherwise, stores the output in @out
     """
     if out is None:
-        data = np.array(data, dtype=data.dtype, copy=True)
+        if data.dtype == np.int64 or data.dtype == np.int32:
+            dtype = np.float64
+        else:
+            dtype = data.dtype
+        data = np.array(data, dtype=dtype, copy=True)
         if data.ndim == 1:
             data /= math.sqrt(np.dot(data, data))
             return data
@@ -1410,7 +1414,9 @@ def calculate_rotation_matrix(v1, v2):
     elif np.dot(v1, v2) == 1:
         qTrans_Mat = np.eye(3, 3)
     else:
-        qTrans_Mat = np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(v1, v2))
+        qTrans_Mat = (
+            np.eye(3, 3) + z_c_vec_mat + np.matmul(z_c_vec_mat, z_c_vec_mat) / (1 + np.dot(v1, v2))
+        )
 
     qTrans_Mat *= scale
     return qTrans_Mat
@@ -1814,3 +1820,209 @@ def compute_rectangle_intersection(bbox, plane_center, plane_width, plane_height
     else:
         # No valid intersection region
         return None
+
+
+def check_box_containment(
+    box1_position,
+    box1_quaternion,
+    box1_size,
+    box2_position,
+    box2_quaternion,
+    box2_size,
+    overlap_threshold=0.8,
+    ignore_axes=None,
+):
+    """
+    Check if two 3D boxes contain each other by calculating overlap ratio.
+    The overlap ratio is the overlapping volume/area/length (depending on ignored axes) 
+    divided by the volume/area/length of the smaller box.
+    If the overlap ratio is greater than or equal to overlap_threshold, then one box contains the other.
+    
+    Args:
+        box1_position (np.ndarray): Position of box1 [x, y, z]
+        box1_quaternion (np.ndarray): Quaternion of box1 in [w, x, y, z] format
+        box1_size (np.ndarray): Size of box1 [x, y, z] in local coordinate system
+        box2_position (np.ndarray): Position of box2 [x, y, z]
+        box2_quaternion (np.ndarray): Quaternion of box2 in [w, x, y, z] format
+        box2_size (np.ndarray): Size of box2 [x, y, z] in local coordinate system
+        overlap_threshold (float): Overlap threshold as percentage (0.0-1.0). 
+                                   If overlap ratio >= threshold, then one box contains the other.
+                                   Default is 0.8 (80% overlap required).
+        ignore_axes (list, optional): List of world coordinate axes to ignore in overlap calculation.
+                                       For example, ["z"] will project boxes to xy plane and calculate 
+                                       overlap area. Valid values: "x", "y", "z". Default is None (check all axes).
+    
+    Returns:
+        tuple: (box1_contains_box2, box2_contains_box1)
+            - box1_contains_box2 (bool): Whether box1 contains box2
+            - box2_contains_box1 (bool): Whether box2 contains box1
+    """
+    # Ensure inputs are numpy arrays
+    box1_position = np.array(box1_position)
+    box1_quaternion = np.array(box1_quaternion)
+    box1_size = np.array(box1_size)
+    box2_position = np.array(box2_position)
+    box2_quaternion = np.array(box2_quaternion)
+    box2_size = np.array(box2_size)
+    
+    # Process ignore_axes parameter
+    if ignore_axes is None:
+        ignore_axes = []
+    ignore_axes = [axis.lower() for axis in ignore_axes if axis.lower() in ["x", "y", "z"]]
+    
+    # Determine which dimensions to keep (world coordinates)
+    all_axes = ["x", "y", "z"]
+    keep_axes = [axis for axis in all_axes if axis not in ignore_axes]
+    axis_to_index = {"x": 0, "y": 1, "z": 2}
+    keep_indices = [axis_to_index[axis] for axis in keep_axes]
+    
+    # Quaternions are in [w, x, y, z] format, use directly for pose_from_position_quaternion
+    box1_quat_wxyz = box1_quaternion
+    box2_quat_wxyz = box2_quaternion
+    
+    # Build pose matrices
+    pose1 = pose_from_position_quaternion(box1_position, box1_quat_wxyz)
+    pose2 = pose_from_position_quaternion(box2_position, box2_quat_wxyz)
+    
+    # Calculate 8 vertices of each box in local coordinate system
+    half_size1 = box1_size / 2.0
+    box1_vertices_local = np.array([
+        [-half_size1[0], -half_size1[1], -half_size1[2]],
+        [half_size1[0], -half_size1[1], -half_size1[2]],
+        [half_size1[0], half_size1[1], -half_size1[2]],
+        [-half_size1[0], half_size1[1], -half_size1[2]],
+        [-half_size1[0], -half_size1[1], half_size1[2]],
+        [half_size1[0], -half_size1[1], half_size1[2]],
+        [half_size1[0], half_size1[1], half_size1[2]],
+        [-half_size1[0], half_size1[1], half_size1[2]],
+    ])
+    
+    half_size2 = box2_size / 2.0
+    box2_vertices_local = np.array([
+        [-half_size2[0], -half_size2[1], -half_size2[2]],
+        [half_size2[0], -half_size2[1], -half_size2[2]],
+        [half_size2[0], half_size2[1], -half_size2[2]],
+        [-half_size2[0], half_size2[1], -half_size2[2]],
+        [-half_size2[0], -half_size2[1], half_size2[2]],
+        [half_size2[0], -half_size2[1], half_size2[2]],
+        [half_size2[0], half_size2[1], half_size2[2]],
+        [-half_size2[0], half_size2[1], half_size2[2]],
+    ])
+    
+    # Transform vertices to world coordinate system
+    box1_vertices_world = transform_points(box1_vertices_local, pose1)
+    box2_vertices_world = transform_points(box2_vertices_local, pose2)
+    
+    # Project to remaining dimensions (remove ignored axes)
+    box1_vertices_projected = box1_vertices_world[:, keep_indices]
+    box2_vertices_projected = box2_vertices_world[:, keep_indices]
+    
+    # Calculate bounding boxes of projected vertices
+    box1_min = np.min(box1_vertices_projected, axis=0)
+    box1_max = np.max(box1_vertices_projected, axis=0)
+    box2_min = np.min(box2_vertices_projected, axis=0)
+    box2_max = np.max(box2_vertices_projected, axis=0)
+    
+    # Calculate overlap region
+    overlap_min = np.maximum(box1_min, box2_min)
+    overlap_max = np.minimum(box1_max, box2_max)
+    
+    # Check if there is overlap
+    has_overlap = np.all(overlap_max > overlap_min)
+    
+    if not has_overlap:
+        return False, False
+    
+    # Calculate overlap volume/area/length
+    overlap_size = overlap_max - overlap_min
+    overlap_measure = np.prod(overlap_size)  # Volume (3D), area (2D), or length (1D)
+    
+    # Calculate volumes/areas/lengths of both boxes in projected space
+    box1_size_projected = box1_max - box1_min
+    box2_size_projected = box2_max - box2_min
+    box1_measure = np.prod(box1_size_projected)
+    box2_measure = np.prod(box2_size_projected)
+    
+    # Calculate overlap ratio for each box (overlap / box_measure)
+    if box1_measure > 0:
+        overlap_ratio_box1 = overlap_measure / box1_measure
+    else:
+        overlap_ratio_box1 = 0.0
+    
+    if box2_measure > 0:
+        overlap_ratio_box2 = overlap_measure / box2_measure
+    else:
+        overlap_ratio_box2 = 0.0
+    # Check if overlap ratio meets threshold
+    # box1 contains box2 if overlap ratio of box2 >= threshold
+    # box2 contains box1 if overlap ratio of box1 >= threshold
+    box1_contains_box2 = overlap_ratio_box2 >= overlap_threshold
+    box2_contains_box1 = overlap_ratio_box1 >= overlap_threshold
+    
+    return box1_contains_box2, box2_contains_box1
+
+
+def get_relative_position_and_orientation_from_world(
+    a_position_world,
+    a_quaternion_wxyz,
+    b_position_world,
+    b_quaternion_wxyz,
+):
+    """
+    Express pose of A in the coordinate frame of B, given both poses in world frame.
+
+    Homogeneous poses follow ``pose_from_position_quaternion``: p_world = T_world_X @ p_X.
+    Relative pose is T_B_A = inv(T_world_B) @ T_world_A so that p_B = T_B_A @ p_A.
+
+    Args:
+        a_position_world: Position of A origin in world, shape (3,).
+        a_quaternion_wxyz: Orientation of A in world, (w, x, y, z).
+        b_position_world: Position of B origin in world, shape (3,).
+        b_quaternion_wxyz: Orientation of B in world, (w, x, y, z).
+
+    Returns:
+        tuple: (position of A in B frame (3,), quaternion (w, x, y, z) of A relative to B)
+    """
+    t_world_a = pose_from_position_quaternion(
+        np.asarray(a_position_world), np.asarray(a_quaternion_wxyz)
+    )
+    t_world_b = pose_from_position_quaternion(
+        np.asarray(b_position_world), np.asarray(b_quaternion_wxyz)
+    )
+    t_b_a = pose_inv(t_world_b) @ t_world_a
+    rel_pos = t_b_a[:3, 3].copy()
+    rel_quat_wxyz = mat2quat_wxyz(t_b_a[:3, :3])
+    return rel_pos, rel_quat_wxyz
+
+
+def get_world_position_and_orientation_from_relative(
+    a_position_in_b,
+    a_quaternion_in_b_wxyz,
+    b_position_world,
+    b_quaternion_wxyz,
+):
+    """
+    Recover world pose of A from its pose relative to B and B's world pose.
+
+    T_world_A = T_world_B @ T_B_A with T_B_A built from the relative position and quaternion.
+
+    Args:
+        a_position_in_b: Position of A in B's frame, shape (3,).
+        a_quaternion_in_b_wxyz: Orientation of A relative to B, (w, x, y, z).
+        b_position_world: Position of B in world, shape (3,).
+        b_quaternion_wxyz: Orientation of B in world, (w, x, y, z).
+
+    Returns:
+        tuple: (position of A in world (3,), quaternion (w, x, y, z) of A in world)
+    """
+    t_b_a = pose_from_position_quaternion(
+        np.asarray(a_position_in_b), np.asarray(a_quaternion_in_b_wxyz)
+    )
+    t_world_b = pose_from_position_quaternion(
+        np.asarray(b_position_world), np.asarray(b_quaternion_wxyz)
+    )
+    t_world_a = t_world_b @ t_b_a
+    world_pos = t_world_a[:3, 3].copy()
+    world_quat_wxyz = mat2quat_wxyz(t_world_a[:3, :3])
+    return world_pos, world_quat_wxyz
+

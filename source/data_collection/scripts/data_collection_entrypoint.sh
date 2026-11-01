@@ -67,7 +67,6 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     # Execute entry_point.sh logic manually (since exec would replace the process)
     export ROS_DISTRO=jazzy
     export ISAACSIM_HOME=/isaac-sim
-    export CUROBO_PATH=/tmp/curobo
     export SIM_REPO_ROOT=/geniesim/main/data_collection
 
     # user 1234 access
@@ -83,7 +82,7 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
         echo "export SIM_REPO_ROOT=/geniesim/main/data_collection" >>~/.bashrc
     fi
     if ! grep -q "export SIM_ASSETS=" ~/.bashrc 2>/dev/null; then
-        echo "export SIM_ASSETS=/geniesim_assets" >>~/.bashrc
+        echo "export SIM_ASSETS=/geniesim/main/source/geniesim/assets" >>~/.bashrc
     fi
     if ! grep -q "export ENABLE_SIM=" ~/.bashrc 2>/dev/null; then
         echo "export ENABLE_SIM=1" >>~/.bashrc
@@ -118,25 +117,15 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     if ! grep -q "alias isaacsim=" ~/.bashrc 2>/dev/null; then
         echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
     fi
-    if ! grep -q "alias geniesim=" ~/.bashrc 2>/dev/null; then
-        echo "alias geniesim='omni_python /geniesim/main/source/geniesim/app/app.py'" >>~/.bashrc
-    fi
     if ! grep -q "alias source_ros_py311=" ~/.bashrc 2>/dev/null; then
         echo "alias source_ros_py311='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
     fi
 
     # Copy curobo assets
     sudo cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/assets/ 2>/dev/null || true
-    sudo cp -r ${SIM_REPO_ROOT}/config/curobo/configs $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/ 2>/dev/null || true
-    # NOTE: this is a workaround to fix the issue that the packaging is not installed in the core archive
-    /isaac-sim/python.sh -m pip install packaging -t /isaac-sim/exts/omni.isaac.core_archive/pip_prebundle/
 
-    # Editable-install geniesim_assets (bind-mounted at /geniesim_assets) so
-    # `import geniesim_assets` / system_utils.assets_path() resolve.
-    if [ -f /geniesim_assets/pyproject.toml ]; then
-        /isaac-sim/python.sh -m pip install -q -e /geniesim_assets 2>/dev/null || true
-        python3 -m pip install -q -e /geniesim_assets --break-system-packages 2>/dev/null || true
-    fi
+    # Allow the container user to copy robot resources into cuRobo assets at runtime.
+    sudo chown -R 1234:1234 $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content 2>/dev/null || true
 
     echo "✓ entry_point.sh setup completed"
 else
@@ -144,7 +133,6 @@ else
     echo "Setting up basic environment..."
     export ROS_DISTRO=jazzy
     export ISAACSIM_HOME=/isaac-sim
-    export CUROBO_PATH=/tmp/curobo
     export SIM_REPO_ROOT=/geniesim/main/data_collection
 fi
 
@@ -153,9 +141,8 @@ echo "Setting up environment variables directly..."
 # Set all required environment variables directly (no need to source bashrc)
 export ROS_DISTRO=jazzy
 export ISAACSIM_HOME=/isaac-sim
-export CUROBO_PATH=/tmp/curobo
 export SIM_REPO_ROOT=/geniesim/main/data_collection
-export SIM_ASSETS=/geniesim_assets
+export SIM_ASSETS=/geniesim/main/source/geniesim/assets
 export ENABLE_SIM=1
 export ROS_VERSION=2
 export ROS_PYTHON_VERSION=3
@@ -177,14 +164,6 @@ fi
 # Source ROS environment if available
 if [ -f "${ISAACSIM_HOME}/setup_ros_env.sh" ]; then
     source "${ISAACSIM_HOME}/setup_ros_env.sh" 2>/dev/null || true
-fi
-
-# Put IsaacSim's bundled rclpy (built for its own Python) on the path so the
-# server imports it instead of the system ROS one.
-ROS_BRIDGE_RCLPY="${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/rclpy"
-if [ -d "${ROS_BRIDGE_RCLPY}" ]; then
-    export PYTHONPATH="${ROS_BRIDGE_RCLPY}:${PYTHONPATH:-}"
-    export LD_LIBRARY_PATH="${ROS_BRIDGE_LIB}:${LD_LIBRARY_PATH}"
 fi
 
 # Verify critical environment variables
@@ -228,6 +207,14 @@ fi
 # Change to work directory
 cd "${WORK_DIR}"
 
+# Grant UID 1234 write access to the host-owned work-directory bind mount.
+# The container user otherwise relies on other permissions and may be unable
+# to write recordings, task files, generated configs, or temporary files.
+# Recursive ACLs cover existing files; default ACLs let new files inherit access.
+# Apply them once across the work directory rather than per output subdirectory.
+sudo setfacl -R    -m u:1234:rwX "${WORK_DIR}" 2>/dev/null || true
+sudo setfacl -R -d -m u:1234:rwX "${WORK_DIR}" 2>/dev/null || true
+
 echo "=========================================="
 echo "Data Collection Entrypoint"
 echo "=========================================="
@@ -241,7 +228,7 @@ echo "=========================================="
 echo ""
 
 # Build command arguments
-DATA_COLLECTOR_ARGS="--enable_physics --enable_curobo"
+DATA_COLLECTOR_ARGS="--enable_physics --enable_curobo --backend gpu"
 MAIN_ARGS=""
 
 if [ "$HEADLESS" = true ]; then

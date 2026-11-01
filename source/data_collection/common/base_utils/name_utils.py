@@ -51,3 +51,32 @@ G2_JOINT_NAMES = [
 
 
 OMNIPICKER_AJ_NAMES = ["idx41_gripper_l_outer_joint1", "idx81_gripper_r_outer_joint1"]
+# G2 ctek90d (CRS-B 90D) gripper control joints: left idx32, right idx72.
+CTEK90D_AJ_NAMES = ["idx32_gripper_l_outer_joint1", "idx72_gripper_r_outer_joint1"]
+
+
+def is_g2_90d(robot_name) -> bool:
+    """Identify the ctek90d gripper using a shared, case-insensitive name check.
+    Extraction, conversion, and client control must agree on the model.
+    Matches G2_crs_90d, G2_crsB_90D, and G2_90d. Older narrower checks selected
+    Omnipicker joints instead of idx32/idx72, shifting recorded joint slots
+    and applying the wrong gripper conversion."""
+    return "90d" in str(robot_name or "").lower()
+
+
+def joint_state_order_key(robot_name) -> str:
+    """Select the recording joint-order entry in robot_joint_names.json.
+    Check 90D first, then G2, ARX, Aloha, and default to G1.
+    Keep this selection independent of ROS for direct testing.
+    Missing joints are skipped by reorder_joint_state, which can shift values
+    relative to the complete name list; use a matching joint configuration."""
+    name = str(robot_name or "")
+    if is_g2_90d(name):
+        return "G2_crsB_90d"
+    if "G2" in name:
+        return "G2"
+    if "ARX" in name:
+        return "ARX"
+    if "Aloha" in name or "aloha" in name:
+        return "Aloha"
+    return "G1"

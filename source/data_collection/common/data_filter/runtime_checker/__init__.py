@@ -5,6 +5,13 @@
 from common.data_filter.runtime_checker.checker_base import CheckerStatus
 from common.data_filter.runtime_checker.checker_factory import create_checker
 from common.data_filter.runtime_checker.distance_to_target_checker import DistanceToTargetChecker
+from common.data_filter.runtime_checker.orientation_checker import OrientationChecker
 from common.data_filter.runtime_checker.local_axis_angle_checker import LocalAxisAngleChecker
 
-__all__ = ["create_checker", "DistanceToTargetChecker", "CheckerStatus", "LocalAxisAngleChecker"]
+__all__ = [
+    "create_checker",
+    "DistanceToTargetChecker",
+    "CheckerStatus",
+    "LocalAxisAngleChecker",
+    "OrientationChecker",
+]

@@ -15,11 +15,16 @@ Keep optional heavy imports local to functions to avoid import errors in non-ISA
 import time
 
 import numpy as np
-from curobo.geom.types import Mesh
-from curobo.types.math import Pose
-from curobo.util.usd_helper import get_prim_world_pose
+# cuRobo v2 relocations:
+#   - curobo.geom.types.Mesh → curobo._src.geom.types.Mesh (re-exported via curobo.scene)
+#   - curobo.types.math.Pose → curobo.types.Pose
+#   - curobo.util.usd_helper.get_prim_world_pose → curobo._src.util.usd_util
+from curobo._src.geom.types import Mesh
+from curobo._src.types.pose import Pose
+from curobo._src.util.usd_util import get_prim_world_pose
 
 from common.base_utils.logger import logger
+from sim_backend import cuda_torch_device
 
 try:
     import torch
@@ -27,7 +32,9 @@ except Exception:
     torch = None
 
 
-def simplify_obstacles_from_stage(world_config, max_faces=1000, min_faces=50, usd_path=None, save=False):
+def simplify_obstacles_from_stage(
+    world_config, max_faces=1000, min_faces=50, usd_path=None, save=False
+):
     if not world_config.mesh:
         return world_config
 
@@ -341,7 +348,8 @@ def _simplify_with_uniform_sampling(vertices, faces, target_faces):
 
 def get_mesh_attrs(prim, cache=None, transform=None):
     try:
-        import curobo.util.usd_helper as _usd_helper
+        # v2: USD helpers live in usd_scene_parser; fall back to None without USD.
+        import curobo._src.util.usd_scene_parser as _usd_helper
     except Exception:
         _usd_helper = None
 
@@ -446,7 +454,7 @@ def get_mesh_attrs(prim, cache=None, transform=None):
     mesh_pose = None
     try:
         if mat is not None and torch is not None:
-            tensor_mat = torch.as_tensor(mat, device=torch.device("cuda", 0))
+            tensor_mat = torch.as_tensor(mat, device=cuda_torch_device())
             mesh_pose = Pose.from_matrix(tensor_mat).tolist()
     except Exception:
         mesh_pose = getattr(mesh, "pose", None)

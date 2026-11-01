@@ -3,7 +3,7 @@
 # License: Mozilla Public License Version 2.0
 
 import torch
-
+import numpy as np
 
 def sort_by_difference_js(paths, weights=None):
     """
@@ -61,7 +61,9 @@ def filter_paths_by_position_error(paths, position_errors):
     Returns:
         List(bool): A filtered list of bool where each path's position error is below the threshold.
     """
-    assert len(paths) == position_errors.shape[0], "The number of paths must match the number of position errors."
+    assert (
+        len(paths) == position_errors.shape[0]
+    ), "The number of paths must match the number of position errors."
 
     mean_error = torch.mean(position_errors)
     torch.std(position_errors)
@@ -82,7 +84,9 @@ def filter_paths_by_rotation_error(paths, rotation_errors):
     Returns:
         List(bool): A filtered list of bool where each path's rotation error is below the threshold.
     """
-    assert len(paths) == rotation_errors.shape[0], "The number of paths must match the number of rotation errors."
+    assert (
+        len(paths) == rotation_errors.shape[0]
+    ), "The number of paths must match the number of rotation errors."
 
     mean_error = torch.mean(rotation_errors)
     torch.std(rotation_errors)
@@ -90,3 +94,42 @@ def filter_paths_by_rotation_error(paths, rotation_errors):
 
     res = [rotation_error <= threshold for rotation_error in rotation_errors]
     return res
+
+def filter_paths_by_crs_bound(paths, is_right_arm: bool):
+    """
+    Filters out paths whose CRS bound is invalid.
+
+    Args:
+        paths (List(JointState): A list of JointState, each path contains a position of shape (T, D).
+    """
+    joint_6_name = "idx66_arm_r_joint6" if is_right_arm else "idx26_arm_l_joint6"
+    joint_7_name = "idx67_arm_r_joint7" if is_right_arm else "idx27_arm_l_joint7"
+    filtered_indices = [True] * len(paths)
+    for index, state in enumerate(paths):
+        joint_6_pose = state.joint_names.index(joint_6_name)
+        joint_7_pose = state.joint_names.index(joint_7_name)
+        joint_position_6 = state.position[:, joint_6_pose]
+        joint_position_7 = state.position[:, joint_7_pose]
+        if torch.any(torch.abs(joint_position_6 + joint_position_7) > 1.92) or torch.any(torch.abs(joint_position_6 - joint_position_7) > 1.92):
+            filtered_indices[index] = False
+    return filtered_indices
+
+def filter_ik_result_by_crs_bound(js_solution, is_right_arm: bool):
+    """
+    Filters out ik result whose CRS bound is invalid.
+
+    Args:
+        ik_result (IkResult): An IkResult object.
+    """
+    joint_6_name = "idx66_arm_r_joint6" if is_right_arm else "idx26_arm_l_joint6"
+    joint_7_name = "idx67_arm_r_joint7" if is_right_arm else "idx27_arm_l_joint7"
+    # js_solution is expected to be a JointState with shape (batch, seeds, dof),
+    # e.g. 20 x 10 x 34. Return a (batch, seeds) boolean mask.
+    joint_6_pose = js_solution.joint_names.index(joint_6_name)
+    joint_7_pose = js_solution.joint_names.index(joint_7_name)
+    joint_position_6 = js_solution.position[..., joint_6_pose]  # (B, S)
+    joint_position_7 = js_solution.position[..., joint_7_pose]  # (B, S)
+    invalid = (torch.abs(joint_position_6 + joint_position_7) > 1.92) | (
+        torch.abs(joint_position_6 - joint_position_7) > 1.92
+    )
+    return (~invalid).cpu().numpy()

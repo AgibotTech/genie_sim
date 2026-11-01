@@ -87,8 +87,13 @@ From a main checkout with the CLI installed:
 ```bash
 geniesim data-collection install
 geniesim data-collection build
+# Optional: geniesim data-collection build --china
 geniesim data-collection up
 ```
+
+Image builds share the repository mirror presets: `--mirrors NAME` or `--china`
+selects a preset; explicit Docker build arguments override it. Without a preset,
+settings inherit the parent image. Use `--dry-run` to inspect the build command.
 
 The installer registers `source/data_collection` as an editable locator. Its
 Isaac Sim 5.1/cuRobo v2/ROS runtime is supplied by its independent Docker image.

@@ -10,7 +10,8 @@ HEADLESS=false
 RECORD=true
 TASK="tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json"
 STANDALONE=false  # false = print to terminal, true = only save to file
-CONTAINER_NAME="data_collection_open_source"
+CONTAINER_NAME="geniesim4-data-collection"
+DATA_COLLECTION_IMAGE="${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim4-data-collection:latest}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -43,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-record             Disable recording (default: record enabled)"
             echo "  --task TASK_PATH        Task template path (default: tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json)"
             echo "  --standalone             Run in standalone mode (only save logs, no terminal output) (default: false, prints to terminal)"
-            echo "  --container-name NAME   Container name (default: data_collection_open_source)"
+            echo "  --container-name NAME   Container name (default: geniesim4-data-collection)"
             echo "  --help, -h              Show this help message"
             echo ""
             echo "Examples:"
@@ -59,36 +60,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# geniesim_assets source root: the CLI passes the editable-installed host path
-# via GENIESIM_ASSETS_SRC; it is bind-mounted to /geniesim_assets below and
-# editable-installed by the entrypoint.
-ASSETS_SRC="${GENIESIM_ASSETS_SRC:-}"
-if [ -z "$ASSETS_SRC" ] || [ ! -f "$ASSETS_SRC/pyproject.toml" ]; then
-    echo "Error: geniesim_assets is not pip-installed (editable) on the host."
-    echo "Install it first, e.g.: pip install -e /path/to/geniesim_assets"
-    exit 1
-fi
-
-# Get current directory
+# Resolve assets relative to this module or through the main repository settings.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CURRENT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SIM_ASSETS="$(python3 "$SCRIPT_DIR/resolve_assets.py")" || exit $?
+export SIM_ASSETS
 
-# Grant the container user (uid 1234) write access to bind-mounted dirs.
-# Prefer sudo+setfacl (original behavior); degrade to plain mkdir + chmod when
-# sudo isn't usable (e.g. unattended / no-tty, where sudo can't cache its
-# tty-keyed timestamp) so the run doesn't hard-fail under `set -e`.
-grant_access() {  # $1 = target dir
-    mkdir -p "$1" 2>/dev/null || sudo mkdir -p "$1" 2>/dev/null || true
-    if sudo -n true 2>/dev/null; then
-        sudo setfacl -m u:1234:rwX -R "$1" 2>/dev/null || true
-    else
-        chmod -R a+rwX "$1" 2>/dev/null || true
-    fi
-}
-grant_access "$CURRENT_DIR/scripts"
-grant_access "$CURRENT_DIR/saved_task"
-grant_access "$CURRENT_DIR/recording_data"
-[ -d "$CURRENT_DIR/config" ] && grant_access "$CURRENT_DIR/config"
+# Keep the task library outside the image; remap its host path for the client.
+LLM_TASK_ROOT="$(python3 "$SCRIPT_DIR/resolve_llm_task_root.py")" || exit $?
+LLM_TASK_DOCKER_ARGS=()
+if [ -n "$LLM_TASK_ROOT" ]; then
+    sudo setfacl -R -m u:1234:rwX "$LLM_TASK_ROOT"
+    LLM_TASK_DOCKER_ARGS=(-v "$LLM_TASK_ROOT:/llm_tasks:rw" -e LLM_TASK_ROOT=/llm_tasks -e GENIESIM_LLM_TASK_ROOT=/llm_tasks)
+fi
+
+sudo setfacl -m u:1234:rwX $CURRENT_DIR/scripts
+sudo mkdir -p $CURRENT_DIR/saved_task && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/saved_task
+sudo mkdir -p $CURRENT_DIR/recording_data && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/recording_data
+[ -d $CURRENT_DIR/config ] && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/config
 # Extract task name from task path or JSON file
 TASK_NAME=""
 if [ -f "$TASK" ]; then
@@ -171,6 +160,7 @@ log_and_print "  Task template: $TASK"
 log_and_print "  Task name: $TASK_NAME"
 log_and_print "  Container name: $CONTAINER_NAME"
 log_and_print "  Log directory: $LOG_DIR"
+log_and_print "  LLM task root: ${LLM_TASK_ROOT:-not configured}"
 log_and_print "  Standalone mode: $STANDALONE (false = print to terminal, true = only save to file)"
 log_and_print "=========================================="
 log_and_print ""
@@ -209,7 +199,7 @@ CONTAINER_ID=$(docker run -d --name $CONTAINER_NAME \
     -e "OMNI_USER=geniesim" \
     -e "OMNI_PASS=geniesim" \
     -e "LOG_DIR=/geniesim/main/data_collection/logs/${TASK_NAME}" \
-    -e "SIM_ASSETS=/geniesim_assets" \
+    -e "SIM_ASSETS=/geniesim/main/source/geniesim/assets" \
     -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
     -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
     -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \
@@ -217,11 +207,12 @@ CONTAINER_ID=$(docker run -d --name $CONTAINER_NAME \
     -v ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw \
     -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw \
     -v /dev/input:/dev/input:rw \
-    -v $ASSETS_SRC:/geniesim_assets:rw \
+    "${LLM_TASK_DOCKER_ARGS[@]}" \
+    -v "$SIM_ASSETS:/geniesim/main/source/geniesim/assets:rw" \
     -v $CURRENT_DIR:/geniesim/main/data_collection:rw \
     -v $LOG_DIR:/geniesim/main/data_collection/logs/${TASK_NAME}:rw \
     -w /geniesim/main/data_collection \
-    registry.agibot.com/genie-sim/geniesim3-data-collection:latest \
+    "$DATA_COLLECTION_IMAGE" \
     $ENTRYPOINT_ARGS)
 
 if [ -z "$CONTAINER_ID" ]; then

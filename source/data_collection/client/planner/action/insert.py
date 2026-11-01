@@ -55,32 +55,82 @@ class InsertStage(PlaceStage):
                 None,
                 np.eye(4),
                 "AvoidObs",
-                extra_params={"skip_check": True},
+                # extra_params={"skip_check": True},
             )
         )
-
+      
         # Add final placement action
         # Move to final placement position
         place_transform_up = np.eye(4)
         place_transform_up[:3, 3] = self.place_transform_up
 
         if post_place_action is not None:
-            action_sequence.add_action(Action(target_pose_canonical, None, place_transform_up, "Simple"))
+            action_sequence.add_action(
+                Action(target_pose_canonical, None, place_transform_up, "Simple")
+            )
             post_place_distance = post_place_action.get("distance", 0.02)
             post_place_direction = np.array(post_place_action.get("direction", [0, 0, 1]))
             target_pose_canonical = target_pose_canonical.copy()
             target_pose_canonical[:3, 3] += (
                 post_place_direction * post_place_distance / np.linalg.norm(post_place_direction)
             )
-            action_sequence.add_action(Action(target_pose_canonical, gripper_cmd, np.eye(4), "simple"))
-        else:
             action_sequence.add_action(
-                Action(
-                    target_pose_canonical,
-                    gripper_cmd,
-                    np.eye(4),
-                    "AvoidObs",
-                )
+                Action(target_pose_canonical, gripper_cmd, np.eye(4), "simple")
             )
+        else:
+            target_pose_gripper_cmd = gripper_cmd if self.extra_params.get("insert_depth", 0.0) < 0.00001 else None
+            # to target_pose
+            if self.extra_params.get("constraint_insert", False):
+                action_sequence.add_action(
+                    Action(
+                        pre_insert_pose,
+                        target_pose_gripper_cmd if not "pre_pose_noise" in self.extra_params else None,
+                        np.eye(4),
+                        "AvoidObs",
+                        extra_params={
+                            "skip_check": True,
+                            "goal_offset": [0, 0, -self.pre_insert_offset, 1, 0, 0, 0],
+                            "path_constraint": [0.1, 0.1, 0.1, 0.1, 0.1, 0.0],
+                            "from_current_pose": True,
+                            "offset_and_constraint_in_goal_frame": False,
+                        },
+                    )
+                )
+                if "pre_pose_noise" in self.extra_params:
+                    action_sequence.add_action(
+                        Action(
+                            target_pose_canonical,
+                            target_pose_gripper_cmd,
+                            np.eye(4),
+                            "AvoidObs",
+                        )
+                    )
+            else:
+                action_sequence.add_action(
+                    Action(
+                        target_pose_canonical,
+                        target_pose_gripper_cmd,
+                        np.eye(4),
+                        "AvoidObs",
+                    )
+                )
+            
+            # if insert depth is provided
+            if self.extra_params.get("insert_depth", 0.0) > 0.00001:
+                action_sequence.add_action(
+                    Action(
+                        target_pose_canonical,
+                        gripper_cmd,
+                        np.eye(4),
+                        "AvoidObs",
+                        extra_params={
+                            "skip_check": True,
+                            "goal_offset": [0, 0, -self.extra_params.get("insert_depth", 0.0), 1, 0, 0, 0],
+                            "path_constraint": [0.1, 0.1, 0.1, 0.1, 0.1, 0.0],
+                            "from_current_pose": True,
+                            "offset_and_constraint_in_goal_frame": False,
+                        },
+                    )
+                )
 
         return action_sequence

@@ -103,7 +103,9 @@ class TaskGenerator:
             if robot_init_workspace_id not in self.origin_task_template["robot"]["robot_init_pose"]:
                 self.robot_init_pose = self.origin_task_template["robot"]["robot_init_pose"]
             else:
-                self.robot_init_pose = self.origin_task_template["robot"]["robot_init_pose"][robot_init_workspace_id]
+                self.robot_init_pose = self.origin_task_template["robot"]["robot_init_pose"][
+                    robot_init_workspace_id
+                ]
         else:
             self.robot_init_pose = self.origin_task_template["robot"]["robot_init_pose"]
 
@@ -113,9 +115,12 @@ class TaskGenerator:
             delta_position = random_range.get("delta_position", [0, 0, 0])
             self.robot_init_pose = {
                 "position": [
-                    self.robot_init_pose["position"][0] + np.random.uniform(-delta_position[0], delta_position[0]),
-                    self.robot_init_pose["position"][1] + np.random.uniform(-delta_position[1], delta_position[1]),
-                    self.robot_init_pose["position"][2] + np.random.uniform(-delta_position[2], delta_position[2]),
+                    self.robot_init_pose["position"][0]
+                    + np.random.uniform(-delta_position[0], delta_position[0]),
+                    self.robot_init_pose["position"][1]
+                    + np.random.uniform(-delta_position[1], delta_position[1]),
+                    self.robot_init_pose["position"][2]
+                    + np.random.uniform(-delta_position[2], delta_position[2]),
                 ],
                 "quaternion": self.robot_init_pose["quaternion"],
             }
@@ -143,8 +148,10 @@ class TaskGenerator:
         all_key_objs = [obj_id for ws_id in key_obj_ids for obj_id in key_obj_ids[ws_id]]
         for obj in all_objs:
             obj_id = obj["object_id"]
-            if obj.get("scene_object", False):
-                obj["data_info_dir"] = os.path.join(task_template["scene"]["scene_info_dir"], obj["data_info_dir"])
+            if obj.get("in_scene", False) and "data_info_dir" not in obj:
+                obj["data_info_dir"] = os.path.join(
+                    task_template["scene"]["scene_info_dir"], obj["data_info_dir"]
+                )
             if "fix_pose" in obj_id:
                 info = dict()
                 info["object_id"] = obj_id
@@ -191,16 +198,21 @@ class TaskGenerator:
                         len(obj["chinese_semantic_name"]),
                     )
                     random_semantic_index = random.randint(0, semantic_num - 1)
-                    info["english_semantic_name"] = obj["english_semantic_name"][random_semantic_index]
-                    info["chinese_semantic_name"] = obj["chinese_semantic_name"][random_semantic_index]
-                if obj.get("scene_object", False):
+                    info["english_semantic_name"] = obj["english_semantic_name"][
+                        random_semantic_index
+                    ]
+                    info["chinese_semantic_name"] = obj["chinese_semantic_name"][
+                        random_semantic_index
+                    ]
+                if obj.get("in_scene", False):
                     info["model_path"] = os.path.join(
                         task_template["scene"]["scene_info_dir"],
                         info.get("model_path", ""),
                     )
-                    info["scene_object"] = True
+                    info["in_scene"] = True
                 else:
-                    info["scene_object"] = False
+                    info["in_scene"] = False
+                info["deactivate"] = obj.get("deactivate", False)
                 obj_infos[obj_id] = info
                 objects[obj_id] = LayoutObject(info, use_sdf=obj_id in all_key_objs)
             if "angle_constraint" in obj:
@@ -253,7 +265,7 @@ class TaskGenerator:
                 sampled_objects.append(object_group)
             elif "sample" in object_group:
                 sample = object_group["sample"]
-                if "workspace_id" not in object_group:
+                if "workspace_id" not in object_group and not object_group.get("deactivate", False):
                     raise ValueError("workspace_id is required for object_group")
                 if "num" not in sample and ("min_num" not in sample or "max_num" not in sample):
                     raise ValueError("num or min_num and max_num are required for sample")
@@ -312,19 +324,24 @@ class TaskGenerator:
         return sampled_objects
 
     def _pre_process(self, task_template):
-        # Load all objects  & constraints
-        fix_objs = task_template["objects"].get("fix_objects", [])
-
         ## Process generalized objects
         # Process generalization in scene objects
         self._task_obj_data_info_dirs = {
             obj["data_info_dir"] for obj in self.task_objs if not obj.get("allow_duplicate", False)
         }
-        selected_scene_objs = self._sample_objects(task_template["objects"].get("scene_objects", []))
+        fix_objs = self._sample_objects(task_template["objects"].get("fix_objects", []))
+        selected_scene_objs = self._sample_objects(
+            task_template["objects"].get("scene_objects", [])
+        )
         attach_objs = self._sample_objects(task_template["objects"].get("attach_objects", []))
 
         # Task object collection
-        all_objs = task_template["objects"]["task_related_objects"] + fix_objs + attach_objs + selected_scene_objs
+        all_objs = (
+            task_template["objects"]["task_related_objects"]
+            + fix_objs
+            + attach_objs
+            + selected_scene_objs
+        )
 
         fix_obj_ids = [obj["object_id"] for obj in fix_objs]
 
@@ -423,20 +440,30 @@ class TaskGenerator:
                         relative_quaternion = np.array(anchor_info["quaternion"])
                     random_range = anchor_info.get("random_range", None)
                     if random_range is not None:
-                        relative_position[0] += np.random.uniform(-random_range[0] / 2, random_range[0] / 2)
-                        relative_position[1] += np.random.uniform(-random_range[1] / 2, random_range[1] / 2)
-                        relative_position[2] += np.random.uniform(-random_range[2] / 2, random_range[2] / 2)
+                        relative_position[0] += np.random.uniform(
+                            -random_range[0] / 2, random_range[0] / 2
+                        )
+                        relative_position[1] += np.random.uniform(
+                            -random_range[1] / 2, random_range[1] / 2
+                        )
+                        relative_position[2] += np.random.uniform(
+                            -random_range[2] / 2, random_range[2] / 2
+                        )
                     relative_matrix = np.eye(4)
                     relative_matrix[:3, :3] = quat2mat_wxyz(relative_quaternion)
                     relative_matrix[:3, 3] = relative_position
                     attach_obj_matrix = np.dot(anchor_matrix, relative_matrix)
                     attach_obj_info["position"] = (attach_obj_matrix[:3, 3]).tolist()
-                    attach_obj_info["quaternion"] = mat2quat_wxyz(attach_obj_matrix[:3, :3]).tolist()
+                    attach_obj_info["quaternion"] = mat2quat_wxyz(
+                        attach_obj_matrix[:3, :3]
+                    ).tolist()
                     attach_obj_info["is_key"] = True
                     task_instance["objects"].append(attach_obj_info)
                     break
         # convert objects to world frame
         for obj in task_instance["objects"]:
+            if obj.get("deactivate", False):
+                continue
             obj_position = np.array(obj["position"])
             obj_quaternion = np.array(obj["quaternion"])
             obj_matrix = np.eye(4)
@@ -463,4 +490,6 @@ class TaskGenerator:
                 if self.generate(output_file):
                     break
                 else:
-                    logger.error(f"Attempt {attempt+1}/{max_attempt} failed for task {i}, retrying...")
+                    logger.error(
+                        f"Attempt {attempt+1}/{max_attempt} failed for task {i}, retrying..."
+                    )

@@ -10,6 +10,7 @@ from client.planner.action.stage import Action, ActionSequence, Stage
 from client.planner.common import get_aligned_fix_pose, get_aligned_pose
 from client.planner.func.common import random_downsample, sorted_by_joint_pos_dist
 from client.planner.func.sort_pose.sort_pose import sorted_by_position_humanlike
+from common.base_utils.name_utils import is_g2_90d
 from common.base_utils.logger import logger
 from common.base_utils.transform_utils import add_random_noise_to_pose
 
@@ -64,7 +65,6 @@ class PlaceStage(Stage):
         super().__init__(stage_config, objects)
         self.place_transform_up = np.array([0, 0, 0.01])
         self.use_pre_place = self.extra_params.get("use_pre_place", False)
-        self.pre_place_offset = self.extra_params.get("pre_place_offset", 0.12)
 
     def select_pose(self, objects, robot):
         object_pose = objects[self.active_obj_id].obj_pose
@@ -76,26 +76,23 @@ class PlaceStage(Stage):
         if not isinstance(self.active_element, list):
             active_elements = [self.active_element]
         active_obj = objects[self.active_obj_id]
-        passive_obj = objects[self.passive_obj_id]
+        passive_obj = objects.get(self.passive_obj_id, None)
         target_obj_pose_canonical_sorted = []
+        if active_obj.name == "gripper":
+                gripper2obj = np.eye(4)
+        anchor_pose = passive_obj.obj_pose
         for active_element in active_elements:
+            # An explicit target pose does not need the asset's placement label.
+            # Some task assets provide grasp poses but no active/place metadata.
+            if active_element is None:
+                if self.extra_params.get("target_pose") is None:
+                    logger.warning(f"{self.action_type}: No active placement element")
+                    continue
+            else:
+                active_obj.update_aligned_info(active_element)
             target_gripper_poses = np.zeros((0, 4, 4))
-            active_obj.obj_pose
-            anchor_pose = passive_obj.obj_pose
-            active_obj.update_aligned_info(active_element)
-            for passive_element in passive_elements:
-                # interaction between two rigid objects
-                passive_obj.update_aligned_info(passive_element)
-                # N_align equals the least common multiple of passive_obj.angle_sample_num and active_obj.angle_sample_num
-                N_align = np.lcm(passive_obj.angle_sample_num, active_obj.angle_sample_num)
-                if active_obj.name == "gripper":
-                    gripper2obj = np.eye(4)
-
-                if "fix_pose" in self.passive_obj_id:
-                    target_obj_poses = get_aligned_fix_pose(active_obj, passive_obj, N=N_align)
-                else:
-                    target_obj_poses = get_aligned_pose(active_obj, passive_obj, N=N_align)
-
+            if self.extra_params.get("target_pose", None) is not None:
+                target_obj_poses = self.extra_params.get("target_pose")
                 target_gripper_poses = np.concatenate(
                     (
                         target_gripper_poses,
@@ -103,10 +100,28 @@ class PlaceStage(Stage):
                     ),
                     axis=0,
                 )
+            else:
+                for passive_element in passive_elements:
+                    # interaction between two rigid objects
+                    passive_obj.update_aligned_info(passive_element)
+                    # N_align equals the least common multiple of passive_obj.angle_sample_num and active_obj.angle_sample_num
+                    N_align = np.lcm(passive_obj.angle_sample_num, active_obj.angle_sample_num)
+                    if "fix_pose" in self.passive_obj_id:
+                        target_obj_poses = get_aligned_fix_pose(active_obj, passive_obj, N=N_align)
+                    else:
+                        target_obj_poses = get_aligned_pose(active_obj, passive_obj, N=N_align)
+
+                    target_gripper_poses = np.concatenate(
+                        (
+                            target_gripper_poses,
+                            target_obj_poses @ gripper2obj[np.newaxis, ...],
+                        ),
+                        axis=0,
+                    )
             disable_upside_down = self.extra_params.get("disable_upside_down", False)
             if disable_upside_down:
                 if disable_upside_down:
-                    if "omnipicker" in robot.robot_cfg:
+                    if ("omnipicker" in robot.robot_cfg or "Aloha" in robot.robot_cfg or "aloha" in robot.robot_cfg or is_g2_90d(robot.robot_cfg)):
                         if arm == "left":
                             upright_mask = target_gripper_poses[:, 2, 1] < 0.0
                         else:
@@ -115,12 +130,14 @@ class PlaceStage(Stage):
                         upright_mask = target_gripper_poses[:, 2, 0] > 0.0
                 target_gripper_poses = target_gripper_poses[upright_mask]
             if not target_gripper_poses.shape[0]:
-                logger.warning(f"{self.action_type}: No target_gripper_poses can pass upright filter")
+                logger.warning(
+                    f"{self.action_type}: No target_gripper_poses can pass upright filter"
+                )
                 continue
 
             # downsample target_gripper_poses
             target_gripper_poses, _ = random_downsample(
-                transforms=target_gripper_poses, downsample_num=100, replace=False
+                transforms=target_gripper_poses, downsample_num=200, replace=False
             )
             ik_success, _ = robot.solve_ik(
                 target_gripper_poses,
@@ -148,7 +165,9 @@ class PlaceStage(Stage):
             ik_link_poses = ik_info["link_poses"][ik_success]
             if len(target_gripper_poses_pass_ik) == 0:
                 if self.extra_params.get("use_near_point", False):
-                    logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac curobo IK")
+                    logger.warning(
+                        f"{self.action_type}: No target_obj_pose can pass isaac curobo IK"
+                    )
                     logger.info("-" * 20 + " use near point " + "-" * 20)
                     if "fix_pose" in self.passive_obj_id:
                         target_obj_poses = get_aligned_fix_pose(active_obj, passive_obj, N=12)
@@ -192,6 +211,7 @@ class PlaceStage(Stage):
                     else:
                         logger.info("find near point grasp pose success")
                 else:
+                    logger.warning(f"{self.action_type}: No target_obj_pose can pass isaac-sim curobo IK")
                     logger.info(
                         f"Unable to find valid target_obj_pose for {self.action_type} action, try next active/passive element combination."
                     )
@@ -200,8 +220,12 @@ class PlaceStage(Stage):
             # filter by pre place pose
             pre_insert_pose_canonical = None
             if self.use_pre_place:
-                target_obj_pose = target_gripper_poses_pass_ik @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
-                target_obj_pose_canonical = np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose
+                target_obj_pose = (
+                    target_gripper_poses_pass_ik @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
+                )
+                target_obj_pose_canonical = (
+                    np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose
+                )
                 self.pre_insert_offset = self.extra_params.get("pre_insert_offset", 0.1)
                 # Calculate direction perpendicular to placement point
                 # We assume that the passive object has only one placement direction, and all passive_elements have the same direction
@@ -257,7 +281,9 @@ class PlaceStage(Stage):
                     for try_time in range(MAX_TRY_TIMES):
                         logger.info(f"try {try_time} times to add noise to pre insert pose")
                         if try_time == MAX_TRY_TIMES - 1:
-                            logger.error("try to add noise to pre insert pose failed, use original pose")
+                            logger.error(
+                                "try to add noise to pre insert pose failed, use original pose"
+                            )
                             position_noise = 0
                             rotation_noise = 0
                         pre_insert_pose_canonical = add_noise(
@@ -267,7 +293,9 @@ class PlaceStage(Stage):
                             position_noise,
                             rotation_noise,
                         )
-                        pre_insert_obj_pose = anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
+                        pre_insert_obj_pose = (
+                            anchor_pose[np.newaxis, ...] @ pre_insert_pose_canonical
+                        )
                         pre_insert_gripper_pose = pre_insert_obj_pose @ gripper2obj[np.newaxis, ...]
                         ik_success_pre, ik_info_pre = robot.solve_ik(
                             pre_insert_gripper_pose,
@@ -288,7 +316,7 @@ class PlaceStage(Stage):
             if len(target_gripper_poses_pass_ik) == 0:
                 logger.warning(f"{self.action_type}: No target_obj_pose can pass curobo IK")
                 continue
-            if "G2" in robot.robot_cfg:
+            if "G2" in robot.robot_cfg or "G1" in robot.robot_cfg:
                 elbow_name = "arm_r_link4" if arm == "right" else "arm_l_link4"
                 hand_name = "gripper_r_center_link" if arm == "right" else "gripper_l_center_link"
                 idx_sorted = sorted_by_position_humanlike(
@@ -300,12 +328,17 @@ class PlaceStage(Stage):
                     hand_name=hand_name,
                 )
             else:
-                idx_sorted = sorted_by_joint_pos_dist(robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score)
+                idx_sorted = sorted_by_joint_pos_dist(
+                    robot, arm, ik_joint_positions, ik_joint_names, ik_jacobian_score
+                )
 
             target_obj_pose_sorted = (
-                target_gripper_poses_pass_ik[idx_sorted] @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
+                target_gripper_poses_pass_ik[idx_sorted]
+                @ np.linalg.inv(gripper2obj)[np.newaxis, ...]
             )
-            target_obj_pose_canonical_sorted = np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose_sorted
+            target_obj_pose_canonical_sorted = (
+                np.linalg.inv(anchor_pose)[np.newaxis, ...] @ target_obj_pose_sorted
+            )
             if pre_insert_pose_canonical is not None:
                 pre_insert_pose_canonical = pre_insert_pose_canonical[idx_sorted]
         result = []
@@ -328,13 +361,22 @@ class PlaceStage(Stage):
             error_type = error_data.get("type", "")
             if error_type == "KeepClose":
                 gripper_cmd = None
-        self.extra_params.get("pre_place_direction", "z")
+    
+        slowdown_factor = self.extra_params.get("slowdown_factor", 1.0)
         post_place_action = self.extra_params.get(
             "post_place_action", None
         )  # place object without collision check, e.g., place on a surface
         palce_transform_up = np.eye(4)
         palce_transform_up[:3, 3] = self.place_transform_up
-        action_sequence.add_action(Action(target_pose_canonical, None, palce_transform_up, "AvoidObs"))
+        action_sequence.add_action(
+            Action(
+                target_pose_canonical,
+                None,
+                palce_transform_up,
+                "AvoidObs",
+                extra_params={"slowdown_factor": slowdown_factor},
+            )
+        )
         if post_place_action is not None:
             for post_action in post_place_action:
                 post_place_gripper_cmd = post_action.get("gripper_cmd", None)
@@ -345,6 +387,7 @@ class PlaceStage(Stage):
                             post_place_gripper_cmd,
                             np.eye(4),
                             "Simple",
+                            extra_params={"slowdown_factor": slowdown_factor},
                         )
                     )
                 post_place_distance = post_action.get("distance", 0.02)
@@ -353,9 +396,27 @@ class PlaceStage(Stage):
                 )  # in passive object local frame
                 target_pose_canonical = target_pose_canonical.copy()
                 target_pose_canonical[:3, 3] += (
-                    post_place_direction * post_place_distance / np.linalg.norm(post_place_direction)
+                    post_place_direction
+                    * post_place_distance
+                    / np.linalg.norm(post_place_direction)
                 )
-                action_sequence.add_action(Action(target_pose_canonical, gripper_cmd, np.eye(4), "Simple"))
+                action_sequence.add_action(
+                    Action(
+                        target_pose_canonical,
+                        gripper_cmd,
+                        np.eye(4),
+                        "Simple",
+                        extra_params={"slowdown_factor": slowdown_factor},
+                    )
+                )
         else:
-            action_sequence.add_action(Action(None, gripper_cmd, np.eye(4), "Simple"))
+            action_sequence.add_action(
+                Action(
+                    None,
+                    gripper_cmd,
+                    np.eye(4),
+                    "Simple",
+                    extra_params={"slowdown_factor": slowdown_factor},
+                )
+            )
         return action_sequence

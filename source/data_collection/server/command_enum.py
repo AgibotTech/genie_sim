@@ -69,6 +69,23 @@ class Command(IntEnum):
     # Checker related
     GET_CHECKER_STATUS = 56
 
+    # Deactivate object
+    DEACTIVATE_OBJECT = 57
+
+    # Run step
+    RUN_STEP = 60
+    
+    COMMAND_ANY_BEGIN = 70
+    # Get revolute joint trajectory
+    GET_REVOLUTE_JOINT_TRAJECTORY = 71
+    FOLLOW_TRAJECTORY = 72
+    GET_ARTICULATION_JOINT_INFO = 73
+    DUAL_LINEAR_MOVE = 74
+    DUAL_CUROBO_MOVE = 75
+    BIMANUAL_RIGID_MOVE = 76
+    CONTROL_GRIPPER = 77
+    # Command any
+    COMMAND_ANY = 99
 
 # int to string
 command_value_to_string = {}

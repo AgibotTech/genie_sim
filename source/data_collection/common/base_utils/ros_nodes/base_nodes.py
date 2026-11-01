@@ -6,11 +6,7 @@ import os
 import sys
 import threading
 
-try:
-    from cv_bridge import CvBridge
-except ImportError:  # real cv_bridge targets the system ROS Python, not IsaacSim's
-    from common.base_utils.cv_bridge_compat import CvBridge
-
+from cv_bridge import CvBridge
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
@@ -28,6 +24,8 @@ from common.base_utils.name_utils import (
     G1_JOINT_NAMES,
     G2_JOINT_NAMES,
     OMNIPICKER_AJ_NAMES,
+    CTEK90D_AJ_NAMES,
+    is_g2_90d,
 )
 
 QOS_PROFILE_LATEST = QoSProfile(
@@ -97,6 +95,8 @@ class SimNode(Node):
     def config_eef(self):
         if "omnipicker" in self.robot_name:
             self.joint_names += OMNIPICKER_AJ_NAMES
+        elif is_g2_90d(self.robot_name):
+            self.joint_names += CTEK90D_AJ_NAMES
         else:
             raise Exception(f"Invalid eef {self.robot_name}")
 

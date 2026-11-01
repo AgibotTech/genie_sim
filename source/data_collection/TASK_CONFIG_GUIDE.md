@@ -228,9 +228,9 @@ The `scene` field defines the basic information and workspaces of the scene.
 ```json
 {
     "scene": {
-        "scene_id": "background/home_b/",
-        "scene_info_dir": "background/home_b/",
-        "scene_usd": "background/home_b/home_b_00.usda",  // or list
+        "scene_id": "background/home/home_b_with_table/",
+        "scene_info_dir": "background/home/home_b_with_table/",
+        "scene_usd": "background/home/home_b_with_table/background.usda",  // or list
         "function_space_objects": { ... }
     }
 }
@@ -675,9 +675,9 @@ This section uses `tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box
         "quaternion": [1, 0, 0, 0]
     },
     "scene": {
-        "scene_id": "background/home_b/",
-        "scene_info_dir": "background/home_b/",
-        "scene_usd": ["background/home_b/home_b_00.usda"],
+        "scene_id": "background/home/home_b_with_table/",
+        "scene_info_dir": "background/home/home_b_with_table/",
+        "scene_usd": ["background/home/home_b_with_table/background.usda"],
         "function_space_objects": {
             "work_table": {
                 "position": [-0.15, 0.01, 0.9],
@@ -1196,8 +1196,7 @@ Action extra parameters are defined in the `extra_params` field of `stages` to c
 - `place_with_origin_orientation` (bool, optional): Whether to use original orientation for placement, default `true`
 - `disable_upside_down` (bool, optional): Disable upside-down placement, default `false`
 - `use_pre_place` (bool, optional): Whether to use pre-placement, default `false`
-- `pre_place_offset` (float, optional): Pre-placement offset (unit: meters), default `0.12`
-- `pre_place_direction` (str, optional): Pre-placement direction, default `"z"`
+- `pre_insert_offset` (float, optional): Pre-placement offset (unit: meters), default `0.12`
 - `pre_pose_noise` (dict, optional): Pre-pose noise configuration
   - `position_noise` (float): Position noise
   - `rotation_noise` (float): Rotation noise
@@ -1216,7 +1215,7 @@ Action extra parameters are defined in the `extra_params` field of `stages` to c
         "arm": "auto",
         "place_with_origin_orientation": true,
         "use_pre_place": true,
-        "pre_place_offset": 0.12
+        "pre_insert_offset": 0.12
     }
 }
 ```
@@ -1231,7 +1230,7 @@ Inherits from `place` action, all parameters are the same as `place` action.
     "extra_params": {
         "arm": "auto",
         "use_pre_place": true,
-        "pre_place_offset": 0.1,
+        "pre_insert_offset": 0.1,
         "gripper_state": "open"
     }
 }

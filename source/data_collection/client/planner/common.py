@@ -166,8 +166,6 @@ def obj2world(obj_info):
         # ensure orthogonalization not necessary here; keep as direction vector
         obj_info_world["constraint"] = constraint_world / np.linalg.norm(constraint_world)
     return obj_info_world
-    return obj_info_world
-
 
 def get_aligned_fix_pose(active_obj, passive_obj, distance=0.01, N=1):
     try:
@@ -243,7 +241,9 @@ def get_aligned_pose(active_obj, passive_obj, distance=0.01, N=1):
                 p_cons,
             )
         else:
-            R = calculate_rotation_matrix(active_obj_world["direction"], passive_obj_world["direction"])
+            R = calculate_rotation_matrix(
+                active_obj_world["direction"], passive_obj_world["direction"]
+            )
     except Exception:
         R = calculate_rotation_matrix(active_obj_world["direction"], passive_obj_world["direction"])
     T = passive_obj_world["xyz_end"] - R @ active_obj_world["xyz_start"]

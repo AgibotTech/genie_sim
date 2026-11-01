@@ -2,10 +2,10 @@
 
 # Usage: ./scripts/start_gui.sh [exec|start|restart|run] [container_name]
 # Default action: run
-# Default container name: data_collection_gui
+# Default container name: geniesim4-data-collection
 
 ACTION=${1:-run}
-CONTAINER_NAME=${2:-data_collection_open_source}
+CONTAINER_NAME=${2:-geniesim4-data-collection}
 
 # current folder as WORD_DIR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,14 +39,17 @@ if [ "$ACTION" == "run" ]; then
     set -eo pipefail
 
     echo "using SIM_REPO_ROOT='$CURRENT_DIR'"
-    ASSETS_SRC="${GENIESIM_ASSETS_SRC:-}"
-    if [ -z "$ASSETS_SRC" ] || [ ! -f "$ASSETS_SRC/pyproject.toml" ]; then
-        echo "Error: geniesim_assets is not pip-installed (editable) on the host."
-        echo "Install it first, e.g.: pip install -e /path/to/geniesim_assets"
-        exit 1
-    else
-        echo "using geniesim_assets='$ASSETS_SRC' -> /geniesim_assets"
+    SIM_ASSETS="$(python3 "$SCRIPT_DIR/resolve_assets.py")"
+    export SIM_ASSETS
+
+    # Keep the task library outside the image; remap its host path for the client.
+    LLM_TASK_ROOT="$(python3 "$SCRIPT_DIR/resolve_llm_task_root.py")" || exit $?
+    LLM_TASK_DOCKER_ARGS=()
+    if [ -n "$LLM_TASK_ROOT" ]; then
+        sudo setfacl -R -m u:1234:rwX "$LLM_TASK_ROOT"
+        LLM_TASK_DOCKER_ARGS=(-v "$LLM_TASK_ROOT:/llm_tasks:rw" -e LLM_TASK_ROOT=/llm_tasks -e GENIESIM_LLM_TASK_ROOT=/llm_tasks)
     fi
+    echo "using SIM_ASSETS='$SIM_ASSETS'"
 
     mkdir -p ~/docker/isaac-sim/cache/main/ov
     mkdir -p ~/docker/isaac-sim/cache/main/warp
@@ -61,6 +64,7 @@ if [ "$ACTION" == "run" ]; then
     sudo mkdir -p $CURRENT_DIR/saved_task && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/saved_task
     sudo mkdir -p $CURRENT_DIR/recording_data && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/recording_data
     [ -d $CURRENT_DIR/config ] && sudo setfacl -m u:1234:rwX -R $CURRENT_DIR/config
+    echo "LLM task root: ${LLM_TASK_ROOT:-not configured}"
     echo "Container name: $CONTAINER_NAME"
     xhost +
     docker run -it --name $CONTAINER_NAME \
@@ -75,7 +79,7 @@ if [ "$ACTION" == "run" ]; then
         -e "PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python" \
         -e "OMNI_USER=geniesim" \
         -e "OMNI_PASS=geniesim" \
-        -e "SIM_ASSETS=/geniesim_assets" \
+        -e "SIM_ASSETS=/geniesim/main/source/geniesim/assets" \
         -e DISPLAY \
         -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
         -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
@@ -84,10 +88,11 @@ if [ "$ACTION" == "run" ]; then
         -v ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw \
         -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw \
         -v /dev/input:/dev/input:rw \
-        -v $ASSETS_SRC:/geniesim_assets:rw \
+        "${LLM_TASK_DOCKER_ARGS[@]}" \
+        -v "$SIM_ASSETS:/geniesim/main/source/geniesim/assets:rw" \
         -v $CURRENT_DIR:/geniesim/main/data_collection:rw \
         -w /geniesim/main/data_collection \
-        registry.agibot.com/genie-sim/geniesim3-data-collection:latest \
+        "${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim4-data-collection:latest}" \
         bash
 fi
 
@@ -100,7 +105,7 @@ echo "    exec    - Enter container (docker exec -it container_name /bin/bash)"
 echo "    start   - Start container (docker start container_name)"
 echo "    restart - Restart container (docker restart container_name)"
 echo "    run     - Create and run new container (default action)"
-echo "  Container name: Default is 'data_collection_gui'"
+echo "  Container name: Default is 'geniesim4-data-collection'"
 echo ""
 echo "Examples:"
 echo "  ./scripts/start_gui.sh run my_container"

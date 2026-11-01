@@ -11,7 +11,8 @@ import omni.syntheticdata._syntheticdata as sd
 from isaacsim.sensors.camera import Camera
 
 from common.base_utils.logger import logger
-from common.base_utils.ros_nodes.sim_ros_node import ImagePubRosNode
+from common.base_utils.ros_nodes.sim_ros_node import DepthImagePubRosNode, ImagePubRosNode
+from sim_backend import render
 from server.ros_publisher.camera_noiser import apply_noise_to_image, get_random_parameters
 
 
@@ -32,7 +33,9 @@ def publish_boundingbox2d_loose(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
+        rv + "IsaacSimulationGate", render_product
+    )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -90,7 +93,9 @@ def publish_boundingbox2d_tight(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
+        rv + "IsaacSimulationGate", render_product
+    )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
@@ -111,38 +116,36 @@ def publish_boundingbox3d(camera: Camera, freq: int, topic=""):
         topicName=topic_name,
     )
     writer.attach([render_product])
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
+        rv + "IsaacSimulationGate", render_product
+    )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
-def publish_rgb(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
-    step_size = freq
+def publish_rgb(camera: Camera, step_size: int, topic=""):
+    resolution = camera.get_resolution()
+    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    annotator = render.get_annotator("rgb")
+    annotator.attach(rp)
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_rgb" if topic == "" else topic
-    queue_size = 50
-    node_namespace = ""
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.Rgb.name)
-    writer = rep.writers.get(rv + "ROS2PublishImage")
-    writer.initialize(
-        frameId=frame_id,
-        nodeNamespace=node_namespace,
-        queueSize=queue_size,
-        topicName=topic_name,
+    def get_msg_callback():
+        rgb = annotator.get_data(device="cpu")
+        if rgb is not None and len(rgb) > 0:
+            return np.array(rgb)[:, :, :3]
+        return None
+
+    ros_node = ImagePubRosNode(
+        topic_name, get_msg_callback, frame_id, node_name=f"{frame_id}_rgb_node", step_size=step_size
     )
-    writer.attach([render_product])
-
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
-    og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
-
-    return gate_path
+    return ros_node
 
 
 def publish_noised_rgb(camera: Camera, step_size: int, topic="", **kwargs):
     resolution = camera.get_resolution()
-    rp = rep.create.render_product(camera.prim_path, (resolution[0], resolution[1]))
-    annotator = rep.AnnotatorRegistry.get_annotator("rgb")
+    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    annotator = render.get_annotator("rgb")
     annotator.attach(rp)
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_rgb" if topic == "" else topic
     frame_id = camera.prim_path.split("/")[-1]
@@ -161,7 +164,7 @@ def publish_noised_rgb(camera: Camera, step_size: int, topic="", **kwargs):
 
     def get_msg_callback():
         rgb = annotator.get_data(device="cuda")
-        if rgb:
+        if rgb is not None:
             rgb = apply_noise_to_image(rgb[:, :, :3], seed=seed, noise_type=noise_type, **kwargs)
             return rgb
         return None
@@ -214,7 +217,9 @@ def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
     node_namespace = ""
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
+    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(
+        sd.SensorType.DistanceToImagePlane.name
+    )
 
     writer = rep.writers.get(rv + "ROS2PublishPointCloud")
     writer.initialize(
@@ -225,28 +230,27 @@ def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
     )
     writer.attach([render_product])
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
+    gate_path = omni.syntheticdata.SyntheticData._get_node_path(
+        rv + "IsaacSimulationGate", render_product
+    )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
 
 
-def publish_depth(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
-    step_size = freq
+def publish_depth(camera: Camera, step_size: int, topic=""):
+    resolution = camera.get_resolution()
+    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    annotator = render.get_annotator("distance_to_image_plane")
+    annotator.attach(rp)
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_depth" if topic == "" else topic
-    queue_size = 50
-    node_namespace = ""
     frame_id = camera.prim_path.split("/")[-1]
 
-    rv = omni.syntheticdata.SyntheticData.convert_sensor_type_to_rendervar(sd.SensorType.DistanceToImagePlane.name)
-    writer = rep.writers.get(rv + "ROS2PublishImage")
-    writer.initialize(
-        frameId=frame_id,
-        nodeNamespace=node_namespace,
-        queueSize=queue_size,
-        topicName=topic_name,
-    )
-    writer.attach([render_product])
+    def get_msg_callback():
+        depth = annotator.get_data(device="cpu")
+        if depth is not None and len(depth) > 0:
+            return np.array(depth)
+        return None
 
-    gate_path = omni.syntheticdata.SyntheticData._get_node_path(rv + "IsaacSimulationGate", render_product)
-    og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
-    return gate_path
+    ros_node = DepthImagePubRosNode(
+        topic_name, get_msg_callback, frame_id, node_name=f"{frame_id}_depth_node", step_size=step_size
+    )
+    return ros_node

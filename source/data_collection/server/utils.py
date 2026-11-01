@@ -59,7 +59,9 @@ class Light:
         self.intensity = intensity
         self.color = color
         self.orientation = orientation
-        base_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/data/" + texture_file
+        base_folder = (
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/data/" + texture_file
+        )
         for file in os.listdir(base_folder):
             if file.endswith(".hdr"):
                 self.texture_file = os.path.join(base_folder, file)

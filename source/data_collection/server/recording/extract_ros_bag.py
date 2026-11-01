@@ -22,8 +22,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, "../.."))
 sys.path.append(project_root)
+from sim_version_constants import SIM_RAW_DATA_VERSION
+from server.recording.derive_fields import compute_raw_derive_arrays
 
 from common.base_utils.logger import logger
+from common.base_utils.name_utils import joint_state_order_key
 from common.base_utils.transform_utils import (
     calculate_y_axis_projection,
     mat2euler,
@@ -33,6 +36,7 @@ from common.base_utils.transform_utils import (
     transform_world_axis_to_robot_axis,
     world_to_robot_base,
 )
+from server.generated_geometry_state import merge_generated_geometry_sidecars
 
 try:
     from .utils.async_json_writer import AsyncJSONWriter
@@ -60,6 +64,136 @@ except ImportError:
     )
 
 count = 0
+
+
+def _drop_playback_boundary_artifacts(
+    frames,
+    timestamps,
+    episode_state,
+    robot_info,
+    playback_timerange,
+    pos_jump_thresh=0.03,
+    return_thresh=0.005,
+    max_drop_run=5,
+):
+    """Trim a contiguous run of object-position artifact frames that leak
+    past ``playback_timerange.end``.
+
+    At each playback subrange end we scan up to ``max_drop_run`` candidate
+    frames forward looking for the pattern ``A → B → B → ... → A``: a run
+    of frames whose max-object delta from the reference (last frame before
+    the boundary) is above ``pos_jump_thresh``, terminated by a frame whose
+    delta drops back within ``return_thresh``. The whole jump-run is dropped.
+    Frames whose delta sits between the two thresholds (genuine task motion)
+    abort the scan to avoid over-trimming. All parallel per-frame lists
+    (frames, timestamps, episode_state, robot_info) are kept in sync.
+    """
+    if not playback_timerange or not frames:
+        return 0
+
+    n_frames_before = len(frames)
+    ends = sorted({
+        sr[1] for sr in playback_timerange
+        if isinstance(sr, (list, tuple)) and len(sr) >= 2
+    })
+    drop_idx = set()
+    for end_t in ends:
+        boundary = next(
+            (i for i, f in enumerate(frames)
+             if f.get("time_stamp", 0) > end_t and i not in drop_idx),
+            None,
+        )
+        if boundary is None or boundary == 0:
+            continue
+        ref_i = boundary - 1
+        while ref_i >= 0 and ref_i in drop_idx:
+            ref_i -= 1
+        if ref_i < 0:
+            continue
+        ref_objs = frames[ref_i].get("objects", {})
+
+        candidates = []  # list of (cand_idx, max_delta_meters)
+        stable_found = False
+        # Scan max_drop_run+1 frames so the stable frame itself fits inside the
+        # window: we can commit up to max_drop_run consecutive jump frames.
+        for k in range(max_drop_run + 1):
+            cand = boundary + k
+            if cand >= len(frames) or cand in drop_idx:
+                break
+            cand_objs = frames[cand].get("objects", {})
+            best_delta = 0.0
+            for name, ref_obj in ref_objs.items():
+                if name not in cand_objs:
+                    continue
+                A = ref_obj.get("pose")
+                B = cand_objs[name].get("pose")
+                if not (A and B):
+                    continue
+                try:
+                    A_t = np.array([A[0][3], A[1][3], A[2][3]], dtype=float)
+                    B_t = np.array([B[0][3], B[1][3], B[2][3]], dtype=float)
+                except (IndexError, TypeError):
+                    continue
+                d = float(np.linalg.norm(B_t - A_t))
+                if d > best_delta:
+                    best_delta = d
+
+            if best_delta <= return_thresh:
+                # Frame has converged back to the reference — end of run.
+                stable_found = True
+                break
+            if best_delta >= pos_jump_thresh:
+                candidates.append((cand, best_delta))
+            else:
+                # Mid-range delta: likely real task motion, abort to be safe.
+                break
+
+        if stable_found:
+            for cand, delta in candidates:
+                drop_idx.add(cand)
+                logger.warning(
+                    f"Drop playback boundary artifact frame {cand} "
+                    f"(t={frames[cand].get('time_stamp', 0):.3f}, "
+                    f"|delta|={delta*1000:.2f}mm) after playback end={end_t:.3f}"
+                )
+
+    if not drop_idx:
+        return 0
+
+    for idx in sorted(drop_idx, reverse=True):
+        if idx < len(frames):
+            del frames[idx]
+        if idx < len(timestamps):
+            del timestamps[idx]
+        for outer in ("joint", "joint_action"):
+            outer_dict = episode_state.get(outer, {})
+            for inner in ("position", "velocity", "effort"):
+                lst = outer_dict.get(inner)
+                if isinstance(lst, list) and idx < len(lst):
+                    del lst[idx]
+        end_dict = episode_state.get("end", {})
+        for inner in ("position", "orientation", "arm_position", "arm_orientation"):
+            lst = end_dict.get(inner)
+            if isinstance(lst, list) and idx < len(lst):
+                del lst[idx]
+        eff_dict = episode_state.get("effector", {})
+        for inner in ("index", "force"):
+            lst = eff_dict.get(inner)
+            if isinstance(lst, list) and idx < len(lst):
+                del lst[idx]
+        for inner in (
+            "position", "orientation", "orientation_drift",
+            "position_drift", "velocity",
+        ):
+            lst = robot_info.get(inner)
+            if isinstance(lst, list) and idx < len(lst):
+                del lst[idx]
+
+    logger.warning(
+        f"Trimmed {len(drop_idx)} playback boundary artifact frame(s) "
+        f"({n_frames_before} → {len(frames)})"
+    )
+    return len(drop_idx)
 
 
 def merge_camera(root):
@@ -143,8 +277,7 @@ def merge_state_json(root):
     root = Path(root)
     files = sorted(root.glob("state_*.json"), key=lambda p: int(p.stem.split("_")[1]))
     if not files:
-        logger.info("No state_*.json files found")
-        exit(0)
+        raise ValueError(f"No state chunks found in {root}")
     with open(files[0], "r", encoding="utf-8") as f:
         base = json.load(f)
     merged_frames = []
@@ -152,7 +285,45 @@ def merge_state_json(root):
         with open(fp, "r", encoding="utf-8") as f:
             data = json.load(f)
         merged_frames.extend(data.get("frames", []))
+    if not merged_frames:
+        raise ValueError(f"No state frames found in {root}")
     base["frames"] = merged_frames
+    base["sim_raw_data_version"] = SIM_RAW_DATA_VERSION
+    # FEM recording writes a temporary _cloth_frames.json during stop_recording.
+    # Each entry includes a timestamp and deformable mesh metadata.
+    # Match cloth samples by nearest timestamp into each state frame.
+    cloth_meta = root / "_cloth_frames.json"
+    if cloth_meta.exists():
+        try:
+            with open(cloth_meta, "r", encoding="utf-8") as f:
+                cloth_data = json.load(f)
+            cloth_frames = cloth_data.get("frames", [])
+            if cloth_frames:
+                cloth_ts = [c["time_stamp"] for c in cloth_frames]
+                # Find the nearest cloth sample for each state frame.
+                for sf in merged_frames:
+                    ts = sf.get("time_stamp")
+                    if ts is None:
+                        continue
+                    # Scan timestamps linearly; recordings have few cloth frames.
+                    nearest_i, nearest_d = 0, float("inf")
+                    for j, t in enumerate(cloth_ts):
+                        d = abs(t - ts)
+                        if d < nearest_d:
+                            nearest_d = d
+                            nearest_i = j
+                    sf["deformable"] = cloth_frames[nearest_i]["deformable"]
+                logger.info(f"Merged {len(cloth_frames)} cloth frames into state.json deformable field")
+            cloth_meta.unlink()
+        except Exception as exc:
+            logger.warning(f"merge _cloth_frames.json failed: {exc}")
+    # Generated-geometry sidecars are sampled on the live simulation timeline. Each state
+    # chunk has already had playback ranges removed before reaching this
+    # final merge, so only the surviving action branch receives prefixes.
+    # Unlike cloth's best-effort path, malformed generated geometry is fatal: silently
+    # dropping generated geometry would violate frame-exact replay.
+    if merge_generated_geometry_sidecars(root, base):
+        logger.info("Merged frame-exact generated geometry into state.json")
     with open(root / "state.json", "w", encoding="utf-8") as f:
         json.dump(base, f, indent=4, ensure_ascii=False)
     for fp in files:
@@ -165,8 +336,7 @@ def merge_h5(root):
     files = sorted(root.glob("aligned_joints_all_*.h5"), key=lambda p: int(p.stem.split("_")[-1]))
 
     if not files:
-        logger.info("No .h5 files found to merge")
-        exit(0)
+        raise ValueError(f"No H5 chunks found in {root}")
     dst_path = root / "aligned_joints_all.h5"
     valid_files = []  # Store files containing valid data
     empty_files = []  # Store empty files
@@ -183,29 +353,9 @@ def merge_h5(root):
             logger.info(f"Error checking file {fp}: {e}")
             empty_files.append(fp)  # Files that cannot be opened are also considered empty
 
-    # If no valid files, create empty target file and delete all source files
+    # Keep invalid chunks for inspection instead of treating an empty recording as success.
     if not valid_files:
-        # Create empty target file
-        with h5py.File(dst_path, "w") as dst:
-            # Create an empty timestamp dataset
-            dst.create_dataset("timestamp", shape=(0,), maxshape=(None,), dtype=np.float64)
-
-            # Create empty state and action groups
-            for grp_name in ["state", "action"]:
-                grp = dst.create_group(grp_name)
-
-        # Delete all files (including empty files)
-        for f in files:
-            try:
-                f.unlink()
-                logger.info(f"Deleted empty file: {f}")
-            except Exception as e:
-                logger.info(f"Error deleting file {f}: {e}")
-
-        logger.info(
-            f"All files are empty, created empty target file and deleted all source files → {dst_path}"
-        )
-        exit(0)
+        raise ValueError(f"No valid H5 frames found in {root}")
 
     # Use first valid file to create target file structure
     with h5py.File(dst_path, "w") as dst:
@@ -285,10 +435,7 @@ def reorder_joint_state(msg, robot_name):
         raise FileNotFoundError("Cannot find config/robot_cfg/robot_joint_names.json")
     with open(config_path, "r") as f:
         config = json.load(f)
-    if "G2" in robot_name:
-        target_joint_name = config["G2"]["joint_state_order"]
-    else:
-        target_joint_name = config["G1"]["joint_state_order"]
+    target_joint_name = config[joint_state_order_key(robot_name)]["joint_state_order"]
     now_joint_name = msg.name
     now_joint_position = msg.position.tolist()
     now_joint_velocity = msg.velocity.tolist()
@@ -309,7 +456,7 @@ def reorder_joint_state(msg, robot_name):
 
 
 class RosExtrater:
-    def __init__(self, bag_file, output_dir, task_info, is_senmatic=False):
+    def __init__(self, bag_file, output_dir, task_info, is_senmatic=False, with_img=True, with_video=True):
         self.bag_file = bag_file
         self.output_dir = output_dir
         self.robot_init_position = np.array(task_info["robot_init_position"])
@@ -330,11 +477,8 @@ class RosExtrater:
             self.articulated_object_names.append(name)
         self.frame_status = task_info["frame_status"]
         self.fps = task_info["fps"]
-        self.with_img = True
-        self.with_video = True
-        self.rgb_write_mode = task_info.get("rgb_write_mode", "passthrough")
-        if self.rgb_write_mode not in {"opencv", "passthrough"}:
-            raise ValueError(f"Unsupported RGB write mode: {self.rgb_write_mode}")
+        self.with_img = with_img
+        self.with_video = with_video
         self.with_senmatic = is_senmatic
         self.light_config = task_info["light_config"]
         self.gripper_names = task_info["gripper_names"]
@@ -348,7 +492,7 @@ class RosExtrater:
         )[-1]
         self.left_gripper_prim_name = task_info["end_effector_prim_path"]["left"].split("/")[-1]
         self.right_gripper_prim_name = task_info["end_effector_prim_path"]["right"].split("/")[-1]
-        self.arm_base_prim_path = task_info["arm_base_prim_path"]
+        self.arm_base_prim_name = task_info["arm_base_prim_path"].split("/")[-1]
 
     def post_process_camera_name(self, camera_name, extra_name="", remove_name=False):
         if "G1" in self.robot_name or "G1" in self.robot_name:
@@ -373,6 +517,34 @@ class RosExtrater:
             elif "left_camera" in camera_name.lower() and "head" not in camera_name.lower():
                 camera_name = "hand_left" + extra_name
             elif "right_camera" in camera_name.lower() and "head" not in camera_name.lower():
+                camera_name = "hand_right" + extra_name
+            elif remove_name:
+                index = camera_name.rfind("_")
+                camera_name = camera_name[:index] + extra_name
+        if "ARX" in self.robot_name:
+            if "head" in camera_name.lower():
+                camera_name = "head" + extra_name
+            elif "hand_left" in camera_name.lower() or (
+                "left" in camera_name.lower() and "head" not in camera_name.lower()
+            ):
+                camera_name = "hand_left" + extra_name
+            elif "hand_right" in camera_name.lower() or (
+                "right" in camera_name.lower() and "head" not in camera_name.lower()
+            ):
+                camera_name = "hand_right" + extra_name
+            elif remove_name:
+                index = camera_name.rfind("_")
+                camera_name = camera_name[:index] + extra_name
+        if "Aloha" in self.robot_name or "aloha" in self.robot_name:
+            if "head" in camera_name.lower():
+                camera_name = "head" + extra_name
+            elif "hand_left" in camera_name.lower() or (
+                "left" in camera_name.lower() and "head" not in camera_name.lower()
+            ):
+                camera_name = "hand_left" + extra_name
+            elif "hand_right" in camera_name.lower() or (
+                "right" in camera_name.lower() and "head" not in camera_name.lower()
+            ):
                 camera_name = "hand_right" + extra_name
             elif remove_name:
                 index = camera_name.rfind("_")
@@ -437,9 +609,7 @@ class RosExtrater:
             if key == semantic:
                 return value
 
-    async def dump_objects_bbox3d(
-        self, label_dict, idx, single_frame_state, chunk_index
-    ):
+    async def dump_objects_bbox3d(self, label_dict, idx, single_frame_state, chunk_index):
         files = ["head", "hand_left", "hand_right"]
         for camera_name in files:
             result = self.segmenation_image_json[idx][camera_name]
@@ -613,21 +783,25 @@ class RosExtrater:
             # organize time stamps
             time_stamps = set()
             for connection, timestamp, msg in reader.messages():
-                msg = reader.deserialize(msg, connection.msgtype)
-                if hasattr(msg, "header"):
-                    current_time = (float)(msg.header.stamp.sec) + (float)(
-                        msg.header.stamp.nanosec
-                    ) * np.power(10.0, -9)
-                    time_stamps.add("{:.4f}".format(current_time))
-            time_stamps = sorted(list(time_stamps), key=lambda x: float(x))
-            time_stamps = np.array([float(t) for t in time_stamps])
+                if connection.topic == "/joint_states":
+                    msg = reader.deserialize(msg, connection.msgtype)
+                    if hasattr(msg, "header"):
+                        current_time = (float)(msg.header.stamp.sec) + (float)(
+                            msg.header.stamp.nanosec
+                        ) * np.power(10.0, -9)
+                        time_stamps.add(round(current_time, 4))
+            time_stamps = sorted(list(time_stamps), key=lambda x: x)
+            time_stamps = np.array(list(time_stamps))
             dt = 1.0 / self.fps
             first, last = time_stamps[0], time_stamps[-1]
             desired = np.arange(first, last + dt / 2, dt)
             # desired keep 4 decimal places
-            desired = np.array([float("{:.4f}".format(t + dt / 10)) for t in desired])
+            desired = np.array([round(t + dt / 10, 4) for t in desired])
             temp_idx = np.searchsorted(time_stamps, desired, side="left")
             temp_idx = np.clip(temp_idx, 0, len(time_stamps) - 1)
+            # Grid points beyond the last timestamp are clipped to the final
+            # frame. Deduplicate indices so the last frame appears only once.
+            temp_idx = np.unique(temp_idx)
             time_stamps = time_stamps[temp_idx].tolist()
             chunk_size = 1000
             chunks = [
@@ -672,8 +846,9 @@ class RosExtrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in image_topics[connection.topic]:
-                            image_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        current_time_rounded = round(current_time, 4)
+                        if current_time_rounded not in image_topics[connection.topic]:
+                            image_topics[connection.topic][current_time_rounded] = msg
                     elif connection.msgtype == "sensor_msgs/msg/JointState" and (
                         connection.topic == "/joint_states"
                         or str(connection.topic).startswith("/articulated/")
@@ -685,8 +860,9 @@ class RosExtrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in joint_topics[connection.topic]:
-                            joint_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        current_time_rounded = round(current_time, 4)
+                        if current_time_rounded not in joint_topics[connection.topic]:
+                            joint_topics[connection.topic][current_time_rounded] = msg
                     elif connection.topic == "/tf":
                         tf_msg = reader.deserialize(msg, "tf2_msgs/msg/TFMessage")
                         current_time = (float)(tf_msg.transforms[0].header.stamp.sec) + (float)(
@@ -694,8 +870,9 @@ class RosExtrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in tf_topics[connection.topic]:
-                            tf_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        current_time_rounded = round(current_time, 4)
+                        if current_time_rounded not in tf_topics[connection.topic]:
+                            tf_topics[connection.topic][current_time_rounded] = msg
                     elif connection.topic == "/tf_static":
                         tf_static_msg = reader.deserialize(msg, "tf2_msgs/msg/TFMessage")
                         logger.info(tf_static_msg)
@@ -717,8 +894,9 @@ class RosExtrater:
                         if file_name not in rgb_topics:
                             rgb_topics[file_name] = {}
                             self.imag_file_name.append(file_name)
-                        if "{:.4f}".format(current_time) not in rgb_topics[file_name]:
-                            rgb_topics[file_name]["{:.4f}".format(current_time)] = msg
+                        current_time_rounded = round(current_time, 4)
+                        if current_time_rounded not in rgb_topics[file_name]:
+                            rgb_topics[file_name][current_time_rounded] = msg
                 if self.with_senmatic:
                     if label_dict is None:
                         label_dict = {}
@@ -729,48 +907,35 @@ class RosExtrater:
                     self.get_part_transform_matrix_map(label_dict)
                 # playback range
                 logger.info(f"Playback time range: {self.playback_timerange}")
-
+                def safe_max(topics):
+                    if len(topics) == 0:
+                        return 0
+                    return max(
+                        [
+                            min(topics[topic].keys(), key=lambda x: x)
+                            for topic in topics
+                        ]
+                    )
+                def safe_min(topics):
+                    if len(topics) == 0:
+                        return np.Infinity
+                    return min(
+                        [
+                            max(topics[topic].keys(), key=lambda x: x)
+                            for topic in topics
+                        ]
+                    )
                 # Align timestamp
                 start_time_stamp = max(
-                    max(
-                        [
-                            min(image_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in image_topics
-                        ]
-                    ),
-                    max(
-                        [
-                            min(joint_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in joint_topics
-                        ]
-                    ),
-                    max(
-                        [
-                            min(tf_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in tf_topics
-                        ]
-                    ),
+                    safe_max(image_topics),
+                    safe_max(joint_topics),
+                    safe_max(tf_topics),
                 )
 
                 end_time_stamp = min(
-                    min(
-                        [
-                            max(image_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in image_topics
-                        ]
-                    ),
-                    min(
-                        [
-                            max(joint_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in joint_topics
-                        ]
-                    ),
-                    min(
-                        [
-                            max(tf_topics[topic].keys(), key=lambda x: float(x))
-                            for topic in tf_topics
-                        ]
-                    ),
+                    safe_min(image_topics),
+                    safe_min(joint_topics),
+                    safe_min(tf_topics),
                 )
 
                 # remove ts earlier than start_time_stamp and insert ts if not exist
@@ -781,29 +946,33 @@ class RosExtrater:
                         to_remove = True
                         ts_to_remove.append(ts)
                     for topic in image_topics:
+                        ts_rounded = round(ts, 4)
                         if to_remove:
-                            if ts in image_topics[topic]:
-                                del image_topics[topic][ts]
-                        elif ts not in image_topics[topic]:
-                            image_topics[topic][ts] = None
+                            if ts_rounded in image_topics[topic]:
+                                del image_topics[topic][ts_rounded]
+                        elif ts_rounded not in image_topics[topic]:
+                            image_topics[topic][ts_rounded] = None
                     for topic in rgb_topics:
+                        ts_rounded = round(ts, 4)
                         if to_remove:
-                            if ts in rgb_topics[topic]:
-                                del rgb_topics[topic][ts]
-                        elif ts not in rgb_topics[topic]:
-                            rgb_topics[topic][ts] = None
+                            if ts_rounded in rgb_topics[topic]:
+                                del rgb_topics[topic][ts_rounded]
+                        elif ts_rounded not in rgb_topics[topic]:
+                            rgb_topics[topic][ts_rounded] = None
                     for topic in joint_topics:
+                        ts_rounded = round(ts, 4)
                         if to_remove:
-                            if ts in joint_topics[topic]:
-                                del joint_topics[topic][ts]
-                        elif ts not in joint_topics[topic]:
-                            joint_topics[topic][ts] = None
+                            if ts_rounded in joint_topics[topic]:
+                                del joint_topics[topic][ts_rounded]
+                        elif ts_rounded not in joint_topics[topic]:
+                            joint_topics[topic][ts_rounded] = None
                     for topic in tf_topics:
+                        ts_rounded = round(ts, 4)
                         if to_remove:
-                            if ts in tf_topics[topic]:
-                                del tf_topics[topic][ts]
-                        elif ts not in tf_topics[topic]:
-                            tf_topics[topic][ts] = None
+                            if ts_rounded in tf_topics[topic]:
+                                del tf_topics[topic][ts_rounded]
+                        elif ts_rounded not in tf_topics[topic]:
+                            tf_topics[topic][ts_rounded] = None
                 for ts in ts_to_remove:
                     chunk.remove(ts)
 
@@ -811,22 +980,22 @@ class RosExtrater:
                 for topic in image_topics:
                     image_topics[topic] = {
                         k: image_topics[topic][k]
-                        for k in sorted(image_topics[topic], key=lambda x: float(x))
+                        for k in sorted(image_topics[topic], key=lambda x: x)
                     }
                 for topic in rgb_topics:
                     rgb_topics[topic] = {
                         k: rgb_topics[topic][k]
-                        for k in sorted(rgb_topics[topic], key=lambda x: float(x))
+                        for k in sorted(rgb_topics[topic], key=lambda x: x)
                     }
                 for topic in joint_topics:
                     joint_topics[topic] = {
                         k: joint_topics[topic][k]
-                        for k in sorted(joint_topics[topic], key=lambda x: float(x))
+                        for k in sorted(joint_topics[topic], key=lambda x: x)
                     }
                 for topic in tf_topics:
                     tf_topics[topic] = {
                         k: tf_topics[topic][k]
-                        for k in sorted(tf_topics[topic], key=lambda x: float(x))
+                        for k in sorted(tf_topics[topic], key=lambda x: x)
                     }
 
                 # If the result of a certain frame is None, fill it with the value of the next frame
@@ -900,7 +1069,7 @@ class RosExtrater:
                         tf_topics[topic][ts] = last_frame
 
                 result = {
-                    "schema": "v6",
+                    "schema": "simubotix.agibot.com/episode/v6",
                     "scene": {
                         "name": self.scene_name,
                         "metadata": None,
@@ -987,10 +1156,11 @@ class RosExtrater:
                         depth_image_paths = {}
                         rgb_image_paths = {}
 
+                        ts_rounded = round(ts, 4)
                         for key in image_topics:
                             try:
                                 msg = reader.deserialize(
-                                    image_topics[key][ts], "sensor_msgs/msg/Image"
+                                    image_topics[key][ts_rounded], "sensor_msgs/msg/Image"
                                 )
                             except Exception:
                                 logger.info(f"❌ Error key={key} ts={ts}")
@@ -1045,10 +1215,11 @@ class RosExtrater:
                                     cv2.imwrite(file_path, img)
                                     self.imag_file_name.append(file_name)
 
+                        ts_rounded = round(ts, 4)
                         for key in rgb_topics:
                             try:
                                 msg = reader.deserialize(
-                                    rgb_topics[key][ts],
+                                    rgb_topics[key][ts_rounded],
                                     "sensor_msgs/msg/CompressedImage",
                                 )
                             except Exception:
@@ -1058,28 +1229,14 @@ class RosExtrater:
                             stamp[file_name] = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
                             ) * np.power(10.0, -9)
-                            image_path = rgb_dir + "/{}.jpg".format(file_name)
-                            if self.rgb_write_mode == "opencv":
-                                # Decode the JPEG and re-encode it (legacy path).
-                                img = message_to_cvimage(msg, "bgr8")
-                                if img is None or img.size == 0:
-                                    logger.info(f"⚠️ empty image, skip key={key} ts={ts}")
-                                    continue
-                                cv2.imwrite(image_path, img)
-                            else:
-                                # The CompressedImage payload is already JPEG; write the
-                                # raw bytes straight to disk to avoid a redundant
-                                # decode + re-encode (and a second lossy pass).
-                                if msg.data.size == 0:
-                                    logger.info(f"⚠️ empty image, skip key={key} ts={ts}")
-                                    continue
-                                with open(image_path, "wb") as image_file:
-                                    image_file.write(msg.data.tobytes())
-                        min_value = min(stamp.values())
-                        for key in stamp:
-                            stamp[key] = min_value
-                        with open(rgb_dir + "/time_stamp.json", "w", encoding="utf-8") as f:
-                            json.dump(stamp, f, indent=4)
+                            img = message_to_cvimage(msg, "bgr8")  # change encoding type if needed
+                            cv2.imwrite(rgb_dir + "/{}.jpg".format(file_name), img)
+                        if len(rgb_topics) > 0:
+                            min_value = min(stamp.values())
+                            for key in stamp:
+                                stamp[key] = min_value
+                            with open(rgb_dir + "/time_stamp.json", "w", encoding="utf-8") as f:
+                                json.dump(stamp, f, indent=4)
 
                     single_frame_state = {
                         "objects": {},
@@ -1090,10 +1247,11 @@ class RosExtrater:
                         "robot": {},
                     }
                     skip_frame = False
+                    ts_rounded = round(ts, 4)
                     for key in joint_topics:
                         if key == "/joint_states":
                             msg = reader.deserialize(
-                                joint_topics[key][ts], "sensor_msgs/msg/JointState"
+                                joint_topics[key][ts_rounded], "sensor_msgs/msg/JointState"
                             )
                             joint_timestamp = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
@@ -1109,7 +1267,7 @@ class RosExtrater:
                             }
                         elif key == "/articulation_action":
                             msg = reader.deserialize(
-                                joint_topics[key][ts], "sensor_msgs/msg/JointState"
+                                joint_topics[key][ts_rounded], "sensor_msgs/msg/JointState"
                             )
                             joint_timestamp = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
@@ -1125,7 +1283,7 @@ class RosExtrater:
                             }
                         else:
                             msg = reader.deserialize(
-                                joint_topics[key][ts], "sensor_msgs/msg/JointState"
+                                joint_topics[key][ts_rounded], "sensor_msgs/msg/JointState"
                             )
                             joint_timestamp = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
@@ -1149,6 +1307,8 @@ class RosExtrater:
                     if len(self.frame_status) > 0:
                         if joint_timestamp < self.frame_status[0]["time_stamp"]:
                             value = self.frame_status[0]["frame_state"]
+                        elif joint_timestamp >= self.frame_status[-1]["time_stamp"]:
+                            value = self.frame_status[-1]["frame_state"]
                         else:
                             while joint_timestamp < self.frame_status[frame_idx]["time_stamp"]:
                                 frame_idx -= 1
@@ -1158,18 +1318,19 @@ class RosExtrater:
                     single_frame_state["robot"]["joints_action"] = single_joint_action_info
                     single_ee_info_r = {
                         "time_stamp": 0,
-                        "position": [0, 0, 0],
-                        "rotation": [1, 0, 0, 0],
+                        "position": np.zeros(3),
+                        "rotation": np.array([1.0, 0.0, 0.0, 0.0]),
                     }
                     single_ee_info_l = {
                         "time_stamp": 0,
-                        "position": [0, 0, 0],
-                        "rotation": [1, 0, 0, 0],
+                        "position": np.zeros(3),
+                        "rotation": np.array([1.0, 0.0, 0.0, 0.0]),
                     }
                     camera_poses = {}
                     point_cloud_cameras = []
+                    ts_rounded = round(ts, 4)
                     for key in tf_topics:
-                        msg = reader.deserialize(tf_topics[key][ts], "tf2_msgs/msg/TFMessage")
+                        msg = reader.deserialize(tf_topics[key][ts_rounded], "tf2_msgs/msg/TFMessage")
                         for transform in msg.transforms:
                             position = np.array(
                                 [
@@ -1235,8 +1396,8 @@ class RosExtrater:
                                         )
                                     }
                                 elif (
-                                    "Camera" in transform.child_frame_id
-                                    or "Fisheye" in transform.child_frame_id
+                                    "camera" in transform.child_frame_id.lower()
+                                    or "fisheye" in transform.child_frame_id.lower()
                                 ):
                                     rotation_x_180 = np.array(
                                         [
@@ -1275,7 +1436,7 @@ class RosExtrater:
                                     single_frame_state["robot"]["pose"] = pose2mat(
                                         (position, quat_wxyz_to_xyzw(rotation))
                                     ).tolist()
-                                elif self.arm_base_prim_path in transform.child_frame_id:
+                                elif self.arm_base_prim_name in transform.child_frame_id:
                                     single_frame_state["robot"]["arm_base_pose"] = pose2mat(
                                         (position, quat_wxyz_to_xyzw(rotation))
                                     ).tolist()
@@ -1380,6 +1541,14 @@ class RosExtrater:
                     robot_info["position_drift"].append([0, 0, 0])
                     robot_info["velocity"].append(0.0)
 
+                _drop_playback_boundary_artifacts(
+                    result["frames"],
+                    state_info["timestamp"],
+                    episode_state,
+                    robot_info,
+                    self.playback_timerange,
+                )
+
                 state_info["state"] = {
                     "joint": episode_state["joint"],
                     "end": episode_state["end"],
@@ -1400,6 +1569,34 @@ class RosExtrater:
                     "velocity": robot_info["velocity"],
                     "orientation": robot_info["orientation"],
                 }
+
+                # Layer A derives G2/G1 geometry in raw H5 for the converter.
+                # Older recordings use h5_post_process as a fallback. Skip
+                # incomplete derived values after any calculation error.
+                if "ARX" not in self.robot_name and "Aloha" not in self.robot_name:
+                    try:
+                        if "G2_crsB" in self.robot_name:
+                            _urdf = os.path.join(project_root, "config", "robot_cfg", "G2", "G2_crsB_90D_from_usd.urdf")
+                        elif "G2" in self.robot_name:
+                            _urdf = os.path.join(project_root, "config", "robot_cfg", "G2", "G2_omnipicker_from_usd.urdf")
+                        else:
+                            _urdf = None  # Preserve G1's historical identity refpose.
+                        _frames = result["frames"]
+                        _robot_pose = [fr["robot"]["pose"] for fr in _frames]
+                        _eec_l = [fr["ee_center"]["left"]["pose"] for fr in _frames]
+                        _eec_r = [fr["ee_center"]["right"]["pose"] for fr in _frames]
+                        _act_joints = state_info["action"]["joint"]["position"]
+                        _eff_pos, _eff_ori, _refpose = compute_raw_derive_arrays(
+                            _robot_pose, _eec_l, _eec_r, _act_joints, attr_names["joint"], _urdf
+                        )
+                        # Separate shared state/end and action/end dictionaries
+                        # before writing effector and reference-pose fields.
+                        state_info["action"]["end"] = dict(state_info["action"]["end"])
+                        state_info["state"]["end"]["effector_position"] = _eff_pos
+                        state_info["state"]["end"]["effector_orientation"] = _eff_ori
+                        state_info["action"]["end"]["refpose_orientation"] = _refpose
+                    except Exception as e:
+                        logger.warning("raw derive fields skipped (chunk %s): %s", chunk_index, e)
 
                 with h5py.File(
                     self.output_dir + f"/aligned_joints_all_{chunk_index}.h5", "w"
@@ -1498,8 +1695,9 @@ class RosExtrater:
                     except OSError as e:
                         logger.error(f"Delete file failed: {file}: {e}")
 
-            delete_db3_files(self.output_dir)
-            delete_mcap_files(self.output_dir)
+            # if self.with_img:
+            #     delete_db3_files(self.output_dir)
+            #     delete_mcap_files(self.output_dir)
             merge_camera(self.output_dir)
             check_camera(self.output_dir)
             merge_state_json(self.output_dir)
@@ -1518,6 +1716,7 @@ class RosExtrater:
                             subprocess.run(
                                 [
                                     "ffmpeg",
+                                    "-y",
                                     "-framerate",
                                     "30",
                                     "-i",
@@ -1525,44 +1724,60 @@ class RosExtrater:
                                     "-c:v",
                                     "png",
                                     "-pix_fmt",
-                                    "rgb24",
+                                    "gray16le",
                                     "-r",
                                     "30",
+                                    "-movflags",
+                                    "+faststart",
                                     f"{self.output_dir}/observations/videos/{image_file}.mp4",
                                 ],
+                                check=True,
+                                capture_output=True,
                             )
                         else:
                             # Use compressed encoding for RGB videos
                             subprocess.run(
                                 [
                                     "ffmpeg",
-                                    "-framerate",
+                                    "-y",
+                                    "-f",
+                                    "image2",
+                                    "-threads",
+                                    "4",
+                                    "-r",
                                     "30",
                                     "-i",
                                     f"{self.output_dir}/camera/%d/{image_file}.{camera_type}",
-                                    "-c:v",
-                                    "libx264",
-                                    "-preset",
-                                    "medium",
-                                    "-crf",
-                                    "18",
-                                    "-g",
-                                    "30",
-                                    "-r",
-                                    "30",
+                                    "-vcodec",
+                                    "libx265",
                                     "-pix_fmt",
                                     "yuv420p",
-                                    "-movflags",
-                                    "+faststart",
+                                    "-keyint_min",
+                                    "8",
+                                    "-sc_threshold",
+                                    "0",
+                                    "-vf",
+                                    "setpts=N/(30*TB)",
+                                    "-bf",
+                                    "0",
+                                    "-crf",
+                                    "24",
+                                    "-g",
+                                    "8",
                                     f"{self.output_dir}/observations/videos/{image_file}.mp4",
                                 ],
+                                check=True,
+                                capture_output=True,
                             )
                     logger.info(f"Video file saved to {self.output_dir}")
-                    subprocess.run(["rm", "-Rf", f"{self.output_dir}/{file_name}.db3"])
+                    # subprocess.run(["rm", "-Rf", f"{self.output_dir}/{file_name}.db3"])
                     logger.info("Successfully transfer h264")
                 except subprocess.CalledProcessError as e:
                     logger.error(f"Error removing file: {e}")
                     sys.exit(1)
+                
+                #remove camera directory
+                shutil.rmtree(os.path.join(self.output_dir, "camera"))
 
 
 if __name__ == "__main__":

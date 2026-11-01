@@ -1,330 +1,348 @@
 # Data Collection
 
-A data collection system for robotic simulation tasks using Isaac Sim and cuRobo.
+Collect robot task episodes and replay recorded trajectories with the module's
+Docker image, based on Isaac Sim 5.1 and cuRobo v2. Robot and object assets are
+provided separately. Supported robot families include G1, G2, ARX, and Aloha.
 
-## Table of Contents
+There are two task workflows:
 
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-  - [cuRobo Dependency and License](#curobo-dependency-and-license)
-  - [Option 1: Docker Container (Recommended)](#option-1-docker-container-recommended)
-    - [Building the Docker Image](#building-the-docker-image)
-    - [One-Click Data Collection (Recommended)](#one-click-data-collection-recommended)
-    - [Interactive Mode](#interactive-mode)
-  - [Option 2: Local Deployment](#option-2-local-deployment)
-- [Usage Examples](#usage-examples)
-  - [Docker - Automated Data Collection](#docker-automated-data-collection)
-  - [Docker - Interactive Development](#docker-interactive-development)
-  - [Local - Full Control](#local-full-control)
-- [Task Configuration Guide](#task-configuration-guide)
+| Task type | How to create it | How to run it |
+| --- | --- | --- |
+| **LLM task** | Use [scene-agent](../geniesim_scene_agent/README.md) to prepare scenes and author `data_gen.py`. | `geniesim data-collection run <TASK>` |
+| **JSON task** | Write a declarative template using the [Task Configuration Guide](TASK_CONFIG_GUIDE.md). | `geniesim data-collection run --task-json <JSON_OR_TEMPLATE>` |
 
-## Prerequisites
+An LLM task's `task_info.json` is metadata for its Python task code; it is not
+the declarative JSON task format.
 
-- Docker (for containerized deployment)
-- NVIDIA GPU with CUDA support (40 series GPU recommended, for 50 series GPU (SM_120) may not be able to install cuRobo)
-- Python 3.11
-- Conda (for local deployment)
+## Contents
 
-## Getting Started
+- [Requirements](#requirements)
+- [Docker installation](#docker-installation)
+- [Collect data](#collect-data)
+- [Outputs and logs](#outputs-and-logs)
+- [Replay recordings](#replay-recordings)
+- [Configuration](#configuration)
+- [Advanced Docker usage](#advanced-docker-usage)
+- [License and third-party notices](#license-and-third-party-notices)
 
-**Note:** Before running, `geniesim_assets` must be pip-installed (editable) on the host. The CLI discovers it (`find_spec`, like `geniesim docker`), bind-mounts it to `/geniesim_assets`, and the entrypoint editable-installs it:
+## Requirements
+
+- An NVIDIA GPU and compatible driver, Docker, and NVIDIA Container Toolkit.
+- A checkout containing this module and the shared `docker/` build resources.
+- An external asset bundle containing `robot/`, `objects/`, and the asset index
+  required by the chosen tasks.
+- The main repository's `geniesim` host CLI for the commands below; see the
+  [CLI guide](../geniesim_cli/README.md). It manages Docker and locates resources.
+
+The image supplies Isaac Sim, Python 3.11, cuRobo, ROS recording tools, and replay
+dependencies. The default build targets GPU architecture `8.9`; adjust
+`TORCH_CUDA_ARCH_LIST` for another GPU and check compatibility with the pinned
+cuRobo revision.
+
+All host commands below run from the **main repository root**, unless a block
+explicitly changes directory.
+
+## Docker installation
+
+### Configure assets and tasks
+
 ```bash
-pip install -e /path/to/geniesim_assets
+export GENIESIM_ASSETS_PATH=/path/to/assets
+geniesim data-collection config
 ```
 
-### cuRobo Dependency and License
-
-cuRobo is not vendored in this repository, and AgiBot does not publish a
-prebuilt data-collection image containing it. When a user builds the Docker
-image, the Dockerfile fetches cuRobo `v0.7.6` directly from the official
-[NVIDIA cuRobo repository](https://github.com/NVlabs/curobo). Local deployments
-must use the same version because the data-collection runtime depends on the
-cuRobo 0.7.x API.
-
-cuRobo `v0.7.6` and the resulting local installation are not covered by this
-repository's MPL-2.0 license. They remain governed by the
-[NVIDIA cuRobo license](../../THIRD_PARTY_LICENSES/LICENSE.CUROBO), which limits
-use to non-commercial research or evaluation. Building the image locally does
-not change those terms.
-
-### Option 1: Docker Container (Recommended)
-
-#### Building the Docker Image
-
-Recommended — via the CLI (wraps the build with the right context and tag):
+The task library defaults to the sibling
+`source/geniesim_scene_agent/examples/tasks/`. To use another library:
 
 ```bash
-geniesim autocollect build
+export GENIESIM_LLM_TASK_ROOT=/path/to/task-library
 ```
 
-Or directly — assuming the benchmark base image `registry.agibot.com/genie-sim/geniesim3:latest` is built:
+Each LLM task contains `data_gen.py`, `task_info.json`, and scene directories
+with `scene.usda` and `scene_info.json`. See the
+[example library](../geniesim_scene_agent/examples/README.md).
+
+### Build the image
 
 ```bash
-docker build -f ./dockerfile -t registry.agibot.com/genie-sim/geniesim3-data-collection:latest .
+geniesim data-collection build
 ```
 
-Both commands build the image locally. The image name above is a local tag; the
-project does not publish a prebuilt data-collection image.
+The default image is
+`registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
+Use `DATA_COLLECTION_IMAGE` or the CLI's `--image TAG` option to select another
+image. The default container name is `geniesim4-data-collection`.
 
-**Note:**  For cuRobo installation, the Dockerfile is configured for RTX 4090D by default. If you're using a different GPU model, you need to modify the `TORCH_CUDA_ARCH_LIST` environment variable in the Dockerfile, 50 series GPU (SM_120) may not be able to install cuRobo, this needs a compatibility update by the cuRobo team.
-
-#### One-Click Data Collection (Recommended)
-
-The recommended entry point is the **`geniesim autocollect`** CLI (ships with `geniesim_cli`; see the repo [README](../../README.md) § 3.8). It auto-discovers the editable-installed `geniesim_assets`, resolves the task by name, and wraps the host orchestrator below:
+Build using shared mirror presets or custom download sources:
 
 ```bash
-geniesim autocollect list --robot=g2 <substr>            # discover tasks
-geniesim autocollect run <TASK> --headless --standalone  # collect (add --dry-run to preview)
+geniesim data-collection build --china
+geniesim data-collection build --mirrors upstream --dry-run
+# Set these variables to your own repository URLs before running:
+geniesim data-collection build --china \
+  --build-arg APT_MIRROR="$APT_MIRROR" \
+  --build-arg PIP_INDEX_URL="$PIP_INDEX_URL"
 ```
 
-Or call the underlying script directly:
+`--china` is an alias for `--mirrors china`. Presets come from the checkout's
+[`docker/mirrors.toml`](../../docker/mirrors.toml). Explicit build arguments
+win over the preset. Without a preset, omitted or empty APT/pip values inherit
+the parent image's settings. The image saves its selected APT repositories and
+pip configuration for subsequent installs; source and SDK version pins remain
+unchanged. See [build options](#build-options) for direct Docker builds.
 
-**Usage:**
+## Collect data
+
+### LLM tasks
+
+To create a new LLM task, use
+[scene-agent](../geniesim_scene_agent/README.md#automatic-collection-task-orchestration)
+for scene preparation and task orchestration. It produces the `data_gen.py`,
+`task_info.json`, `scene.usda`, and `scene_info.json` files consumed here.
+See the [task-orchestration skill](../geniesim_scene_agent/skills/geniesim-task-orchestration/SKILL.md)
+for the authoring workflow. Existing task libraries can be executed directly
+with this collection image.
+
+List tasks and inspect a task's available scene IDs:
 
 ```bash
-./scripts/run_data_collection.sh [OPTIONS]
+geniesim data-collection llm list --robot g2
+geniesim data-collection llm show place_long_block_across_two_supports_g2
 ```
 
-**Options:**
-- `--headless` - Run in headless mode (default: false)
-- `--no-record` - Disable recording (default: record enabled)
-- `--task TASK_PATH` - Task template path (e.g. `tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json`)
-- `--standalone` - Run in standalone mode (only save logs, no terminal output) (default: false)
-- `--container-name NAME` - Container name (default: `data_collection_open_source`)
-- `--help, -h` - Show help message
-
-**Assets:**
-- `geniesim_assets` must be pip-installed (editable) on the host. The CLI auto-discovers it and mounts it at `/geniesim_assets` — no manual `SIM_ASSETS` export needed.
-
-**Examples:**
+Collect one episode, including camera rendering:
 
 ```bash
-# Run with default task in GUI mode
-./scripts/run_data_collection.sh
-
-# Run in headless mode with custom task
-./scripts/run_data_collection.sh --headless --task tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json
-
-# Run in standalone headless mode (logs only, no terminal output)
-./scripts/run_data_collection.sh --standalone --headless
-
-# Run without recording
-./scripts/run_data_collection.sh --no-record
+geniesim data-collection run place_long_block_across_two_supports_g2 \
+  --scene 2026121696_166a0404 --render
 ```
 
-**Logs:**
-Logs are saved to `logs/{TASK_NAME}/` directory:
-- `run_data_collection_sh.log` - Script output
-- `container.log` - Container logs
-- `data_collector_server.log` - Data collector server logs (if available)
-- `run_data_collection.log` - data collection application logs (if available)
+The host CLI starts the collection server and client inside the Docker image.
+It copies the task into the run directory and mounts that copy at `/run/tasks`;
+assets are mounted read-only at `/sim_assets`.
 
-**Outputs:**
-Outputs are save to `recording_data/[{TASK_NAME}_{INDEX}]/` directory
-#### Interactive Mode
+| Option | Behavior |
+| --- | --- |
+| `--scene ID` | Choose a fixed scene; default `random` samples a scene for each episode. |
+| `--run-times N` | Collect N episodes serially; default 1. See the limits below. |
+| `--render` | Enable collection camera rendering. |
+| `--no-record` | Execute without saving an episode. Recording is enabled by default. |
+| `--no-headless` | Show the GUI. Execution is headless by default. |
+| `--task-root PATH`, `--assets-root PATH` | Override resource roots for this command. |
+| `--output-dir PATH` | Select a new run directory. |
+| `--image TAG`, `--container-name NAME` | Override the Docker image or container name. |
+| `--dry-run` | Print the command without creating a run or starting Docker. |
 
-Via the CLI: **`geniesim autocollect up`** creates/starts the GUI container and **`geniesim autocollect into`** drops you into a shell in it (wrapping the script below).
+**Single-run limits:** tasks with deformable objects or USD-attached behavior
+scripts require `--run-times 1`. Start a new CLI run for another episode.
+The CLI and container entrypoints reject multiple runs when task/scene metadata
+sets `enable_deformable: true`; random scene selection checks all candidates.
+USD-attached behavior scripts are not automatically inspected by the host CLI,
+so check those assets before requesting multiple runs. These limits also apply
+to LLM jobs launched through `--task-json`.
 
-Or use `scripts/start_gui.sh` directly to launch an interactive container for debugging or development.
+### JSON tasks
 
-**Usage:**
+JSON tasks describe scene generation and action stages in a declarative
+configuration. Create or adapt a template using the
+[Task Configuration Guide](TASK_CONFIG_GUIDE.md), then run it with the explicit
+JSON selector:
 
 ```bash
-./scripts/start_gui.sh [ACTION] [CONTAINER_NAME]
+geniesim data-collection run --task-json sort_the_fruit_into_the_box_apple_g2 \
+  --headless --standalone
 ```
 
-**Actions:**
-- `run` (default) - Create and run a new container
-- `exec` - Enter an existing container
-- `start` - Start a stopped container
-- `restart` - Restart a container
+The guide documents task fields, robot and scene settings, action stages,
+and complete examples. JSON tasks use the configured template rather than
+an LLM task's `data_gen.py`.
 
-**Parameters:**
-- `ACTION` - One of: `exec`, `start`, `restart`, `run` (default: `run`)
-- `CONTAINER_NAME` - Container name (default: `data_collection_open_source`)
+The JSON and interactive launchers mount the task library read/write at
+`/llm_tasks` because they update scene USD references. Use a working copy when
+those source files must be preserved.
 
-**Examples:**
+## Outputs and logs
 
-```bash
-# Create and run a new container (default)
-./scripts/start_gui.sh run my_container
+Default LLM collection runs are saved under the **data_collection module**:
 
-# Enter an existing container
-./scripts/start_gui.sh exec my_container
-
-# Start a stopped container
-./scripts/start_gui.sh start my_container
-
-# Restart a container
-./scripts/start_gui.sh restart my_container
+```text
+source/data_collection/recording_data/llm/<task>/<run>/
+├── tasks/                  # Isolated task copy
+├── episodes/               # Recorded episodes
+├── report/                 # Server/client logs and per-episode results
+├── run.log
+├── run_manifest.json
+└── run_result.json
 ```
 
-**Running Services Inside Container:**
+`--output-dir` selects a different run directory. Check `run_result.json` and the
+per-episode results to determine success. Camera videos require `--render`.
+Each episode also saves `report/server_config_<N>.json`, recording the metadata
+source, resolved server settings, and command, including startup failures.
 
-After entering the container using `exec`, you need to start two services in separate terminals:
+JSON tasks write episodes under `source/data_collection/recording_data/` and
+launcher logs under `source/data_collection/logs/`.
+The direct launcher retains its script, container, server, and client logs in
+the reported task log directory.
 
-**Terminal 1 - Start the container and run data collector server:**
+## Replay recordings
+
+Replay the latest successful recorded CLI episode for a task, or supply an
+explicit episode directory:
 
 ```bash
-# Enter the container
-./scripts/start_gui.sh exec my_container
-
-# Inside container, start data collector server
-python scripts/data_collector_server.py --enable_physics --enable_curobo --publish_ros
+geniesim data-collection replay place_long_block_across_two_supports_g2
+geniesim data-collection replay /path/to/episode --no-fuzz --depth ALL
 ```
 
-**Terminal 2 - Enter the same container and run data collection application:**
+The CLI copies the input before replay and runs the Docker image. Default preset
+`data_collection` uses three environments and one round. Use `--preset teleop`
+for teleoperation data, `--config FILE` for custom JSON, or
+`--max-concurrent-envs N` and `--num-rounds N` to change replay coverage.
+`--render-hz` defaults to 30 and controls simulation advance; timestamps come from
+the original recording. `--no-fuzz` disables appearance randomization.
+
+Replay runs are saved under
+`source/data_collection/recording_data/replay_runs/<episode>/<run>/`.
+Rendered episodes are in `output/`; `output_check.json` reports conversion,
+HDF5, and video checks. An image/container override and `--dry-run` are available
+as for collection.
+
+For direct Docker use, mount an **episode working copy** and an output directory
+writable by UID 1234:
 
 ```bash
-# Enter the same container (in a new terminal)
-./scripts/start_gui.sh exec my_container
-
-# Inside container, run data collection application
-python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json --use_recording
+docker run --rm --name geniesim4-data-collection --gpus all \
+  -e ACCEPT_EULA=Y -e SIM_ASSETS=/sim_assets \
+  -v /path/to/assets:/sim_assets:ro \
+  -v /path/to/episode-copy:/input:rw \
+  -v /path/to/replay-output:/output:rw \
+  registry.agibot.com/genie-sim/geniesim4-data-collection:latest \
+  /isaac-sim/python.sh -m replay --input_dir /input --recording_root /output
 ```
 
-**Note:** Both terminals need to `exec` into the same container. Make sure the container is running before executing these commands.
+The [Replay guide](replay/README.md) documents required input files, direct
+container arguments, presets, HDR assets, output formats, and completion checks.
+Host CLI options such as `--depth` and `--no-fuzz` are converted into a replay
+configuration; the direct `python -m replay` entry uses that JSON configuration.
 
-### Option 2: Local Deployment
+## Configuration
 
-#### 1. Create Conda Environment
+### Resource roots
+
+| Setting | Purpose |
+| --- | --- |
+| `GENIESIM_ASSETS_PATH` | Asset bundle; legacy `SIM_ASSETS` is also supported. |
+| `GENIESIM_LLM_TASK_ROOT` | External task library; legacy `LLM_TASK_ROOT` is also supported. |
+| `DATA_COLLECTION_IMAGE` | Collection/replay Docker image. |
+| `GENIESIM_DATA_COLLECTION_CONFIG` | Alternative saved-settings file. |
+
+Explicit environment roots take precedence over saved settings in
+`~/.config/geniesim/data-collection.json`. Without configured roots, discovery
+checks installed packages, sibling scene-agent examples, and nearby resource
+layouts. `geniesim data-collection config` shows effective paths.
+
+### LLM task server settings
+
+The selected scene's `task_info.json` is used when present; otherwise collection
+uses the task-level file. A scene-specific file must contain the required task
+and robot metadata as well as any server settings.
+
+| Task metadata field | Server argument | Default |
+| --- | --- | --- |
+| `backend` | `--backend` | `cpu` |
+| `physics_frequency` | `--physics_step` | `60` Hz |
+| `enable_deformable` | `--enable_deformable` when true | `false` |
+| `curobo_batch_size` | `--curobo_batch_size` | `10` |
+
+Recording frequency is configured separately by `recording_setting.fps`.
+For example, `fold_double_layer_t_shirt_g2` selects GPU physics, 360 Hz stepping,
+and deformable support through its metadata. Run it with `--run-times 1`.
+Robot definitions and planner configurations are in `config/robot_cfg/` and
+`config/curobo/v2/` relative to this module. For JSON task settings, use the
+[Task Configuration Guide](TASK_CONFIG_GUIDE.md).
+
+## Advanced Docker usage
+
+### Interactive container
 
 ```bash
-conda create -n data_collect python=3.11
-conda activate data_collect
+geniesim data-collection up
 ```
 
-#### 2. Install Dependencies
+`up` creates and enters the container. From another host terminal,
+`geniesim data-collection into` opens a second shell;
+`geniesim data-collection down` stops and removes the container when finished.
+Use a distinct `--container-name NAME` when needed. Inside the container, run
+application commands with `/isaac-sim/python.sh` or `omni_python`.
+
+Alternatively, `scripts/start_gui.sh run` starts an interactive container from
+the module directory. To launch a JSON job directly instead:
 
 ```bash
-pip install -r requirements.txt
-pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
-```
-
-#### 3. Install cuRobo
-
-Clone cuRobo `v0.7.6` from the official repository and install:
-
-```bash
-# Set CUROBO_DIR to the desired cuRobo installation directory
-export CUROBO_DIR=/path/to/curobo
-git clone --branch v0.7.6 --depth 1 \
-  https://github.com/NVlabs/curobo.git "${CUROBO_DIR}"
-
-# Copy robot assets and configs
-cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot ${CUROBO_DIR}/src/curobo/content/assets
-cp -r config/curobo/configs ${CUROBO_DIR}/src/curobo/content/
-
-# Install cuRobo
-cd ${CUROBO_DIR} && pip install -e ".[isaacsim]" --no-build-isolation
-```
-
-**Note:** Make sure to set `TORCH_CUDA_ARCH_LIST` according to your GPU architecture before installing cuRobo. For RTX 4090D, use:
-```bash
-export TORCH_CUDA_ARCH_LIST="8.9"
-```
-
-#### 4. Setup ROS2
-Install ROS2 on your local, who should be located in either `/opt/ros/humble/` or `/opt/ros/jazzy/`.
-Then set environment variables, which can also be insert to your ~/.bashrc:
-```bash
-export ROS_DISTRO=jazzy # or humble
-export ROS_CMD_DISTRO=${ROS_DISTRO}
-export CONDA_SITE_PACKAGES=YOUR_CONDA_ENV_SITE_PACKAGES_PATH # e.g. ~/anaconda3/envs/data_collect/lib/python3.11/site-packages/
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_SITE_PACKAGES}/isaacsim/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib
-export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-```
-#### 5. Start the Services
-
-You need to run two services in separate terminals:
-
-**Terminal 1 - Data Collector Server:**
-
-```bash
-python scripts/data_collector_server.py [OPTIONS]
-```
-
-**Options for `data_collector_server.py`:**
-- `--headless` - Run in headless mode
-- `--enable_physics` - Enable physics simulation
-- `--enable_curobo` - Enable cuRobo motion planning
-- `--publish_ros` - Publish ROS messages, MUST be set if recording is needed
-
-**Terminal 2 - Data Collection Application:**
-
-```bash
-python scripts/run_data_collection.py [OPTIONS]
-```
-
-**Options for `run_data_collection.py`:**
-- `--use_recording` - Use recording mode, MUST be set if recording is needed
-- `--task_template` - Task template JSON file path
-
-**Example:**
-
-```bash
-# Terminal 1
-python scripts/data_collector_server.py --enable_physics --enable_curobo --publish_ros
-
-# Terminal 2
-python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json --use_recording
-```
-
-## Usage Examples
-
-### Docker - Automated Data Collection
-
-```bash
-# Install geniesim_assets (editable, once on the host)
-pip install -e /path/to/geniesim_assets
-
-# Run data collection with custom task
+cd source/data_collection
 ./scripts/run_data_collection.sh \
-  --headless \
-  --task tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json
+  --task tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
+  --headless --standalone
 ```
 
-### Docker - Interactive Development
+Use different container names or stop an existing container before starting a
+launcher with the same name.
+
+### LLM jobs through the JSON launcher
+
+For integrations that already supply job JSON, `--task-json` also accepts an
+LLM job wrapper with `mode: "llm"`, `task_name`, `scene_dir`, and `run_times`.
+It still executes the existing LLM task's `data_gen.py`; the wrapper is a job
+selector, not a declarative JSON task template. Use a working task-library copy
+because this launcher mounts it read/write at `/llm_tasks`.
+
+### Build options
+
+An equivalent direct build from the module directory is:
 
 ```bash
-# Install geniesim_assets (editable, once on the host)
-pip install -e /path/to/geniesim_assets
-
-# Start interactive container
-./scripts/start_gui.sh run my_container
-
-# Terminal 1: Enter container and start data collector server
-./scripts/start_gui.sh exec my_container
-# Inside container:
-python scripts/data_collector_server.py --enable_physics --enable_curobo --publish_ros
-
-# Terminal 2: Enter the same container and run data collection application
-./scripts/start_gui.sh exec my_container
-# Inside container:
-python scripts/run_data_collection.py --task_template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json --use_recording
+cd source/data_collection
+docker build -f docker/Dockerfile \
+  --build-context geniesim_mirrors=../../docker \
+  -t registry.agibot.com/genie-sim/geniesim4-data-collection:latest .
 ```
 
-### Local - Full Control
+The named context supplies the shared mirror helper. Keep that directory with
+this module when exporting sources. Direct Docker builds accept mirror URLs
+through `--build-arg`; preset flags `--china` and `--mirrors` belong to `geniesim`.
+Keep external asset/task libraries outside the module's build context.
 
-```bash
-# Terminal 1: Start server with physics and cuRobo
-python scripts/data_collector_server.py --enable_physics --enable_curobo --publish_ros
+<details>
+<summary>Docker build arguments and runtime layout</summary>
 
-# Terminal 2: Run data collection
-python scripts/run_data_collection.py \
-  --task_template tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json \
-  --use_recording
-```
+| Build argument | Default | Purpose |
+| --- | --- | --- |
+| `ISAAC_SIM_BASE_IMAGE` | `nvcr.io/nvidia/isaac-sim:5.1.0` | Compatible parent image. |
+| `ISAACSIM_REGISTRY` | `nvcr.io/nvidia` | Parent registry; explicit base-image override takes precedence. |
+| `APT_MIRROR`, `PIP_INDEX_URL` | Inherit parent | Persistent APT/pip download sources. |
+| `TORCH_CUDA_ARCH_LIST` | `8.9` | GPU architecture for extension builds. |
+| `CUROBO_REPO` | `https://github.com/NVlabs/curobo.git` | cuRobo source repository. |
+| `CUROBO_COMMIT` | `3fd54dc782a82e5500a771cfd47856ea499d5fef` | Pinned cuRobo v2 revision. |
+| `GIT_COMMIT_SHA`, `GIT_COMMIT_DATE`, `GIT_BRANCH` | `unknown` | Optional source metadata stored in the image. |
 
-## Task Configuration Guide
+The image installs ROS 2 Jazzy recording tools and the CUDA 12.8 compiler.
+Isaac Sim uses Python 3.11 and its bundled ROS bridge; system ROS uses Python
+3.12 for recording subprocesses. The launcher separates their environments.
+The build copies and validates seven cuRobo v2 planner configurations and their
+URDFs. Recording conversion uses the repository URDFs for forward kinematics.
 
-To create and configure data collection tasks, refer to the [Task Configuration Guide](TASK_CONFIG_GUIDE.md). This comprehensive guide covers:
+</details>
 
-- Creating task configuration files from scratch
-- Configuring scenes, robots, and objects
-- Setting up task stages (pick, place, insert, rotate, reset)
-- Configuring runtime checkers and data filter rules
-- Understanding action parameters and workspace types
-- Complete examples and best practices
+## License and third-party notices
 
-The guide provides detailed explanations and examples for all configuration options, making it easy to create custom tasks for your data collection needs.
+Original AgiBot code is provided under the [Mozilla Public License 2.0](LICENSE).
+Third-party components and robot assets retain their own licenses and notices;
+see [third-party licenses](THIRD_PARTY_LICENSES/).
+`server/controllers/parallel_gripper.py` follows NVIDIA's Apache-2.0 release;
+`server/ui_builder.py` follows AgiBot's published MPL-2.0 version.
+
+The Docker build fetches cuRobo v2 from
+[NVIDIA's repository](https://github.com/NVlabs/curobo) at commit
+`3fd54dc782a82e5500a771cfd47856ea499d5fef`, under the retained
+[Apache-2.0 license](THIRD_PARTY_LICENSES/LICENSE.CUROBO-V2).

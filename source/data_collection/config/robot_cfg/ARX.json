@@ -1,0 +1,139 @@
+{
+    "robot": {
+        "robot_name": "ARX",
+        "base_prim_path": "/ARX",
+        "arm_base_prim_path": "/ARX/base_link",
+        "arm": "dual",
+        "urdf_name": "/ARX/ARX.urdf",
+        "robot_description": {
+            "right": "/ARX/arx_right.yaml",
+            "left": "/ARX/arx_left.yaml"
+        },
+        "robot_usd": "robot/arx/robot.usda",
+        "initial_position": [],
+        "dof_nums": 6,
+        "joint_delta_time": 0.01,
+        "lock_joints": [
+            "gripper_l_active_joint",
+            "gripper_r_active_joint"
+        ],
+        "active_arm_joints": {
+            "left": [
+                "arm_l_joint1",
+                "arm_l_joint2",
+                "arm_l_joint3",
+                "arm_l_joint4",
+                "arm_l_joint5",
+                "arm_l_joint6"
+            ],
+            "right": [
+                "arm_r_joint1",
+                "arm_r_joint2",
+                "arm_r_joint3",
+                "arm_r_joint4",
+                "arm_r_joint5",
+                "arm_r_joint6"
+            ]
+        },
+        "init_joint_position": [
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0
+        ]
+    },
+    "camera": {
+        "/ARX/base_link/head_camera": [
+            640,
+            480
+        ],
+        "/ARX/arm_l_end_link/hand_left_camera": [
+            640,
+            480
+        ],
+        "/ARX/arm_r_end_link/hand_right_camera": [
+            640,
+            480
+        ]
+    },
+    "gripper": {
+        "gripper_type": "linear",
+        "gripper_name": {
+            "left": "arx_gripper",
+            "right": "arx_gripper"
+        },
+        "max_force": 10,
+        "finger_names": {
+            "left": [
+                "gripper_l_active_joint",
+                "gripper_l_passive_joint"
+            ],
+            "right": [
+                "gripper_r_active_joint",
+                "gripper_r_passive_joint"
+            ]
+        },
+        "end_effector_name": {
+            "left": "gripper_l_center",
+            "right": "gripper_r_center"
+        },
+        "end_effector_prim_path": {
+            "left": "/ARX/arm_l_end_link",
+            "right": "/ARX/arm_r_end_link"
+        },
+        "end_effector_center_prim_path": {
+            "left": "/ARX/gripper_l_base_link/gripper_l_center",
+            "right": "/ARX/gripper_r_base_link/gripper_r_center"
+        },
+        "gripper_controll_joint": {
+            "left": "/ARX/joints/gripper_l_active_joint",
+            "right": "/ARX/joints/gripper_r_active_joint"
+        },
+        "opened_positions": {
+            "left": [
+                0.044,
+                0.044
+            ],
+            "right": [
+                0.044,
+                0.044
+            ]
+        },
+        "closed_velocities": {
+            "left": [
+                -1,
+                -1
+            ],
+            "right": [
+                -1,
+                -1
+            ]
+        }
+    },
+    "closed_positions": {
+        "left": [
+            0.0,
+            0.0
+        ],
+        "right": [
+            0.0,
+            0.0
+        ]
+    },
+    "curobo": {
+        "curobo_config_file": {
+            "right": "arx_dual.yml",
+            "left": "arx_dual.yml"
+        },
+        "curobo_urdf_path": "ARX",
+        "curobo_urdf_name": "ARX/ARX.urdf"
+    },
+    "recording_config": {
+        "camera_list": [
+            "/ARX/base_link/head_camera",
+            "/ARX/arm_l_end_link/hand_left_camera",
+            "/ARX/arm_r_end_link/hand_right_camera"
+        ],
+        "fps": 30,
+        "noised_probability": 0.0
+    }
+}

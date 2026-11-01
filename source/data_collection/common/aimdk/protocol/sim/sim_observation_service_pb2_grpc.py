@@ -104,6 +104,16 @@ class SimObservationServiceStub(object):
                 request_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusReq.SerializeToString,
                 response_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusRsp.FromString,
                 )
+        self.run_step = channel.unary_unary(
+                '/aimdk.protocol.SimObservationService/run_step',
+                request_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepReq.SerializeToString,
+                response_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepRsp.FromString,
+                )
+        self.command_any = channel.unary_unary(
+                '/aimdk.protocol.SimObservationService/command_any',
+                request_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyReq.SerializeToString,
+                response_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyRsp.FromString,
+                )
 
 
 class SimObservationServiceServicer(object):
@@ -217,6 +227,18 @@ class SimObservationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def run_step(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def command_any(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_SimObservationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -309,6 +331,16 @@ def add_SimObservationServiceServicer_to_server(servicer, server):
                     servicer.get_checker_status,
                     request_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusReq.FromString,
                     response_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusRsp.SerializeToString,
+            ),
+            'run_step': grpc.unary_unary_rpc_method_handler(
+                    servicer.run_step,
+                    request_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepReq.FromString,
+                    response_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepRsp.SerializeToString,
+            ),
+            'command_any': grpc.unary_unary_rpc_method_handler(
+                    servicer.command_any,
+                    request_deserializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyReq.FromString,
+                    response_serializer=aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyRsp.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -623,5 +655,39 @@ class SimObservationService(object):
         return grpc.experimental.unary_unary(request, target, '/aimdk.protocol.SimObservationService/get_checker_status',
             aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusReq.SerializeToString,
             aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.GetCheckerStatusRsp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def run_step(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/aimdk.protocol.SimObservationService/run_step',
+            aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepReq.SerializeToString,
+            aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.RunStepRsp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def command_any(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/aimdk.protocol.SimObservationService/command_any',
+            aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyReq.SerializeToString,
+            aimdk_dot_protocol_dot_sim_dot_sim__observation__service__pb2.CommandAnyRsp.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

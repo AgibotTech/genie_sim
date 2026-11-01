@@ -1,0 +1,65 @@
+exclude: ^.pre-commit-config.yaml
+repos:
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 25.12.0 # Use the latest Black version
+    hooks:
+      - id: black
+        exclude: .*_pb2.*\.py
+        args: [
+            "--diff",
+            "--line-length",
+            "120",
+            "--exclude",
+            "source/geniesim/benchmark/config/llm_task/",
+          ] # --check to Enforce check-only mode (no auto-formatting)
+        types: [python] # Target Python files
+
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
+    hooks:
+      - id: insert-license
+        files: ^.*\.py$
+        exclude: ^server/(ui_builder\.py|controller/parallel_gripper\.py|command_controller.py|robot/omni_robot.py|robot/client.py|robot/isaac_sim/aimdk/|app/workflow/|app/controllers/parallel_gripper\.py$)|.*ui_builder\.py$|.*parallel_gripper\.py$|.*_pb2.*\.py$
+        args:
+          - --license-filepath
+          - .github/LICENSE_HEADER.txt
+          - --use-current-year
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 # Use the ref you want to point at
+    hooks:
+      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-json
+      - id: check-xml
+      - id: check-yaml
+        exclude: .*\.(yaml|yml)$
+      - id: requirements-txt-fixer
+      - id: sort-simple-yaml
+        exclude: .*\.(yaml|yml)$
+      - id: pretty-format-json
+        args: [--autofix]
+        exclude: .*\.json$
+      - id: mixed-line-ending
+      - id: detect-private-key
+      - id: debug-statements
+        exclude: ^source/geniesim/generator/scene_language
+      - id: check-merge-conflict
+      - id: check-docstring-first
+        exclude: ^source/geniesim/(benchmark/config/llm_task/|generator/LLM_RESULT\.py$)
+      - id: check-byte-order-marker # Forbid UTF-8 byte-order markers
+      - id: end-of-file-fixer
+
+  # https://blogs.halodoc.io/code-version-best-practices-with-clean-commit-formats/
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.2.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+        args:
+          [
+            --allowed-prefixes,
+            "add,dev,chore,ci,perf,update,fix,feat,docs,refactor,revert,test,format",
+            --min-length=10,
+          ]

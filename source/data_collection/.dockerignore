@@ -1,0 +1,19 @@
+# Python caches and build artifacts.
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+build/
+dist/
+
+# Exclude collection and replay output from the image.
+recording_data*/
+tmp/
+logs/
+config/robot_cfg/**/*_tmp.yaml
+config/robot_cfg/**/*_tmp_rotated.yaml
+
+# Development metadata and local experiments are not runtime inputs.
+.git
+.github
+tests/
+.venv/

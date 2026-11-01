@@ -76,38 +76,36 @@ if __name__ == "__main__":
 
         # Example configuration
         config = {
-            "filter_rules": [
-                {
-                    "params": {
-                        "camera": "head",
-                        "downsample_ratio": 0.2,
-                        "gripper": "right",
-                        "out_view_allow_time": 0.2,
+                "filter_rules": [
+                    {
+                        "params": {
+                            "camera": "head",
+                            "downsample_ratio": 0.2,
+                            "gripper": "right",
+                            "out_view_allow_time": 0.2
+                        },
+                        "result_code": 4,
+                        "rule_name": "is_gripper_in_view"
                     },
-                    "result_code": 4,
-                    "rule_name": "is_gripper_in_view",
-                },
-                {
-                    "params": {
-                        "camera": "head",
-                        "downsample_ratio": 0.2,
-                        "gripper": "left",
-                        "out_view_allow_time": 0.1,
+                    {
+                        "params": {
+                            "camera": "head",
+                            "downsample_ratio": 0.2,
+                            "gripper": "left",
+                            "out_view_allow_time": 0.2
+                        },
+                        "result_code": 4,
+                        "rule_name": "is_gripper_in_view"
                     },
-                    "result_code": 4,
-                    "rule_name": "is_gripper_in_view",
-                },
-                {
-                    "params": {
-                        "objects": ["brain_benchmark_building_blocks_003"],
-                        "target": "brain_benchmark_building_blocks_000",
-                        "relative_position_range": [[-0.07, 0.07], [-0.07, 0.07], [-0.07, 0.07]],
-                    },
-                    "result_code": 1,
-                    "rule_name": "is_object_relative_position_in_target",
-                },
-            ]
-        }
+                    {
+                        "params": {
+                        },
+                        "result_code": 5,
+                        "rule_name": "is_crs_bound_valid_g2"
+                    }
+                ]
+            }
+        
 
         # Execute filtering
         data_valid, result_code, _ = filter_folder_data(target_folder, config)

@@ -403,13 +403,20 @@ Isaac Sim, cuRobo, or ROS dependencies to the lightweight CLI.
 
 `geniesim data-collection build` builds the complete image using
 `source/data_collection/docker/Dockerfile`, starting from official Isaac Sim 5.1.
-It accepts `--image=TAG`, `--dry-run`, and Docker build arguments, including
+It accepts `--image=TAG`, `--dry-run`, `--mirrors NAME` (or `--china`), and Docker build arguments, including
 `--build-arg ISAAC_SIM_BASE_IMAGE=IMAGE`. `DATA_COLLECTION_IMAGE` selects the
 application image; the default is
 `registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
 Default container name is `geniesim4-data-collection`; `--container-name`
 overrides it. Dependency installation and application copies share a single
 Dockerfile. Use this complete-image build path.
+
+The shared `_module_image.py` helper consumes mirror options using
+`docker/mirrors.toml`, filters presets to declared Dockerfile arguments, and
+forwards explicit build arguments with precedence over presets. BuildKit adds
+`geniesim_mirrors` as a named context without widening the module build context.
+Without a preset, mirror settings inherit the parent image. Dry runs need no
+Docker daemon and print the resolved build command.
 
 `data-collection run/up` resolve assets through the module's standard-library
 `scripts/resolve_assets.py`. Forward `_env.assets_path()` using the canonical

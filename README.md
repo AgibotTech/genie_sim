@@ -217,31 +217,30 @@ See [`source/geniesim_teleop/README.md`](source/geniesim_teleop/README.md) for t
 
 ```mermaid
 flowchart LR
-  build(["🔨 docker build +<br/>autocollect build"]) ==> list(["📋 autocollect list<br/>pick a task"]) ==> run(["📥 autocollect run<br/>cuRobo auto-planning"]) ==> ep(["💾 episodes<br/>recording_data/"])
+  build(["🔨 data-collection build"]) ==> list(["📋 data-collection llm list<br/>pick a task"]) ==> run(["📥 data-collection run<br/>cuRobo auto-planning"]) ==> ep(["💾 episodes<br/>recording_data/"])
   classDef step fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e,font-weight:bold
   class build,list,run,ep step
   linkStyle 0,1,2 stroke:#0369a1,stroke-width:2px
 ```
 
-The automated counterpart to teleoperation: pre-orchestrated tasks are collected unattended using cuRobo trajectory planning — no human in the loop. Install the `geniesim` client and assets first (see § 3.1).
+Collect automated tasks with cuRobo v2 trajectory planning in an independent Isaac Sim 5.1 image. The host CLI registers the module and locates external assets and task libraries; runtime dependencies are installed in the collection image.
 
 ```bash
-# 1. Build the GenieSim base image, then the data-collection image:
-geniesim docker build         # → registry.agibot.com/genie-sim/geniesim3:latest (base)
-geniesim autocollect build    # → registry.agibot.com/genie-sim/geniesim3-data-collection:latest
+# 1. Register the module and build its complete runtime image:
+geniesim data-collection install
+geniesim data-collection build    # optional: --china or --mirrors NAME
 
-# 2. Discover tasks, then collect one (headless, unattended):
-geniesim autocollect list --robot=g2 <substr>
-geniesim autocollect run <TASK> --headless --standalone
+# 2. Discover LLM tasks, then collect one:
+geniesim data-collection llm list --robot g2
+geniesim data-collection run <TASK> --scene <SCENE_ID> --run-times 1 --render
+
+# Declarative JSON jobs use a separate entry:
+geniesim data-collection run --task-json tasks/my_job.json --headless --standalone
 ```
 
-Or let your AI assistant drive the whole run — point it at the skill and it follows the workflow (resolve task → check prereqs → launch → monitor & verify):
+The image defaults to `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and builds directly from official Isaac Sim 5.1. Configure external assets with `GENIESIM_ASSETS_PATH` and task libraries with `GENIESIM_LLM_TASK_ROOT` or the install command's `--assets-root` / `--task-root` options.
 
-```bash
-cat source/data_collection/skills/run-data-collection/SKILL.md
-```
-
-Episodes land in `source/data_collection/recording_data/`. See [`source/data_collection/README.md`](source/data_collection/README.md) (and its [AGENTS.md](source/data_collection/AGENTS.md) / [skill](source/data_collection/skills/run-data-collection/SKILL.md)) for flags, task configs, and the two-process server/client layout.
+Episodes land in `source/data_collection/recording_data/`. See [the collection guide](source/data_collection/README.md), [task configuration](source/data_collection/TASK_CONFIG_GUIDE.md), and [replay](source/data_collection/replay/README.md) for the runtime and output contracts.
 
 ### 3.9 Agent2Act — LLM-to-action runtime
 

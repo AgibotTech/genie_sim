@@ -41,10 +41,10 @@ def simple_check_completion(
     if skip_check:
         logger.warning("skip check completion")
         return True
-    goal_offset = extra_action_params.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
-    if goal_offset != [0, 0, 0, 1, 0, 0, 0]:
-        logger.info("currently simple_check_completion is not supported with goal_offset")
-        return True
+    # goal_offset = extra_action_params.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
+    # if goal_offset != [0, 0, 0, 1, 0, 0, 0]:
+    #     logger.info("currently simple_check_completion is not supported with goal_offset")
+    #     return True
     current_pose_world = objects[active_obj_id].obj_pose
     if len(target_pose_canonical.shape) == 3:
         target_pose_canonical = target_pose_canonical[-1]
@@ -55,6 +55,7 @@ def simple_check_completion(
 
     pos_diff, angle_diff = pose_difference(current_pose_world, target_pose_world)
     success = (pos_diff < pos_threshold) and (angle_diff < angle_threshold)
+    logger.info(f"pos_diff: {pos_diff}, angle_diff: {angle_diff}, success: {success}")
     return success
 
 
@@ -229,13 +230,13 @@ class Stage(ABC):
 
         single_obj = action in ["pull", "rotate", "slide", "shave", "brush", "wipe"]
 
-        gripper_only = action in ["clamp", "move"]
+        gripper_only = action in ["clamp"]
 
         def _load_element(obj, type):
             # For pick, hook, and move actions, uniformly map to grasp
-            if action in ["pick", "hook", "move", "rotate"]:
+            if action in ["pick", "hook", "rotate"]:
                 action_mapped = "grasp"
-            elif action in ["insert"]:
+            elif action in ["insert", "move", "bimanual_rigid_move"]:
                 action_mapped = "place"
             else:
                 action_mapped = action
@@ -243,10 +244,20 @@ class Stage(ABC):
             if action_mapped == "grasp" and type == "active":
                 return None, None
             elif obj.name == "gripper":
+                action_mapped = "click"
                 element = obj.elements[type][action_mapped]
                 return element, "default"
 
-            primitive = stage[type]["primitive"] if stage[type]["primitive"] is not None else "default"
+            # Objects may lack interaction annotations or the requested action type.
+            # Return the same fallback as for missing actions, allowing stages
+            # such as PickStage to use custom extra_params["grasp_pose"].
+            if obj.elements is None or type not in obj.elements:
+                logger.info("No %s elements for %s" % (type, obj.name))
+                return None, None
+
+            primitive = (
+                stage[type]["primitive"] if stage[type]["primitive"] is not None else "default"
+            )
             if primitive != "default" or (action_mapped == "grasp" and type == "passive"):
                 if action_mapped not in obj.elements[type]:
                     logger.info("No %s element for %s" % (action_mapped, obj.name))
@@ -317,7 +328,9 @@ class Stage(ABC):
                     transform_world,
                     motion_type,
                 ]
-                target_gripper_pose = solve_target_gripper_pose(goal_datapack, objects, action_extra_params)
+                target_gripper_pose = solve_target_gripper_pose(
+                    goal_datapack, objects, action_extra_params
+                )
 
             last_statement = {
                 "objects": copy.deepcopy(objects),
@@ -365,7 +378,9 @@ class Stage(ABC):
         return gripper2obj
 
     def check_completion(self, objects, robot=None):
-        assert self.active_action_sequence is not None, f"Active action for stage {self.action_type} is None"
+        assert (
+            self.active_action_sequence is not None
+        ), f"Active action for stage {self.action_type} is None"
         goal_datapack = [
             self.active_obj_id,
             self.passive_obj_id,

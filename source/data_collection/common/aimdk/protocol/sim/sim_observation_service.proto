@@ -247,6 +247,18 @@ message GetCheckerStatusReq {
 message GetCheckerStatusRsp {
     string msg = 1;
 }
+message RunStepReq {
+    int32 steps = 1;
+}
+message RunStepRsp {
+    string msg = 1;
+}
+message CommandAnyReq {
+    string msg = 1;
+}
+message CommandAnyRsp {
+    string msg = 1;
+}
 service SimObservationService {
     rpc get_observation(GetObservationReq) returns(GetObservationRsp);
     rpc reset(ResetReq) returns(ResetRsp);
@@ -266,4 +278,6 @@ service SimObservationService {
     rpc store_current_state(StoreCurrentStateReq) returns(StoreCurrentStateRsp);
     rpc playback(PlaybackReq) returns(PlaybackRsp);
     rpc get_checker_status(GetCheckerStatusReq) returns(GetCheckerStatusRsp);
+    rpc run_step(RunStepReq) returns(RunStepRsp);
+    rpc command_any(CommandAnyReq) returns(CommandAnyRsp);
 }

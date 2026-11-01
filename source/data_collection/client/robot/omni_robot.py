@@ -20,6 +20,7 @@ from scipy.spatial.transform import Rotation
 from client.robot import Robot
 from client.robot.client import RpcClient
 from common.base_utils.logger import logger
+from common.base_utils.name_utils import is_g2_90d
 from common.base_utils.noise_utils import add_noise_with_regex
 from common.base_utils.transform_utils import (
     euler2quat,
@@ -43,6 +44,7 @@ class IsaacSimRpcRobot(Robot):
         stand_size_y=0.1,
         robot_init_arm_pose=None,
         robot_init_arm_pose_noise=None,
+        body_init_poses=None,
     ):
         robot_urdf = robot_cfg.split(".")[0] + ".urdf"
         self.robot_cfg = robot_cfg
@@ -50,8 +52,25 @@ class IsaacSimRpcRobot(Robot):
             robot_joint_names = self._get_robot_joint_names()
             if len(robot_joint_names) != len(robot_init_arm_pose):
                 raise ValueError("robot_init_arm_pose length does not match joint_names length")
-            robot_init_arm_pose = {robot_joint_names[i]: robot_init_arm_pose[i] for i in range(len(robot_joint_names))}
+            robot_init_arm_pose = {
+                robot_joint_names[i]: robot_init_arm_pose[i] for i in range(len(robot_joint_names))
+            }
         self.client = RpcClient(client_host, robot_urdf)
+        # tmp: for fix joints, it must be initialized in the first step
+        if robot_init_arm_pose_noise is not None:
+            robot_init_arm_pose = add_noise_with_regex(robot_init_arm_pose, robot_init_arm_pose_noise)
+            keys_to_remove = [k for k in robot_init_arm_pose_noise.keys() if "body_joint" in k]
+            for k in keys_to_remove:
+                logger.info(f"random body joint: {k}: {robot_init_arm_pose[k]}")
+                del robot_init_arm_pose_noise[k]
+        if body_init_poses is not None:
+            self.body_init_poses = body_init_poses
+            robot_init_arm_pose.update(body_init_poses)
+        else:
+            self.body_init_poses = {}
+            for key in robot_init_arm_pose:
+                if "body_joint" in key:
+                    self.body_init_poses[key] = robot_init_arm_pose[key]
         self.client.init_robot(
             robot_cfg=robot_cfg,
             robot_usd="",
@@ -64,15 +83,28 @@ class IsaacSimRpcRobot(Robot):
             robot_init_arm_pose=robot_init_arm_pose,
         )
         self.cam_info = None
-        if "omnipicker" in robot_cfg:
-            self.robot_gripper_2_grasp_gripper = np.array([[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]])
+        if "omnipicker" in robot_cfg or "Aloha" in robot_cfg or "aloha" in robot_cfg or is_g2_90d(robot_cfg):
+            self.robot_gripper_2_grasp_gripper = np.array(
+                [[0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0]]
+            )
         else:
-            self.robot_gripper_2_grasp_gripper = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])
+            self.robot_gripper_2_grasp_gripper = np.array(
+                [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]
+            )
         self.robot_init_arm_pose = robot_init_arm_pose
         self.robot_init_arm_pose_noise = robot_init_arm_pose_noise
 
         # Read joint names from configuration file
-        robot_names_key = "G1" if "G1" in robot_cfg else "G2"
+        if "ARX" in robot_cfg:
+            robot_names_key = "ARX"
+        elif "Aloha" in robot_cfg or "aloha" in robot_cfg:
+            robot_names_key = "Aloha"
+        elif is_g2_90d(robot_cfg):
+            robot_names_key = "G2_crsB_90d"
+        elif "G1" in robot_cfg:
+            robot_names_key = "G1"
+        else:
+            robot_names_key = "G2"
         config = self._load_robot_config()
         arm_joint_names = config[robot_names_key]["arm_joint_names"]
 
@@ -93,7 +125,9 @@ class IsaacSimRpcRobot(Robot):
         # Find project root directory
         project_root = current_dir
         while project_root != os.path.dirname(project_root):
-            config_path = os.path.join(project_root, "config", "robot_cfg", "robot_joint_names.json")
+            config_path = os.path.join(
+                project_root, "config", "robot_cfg", "robot_joint_names.json"
+            )
             if os.path.exists(config_path):
                 break
             project_root = os.path.dirname(project_root)
@@ -105,7 +139,16 @@ class IsaacSimRpcRobot(Robot):
         return config
 
     def _get_robot_joint_names(self):
-        robot_names_key = "G1" if "G1" in self.robot_cfg else "G2"
+        if "ARX" in self.robot_cfg:
+            robot_names_key = "ARX"
+        elif "Aloha" in self.robot_cfg or "aloha" in self.robot_cfg:
+            robot_names_key = "Aloha"
+        elif is_g2_90d(self.robot_cfg):
+            robot_names_key = "G2_crsB_90d"
+        elif "G1" in self.robot_cfg:
+            robot_names_key = "G1"
+        else:
+            robot_names_key = "G2"
         config = self._load_robot_config()
         robot_joint_names = config[robot_names_key]["dof_order"]
         return robot_joint_names
@@ -138,9 +181,6 @@ class IsaacSimRpcRobot(Robot):
         self.target_object = None
         self.client.reset()
         self.set_init_pose(self.robot_init_arm_pose, self.robot_init_arm_pose_noise)
-        time.sleep(0.5)
-
-        time.sleep(0.5)
 
     def setup(self):
         self.target_object = None
@@ -173,6 +213,18 @@ class IsaacSimRpcRobot(Robot):
     ):
         motion_run_ratio = kwargs.get("motion_run_ratio", 1.0)
         gripper_action_timing = kwargs.get("gripper_action_timing", {})
+        if type == "BimanualRigidAvoidObs":
+            return self._move_bimanual_rigid(
+                target_pose,
+                arm=arm,
+                goal_offset=goal_offset,
+                path_constraint=path_constraint,
+                offset_and_constraint_in_goal_frame=offset_and_constraint_in_goal_frame,
+                disable_collision_links=disable_collision_links,
+                motion_run_ratio=motion_run_ratio,
+                max_consecutive_failures=kwargs.get("max_consecutive_failures", 1),
+                from_current_pose=from_current_pose,
+            )
         if type.lower() == "trajectory":
             content = {
                 "type": "trajectory_4x4_pose",
@@ -201,19 +253,145 @@ class IsaacSimRpcRobot(Robot):
                 "motion_run_ratio": motion_run_ratio,
                 "gripper_action_timing": gripper_action_timing,
                 "from_current_pose": from_current_pose,
+                "slowdown_factor": float(kwargs.get("slowdown_factor", 1.0) or 1.0),
             }
         return self.move(content)
+
+    def _move_bimanual_rigid(
+        self,
+        target_pose,
+        arm="right",
+        goal_offset=[0, 0, 0, 1, 0, 0, 0],
+        path_constraint=[],
+        offset_and_constraint_in_goal_frame=True,
+        disable_collision_links=[],
+        motion_run_ratio=1.0,
+        max_consecutive_failures=1,
+        from_current_pose=False,
+        slowdown_factor=1,
+    ):
+        leader_arm = arm
+        follower_arm = "left" if leader_arm == "right" else "right"
+        if not isinstance(target_pose, np.ndarray):
+            raise ValueError("BimanualRigidAvoidObs requires a 4x4 matrix target_pose")
+        init_rotation_matrix = quat2mat_wxyz(self.init_rotation)
+        translation_matrix = np.zeros((4, 4))
+        translation_matrix[:3, :3] = init_rotation_matrix
+        translation_matrix[:3, 3] = self.init_position
+        translation_matrix[3, 3] = 1
+        target_matrix_local = np.linalg.inv(translation_matrix) @ target_pose
+        target_position_local = target_matrix_local[:3, 3]
+        target_rotation_local = quat_xyzw_to_wxyz(
+            euler2quat(mat2euler(target_matrix_local[:3, :3], order="zyx"), order="zyx")
+        )
+        command_config = {
+            "command": "BimanualRigidMove",
+            "leader_arm": leader_arm,
+            "follower_arm": follower_arm,
+            "target_position": target_position_local.tolist(),
+            "target_rotation": target_rotation_local.tolist(),
+            "goal_offset": goal_offset,
+            "path_constraint": path_constraint if path_constraint else [],
+            "offset_and_constraint_in_goal_frame": offset_and_constraint_in_goal_frame,
+            "disable_collision_links": disable_collision_links,
+            "motion_run_ratio": motion_run_ratio,
+            "max_consecutive_failures": max_consecutive_failures,
+            "from_current_pose": from_current_pose,
+            "slowdown_factor": float(slowdown_factor),
+        }
+        result = self.client.command_any(command_config)
+        return result.get("success", False)
+
+    def dual_move_pose(self, left_pose=None, right_pose=None, **kwargs):
+        """Simultaneously move both arms to their target poses (backend/trajectory mode).
+
+        Args:
+            left_pose:  4x4 np.ndarray for left arm target pose, or None to skip.
+            right_pose: 4x4 np.ndarray for right arm target pose, or None to skip.
+            kwargs: optional overrides — ee_interpolation (bool), distance_frame (float).
+
+        Returns:
+            dict with {"success": bool}
+        """
+        moves = []
+        for arm_key, pose in [("left", left_pose), ("right", right_pose)]:
+            if pose is None:
+                continue
+            if isinstance(pose, list):
+                pose = np.array(pose)
+            R, T = pose[:3, :3], pose[:3, 3]
+            quat_wxyz = quat_xyzw_to_wxyz(euler2quat(mat2euler(R, order="zyx"), order="zyx"))
+            moves.append(
+                {
+                    "arm": arm_key,
+                    "target_position": list(T),
+                    "target_rotation": list(quat_wxyz),
+                    "ee_interpolation": kwargs.get("ee_interpolation", False),
+                    "distance_frame": kwargs.get("distance_frame", 0.0008),
+                }
+            )
+        if not moves:
+            return {"success": True}
+        return self.client.dual_moveto(moves)
+
+    def dual_move_pose_curobo(self, left_pose=None, right_pose=None, **kwargs):
+        """Simultaneously move both arms using CuRobo planners.
+
+        Poses are in world frame (4x4 np.ndarray); internally converted to robot-local
+        frame the same way the single-arm CuRobo path does it.
+
+        Args:
+            left_pose:  4x4 np.ndarray for left arm target pose, or None to skip.
+            right_pose: 4x4 np.ndarray for right arm target pose, or None to skip.
+            kwargs: optional overrides forwarded to each move entry —
+                goal_offset, path_constraint, offset_and_constraint_in_goal_frame,
+                disable_collision_links, from_current_pose.
+
+        Returns:
+            dict with {"success": bool}
+        """
+        init_rotation_matrix = quat2mat_wxyz(self.init_rotation)
+        T_world_robot = np.eye(4)
+        T_world_robot[:3, :3] = init_rotation_matrix
+        T_world_robot[:3, 3] = self.init_position
+        T_robot_world = np.linalg.inv(T_world_robot)
+
+        moves = []
+        for arm_key, pose in [("left", left_pose), ("right", right_pose)]:
+            if pose is None:
+                continue
+            if isinstance(pose, list):
+                pose = np.array(pose)
+            target_matrix = T_robot_world @ pose
+            R, T = target_matrix[:3, :3], target_matrix[:3, 3]
+            target_rotation = quat_xyzw_to_wxyz(euler2quat(mat2euler(R, order="zyx"), order="zyx"))
+            moves.append(
+                {
+                    "arm": arm_key,
+                    "target_position": list(T),
+                    "target_rotation": list(target_rotation),
+                    "goal_offset": kwargs.get("goal_offset", [0, 0, 0, 1, 0, 0, 0]),
+                    "path_constraint": kwargs.get("path_constraint", None),
+                    "offset_and_constraint_in_goal_frame": kwargs.get(
+                        "offset_and_constraint_in_goal_frame", True
+                    ),
+                    "disable_collision_links": kwargs.get("disable_collision_links", []),
+                    "from_current_pose": kwargs.get("from_current_pose", False),
+                    "slowdown_factor": float(kwargs.get("slowdown_factor", 1.0) or 1.0),
+                }
+            )
+        if not moves:
+            return {"success": True}
+        return self.client.dual_moveto_curobo(moves)
 
     def set_gripper_action(self, action, arm="right"):
         assert arm in ["left", "right"]
         if action is None:
             return
-        time.sleep(0.3)
         if action == "open":
             self.open_gripper(id=arm, width=0.1)
         elif action == "close":
             self.close_gripper(id=arm)
-            time.sleep(0.7)
 
     def move(self, content):
         """
@@ -225,11 +403,14 @@ class IsaacSimRpcRobot(Robot):
         arm_name = content.get("arm", "right")
         goal_offset = content.get("goal_offset", [0, 0, 0, 1, 0, 0, 0])
         path_constraint = content.get("path_constraint", [])
-        offset_and_constraint_in_goal_frame = content.get("offset_and_constraint_in_goal_frame", True)
+        offset_and_constraint_in_goal_frame = content.get(
+            "offset_and_constraint_in_goal_frame", True
+        )
         disable_collision_links = content.get("disable_collision_links", [])
         motion_run_ratio = content.get("motion_run_ratio", 1.0)
         gripper_action_timing = content.get("gripper_action_timing", {})
         from_current_pose = content.get("from_current_pose", False)
+        slowdown_factor = float(content.get("slowdown_factor", 1.0) or 1.0)
         logger.info(f"robot: arm{arm_name}")
         if type == "matrix":
             if isinstance(content["matrix"], list):
@@ -278,6 +459,7 @@ class IsaacSimRpcRobot(Robot):
                     motion_run_ratio=motion_run_ratio,
                     gripper_action_timing=gripper_action_timing,
                     from_current_pose=from_current_pose,
+                    slowdown_factor=slowdown_factor,
                 ).errmsg
                 == "True"
             )
@@ -285,7 +467,9 @@ class IsaacSimRpcRobot(Robot):
             # Create rotation object
             rot = Rotation.from_quat([quat_wxyz[1], quat_wxyz[2], quat_wxyz[3], quat_wxyz[0]])
             euler_angles = rot.as_euler("YZX", degrees=True)
-            logger.info(f"Yaw: {euler_angles[0]}, Pitch: {euler_angles[1]}, Roll: {euler_angles[2]}")
+            logger.info(
+                f"Yaw: {euler_angles[0]}, Pitch: {euler_angles[1]}, Roll: {euler_angles[2]}"
+            )
 
         elif type == "joint":
             state = self.client.set_joint_positions(content["position"])
@@ -311,7 +495,9 @@ class IsaacSimRpcRobot(Robot):
         return state
 
     def get_prim_world_pose(self, prim_path, camera=False):
-        rotation_x_180 = np.array([[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]])
+        rotation_x_180 = np.array(
+            [[1.0, 0.0, 0.0, 0], [0.0, -1.0, 0.0, 0], [0.0, 0.0, -1.0, 0], [0, 0, 0, 1]]
+        )
         response = self.client.get_object_pose(prim_path=prim_path)
         x, y, z = (
             response.object_pose.position.x,

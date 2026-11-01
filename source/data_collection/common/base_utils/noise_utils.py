@@ -10,7 +10,9 @@ import numpy as np
 from common.base_utils.logger import logger
 
 
-def add_noise_with_regex(data_dict: Dict[str, float], noise_config: Dict[str, Dict[str, Any]]) -> Dict[str, float]:
+def add_noise_with_regex(
+    data_dict: Dict[str, float], noise_config: Dict[str, Dict[str, Any]]
+) -> Dict[str, float]:
     """
     Supported Noise Types and Their Parameters:
 

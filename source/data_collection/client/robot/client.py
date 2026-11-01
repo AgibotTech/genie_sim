@@ -26,7 +26,7 @@ import json
 import os
 import time
 
-import pinocchio
+
 
 # Arm protocol
 from common.aimdk.protocol.hal.arm import arm_pb2, arm_pb2_grpc
@@ -75,17 +75,22 @@ def find_urdf_in_robot_cfg(robot_urdf_name, project_root):
 
     # Raise error if not found
     raise FileNotFoundError(
-        f"URDF file not found in robot_cfg directory: {robot_urdf_name}\n" f"Search path: {robot_cfg_dir}"
+        f"URDF file not found in robot_cfg directory: {robot_urdf_name}\n"
+        f"Search path: {robot_cfg_dir}"
     )
 
 
 # All rotation angles in the code are in degrees
 class RpcClient:
+    # Delay at recording start/end in seconds, converted to run_step counts
+    # using the server physics_dt for any configured physics frequency.
+    RECORDING_DELAY_SEC = 2.0
+
     def __init__(self, client_host, robot_urdf=""):
         for i in range(600):
             try:
                 self.channel = grpc.insecure_channel(
-                    client_host, options=[("grpc.max_receive_message_length", 16094304)]
+                    client_host, options=[("grpc.max_receive_message_length", 256*1024*1024)]
                 )
                 grpc.channel_ready_future(self.channel).result(timeout=5)
                 self.robot_urdf = robot_urdf
@@ -172,6 +177,7 @@ class RpcClient:
         motion_run_ratio=1.0,
         gripper_action_timing={},
         from_current_pose=False,
+        slowdown_factor=1,
     ):
         stub = arm_pb2_grpc.ArmControlServiceStub(self.channel)
         req = arm_pb2.LinearMoveReq()
@@ -188,6 +194,7 @@ class RpcClient:
         req.motion_run_ratio = motion_run_ratio
         req.gripper_action_timing = json.dumps(gripper_action_timing)
         req.from_current_pose = from_current_pose
+        req.slowdown_factor = float(slowdown_factor)
         response = stub.linear_move(req)
         return response
 
@@ -266,7 +273,9 @@ class RpcClient:
         req.add_particle = add_particle
         req.static_friction = static_friction
         req.dynamic_friction = dynamic_friction
-        req.particle_position.x, req.particle_position.y, req.particle_position.z = particle_position
+        req.particle_position.x, req.particle_position.y, req.particle_position.z = (
+            particle_position
+        )
         req.particle_scale.x, req.particle_scale.y, req.particle_scale.z = particle_scale
         req.particle_color.r, req.particle_color.g, req.particle_color.b = particle_color
         req.add_rigid_body = add_rigid_body
@@ -319,15 +328,32 @@ class RpcClient:
         req.isJoint = data_keys["joint_position"]
         req.isGripper = data_keys["gripper"]
         response = stub.get_observation(req)
+        # Step for RECORDING_DELAY_SEC to capture the stable scene before motion.
+        # Advance blocked simulation steps during the delay rather than sleeping.
+        self.run_step(self._recording_delay_steps())
         return response
 
     # Client-side stop recording
     def stop_recording(self):
+        # Step for RECORDING_DELAY_SEC to capture the stable scene after motion.
+        # Advance blocked simulation steps before requesting recording stop.
+        self.run_step(self._recording_delay_steps())
         stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)
         req = sim_observation_service_pb2.GetObservationReq()
         req.stopRecording = True
         response = stub.get_observation(req)
         return response
+
+    def get_physics_dt(self):
+        """Query and cache the server World physics_dt in seconds per step."""
+        if getattr(self, "_physics_dt", None) is None:
+            resp = self.command_any({"command": "GetPhysicsDt"})
+            self._physics_dt = float(resp["physics_dt"])
+        return self._physics_dt
+
+    def _recording_delay_steps(self):
+        """Convert recording delays to run_step counts: RECORDING_DELAY_SEC / physics_dt."""
+        return max(1, round(self.RECORDING_DELAY_SEC / self.get_physics_dt()))
 
     def reset(self):
         stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)
@@ -384,6 +410,7 @@ class RpcClient:
         return response
 
     def get_ik_status(self, target_poses, is_right, ObsAvoid=False, output_link_pose=False):
+        import pinocchio
         stub = joint_channel_pb2_grpc.JointControlServiceStub(self.channel)
         req = joint_channel_pb2.GetIKStatusReq()
         req.is_right = is_right
@@ -416,11 +443,33 @@ class RpcClient:
                     joint_positions.append(joint_datas[name])
             joint_positions = np.array(joint_positions)
 
+            # If URDF has continuous joints (nq=2 each, e.g. Aloha chassis
+            # wheels), the simple 1-per-joint flat list above is too short.
+            # In that case fall back to a neutral baseline and override only
+            # the known joints by their per-joint idx_q.
+            if joint_positions.shape[0] != model.nq:
+                q = pinocchio.neutral(model)
+                for jname, val in joint_datas.items():
+                    jid = model.getJointId(jname)
+                    if jid >= len(model.joints):
+                        continue
+                    j = model.joints[jid]
+                    if j.nq == 1:
+                        q[j.idx_q] = val
+                joint_positions = q
+
             pinocchio.forwardKinematics(model, data, joint_positions)
             if "G1" in self.robot_urdf:
                 J = pinocchio.computeJointJacobian(model, data, joint_positions, 24)
             elif "G2" in self.robot_urdf:
-                J = pinocchio.computeJointJacobian(model, data, joint_positions, 45)
+                if "90D" in self.robot_urdf:
+                    J = pinocchio.computeJointJacobian(model, data, joint_positions, 42)
+                else:
+                    J = pinocchio.computeJointJacobian(model, data, joint_positions, 45)
+            elif "Aloha" in self.robot_urdf or "aloha" in self.robot_urdf:
+                # 16 non-universe joints: 6 left arm + 2 gripper + 6 right arm + 2 gripper.
+                # Index 6 is the last left-arm joint (arm_fl_joint6).
+                J = pinocchio.computeJointJacobian(model, data, joint_positions, 6)
             else:
                 J = pinocchio.computeJointJacobian(model, data, joint_positions, 7)
             manip = np.sqrt(np.linalg.det(np.dot(J, J.T)))
@@ -613,3 +662,97 @@ class RpcClient:
         req.checker = json.dumps(checker_config)
         response = stub.get_checker_status(req)
         return response
+
+    def DeactivateObject(self, object_prim_path):
+        stub = sim_object_service_pb2_grpc.SimObjectServiceStub(self.channel)
+        req = sim_object_service_pb2.DeactivateObjectReq()
+        req.object_prim_path = object_prim_path
+        response = stub.DeactivateObject(req)
+        return response
+    
+    def run_step(self, steps):
+        stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)
+        req = sim_observation_service_pb2.RunStepReq()
+        req.steps = steps
+        response = stub.run_step(req)
+        return response
+    
+    def command_any(self, command_config):
+        stub = sim_observation_service_pb2_grpc.SimObservationServiceStub(self.channel)
+        req = sim_observation_service_pb2.CommandAnyReq()
+        for key, value in command_config.items():
+            if isinstance(value, np.ndarray):
+                command_config[key] = value.tolist()
+        req.msg = json.dumps(command_config)
+        response = stub.command_any(req)
+        response = json.loads(response.msg)
+        return response
+
+    def dual_moveto(self, moves):
+        """Simultaneous dual-arm linear move (backend/trajectory mode).
+
+        Args:
+            moves: list of dicts, each containing:
+                arm (str): "left" or "right"
+                target_position (array-like[3]): [x, y, z]
+                target_rotation (array-like[4]): [w, x, y, z] quaternion
+                ee_interpolation (bool, optional): default False
+                distance_frame (float, optional): default 0.0008
+
+        Returns:
+            dict with {"success": bool}
+        """
+        command_config = {
+            "command": "DualLinearMove",
+            "moves": [
+                {
+                    "arm": m["arm"],
+                    "target_position": list(m["target_position"]),
+                    "target_rotation": list(m["target_rotation"]),
+                    "ee_interpolation": m.get("ee_interpolation", False),
+                    "distance_frame": m.get("distance_frame", 0.0008),
+                }
+                for m in moves
+            ],
+        }
+        return self.command_any(command_config)
+
+    def dual_moveto_curobo(self, moves):
+        """Simultaneous dual-arm move using CuRobo planners.
+
+        Args:
+            moves: list of dicts, each containing:
+                arm (str): "left" or "right"
+                target_position (array-like[3]): [x, y, z] in robot-local frame
+                target_rotation (array-like[4]): [w, x, y, z] in robot-local frame
+                goal_offset (array-like[7], optional): [x,y,z,w,x,y,z]
+                path_constraint (list, optional)
+                offset_and_constraint_in_goal_frame (bool, optional)
+                disable_collision_links (list, optional)
+                from_current_pose (bool, optional)
+                slowdown_factor (int, optional): Slowdown multiplier; 1 keeps the original speed.
+                    The server sets plan_config.time_dilation_factor to 1/N.
+
+        Returns:
+            dict with {"success": bool}
+        """
+        command_config = {
+            "command": "DualCuroboMove",
+            "moves": [
+                {
+                    "arm": m["arm"],
+                    "target_position": list(m["target_position"]),
+                    "target_rotation": list(m["target_rotation"]),
+                    "goal_offset": m.get("goal_offset", [0, 0, 0, 1, 0, 0, 0]),
+                    "path_constraint": m.get("path_constraint", None),
+                    "offset_and_constraint_in_goal_frame": m.get(
+                        "offset_and_constraint_in_goal_frame", True
+                    ),
+                    "disable_collision_links": m.get("disable_collision_links", []),
+                    "from_current_pose": m.get("from_current_pose", False),
+                    "slowdown_factor": float(m.get("slowdown_factor", 1.0) or 1.0),
+                }
+                for m in moves
+            ],
+        }
+        return self.command_any(command_config)

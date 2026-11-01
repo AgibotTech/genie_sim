@@ -1,0 +1,242 @@
+{
+    "objects": {
+        "constraints": null,
+        "fix_objects": [],
+        "scene_objects": [
+            {
+                "sample": {
+                    "min_num": 2,
+                    "max_num": 4,
+                    "max_repeat": 1
+                },
+                "workspace_id": "work_table",
+                "sub_workspace": {
+                    "x": {
+                        "min": 0.0,
+                        "max": 0.8
+                    },
+                    "y": {
+                        "min": 0.0,
+                        "max": 1.0
+                    }
+                },
+                "available_objects": [
+                    {
+                        "data_info_dir": "objects/benchmark/pen/benchmark_pen_005/",
+                        "object_id": "geniesim_2025_pen_green_005",
+                        "mass": 0.05
+                    },
+                    {
+                        "data_info_dir": "objects/benchmark/pen/benchmark_pen_003/",
+                        "object_id": "geniesim_2025_pen_yellow_003",
+                        "mass": 0.05
+                    },
+                    {
+                        "data_info_dir": "objects/benchmark/pen/benchmark_pen_002/",
+                        "object_id": "geniesim_2025_pen_purple_002",
+                        "mass": 0.05
+                    },
+                    {
+                        "data_info_dir": "objects/benchmark/pen/benchmark_pen_001/",
+                        "object_id": "geniesim_2025_pen_blue_001",
+                        "mass": 0.05
+                    },
+                    {
+                        "data_info_dir": "objects/benchmark/pen/benchmark_pen_000/",
+                        "object_id": "geniesim_2025_pen_red_000",
+                        "mass": 0.05
+                    }
+                ]
+            }
+        ],
+        "task_related_objects": [
+            {
+                "data_info_dir": "objects/benchmark/pen/benchmark_pen_003/",
+                "object_id": "geniesim_2025_pen_yellow_003",
+                "workspace_id": "work_table",
+                "sub_workspace": {
+                    "x": {
+                        "min": 0.0,
+                        "max": 0.8
+                    },
+                    "y": {
+                        "min": 0.0,
+                        "max": 1.0
+                    }
+                },
+                "mass": 0.05
+            }
+        ]
+    },
+    "recording_setting": {
+        "camera_list": [
+            "/ARX/base_link/head_camera",
+            "/ARX/arm_l_end_link/hand_left_camera",
+            "/ARX/arm_r_end_link/hand_right_camera"
+        ],
+        "fps": 30,
+        "num_of_episode": 8,
+        "noised_probability": 0.0
+    },
+    "robot": {
+        "arm": "dual",
+        "init_arm_pose_noise": {
+            "arm_.*": {
+                "noise_type": "uniform",
+                "low": -0.05,
+                "high": 0.05
+            }
+        },
+        "init_arm_pose": {
+            "arm_l_joint1": -0.0002,
+            "arm_l_joint2": 0.9588,
+            "arm_l_joint3": 0.8536,
+            "arm_l_joint4": -0.5804,
+            "arm_l_joint5": -0.0002,
+            "arm_l_joint6": 0.0044,
+            "arm_r_joint1": -0.0002,
+            "arm_r_joint2": 0.9588,
+            "arm_r_joint3": 0.8536,
+            "arm_r_joint4": -0.5804,
+            "arm_r_joint5": -0.0002,
+            "arm_r_joint6": 0.0044,
+            "gripper_l_passive_joint": 0.044,
+            "gripper_r_passive_joint": 0.044,
+            "gripper_l_active_joint": 0.044,
+            "gripper_r_active_joint": 0.044
+        },
+        "robot_cfg": "ARX.json",
+        "robot_id": "ARX",
+        "robot_init_pose": {
+            "position": [
+                -0.4,
+                0,
+                0.95
+            ],
+            "quaternion": [
+                1,
+                0,
+                0,
+                0
+            ],
+            "random": {
+                "delta_position": [
+                    0.03,
+                    0.03,
+                    0.03
+                ]
+            }
+        }
+    },
+    "scene": {
+        "function_space_objects": {
+            "work_table": {
+                "material_obj_prim": {},
+                "position": [
+                    0.0,
+                    0.0,
+                    0.9
+                ],
+                "quaternion": [
+                    1,
+                    0,
+                    0,
+                    0
+                ],
+                "size": [
+                    0.5,
+                    0.8,
+                    0.2
+                ]
+            }
+        },
+        "scene_id": "background/home/home_b_with_table/",
+        "scene_info_dir": "background/home/home_b_with_table/",
+        "scene_usd": [
+            "background/home/home_b_with_table/background.usda"
+        ]
+    },
+    "stages": [
+        {
+            "action": "pick",
+            "action_description": {
+                "action_text": "{左/右}臂拿起桌面上的黄色笔",
+                "english_action_text": "{Left/Right} arm picks up the yellow pen on the table"
+            },
+            "active": {
+                "object_id": "gripper",
+                "primitive": null
+            },
+            "extra_params": {
+                "arm": "auto",
+                "disable_upside_down": true,
+                "flip_grasp": true,
+                "grasp_offset": -0.005,
+                "pick_up_distance": [
+                    0.07,
+                    0.15
+                ]
+            },
+            "passive": {
+                "object_id": "geniesim_2025_pen_yellow_003",
+                "primitive": null
+            }
+        }
+    ],
+    "task_metric": {
+        "filter_rules": [
+            {
+                "params": {
+                    "camera": "head",
+                    "downsample_ratio": 0.2,
+                    "gripper": "right",
+                    "out_view_allow_time": 0.2,
+                    "camear_z_reverse": false
+                },
+                "result_code": 4,
+                "rule_name": "is_gripper_in_view"
+            },
+            {
+                "params": {
+                    "camera": "head",
+                    "downsample_ratio": 0.2,
+                    "gripper": "left",
+                    "out_view_allow_time": 0.1,
+                    "camear_z_reverse": false
+                },
+                "result_code": 4,
+                "rule_name": "is_gripper_in_view"
+            },
+            {
+                "params": {
+                    "objects": [
+                        "geniesim_2025_pen_yellow_003"
+                    ],
+                    "delta_z": 0.1,
+                    "tolerance": 0.05
+                },
+                "result_code": 1,
+                "rule_name": "is_object_end_higher_than_start"
+            }
+        ]
+    },
+    "task": "pick_pen_of_specific_color_yellow_arx",
+    "task_description": {
+        "english_task_name": "Pick up the yellow pen on the table",
+        "init_scene_text": "机器人在桌面前，桌面上放着不同颜色的笔",
+        "task_name": "拿起黄色笔"
+    },
+    "origin": {
+        "position": [
+            2.91,
+            0.76,
+            0.0
+        ],
+        "quaternion": [
+            1,
+            0,
+            0,
+            0
+        ]
+    }
+}

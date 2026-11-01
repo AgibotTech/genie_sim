@@ -1,36 +1,16 @@
-# === pip install / build artifacts ===
+# Python and local development artifacts.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
 build/
 dist/
-*.egg-info/
-*.egg
-.eggs/
-pip-wheel-metadata/
-pip-build-env-*/
-wheels/
 
-# === Python bytecode (created on import) ===
-__pycache__
-__pycache__/
-*.pyc
-*.pyo
+# Collection and replay output.
+/recording_data*/
+/tmp/
+/logs/
 
-# === data_collection — runtime & content ===
-!output/
-!server/recording
-!config/curobo/assets
-*.jpg
-*.json
-*.mp4
-*.npy
-*.onnx
-*.png
-*.pt
-*.wav
-.vscode
-!tasks/**/*.json
-!config/robot_cfg/**/*.urdf
-!config/**/*.json
-recording_data
-config/robot_cfg/*/*_tmp.yaml
-tmp/
-logs
+# Runtime-generated kinematics descriptions.
+/config/robot_cfg/**/*_tmp.yaml
+/config/robot_cfg/**/*_tmp_rotated.yaml

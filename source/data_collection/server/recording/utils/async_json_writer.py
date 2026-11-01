@@ -4,6 +4,8 @@
 
 import asyncio
 import json
+import os
+import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -40,7 +42,8 @@ class AsyncJSONWriter:
         # Control variables
         self._is_running = False
         self._worker_task: Optional[asyncio.Task] = None
-        self._pending_writes: Dict[str, dict] = {}  # file_path -> [data_list]
+        self._pending_writes: Dict[str, dict] = {}
+        self._queued_paths: set[str] = set()
 
         # Statistics
         self.total_written = 0
@@ -57,13 +60,13 @@ class AsyncJSONWriter:
 
     async def stop(self):
         """Stop writer, wait for all data to be written"""
-        if not self._is_running:
+        if not self._is_running and self.data_queue.empty() and not self._pending_writes:
             return
 
         self._is_running = False
 
         # Wait for worker task to complete
-        if self._worker_task and not self._worker_task.done():
+        if self._worker_task:
             await self._worker_task
 
         # Force flush all pending data
@@ -82,12 +85,14 @@ class AsyncJSONWriter:
         if not self._is_running:
             raise RuntimeError("Writer not started, please call start() method first")
 
+        if file_path in self._queued_paths:
+            raise ValueError(f"File path already queued: {file_path}")
+        self._queued_paths.add(file_path)
         try:
-            # Add data in non-blocking way, wait if queue is full
             await self.data_queue.put((data, file_path))
-        except asyncio.QueueFull:
-            logger.warning("Data queue is full, waiting for space...")
-            await self.data_queue.put((data, file_path))
+        except BaseException:
+            self._queued_paths.remove(file_path)
+            raise
 
     async def _write_worker(self):
         """Worker coroutine, continuously process write tasks"""
@@ -122,33 +127,32 @@ class AsyncJSONWriter:
 
     async def _flush_file(self, file_path):
         """Flush pending data for specified file"""
-        if file_path not in self._pending_writes or not self._pending_writes[file_path]:
+        if file_path not in self._pending_writes:
             return
+        target = Path(file_path)
+        temporary = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
         try:
-            data = self._pending_writes.pop(file_path)
-            # Ensure directory exists
-            Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-
-            # Async write to file
-            async with aiofiles.open(file_path, "a", encoding="utf-8") as f:
-                json_str = json.dumps(
-                    data,
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                    check_circular=False,
-                )
-                await f.write(json_str)  # One JSON object per line
-                self.total_written += 1
+            json_str = json.dumps(
+                self._pending_writes[file_path],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            async with aiofiles.open(temporary, "w", encoding="utf-8") as f:
+                await f.write(json_str)
+            await asyncio.to_thread(os.replace, temporary, target)
+            del self._pending_writes[file_path]
+            self.total_written += 1
 
         except Exception as e:
             logger.error(f"Failed to write file {file_path}: {e}")
-            # Keep data for retry next time
+            temporary.unlink(missing_ok=True)
+            raise
 
     async def _flush_all(self):
         """Flush pending data for all files"""
         for file_path in list(self._pending_writes.keys()):
-            if self._pending_writes[file_path]:
-                await self._flush_file(file_path)
+            await self._flush_file(file_path)
 
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics"""
