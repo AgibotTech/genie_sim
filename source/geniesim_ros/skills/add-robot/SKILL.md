@@ -149,7 +149,11 @@ Required keys:
 
 ```yaml
 robot:
-  urdf: <your_robot>.urdf            # filename, resolved against genie_sim_robot_model/urdf/
+  robot_source:
+    package: genie_sim_robot_model
+    robot_model: <your_robot>
+    urdf:                            # presence selects URDF→USD assembly
+      xacro_entry: urdf/<your_robot>.urdf  # relative to the package share directory
   init_base_pose:                    # non-physics teleport at spawn
     x: 0.0
     y: 0.0
@@ -162,10 +166,14 @@ viewer_camera:                       # Newton GL viewer default cam
   pos: [1.6, -1.6, 1.2]
   lookat: [0.0, 0.0, 0.8]
 
-scene:
-  base_path: <relative_to_geniesim_assets>
-  scene_usda: <stage>.usda           # or omit for an empty scene
+scene: {}                            # empty environment; copy asset settings from a reference scene
 ```
+
+The launcher reads `robot.robot_source`; a top-level `robot.urdf` is ignored.
+`xacro_entry` accepts the plain URDF staged in Step 1 or a xacro entry such as
+`xacro/robot.xacro`. For a composed xacro, set `robot_model`, `body`, `arm` and
+`gripper` under `robot_source` to the values supported by that entry. Build the
+ROS workspace after adding the file so it is installed into the package share.
 
 ### Step 6 — Launch via `launch-scene`
 
