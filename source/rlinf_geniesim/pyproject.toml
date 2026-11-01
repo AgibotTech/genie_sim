@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77.0.3", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rlinf-geniesim-client"
+version = "0.1.0"
+description = "GenieSim transport clients and vector environment for RLinf"
+readme = "CLIENT_README.md"
+requires-python = ">=3.10"
+license = "MPL-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Genie Sim Team" }]
+dependencies = ["numpy", "pyzmq", "Pillow"]
+
+[project.optional-dependencies]
+shm = ["posix_ipc"]
+sensor = ["scipy"]
+
+[tool.setuptools]
+packages = []
+include-package-data = false
+# Dotted modules include their package initializers without collecting server modules.
+py-modules = [
+    "rlinf_geniesim.__init__",
+    "rlinf_geniesim.spawn",
+    "rlinf_geniesim.owner_watchdog",
+    "rlinf_geniesim.comm.base",
+    "rlinf_geniesim.comm.zmq.client",
+    "rlinf_geniesim.comm.zmq._wire",
+    "rlinf_geniesim.comm.shm.client",
+    "rlinf_geniesim.comm.shm.layout",
+    "rlinf_geniesim.comm.shm.result",
+    "rlinf_geniesim.comm.shm.sem",
+    "rlinf_geniesim.envs.vec_env",
+    "rlinf_geniesim.randomize.plan",
+    "rlinf_geniesim.randomize.sampler",
+    "rlinf_geniesim.randomize.sensor",
+    "rlinf_geniesim.randomize.spec",
+]
+
+[tool.setuptools.package-dir]
+rlinf_geniesim = "."
