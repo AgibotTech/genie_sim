@@ -1,0 +1,10 @@
+# Default physics randomization per task; see docs/GENERALIZATION_DESIGN.md.
+# Explicit task-init values override these defaults. Per-task null disables a key.
+# Seed -1 bypasses randomization; use_task_generalization: false bypasses this file.
+# Instance-specific robot base poses take precedence over base perturbation.
+defaults:
+  init_joint_thresh: 0.05
+  init_base_xy_thresh:
+  - 0.05
+  - 0.05
+tasks: {}

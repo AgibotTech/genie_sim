@@ -1,0 +1,40 @@
+# Task initialization payload for the benchmark pick_block_color task.
+# The server derives scene, robot, checker, and joint layout from task identity.
+# Omitted superset_instances enables switching among compatible task instances.
+# Physics and render selection is locked after the first successful init.
+# A reset seed >= 0 enables seeded randomization; -1 uses authored values.
+# Episode length/auto-reset are local GenieSimVecEnv options.
+task:
+  task_name: table_task_1_g2_op
+  sub_task_name: pick_block_color
+  instances:
+  - 0
+  reset_settle_time_s: 1.0
+backends:
+  physics: newton_mujoco_warp
+  physics_solver: mujoco-warp
+  physics_solver_substep: 10
+  render: none
+  num_envs: 1
+  device: cuda:0
+multi_env:
+  env_spacing: 15.0
+  head_height_m: 1.5
+  output_dir: ''
+rates:
+  physics_hz: 120.0
+  render_hz: 30.0
+  control_hz: 30.0
+observation:
+  cameras:
+  - name: head
+    link: head_link3
+    prim_path: head_link3/head_front_Camera
+    image_hw:
+    - 400
+    - 640
+reward:
+  success_from_checker: true
+randomization:
+  object_xy_radius: 0.03
+seed: 0
