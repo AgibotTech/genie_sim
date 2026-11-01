@@ -67,6 +67,7 @@ _KNOWN_CATEGORIES: frozenset[str] = frozenset(
         "vln",
         "pick",
         "ci",
+        "sandbox",
     }
 )
 

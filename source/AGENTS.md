@@ -20,7 +20,7 @@ installs in topological order.
 |---|---|---|---|---|
 | `geniesim/` | umbrella (`geniesim`) | [README](geniesim/README.md) | — | — |
 | `geniesim_cli/` | `geniesim_cli` — owns the `geniesim` console script | [README](geniesim_cli/README.md) | [AGENTS](geniesim_cli/AGENTS.md) | — |
-| `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (direct Isaac Sim evaluation) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
+| `geniesim_benchmark/` | `geniesim_benchmark` — benchmark tasks + scoring (Isaac, Newton, native MuJoCo) | [README](geniesim_benchmark/README.md) | — | [skills/](geniesim_benchmark/skills/) |
 | `geniesim_scene_agent/` | `geniesim_scene_agent` — Asset search, scene authoring, and task skills (optional) | [README](geniesim_scene_agent/README.md) | [AGENTS](geniesim_scene_agent/AGENTS.md) | [skills/](geniesim_scene_agent/skills/) |
 | `geniesim_ros/` | `geniesim_ros` — Genie Sim RT Engine (ROS 2 workspace) | [README](geniesim_ros/README.md) | [AGENTS](geniesim_ros/AGENTS.md) | [skills/](geniesim_ros/skills/) |
 | `geniesim_teleop/` | `geniesim_teleop` — VR / Pico teleop bridge | [README](geniesim_teleop/README.md) | [AGENTS](geniesim_teleop/AGENTS.md) | [skills/](geniesim_teleop/skills/) |
@@ -34,8 +34,9 @@ installs in topological order.
 > policy and evaluation environments. It is outside the umbrella and default bootstrap.
 
 > Benchmark configurations and ROS scene configurations have separate schemas.
-> Benchmark evaluation uses its direct Isaac runtime. The shared `genie_sim_client`
-> remains an independent ROS client; see each package's README for its contract.
+> Benchmark task YAMLs select direct Isaac, managed Newton through the ROS
+> `genie_sim_client`, or native MuJoCo. See the benchmark runtime guides for
+> environment and asset requirements.
 
 ---
 
@@ -74,7 +75,10 @@ The generator writes between `<!-- AUTOGEN:deps-dag start -->` and `<!-- AUTOGEN
 
 ### Adding a new edge category
 
-To surface a relationship that isn't in pyproject metadata (e.g. a runtime ROS topic contract), add a new emission pass inside `_emit_mermaid` in `tool.py` and define a new Mermaid arrow style. The `_RUNTIME_EDGES` constant existed for this purpose previously and is currently empty — that's where one-off runtime contracts that don't have a pip-level dep should be declared.
+Use `_RUNTIME_EDGES` in `tool.py` for runtime contracts without a pip dependency.
+The Newton benchmark client uses ROS packages built by colcon. For a new edge
+category, add an emission pass inside `_emit_mermaid` and define its arrow style.
+
 ---
 
 ## 🧩 Separately-maintained modules

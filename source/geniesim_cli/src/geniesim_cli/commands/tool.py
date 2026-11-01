@@ -79,7 +79,7 @@ _ANNOTATIONS: dict[str, dict] = {
     "geniesim": {"role": "umbrella", "note": "meta-package", "requires_agents": False},
     "geniesim_cli": {"role": "cli", "note": "console script"},
     "geniesim_benchmark": {
-        "note": "Isaac Sim direct",
+        "note": "Isaac / Newton / MuJoCo",
         "requires_agents": False,
     },
     "geniesim_ros": {"note": "⚡ RT Engine"},
@@ -89,13 +89,12 @@ _ANNOTATIONS: dict[str, dict] = {
     "geniesim_scene_agent": {"note": "🏗️ scene gen (optional extra)"},
 }
 
-# Cross-package data-flow edges that are not in pyproject.toml deps but
-# are real runtime contracts. Currently empty: every meaningful runtime
-# coupling is now reflected in pyproject deps (e.g. geniesim_teleop →
-# geniesim_ros). Add an entry here when a new runtime relationship
-# exists *without* a pip-level dep. Each entry: (from, to, label, style).
-# style: "data" | "refactor"
-_RUNTIME_EDGES: list[tuple[str, str, str, str]] = []
+# Cross-package runtime contracts without a pip dependency. Newton benchmark
+# tasks use the ROS client built by colcon; Isaac and native MuJoCo do not.
+# Each entry: (from, to, label, style); style: "data" | "refactor".
+_RUNTIME_EDGES: list[tuple[str, str, str, str]] = [
+    ("geniesim_benchmark", "geniesim_ros", "Newton client", "data"),
+]
 
 
 def _autogen_markers(key: str) -> tuple[str, str]:

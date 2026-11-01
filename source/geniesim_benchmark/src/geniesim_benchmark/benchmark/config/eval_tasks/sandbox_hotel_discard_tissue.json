@@ -1,0 +1,84 @@
+{
+  "generalization": {},
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_camera_link/Left_Camera",
+      "/genie/gripper_r_camera_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 1
+  },
+  "robot": {
+    "arm": "right",
+    "free_base": true,
+    "robot_cfg": "G2_crsB_90d_sandbox_full_body.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          3.75,
+          1.38,
+          0.04199992768466473
+        ],
+        "quaternion": [
+          6.123233995736766e-17,
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "sandbox_hotel_discard_tissue/workspace_00",
+    "scene_info_dir": "background/sandbox/hotel/discard_tissue",
+    "scene_usd": "background/sandbox/hotel/discard_tissue/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "sandbox_hotel_discard_tissue"
+}

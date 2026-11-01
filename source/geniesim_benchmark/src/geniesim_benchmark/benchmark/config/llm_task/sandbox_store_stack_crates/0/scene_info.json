@@ -1,0 +1,376 @@
+{
+  "initial_state": {
+    "base_pose_xyzw": [
+      -1.65,
+      -1.8,
+      0.0281126294952034,
+      0.0,
+      0.0,
+      0.7071067811865475,
+      0.7071067811865476
+    ],
+    "environment": {},
+    "joint_positions": {
+      "idx01_body_joint1": -0.85,
+      "idx02_body_joint2": 1.7,
+      "idx03_body_joint3": -0.85,
+      "idx04_body_joint4": 0.0,
+      "idx05_body_joint5": 0.0,
+      "idx111_chassis_lwheel_front_joint1": 0.0,
+      "idx112_chassis_lwheel_front_joint2": 0.0,
+      "idx11_head_joint1": 0.0007184035775665027,
+      "idx121_chassis_lwheel_rear_joint1": 0.0,
+      "idx122_chassis_lwheel_rear_joint2": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx131_chassis_rwheel_front_joint1": 0.0,
+      "idx132_chassis_rwheel_front_joint2": 0.0,
+      "idx13_head_joint3": 0.0008619110579972023,
+      "idx141_chassis_rwheel_rear_joint1": 0.0,
+      "idx142_chassis_rwheel_rear_joint2": 0.0,
+      "idx21_arm_l_joint1": 2.699052,
+      "idx22_arm_l_joint2": -1.449331,
+      "idx23_arm_l_joint3": -1.4837980000000002,
+      "idx24_arm_l_joint4": -1.9059690000000005,
+      "idx25_arm_l_joint5": -1.6576050000000002,
+      "idx26_arm_l_joint6": -0.121615,
+      "idx27_arm_l_joint7": -1.2396750000000003,
+      "idx31_gripper_l_inner_joint1": 0.0,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx33_gripper_l_left_support_joint": 0.0,
+      "idx34_gripper_l_inner_joint2": 0.0,
+      "idx35_gripper_l_outer_joint2": 0.0,
+      "idx36_gripper_l_right_support_joint": 0.0,
+      "idx61_arm_r_joint1": -2.699002,
+      "idx62_arm_r_joint2": -1.448731,
+      "idx63_arm_r_joint3": 1.483238,
+      "idx64_arm_r_joint4": -1.9059690000000005,
+      "idx65_arm_r_joint5": 1.6579930000000003,
+      "idx66_arm_r_joint6": -0.12232200000000001,
+      "idx67_arm_r_joint7": 1.2397330000000002,
+      "idx71_gripper_r_inner_joint1": 0.0,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx73_gripper_r_left_support_joint": 0.0,
+      "idx74_gripper_r_inner_joint2": 0.0,
+      "idx75_gripper_r_outer_joint2": 0.0,
+      "idx76_gripper_r_right_support_joint": 0.0
+    },
+    "objects": {
+      "/World/Objects/doc_crate0/entity": [
+        -2.15,
+        -1.3,
+        -0.0108873705047966,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "/World/Objects/doc_crate1/entity": [
+        -2.16,
+        -2.15,
+        -0.0108873705047966,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "/World/Objects/doc_stack_base/entity": [
+        -2.1999999999999997,
+        -2.75,
+        -0.0108873705047966,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "/World/Objects/doc_stack_top/entity": [
+        -2.1999999999999997,
+        -2.75,
+        0.08708097951823464,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  },
+  "objects": [
+    {
+      "asset": "assets/objects/open_world_doc_v1/shopping_basket/Aligned.usda",
+      "dynamic": false,
+      "name": "stack_base",
+      "prim_path": "/World/Objects/doc_stack_base/entity",
+      "role": "fixture"
+    },
+    {
+      "asset": "assets/objects/open_world_doc_v1/shopping_basket/Aligned.usda",
+      "dynamic": false,
+      "name": "stack_top",
+      "prim_path": "/World/Objects/doc_stack_top/entity",
+      "role": "fixture"
+    },
+    {
+      "asset": "assets/objects/open_world_doc_v1/shopping_basket/Aligned.usda",
+      "dynamic": true,
+      "name": "crate0",
+      "prim_path": "/World/Objects/doc_crate0/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/open_world_doc_v1/shopping_basket/Aligned.usda",
+      "dynamic": true,
+      "name": "crate1",
+      "prim_path": "/World/Objects/doc_crate1/entity",
+      "role": "interactive"
+    }
+  ],
+  "regions": {
+    "bakery": {
+      "approach_xy": [
+        -0.97,
+        2.7
+      ],
+      "height_range": [
+        0.8,
+        0.87
+      ],
+      "label": "\u9762\u5305\u96f6\u98df\u8d27\u67b6",
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_008_01/entity/body/visual",
+      "surface_height_m": 0.8361641225618905,
+      "xy": [
+        -0.97,
+        3.7
+      ]
+    },
+    "basket_delivery": {
+      "approach_xy": [
+        0.5,
+        0.8
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "basket_delivery",
+      "slot_bounds": [
+        0.21999999999999997,
+        1.47,
+        0.78,
+        1.8299999999999998
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        0.5,
+        1.65
+      ]
+    },
+    "bin_floor": {
+      "approach_xy": [
+        2.65,
+        -1.7999999999999998
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "bin_floor",
+      "slot_bounds": [
+        2.37,
+        -2.83,
+        2.9299999999999997,
+        -2.4699999999999998
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        2.65,
+        -2.65
+      ]
+    },
+    "checkout": {
+      "approach_xy": [
+        2.6,
+        -1.3
+      ],
+      "height_range": [
+        0.86,
+        0.9
+      ],
+      "label": "\u539f\u751f\u6536\u94f6\u67dc\u53f0",
+      "support_mesh": "/World/background/benchmark_cashier_004/entity/body/visual",
+      "surface_height_m": 0.8727308576293707,
+      "xy": [
+        1.85,
+        -2.08
+      ]
+    },
+    "corner_stack": {
+      "approach_xy": [
+        -2.1999999999999997,
+        -3.43
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "corner_stack",
+      "slot_bounds": [
+        -2.83,
+        -2.93,
+        -2.2699999999999996,
+        -2.57
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        -2.1999999999999997,
+        -2.75
+      ]
+    },
+    "daily": {
+      "approach_xy": [
+        -1.75,
+        -0.7
+      ],
+      "height_range": [
+        1.02,
+        1.06
+      ],
+      "label": "\u65e5\u7528\u54c1\u8d27\u67b6",
+      "support_mesh": "/World/background/supermarket_shelf_002_03/entity/body/visual",
+      "surface_height_m": 1.0391947588734034,
+      "xy": [
+        -0.83,
+        -0.7
+      ]
+    },
+    "drinks": {
+      "approach_xy": [
+        0.55,
+        2.7
+      ],
+      "height_range": [
+        0.8,
+        0.87
+      ],
+      "label": "\u996e\u6599\u8d27\u67b6",
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_008_02/entity/body/visual",
+      "surface_height_m": 0.8361639508022085,
+      "xy": [
+        0.55,
+        3.7
+      ]
+    },
+    "scattered0": {
+      "approach_xy": [
+        -1.9,
+        -2.0
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "scattered0",
+      "slot_bounds": [
+        -2.4299999999999997,
+        -1.48,
+        -1.8699999999999999,
+        -1.12
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        -2.15,
+        -1.3
+      ]
+    },
+    "scattered1": {
+      "approach_xy": [
+        -1.8,
+        -1.35
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "scattered1",
+      "slot_bounds": [
+        -2.4800000000000004,
+        -2.33,
+        -1.9200000000000002,
+        -1.97
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        -2.16,
+        -2.15
+      ]
+    },
+    "stock": {
+      "approach_xy": [
+        -1.55,
+        -1.85
+      ],
+      "height_range": [
+        0.65,
+        0.75
+      ],
+      "label": "\u6536\u94f6\u65c1\u7406\u8d27\u53f0",
+      "support_mesh": "/World/Objects/fixture_restock_counter/entity/body/visual",
+      "surface_height_m": 0.6891174854640949,
+      "xy": [
+        -1.55,
+        -2.75
+      ]
+    },
+    "waste": {
+      "approach_xy": [
+        2.65,
+        -1.75
+      ],
+      "height_range": [
+        -0.0058873705047966015,
+        0.006112629495203399
+      ],
+      "label": "\u6536\u94f6\u5783\u573e\u6876\u5185",
+      "slot_bounds": [
+        2.37,
+        -2.83,
+        2.9299999999999997,
+        -2.4699999999999998
+      ],
+      "support_mesh": "/World/Objects/doc_bin/entity",
+      "surface_height_m": 0.00011262949520339863,
+      "xy": [
+        2.65,
+        -2.65
+      ]
+    },
+    "yellow_juice": {
+      "approach_xy": [
+        2.353176213413883,
+        -2.473225184700195
+      ],
+      "height_range": [
+        0.6425782890660519,
+        0.6545782890660519
+      ],
+      "label": "\u539f\u751f\u6728\u9ec4\u8272\u8d27\u67b6\u679c\u6c41\u533a",
+      "slot_bounds": [
+        2.000676213413883,
+        -3.4602251847001946,
+        3.131176213413883,
+        -3.213725184700195
+      ],
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_004/entity/body/visual",
+      "surface_height_m": 0.6485782890660519,
+      "xy": [
+        2.553176213413883,
+        -3.2732251847001947
+      ]
+    }
+  },
+  "source_display_id": "S5",
+  "source_scene": "store"
+}

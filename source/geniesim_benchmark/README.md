@@ -17,8 +17,8 @@ Skills: [`skills/`](skills/)
 pip install -e source/geniesim_benchmark/
 ```
 
-Pulled in automatically by `geniesim bootstrap`. Heavy runtime deps
-(Isaac Sim, MuJoCo, open3d, …) come from this package.
+Pulled in automatically by `geniesim bootstrap`. Use the selected task's
+runtime guide to prepare its simulator, asset package, and Python environment.
 
 ---
 
@@ -78,6 +78,15 @@ geniesim benchmark run g2crsbwuji_dexmanip_rubik_cube_solve --infer-host=localho
 Prepare the native model package and Python environment described in the
 [Rubik guide](docs/rubik_mujoco_benchmark.md). Physics and observation rendering
 use separate processes and interpreter settings.
+
+### Open-world sandbox scenarios
+
+The [sandbox guide](docs/openworld-sandbox.md) lists 25 scenarios across five
+environments. They have no success checker and do not produce completion scores.
+
+```bash
+geniesim benchmark list --category=sandbox
+```
 
 ### Discover tasks
 

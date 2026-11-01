@@ -1,0 +1,456 @@
+{
+  "initial_state": {
+    "base_pose_xyzw": [
+      -1.5915449744583294,
+      0.85,
+      -1.4453999614715576,
+      0.0,
+      0.0,
+      -0.7071067811865475,
+      0.7071067811865476
+    ],
+    "environment": {},
+    "joint_positions": {
+      "idx01_body_joint1": -0.3,
+      "idx02_body_joint2": 0.6,
+      "idx03_body_joint3": -0.3,
+      "idx04_body_joint4": 0.0,
+      "idx05_body_joint5": 0.0,
+      "idx111_chassis_lwheel_front_joint1": 0.0,
+      "idx112_chassis_lwheel_front_joint2": 0.0,
+      "idx11_head_joint1": 0.0,
+      "idx121_chassis_lwheel_rear_joint1": 0.0,
+      "idx122_chassis_lwheel_rear_joint2": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx131_chassis_rwheel_front_joint1": 0.0,
+      "idx132_chassis_rwheel_front_joint2": 0.0,
+      "idx13_head_joint3": 0.0,
+      "idx141_chassis_rwheel_rear_joint1": 0.0,
+      "idx142_chassis_rwheel_rear_joint2": 0.0,
+      "idx21_arm_l_joint1": 2.699052,
+      "idx22_arm_l_joint2": -1.449331,
+      "idx23_arm_l_joint3": -1.483798,
+      "idx24_arm_l_joint4": -1.905969,
+      "idx25_arm_l_joint5": -1.657605,
+      "idx26_arm_l_joint6": -0.121615,
+      "idx27_arm_l_joint7": -1.239675,
+      "idx31_gripper_l_inner_joint1": 0.0,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx33_gripper_l_left_support_joint": 0.0,
+      "idx34_gripper_l_inner_joint2": 0.0,
+      "idx35_gripper_l_outer_joint2": 0.0,
+      "idx36_gripper_l_right_support_joint": 0.0,
+      "idx61_arm_r_joint1": -2.699002,
+      "idx62_arm_r_joint2": -1.448731,
+      "idx63_arm_r_joint3": 1.483238,
+      "idx64_arm_r_joint4": -1.905969,
+      "idx65_arm_r_joint5": 1.657993,
+      "idx66_arm_r_joint6": -0.122322,
+      "idx67_arm_r_joint7": 1.239733,
+      "idx71_gripper_r_inner_joint1": 0.0,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx73_gripper_r_left_support_joint": 0.0,
+      "idx74_gripper_r_inner_joint2": 0.0,
+      "idx75_gripper_r_outer_joint2": 0.0,
+      "idx76_gripper_r_right_support_joint": 0.0
+    },
+    "objects": {
+      "/World/Objects/doc_bin/entity": [
+        2.7794001663798196,
+        -0.9496477077865811,
+        -1.3254772374366104,
+        0.707103479658032,
+        0.0,
+        0.0,
+        0.7071100826996483
+      ],
+      "/World/Objects/doc_crumpled_paper0/entity": [
+        -1.9456751381444233,
+        0.16579951035753132,
+        -0.603566397415246,
+        0.5878713859566587,
+        -0.3929410882279267,
+        -0.39294465202772777,
+        0.5878767176870148
+      ],
+      "/World/Objects/doc_crumpled_paper1/entity": [
+        -0.5109613437916595,
+        0.1525953688683687,
+        -0.6035645434737926,
+        0.6992312943932046,
+        0.1052191151148566,
+        0.1052200694051376,
+        0.6992376361080889
+      ],
+      "/World/Objects/doc_crumpled_paper2/entity": [
+        1.855499229935685,
+        0.1603038696401506,
+        -0.6035631523061276,
+        0.43085730932670496,
+        0.560675881632251,
+        0.5606809667115549,
+        0.4308612170096611
+      ]
+    }
+  },
+  "objects": [
+    {
+      "asset": "assets/objects/iros/trash/iros_crumpled_paper_000/Aligned.usda",
+      "dynamic": true,
+      "name": "tissue0",
+      "prim_path": "/World/Objects/doc_crumpled_paper0/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/iros/trash/iros_crumpled_paper_000/Aligned.usda",
+      "dynamic": true,
+      "name": "tissue1",
+      "prim_path": "/World/Objects/doc_crumpled_paper1/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/iros/trash/iros_crumpled_paper_000/Aligned.usda",
+      "dynamic": true,
+      "name": "tissue2",
+      "prim_path": "/World/Objects/doc_crumpled_paper2/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/iros/trash_can/iros_trash_can_001/Aligned.usda",
+      "dynamic": false,
+      "name": "bin",
+      "prim_path": "/World/Objects/doc_bin/entity",
+      "role": "fixture"
+    }
+  ],
+  "regions": {
+    "bin_floor": {
+      "approach_xy": [
+        2.78,
+        -0.1
+      ],
+      "height_range": [
+        -1.4913999614715576,
+        -1.4793999614715576
+      ],
+      "label": "bin_floor",
+      "slot_bounds": [
+        2.5,
+        -1.13,
+        3.0599999999999996,
+        -0.77
+      ],
+      "support_mesh": "/World/background/background/body/visual",
+      "surface_height_m": -1.4853999614715576,
+      "xy": [
+        2.78,
+        -0.95
+      ]
+    },
+    "entrance_desk": {
+      "approach_xy": [
+        1.8,
+        1.0
+      ],
+      "height_range": [
+        -0.6395694577205001,
+        -0.6275694577205001
+      ],
+      "label": "entrance_desk",
+      "slot_bounds": [
+        1.52,
+        -0.12,
+        2.08,
+        0.24
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335694577205001,
+      "xy": [
+        1.8,
+        0.06
+      ]
+    },
+    "inner_side_station": {
+      "approach_xy": [
+        -2.65,
+        -0.72
+      ],
+      "height_range": [
+        -0.6395710528515953,
+        -0.6275710528515953
+      ],
+      "label": "inner_side_station",
+      "slot_bounds": [
+        -1.8800000000000001,
+        -0.8999999999999999,
+        -1.32,
+        -0.54
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_002/entity/body/visual",
+      "surface_height_m": -0.6335710528515953,
+      "xy": [
+        -1.6,
+        -0.72
+      ]
+    },
+    "left": {
+      "approach_xy": [
+        -1.6,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006",
+      "height_range": [
+        -0.6365749702074437,
+        -0.6305749702074437
+      ],
+      "label": "\u4f1a\u8bae\u684c\u5de6\u4fa7",
+      "slot_bounds": [
+        -2.01,
+        -0.25,
+        -0.78,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006/entity/body/visual",
+      "surface_height_m": -0.6335749702074437,
+      "xy": [
+        -1.6,
+        0.06
+      ]
+    },
+    "middle": {
+      "approach_xy": [
+        0.0,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006_000",
+      "height_range": [
+        -0.6365731162659903,
+        -0.6305731162659903
+      ],
+      "label": "\u4f1a\u8bae\u684c\u4e2d\u90e8",
+      "slot_bounds": [
+        -0.59,
+        -0.25,
+        0.61,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_000/entity/body/visual",
+      "surface_height_m": -0.6335731162659903,
+      "xy": [
+        0,
+        0.06
+      ]
+    },
+    "right": {
+      "approach_xy": [
+        1.5499999999999998,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006_003",
+      "height_range": [
+        -0.6365717250983253,
+        -0.6305717250983253
+      ],
+      "label": "\u4f1a\u8bae\u684c\u53f3\u4fa7",
+      "slot_bounds": [
+        0.79,
+        -0.25,
+        2.0,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335717250983253,
+      "xy": [
+        1.55,
+        0.06
+      ]
+    },
+    "seat_north_left": {
+      "approach_xy": [
+        -1.55,
+        1.0
+      ],
+      "height_range": [
+        -0.6395745167318599,
+        -0.6275745167318599
+      ],
+      "label": "seat_north_left",
+      "slot_bounds": [
+        -1.83,
+        -0.06,
+        -1.27,
+        0.3
+      ],
+      "support_mesh": "/World/background/benchmark_table_006/entity/body/visual",
+      "surface_height_m": -0.6335745167318599,
+      "xy": [
+        -1.55,
+        0.12
+      ]
+    },
+    "seat_north_middle": {
+      "approach_xy": [
+        0,
+        1.0
+      ],
+      "height_range": [
+        -0.6395731162659717,
+        -0.6275731162659717
+      ],
+      "label": "seat_north_middle",
+      "slot_bounds": [
+        -0.28,
+        -0.06,
+        0.28,
+        0.3
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_000/entity/body/visual",
+      "surface_height_m": -0.6335731162659717,
+      "xy": [
+        0,
+        0.12
+      ]
+    },
+    "seat_north_right": {
+      "approach_xy": [
+        1.55,
+        1.0
+      ],
+      "height_range": [
+        -0.6395717250983066,
+        -0.6275717250983066
+      ],
+      "label": "seat_north_right",
+      "slot_bounds": [
+        1.27,
+        -0.06,
+        1.83,
+        0.3
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335717250983066,
+      "xy": [
+        1.55,
+        0.12
+      ]
+    },
+    "seat_south_left": {
+      "approach_xy": [
+        -1.55,
+        -1.75
+      ],
+      "height_range": [
+        -0.6395715063271727,
+        -0.6275715063271727
+      ],
+      "label": "seat_south_left",
+      "slot_bounds": [
+        -1.83,
+        -0.94,
+        -1.27,
+        -0.5800000000000001
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_002/entity/body/visual",
+      "surface_height_m": -0.6335715063271727,
+      "xy": [
+        -1.55,
+        -0.76
+      ]
+    },
+    "seat_south_middle": {
+      "approach_xy": [
+        0,
+        -1.75
+      ],
+      "height_range": [
+        -0.6395729940736853,
+        -0.6275729940736853
+      ],
+      "label": "seat_south_middle",
+      "slot_bounds": [
+        -0.28,
+        -0.94,
+        0.28,
+        -0.5800000000000001
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_001/entity/body/visual",
+      "surface_height_m": -0.6335729940736853,
+      "xy": [
+        0,
+        -0.76
+      ]
+    },
+    "seat_south_right": {
+      "approach_xy": [
+        1.55,
+        -1.75
+      ],
+      "height_range": [
+        -0.6395743852413056,
+        -0.6275743852413056
+      ],
+      "label": "seat_south_right",
+      "slot_bounds": [
+        1.27,
+        -0.94,
+        1.83,
+        -0.5800000000000001
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_004/entity/body/visual",
+      "surface_height_m": -0.6335743852413056,
+      "xy": [
+        1.55,
+        -0.76
+      ]
+    },
+    "service": {
+      "approach_xy": [
+        0.1499999999999999,
+        1.0
+      ],
+      "fixture_path": "/World/Objects/fixture_service/entity",
+      "height_range": [
+        -0.7873951440311086,
+        -0.7813951440311085
+      ],
+      "label": "\u4f1a\u8bae\u5907\u54c1\u53f0",
+      "slot_bounds": [
+        -0.47,
+        1.73,
+        0.77,
+        2.19
+      ],
+      "support_mesh": "/World/Objects/fixture_service/entity/body/visual",
+      "surface_height_m": -0.7843951440311085,
+      "xy": [
+        0.15,
+        1.96
+      ]
+    },
+    "waste": {
+      "approach_xy": [
+        2.78,
+        -0.1
+      ],
+      "height_range": [
+        -1.4793999614715576,
+        -1.4673999614715576
+      ],
+      "label": "\u529e\u516c\u5ba4\u5783\u573e\u6876\u5185",
+      "slot_bounds": [
+        2.5,
+        -1.13,
+        3.0599999999999996,
+        -0.77
+      ],
+      "support_mesh": "/World/Objects/doc_bin/entity",
+      "surface_height_m": -1.4733999614715576,
+      "xy": [
+        2.78,
+        -0.95
+      ]
+    }
+  },
+  "source_display_id": "O2",
+  "source_scene": "office"
+}

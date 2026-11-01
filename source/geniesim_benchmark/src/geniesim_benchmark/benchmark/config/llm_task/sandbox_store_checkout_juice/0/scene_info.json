@@ -1,0 +1,313 @@
+{
+  "initial_state": {
+    "base_pose_xyzw": [
+      2.566957256827835,
+      -0.7098986883886501,
+      0.0281126294952034,
+      0.0,
+      0.0,
+      -0.9989598329924403,
+      0.045598816516615626
+    ],
+    "environment": {},
+    "joint_positions": {
+      "idx01_body_joint1": -1.08,
+      "idx02_body_joint2": 2.16,
+      "idx03_body_joint3": -1.08,
+      "idx04_body_joint4": 0.0,
+      "idx05_body_joint5": 0.0,
+      "idx111_chassis_lwheel_front_joint1": 0.0,
+      "idx112_chassis_lwheel_front_joint2": 3.6176205048498886,
+      "idx11_head_joint1": -0.6129565271114046,
+      "idx121_chassis_lwheel_rear_joint1": 0.0,
+      "idx122_chassis_lwheel_rear_joint2": 3.6176205048498886,
+      "idx12_head_joint2": 0.0,
+      "idx131_chassis_rwheel_front_joint1": 0.0,
+      "idx132_chassis_rwheel_front_joint2": -6.116485233427952,
+      "idx13_head_joint3": 0.5230999988156386,
+      "idx141_chassis_rwheel_rear_joint1": 0.0,
+      "idx142_chassis_rwheel_rear_joint2": -6.116485233427952,
+      "idx21_arm_l_joint1": 2.699052,
+      "idx22_arm_l_joint2": -1.449331,
+      "idx23_arm_l_joint3": -1.483798,
+      "idx24_arm_l_joint4": -1.905969,
+      "idx25_arm_l_joint5": -1.657605,
+      "idx26_arm_l_joint6": -0.121615,
+      "idx27_arm_l_joint7": -1.239675,
+      "idx31_gripper_l_inner_joint1": 0.0,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx33_gripper_l_left_support_joint": 0.0,
+      "idx34_gripper_l_inner_joint2": 0.0,
+      "idx35_gripper_l_outer_joint2": 0.0,
+      "idx36_gripper_l_right_support_joint": 0.0,
+      "idx61_arm_r_joint1": -2.169420651419035,
+      "idx62_arm_r_joint2": -1.3409979854097234,
+      "idx63_arm_r_joint3": 1.525031691649821,
+      "idx64_arm_r_joint4": -2.495889659920157,
+      "idx65_arm_r_joint5": 0.16729433881017544,
+      "idx66_arm_r_joint6": 0.2727570946734196,
+      "idx67_arm_r_joint7": -0.1066580539891595,
+      "idx71_gripper_r_inner_joint1": 0.0,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx73_gripper_r_left_support_joint": 0.0,
+      "idx74_gripper_r_inner_joint2": 0.0,
+      "idx75_gripper_r_outer_joint2": 0.0,
+      "idx76_gripper_r_right_support_joint": 0.0
+    },
+    "objects": {
+      "/World/Objects/doc_juice/entity": [
+        1.9650836340681546,
+        -0.4700753304656141,
+        1.1574699609231471,
+        0.6287741291728061,
+        -0.3234825955262541,
+        -0.32348190808134303,
+        0.6287778304128023
+      ],
+      "/World/Objects/doc_same_juice_0/entity": [
+        1.9651760949243342,
+        -0.3806751637567507,
+        1.1627592763346577,
+        0.7071035746228059,
+        0.0,
+        0.0,
+        0.7071099877357483
+      ],
+      "/World/Objects/doc_same_juice_1/entity": [
+        1.9651760949243342,
+        -0.2914251637567507,
+        1.1622899127771438,
+        0.7071035746228059,
+        0.0,
+        0.0,
+        0.7071099877357483
+      ],
+      "/World/Objects/doc_same_juice_2/entity": [
+        1.9651760949243342,
+        -0.20217516375675065,
+        1.1618205492196299,
+        0.7071035746228059,
+        0.0,
+        0.0,
+        0.7071099877357483
+      ]
+    }
+  },
+  "objects": [
+    {
+      "asset": "assets/objects/genie/juice/Aligned.usda",
+      "dynamic": true,
+      "name": "juice",
+      "prim_path": "/World/Objects/doc_juice/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/genie/juice/Aligned.usda",
+      "dynamic": true,
+      "name": "same_juice_0",
+      "prim_path": "/World/Objects/doc_same_juice_0/entity",
+      "role": "interactive_context"
+    },
+    {
+      "asset": "assets/objects/genie/juice/Aligned.usda",
+      "dynamic": true,
+      "name": "same_juice_1",
+      "prim_path": "/World/Objects/doc_same_juice_1/entity",
+      "role": "interactive_context"
+    },
+    {
+      "asset": "assets/objects/genie/juice/Aligned.usda",
+      "dynamic": true,
+      "name": "same_juice_2",
+      "prim_path": "/World/Objects/doc_same_juice_2/entity",
+      "role": "interactive_context"
+    }
+  ],
+  "regions": {
+    "bakery": {
+      "approach_xy": [
+        -0.97,
+        2.7
+      ],
+      "height_range": [
+        0.8,
+        0.87
+      ],
+      "label": "\u9762\u5305\u96f6\u98df\u8d27\u67b6",
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_008_01/entity/body/visual",
+      "surface_height_m": 0.8361641225618905,
+      "xy": [
+        -0.97,
+        3.7
+      ]
+    },
+    "basket_delivery": {
+      "approach_xy": [
+        0.5,
+        0.8
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "basket_delivery",
+      "slot_bounds": [
+        0.21999999999999997,
+        1.47,
+        0.78,
+        1.8299999999999998
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        0.5,
+        1.65
+      ]
+    },
+    "bin_floor": {
+      "approach_xy": [
+        2.65,
+        -1.7999999999999998
+      ],
+      "height_range": [
+        -0.0178873705047966,
+        -0.0058873705047966015
+      ],
+      "label": "bin_floor",
+      "slot_bounds": [
+        2.37,
+        -2.83,
+        2.9299999999999997,
+        -2.4699999999999998
+      ],
+      "support_mesh": "/World/background/background/part_01/part_01",
+      "surface_height_m": -0.011887370504796602,
+      "xy": [
+        2.65,
+        -2.65
+      ]
+    },
+    "checkout": {
+      "approach_xy": [
+        2.34,
+        -1.28
+      ],
+      "height_range": [
+        0.8667312413780526,
+        0.8787312413780526
+      ],
+      "label": "\u987e\u5ba2\u4fa7\u53ef\u8fbe\u7684\u539f\u751f\u6536\u94f6\u67dc\u53f0",
+      "slot_bounds": [
+        1.81,
+        -2.19,
+        1.93,
+        -2.07
+      ],
+      "support_mesh": "/World/background/benchmark_cashier_004/entity/body/visual",
+      "surface_height_m": 0.8727312413780526,
+      "xy": [
+        1.87,
+        -2.13
+      ]
+    },
+    "daily": {
+      "approach_xy": [
+        -1.75,
+        -0.7
+      ],
+      "height_range": [
+        1.02,
+        1.06
+      ],
+      "label": "\u65e5\u7528\u54c1\u8d27\u67b6",
+      "support_mesh": "/World/background/supermarket_shelf_002_03/entity/body/visual",
+      "surface_height_m": 1.0391947588734034,
+      "xy": [
+        -0.83,
+        -0.7
+      ]
+    },
+    "drinks": {
+      "approach_xy": [
+        0.55,
+        2.7
+      ],
+      "height_range": [
+        0.8,
+        0.87
+      ],
+      "label": "\u996e\u6599\u8d27\u67b6",
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_008_02/entity/body/visual",
+      "surface_height_m": 0.8361639508022085,
+      "xy": [
+        0.55,
+        3.7
+      ]
+    },
+    "stock": {
+      "approach_xy": [
+        -1.55,
+        -1.85
+      ],
+      "height_range": [
+        0.65,
+        0.75
+      ],
+      "label": "\u6536\u94f6\u65c1\u7406\u8d27\u53f0",
+      "support_mesh": "/World/Objects/fixture_restock_counter/entity/body/visual",
+      "surface_height_m": 0.6891174854640949,
+      "xy": [
+        -1.55,
+        -2.75
+      ]
+    },
+    "waste": {
+      "approach_xy": [
+        2.65,
+        -1.75
+      ],
+      "height_range": [
+        -0.0058873705047966015,
+        0.006112629495203399
+      ],
+      "label": "\u6536\u94f6\u5783\u573e\u6876\u5185",
+      "slot_bounds": [
+        2.37,
+        -2.83,
+        2.9299999999999997,
+        -2.4699999999999998
+      ],
+      "support_mesh": "/World/Objects/doc_bin/entity",
+      "surface_height_m": 0.00011262949520339863,
+      "xy": [
+        2.65,
+        -2.65
+      ]
+    },
+    "yellow_juice": {
+      "approach_xy": [
+        2.566976213413883,
+        -0.7099251847001947
+      ],
+      "height_range": [
+        1.080679696459221,
+        1.092679696459221
+      ],
+      "label": "\u987e\u5ba2\u4fa7\u9ec4\u8272\u8d27\u67b6\u4e0a\u5c42\u540c\u7c7b\u679c\u6c41\u533a",
+      "slot_bounds": [
+        1.9454262134138833,
+        -0.4996751847001948,
+        2.001526213413883,
+        -0.1724251847001948
+      ],
+      "support_mesh": "/World/background/benchmark_supermarket_shelf_011_01/entity/body/visual",
+      "surface_height_m": 1.086679696459221,
+      "xy": [
+        1.964976213413883,
+        -0.46992518470019473
+      ]
+    }
+  },
+  "source_display_id": "S1",
+  "source_scene": "store"
+}

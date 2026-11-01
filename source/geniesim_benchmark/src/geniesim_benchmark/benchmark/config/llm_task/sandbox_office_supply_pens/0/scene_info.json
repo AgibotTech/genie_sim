@@ -1,0 +1,358 @@
+{
+  "initial_state": {
+    "base_pose_xyzw": [
+      2.08,
+      0.72,
+      -1.4453999614715576,
+      0.0,
+      0.0,
+      -0.7071067811865475,
+      0.7071067811865476
+    ],
+    "environment": {},
+    "joint_positions": {
+      "idx01_body_joint1": -0.3,
+      "idx02_body_joint2": 0.6,
+      "idx03_body_joint3": -0.3,
+      "idx04_body_joint4": 0.0,
+      "idx05_body_joint5": 0.0,
+      "idx111_chassis_lwheel_front_joint1": 0.0,
+      "idx112_chassis_lwheel_front_joint2": 0.0,
+      "idx11_head_joint1": 0.0,
+      "idx121_chassis_lwheel_rear_joint1": 0.0,
+      "idx122_chassis_lwheel_rear_joint2": 0.0,
+      "idx12_head_joint2": 0.0,
+      "idx131_chassis_rwheel_front_joint1": 0.0,
+      "idx132_chassis_rwheel_front_joint2": 0.0,
+      "idx13_head_joint3": 0.0,
+      "idx141_chassis_rwheel_rear_joint1": 0.0,
+      "idx142_chassis_rwheel_rear_joint2": 0.0,
+      "idx21_arm_l_joint1": 2.699052,
+      "idx22_arm_l_joint2": -1.449331,
+      "idx23_arm_l_joint3": -1.483798,
+      "idx24_arm_l_joint4": -1.905969,
+      "idx25_arm_l_joint5": -1.657605,
+      "idx26_arm_l_joint6": -0.121615,
+      "idx27_arm_l_joint7": -1.239675,
+      "idx31_gripper_l_inner_joint1": 0.0,
+      "idx32_gripper_l_outer_joint1": 0.0,
+      "idx33_gripper_l_left_support_joint": 0.0,
+      "idx34_gripper_l_inner_joint2": 0.0,
+      "idx35_gripper_l_outer_joint2": 0.0,
+      "idx36_gripper_l_right_support_joint": 0.0,
+      "idx61_arm_r_joint1": -2.699002,
+      "idx62_arm_r_joint2": -1.448731,
+      "idx63_arm_r_joint3": 1.483238,
+      "idx64_arm_r_joint4": -1.905969,
+      "idx65_arm_r_joint5": 1.657993,
+      "idx66_arm_r_joint6": -0.122322,
+      "idx67_arm_r_joint7": 1.239733,
+      "idx71_gripper_r_inner_joint1": 0.0,
+      "idx72_gripper_r_outer_joint1": 0.0,
+      "idx73_gripper_r_left_support_joint": 0.0,
+      "idx74_gripper_r_inner_joint2": 0.0,
+      "idx75_gripper_r_outer_joint2": 0.0,
+      "idx76_gripper_r_right_support_joint": 0.0
+    },
+    "objects": {
+      "/World/Objects/doc_pen_holder/entity": [
+        1.77,
+        0.13999999999998203,
+        -0.5875717281728459,
+        0.7071035746228059,
+        0.0,
+        0.0,
+        0.7071099877357483
+      ],
+      "/World/Objects/doc_supply_pen0/entity": [
+        1.7419886378957408,
+        0.11705312418016134,
+        -0.5537071349352496,
+        -0.09323507924150254,
+        0.7665143794783621,
+        -0.00479705506333384,
+        -0.6354053149875688
+      ],
+      "/World/Objects/doc_supply_pen1/entity": [
+        1.7432714761741706,
+        0.16585229283109226,
+        -0.5542710269101278,
+        0.1293664984866293,
+        0.7723761264746655,
+        0.04165198615817411,
+        -0.6204551074577271
+      ],
+      "/World/Objects/doc_supply_pen2/entity": [
+        1.7969622121721998,
+        0.1150915243156232,
+        -0.5533802766980346,
+        0.2000129545829559,
+        -0.6374185784026326,
+        0.08018039234849816,
+        0.7397725857241563
+      ],
+      "/World/Objects/doc_supply_pen3/entity": [
+        1.7971188264299893,
+        0.16281224437400388,
+        -0.5534014931488881,
+        -0.25400565187395036,
+        -0.6349948715486405,
+        -0.1215908070936667,
+        0.7193596579968365
+      ]
+    }
+  },
+  "objects": [
+    {
+      "asset": "assets/objects/iros/pen_cup/iros_pen_cup_000/Aligned.usda",
+      "dynamic": false,
+      "name": "pen_holder",
+      "prim_path": "/World/Objects/doc_pen_holder/entity",
+      "role": "fixture"
+    },
+    {
+      "asset": "assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda",
+      "dynamic": true,
+      "name": "supply_pen0",
+      "prim_path": "/World/Objects/doc_supply_pen0/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda",
+      "dynamic": true,
+      "name": "supply_pen1",
+      "prim_path": "/World/Objects/doc_supply_pen1/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda",
+      "dynamic": true,
+      "name": "supply_pen2",
+      "prim_path": "/World/Objects/doc_supply_pen2/entity",
+      "role": "interactive"
+    },
+    {
+      "asset": "assets/objects/benchmark/pen/benchmark_pen_001/Aligned.usda",
+      "dynamic": true,
+      "name": "supply_pen3",
+      "prim_path": "/World/Objects/doc_supply_pen3/entity",
+      "role": "interactive"
+    }
+  ],
+  "regions": {
+    "left": {
+      "approach_xy": [
+        -1.6,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006",
+      "height_range": [
+        -0.6365749702074437,
+        -0.6305749702074437
+      ],
+      "label": "\u4f1a\u8bae\u684c\u5de6\u4fa7",
+      "slot_bounds": [
+        -2.01,
+        -0.25,
+        -0.78,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006/entity/body/visual",
+      "surface_height_m": -0.6335749702074437,
+      "xy": [
+        -1.6,
+        0.06
+      ]
+    },
+    "middle": {
+      "approach_xy": [
+        0.0,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006_000",
+      "height_range": [
+        -0.6365731162659903,
+        -0.6305731162659903
+      ],
+      "label": "\u4f1a\u8bae\u684c\u4e2d\u90e8",
+      "slot_bounds": [
+        -0.59,
+        -0.25,
+        0.61,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_000/entity/body/visual",
+      "surface_height_m": -0.6335731162659903,
+      "xy": [
+        0,
+        0.06
+      ]
+    },
+    "pen_cup": {
+      "approach_xy": [
+        1.5499999999999998,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006_003",
+      "height_range": [
+        -0.6365717250983253,
+        -0.6305717250983253
+      ],
+      "label": "\u4f1a\u8bae\u684c\u53f3\u4fa7",
+      "slot_bounds": [
+        0.79,
+        -0.25,
+        2.0,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335717250983253,
+      "xy": [
+        1.77,
+        0.14
+      ]
+    },
+    "right": {
+      "approach_xy": [
+        1.5499999999999998,
+        1.0
+      ],
+      "fixture_path": "/World/background/benchmark_table_006_003",
+      "height_range": [
+        -0.6365717250983253,
+        -0.6305717250983253
+      ],
+      "label": "\u4f1a\u8bae\u684c\u53f3\u4fa7",
+      "slot_bounds": [
+        0.79,
+        -0.25,
+        2.0,
+        0.25
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335717250983253,
+      "xy": [
+        1.55,
+        0.06
+      ]
+    },
+    "seat_1": {
+      "approach_xy": [
+        -1.03,
+        0.68
+      ],
+      "height_range": [
+        -0.6395720679638213,
+        -0.6275720679638213
+      ],
+      "label": "\u5ea7\u4f4d1",
+      "slot_bounds": [
+        -1.44,
+        -0.25,
+        -1.12,
+        0.010000000000000009
+      ],
+      "support_mesh": "/World/background/benchmark_table_006/entity/body/visual",
+      "surface_height_m": -0.6335720679638213,
+      "xy": [
+        -1.28,
+        -0.12000000000000001
+      ]
+    },
+    "seat_2": {
+      "approach_xy": [
+        -0.04999999999999999,
+        0.68
+      ],
+      "height_range": [
+        -0.6395758371193744,
+        -0.6275758371193744
+      ],
+      "label": "\u5ea7\u4f4d2",
+      "slot_bounds": [
+        -0.45999999999999996,
+        -0.25,
+        -0.13999999999999999,
+        0.010000000000000009
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_000/entity/body/visual",
+      "surface_height_m": -0.6335758371193744,
+      "xy": [
+        -0.3,
+        -0.12000000000000001
+      ]
+    },
+    "seat_3": {
+      "approach_xy": [
+        0.56,
+        0.68
+      ],
+      "height_range": [
+        -0.639570304717481,
+        -0.627570304717481
+      ],
+      "label": "\u5ea7\u4f4d3",
+      "slot_bounds": [
+        0.15,
+        -0.25,
+        0.47,
+        0.010000000000000009
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_000/entity/body/visual",
+      "surface_height_m": -0.633570304717481,
+      "xy": [
+        0.31,
+        -0.12000000000000001
+      ]
+    },
+    "seat_4": {
+      "approach_xy": [
+        1.875,
+        0.68
+      ],
+      "height_range": [
+        -0.6395710448849714,
+        -0.6275710448849714
+      ],
+      "label": "\u5ea7\u4f4d4",
+      "slot_bounds": [
+        1.465,
+        -0.25,
+        1.785,
+        0.010000000000000009
+      ],
+      "support_mesh": "/World/background/benchmark_table_006_003/entity/body/visual",
+      "surface_height_m": -0.6335710448849714,
+      "xy": [
+        1.625,
+        -0.12000000000000001
+      ]
+    },
+    "service": {
+      "approach_xy": [
+        0.1499999999999999,
+        1.0
+      ],
+      "fixture_path": "/World/Objects/fixture_service/entity",
+      "height_range": [
+        -0.7873951440311086,
+        -0.7813951440311085
+      ],
+      "label": "\u4f1a\u8bae\u5907\u54c1\u53f0",
+      "slot_bounds": [
+        -0.47,
+        1.73,
+        0.77,
+        2.19
+      ],
+      "support_mesh": "/World/Objects/fixture_service/entity/body/visual",
+      "surface_height_m": -0.7843951440311085,
+      "xy": [
+        0.15,
+        1.96
+      ]
+    }
+  },
+  "source_display_id": "O3",
+  "source_scene": "office"
+}

@@ -23,7 +23,7 @@ installs in topological order.
 |---|---|---|---|
 | 🧞 [`geniesim_cli/`](geniesim_cli/) | CLI dispatcher — the `geniesim` console script | [AGENTS.md](geniesim_cli/AGENTS.md) | — |
 | 🌐 [`geniesim/`](geniesim/) | Umbrella meta-package — pulls in every peer | — | — |
-| 🧪 [`geniesim_benchmark/`](geniesim_benchmark/) | Benchmark tasks, scoring, LLM eval configs *(legacy stack — Isaac Sim direct; will be refactored onto `geniesim_ros`)* | [README.md](geniesim_benchmark/README.md) | [run-benchmark](geniesim_benchmark/skills/run-benchmark/SKILL.md), [check-inference](geniesim_benchmark/skills/check-inference/SKILL.md) |
+| 🧪 [`geniesim_benchmark/`](geniesim_benchmark/) | Benchmark tasks and scoring with Isaac, Newton, and native MuJoCo runtimes | [README.md](geniesim_benchmark/README.md) | [run-benchmark](geniesim_benchmark/skills/run-benchmark/SKILL.md), [check-inference](geniesim_benchmark/skills/check-inference/SKILL.md) |
 | 🏗️ [`geniesim_scene_agent/`](geniesim_scene_agent/) | Asset search, scene authoring, and task orchestration | [AGENTS.md](geniesim_scene_agent/AGENTS.md) | [geniesim-scene-generation](geniesim_scene_agent/skills/geniesim-scene-generation/SKILL.md), [geniesim-asset-search](geniesim_scene_agent/skills/geniesim-asset-search/SKILL.md), [scene-to-data](geniesim_scene_agent/skills/geniesim-scene-to-data/SKILL.md) |
 | ⚡ [`geniesim_ros/`](geniesim_ros/) | **Genie Sim RT Engine** — realtime interactive ROS 2 simulation | [README.md](geniesim_ros/README.md) · [AGENTS.md](geniesim_ros/AGENTS.md) | [build-workspace](geniesim_ros/skills/build-workspace/SKILL.md), [launch-scene](geniesim_ros/skills/launch-scene/SKILL.md), [moveit-wbc](geniesim_ros/skills/moveit-wbc/SKILL.md), [add-robot](geniesim_ros/skills/add-robot/SKILL.md), [teleop-bridge](geniesim_ros/skills/teleop-bridge/SKILL.md), [record-episode](geniesim_ros/skills/record-episode/SKILL.md), [debug-physics](geniesim_ros/skills/debug-physics/SKILL.md), [material-override](geniesim_ros/skills/material-override/SKILL.md) |
 | 🎮 [`geniesim_teleop/`](geniesim_teleop/) | VR / Pico teleoperation bridge | [AGENTS.md](geniesim_teleop/AGENTS.md) | [run-teleop](geniesim_teleop/skills/run-teleop/SKILL.md) |
@@ -32,13 +32,12 @@ installs in topological order.
 
 ### Where do I start?
 
-Install + docker via `geniesim_cli`, then **pick a stack** — they are
-independent and parallel today:
+Install and manage containers with `geniesim_cli`, then select the workflow:
 
 ```
 geniesim_cli      → install + docker
    │
-   ├── geniesim_benchmark   legacy benchmark runtime (Isaac Sim direct)
+   ├── geniesim_benchmark   task-selected Isaac / Newton / native MuJoCo
    │                        — run / score / evaluate policies headless
    │
    └── geniesim_ros         Genie Sim RT Engine (ROS 2 native)
@@ -77,7 +76,7 @@ graph TD
 
   geniesim["<b>geniesim</b><br/>meta-package"]
   geniesim_cli["<b>geniesim_cli</b><br/>console script"]
-  geniesim_benchmark["<b>geniesim_benchmark</b><br/>Isaac Sim direct"]
+  geniesim_benchmark["<b>geniesim_benchmark</b><br/>Isaac / Newton / MuJoCo"]
   geniesim_dream["<b>geniesim_dream</b><br/>🌙 world-model inference (own envs)"]
   geniesim_ros["<b>geniesim_ros</b><br/>⚡ RT Engine"]
   geniesim_scene_agent["<b>geniesim_scene_agent</b><br/>🏗️ scene gen (optional extra)"]
@@ -94,6 +93,7 @@ graph TD
   geniesim -."[teleop,all,full] extra".-> geniesim_teleop
   geniesim -."[scene_agent,all,full] extra".-> geniesim_scene_agent
   geniesim -."[world,all,full] extra".-> geniesim_world
+  geniesim_benchmark -..->|Newton client| geniesim_ros
 
   classDef legacy fill:#fff3cd,stroke:#856404,color:#856404
   classDef leaf fill:#e9ecef,stroke:#6c757d,color:#495057

@@ -1,0 +1,84 @@
+{
+  "generalization": {},
+  "objects": {
+    "constraints": null,
+    "extra_objects": [],
+    "fix_objects": [],
+    "task_related_objects": []
+  },
+  "problem_instance": 0,
+  "recording_setting": {
+    "camera_list": [
+      "/genie/head_link3/head_front_Camera",
+      "/genie/gripper_l_camera_link/Left_Camera",
+      "/genie/gripper_r_camera_link/Right_Camera"
+    ],
+    "fps": 30,
+    "num_of_episode": 1
+  },
+  "robot": {
+    "arm": "right",
+    "free_base": true,
+    "robot_cfg": "G2_crsB_90d_sandbox_full_body.json",
+    "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -1.65,
+          -1.8,
+          0.0281126294952034
+        ],
+        "quaternion": [
+          0.7071067811865476,
+          0.0,
+          0.0,
+          0.7071067811865475
+        ]
+      }
+    }
+  },
+  "scene": {
+    "function_space_objects": {
+      "workspace_00": {
+        "material_obj_prim": {},
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "size": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "scene_id": "sandbox_store_stack_crates/workspace_00",
+    "scene_info_dir": "background/sandbox/store/stack_crates",
+    "scene_usd": "background/sandbox/store/stack_crates/background.usda"
+  },
+  "stages": [
+    {
+      "action": "pick",
+      "active": {
+        "object_id": "gripper",
+        "primitive": null
+      },
+      "extra_params": {
+        "pick_up_direction": "x",
+        "pick_up_distance": 0.12
+      },
+      "passive": {
+        "object_id": "",
+        "primitive": null
+      }
+    }
+  ],
+  "task": "sandbox_store_stack_crates"
+}
