@@ -54,21 +54,27 @@ CheckResult = tuple[str, list[str], Optional[str], Optional[Callable[[], int]]]
 
 def _check_stack() -> CheckResult:
     """Re-run ``geniesim status``-style inspection; flag missing/broken peers."""
-    from geniesim_cli.commands.status import DISTRIBUTIONS, inspect
+    from geniesim_cli.commands.status import DISTRIBUTIONS, health_issues, inspect
 
     rows = [(spec, inspect(spec)) for spec in DISTRIBUTIONS]
 
     missing: list[str] = []
     broken: list[str] = []
     for spec, info in rows:
+        issues = health_issues(spec, info)
+        if not issues:
+            continue
         if not info["installed"]:
             missing.append(spec["dist"])
-        elif info["import_ok"] is False:
-            broken.append(spec["dist"])
+        else:
+            broken.append(f"{spec['dist']} ({', '.join(issues)})")
 
     if not missing and not broken:
-        lines = [f"   {GREEN}✅ All geniesim distributions installed and importable.{RST}"]
+        lines = [f"   {GREEN}✅ Required distributions and installed optional peers are healthy.{RST}"]
         for spec, info in rows:
+            if not info["installed"]:
+                lines.append(f"      {DIM}⏭️  {spec['dist']} (optional, not installed){RST}")
+                continue
             mode = "editable" if info["editable"] else "wheel" if info["editable"] is False else "?"
             lines.append(f"      {WHITE}{spec['dist']}{RST} {GREEN}{info['version']}{RST} {DIM}({mode}){RST}")
         return "ok", lines, None, None
@@ -77,7 +83,7 @@ def _check_stack() -> CheckResult:
     if missing:
         lines.append(f"   {RED}❌ Missing distributions:{RST} {WHITE}{', '.join(missing)}{RST}")
     if broken:
-        lines.append(f"   {RED}❌ Installed but import-broken:{RST} {WHITE}{', '.join(broken)}{RST}")
+        lines.append(f"   {RED}❌ Unhealthy distributions:{RST} {WHITE}{', '.join(broken)}{RST}")
     lines.append(f"   {DIM}Run{RST} {CYAN}geniesim status{RST} {DIM}for the full report.{RST}")
 
     def _fix() -> int:

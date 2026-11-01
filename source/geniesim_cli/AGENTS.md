@@ -71,6 +71,10 @@ The CLI, umbrella and asset package have separate responsibilities; see the
 The CLI has no SDK install extra. Required peers and optional extras are
 declared in the [umbrella metadata](../geniesim/pyproject.toml); bootstrap
 installs required peers, while optional peers need their own setup.
+Standalone wheels bundle that declaration as `_umbrella.toml` for diagnostics
+before the umbrella is installed. The source file links to the canonical
+pyproject, so tier changes still have one owner. A checkout found from the CLI
+location or current directory takes precedence over installed and bundled metadata.
 
 ---
 
@@ -319,7 +323,9 @@ intentional: `status` reports, `bootstrap` installs.
 When extending `status` (e.g. probing optional features inside an installed
 package), keep it cheap and non-fatal. Update peer dependencies / extras in
 package metadata and required / optional tiers in the umbrella metadata;
-`_tiers.py` reads source metadata first, then installed metadata. Keep
+`_tiers.py` reads source metadata first, then installed metadata, then the
+declaration bundled with the CLI wheel. Doctor uses the same health verdict
+as status, including skipping absent optional peers. Keep
 `_status_spec.py` import mappings and discovery rules aligned with new packages.
 
 ---
@@ -342,7 +348,9 @@ The install command per dist is chosen by
 [`_install_command`](./src/geniesim_cli/commands/bootstrap.py): if the dist is
 importable from a local source tree (i.e. editable-installed somewhere or
 on `PYTHONPATH`), the command becomes `pip install -e <source_root>`.
-Otherwise it searches for sibling source trees, including local asset sources.
+Otherwise it searches for sibling source trees and the current checkout,
+including local asset sources. Installed wheel directories without packaging
+metadata are not editable source trees.
 **There is no PyPI fallback** — `geniesim` and `geniesim_assets` are
 private distributions and must be installed from a local checkout. When
 no local source tree can be located, `_install_command` returns

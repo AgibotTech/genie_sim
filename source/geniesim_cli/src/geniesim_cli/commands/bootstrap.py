@@ -67,9 +67,8 @@ def _install_command(dist_name: str) -> list[str] | None:
     Resolution order:
       1. If ``dist_name`` is already importable, use its on-disk source root
          (the editable checkout it was installed from).
-      2. Otherwise, look for a sibling source tree next to ``geniesim_cli``'s
-         own checkout — e.g. ``main/source/<dist_name>/pyproject.toml`` — so
-         ``geniesim bootstrap`` works after only ``geniesim_cli`` is installed.
+      2. Otherwise, look in the CLI's checkout or the current checkout,
+         then the local asset-source locations.
     """
     from pathlib import Path
 
@@ -86,18 +85,23 @@ def _install_command(dist_name: str) -> list[str] | None:
         # shim), and a blind ``.parent.parent`` there walks two levels
         # above the package and lands on a meaningless directory, which
         # then breaks the ``pip install -e <…>`` command.
-        # Walk outward and pick the closest ancestor that actually
-        # carries packaging metadata. If nothing matches, fall back to
-        # the package directory itself so pip's error message is
-        # informative instead of naming an unrelated ancestor.
+        # Walk outward and pick an ancestor with packaging metadata.
+        # A wheel's site-packages directory is not an editable source tree.
         source_root: Path | None = None
         for candidate in (pkg_dir.parent.parent, pkg_dir.parent, pkg_dir):
             if (candidate / "pyproject.toml").is_file() or (candidate / "setup.py").is_file():
                 source_root = candidate
                 break
-        if source_root is None:
-            source_root = pkg_dir
-        return [sys.executable, "-m", "pip", "install", "-e", str(source_root)]
+        if source_root is not None:
+            return [sys.executable, "-m", "pip", "install", "-e", str(source_root)]
+
+    from geniesim_cli._tiers import _source_pyproject
+
+    umbrella = _source_pyproject()
+    if umbrella is not None:
+        candidate = umbrella.parent.parent / dist_name
+        if (candidate / "pyproject.toml").is_file():
+            return [sys.executable, "-m", "pip", "install", "-e", str(candidate.resolve())]
 
     cli_spec = importlib.util.find_spec("geniesim_cli")
     if cli_spec is not None and cli_spec.origin is not None:
@@ -142,6 +146,11 @@ def run(args: list[str]) -> None:
     ``No matching distribution found for geniesim_benchmark``.
     """
     import subprocess
+
+    if "--help" in args or "-h" in args:
+        print(f"{BOLD}Usage: geniesim bootstrap{RST}")
+        print("Install or repair required peers from local source trees; optional peers are skipped.")
+        return
 
     print(f"{BOLD}{MAGENTA}🧞 geniesim bootstrap{RST} {DIM}— bootstrap the geniesim stack{RST}")
     print()

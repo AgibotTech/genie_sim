@@ -14,9 +14,9 @@ deps-dag``, …) should call into here rather than maintaining its own list,
 so that adding or re-tiering a peer is a **one-line edit** in the umbrella's
 pyproject.
 
-Two read paths (in order):
+Three read paths (in order):
 
-1. **Source-tree path** — walk up from this module to find
+1. **Source-tree path** — walk up from this module and the current directory to find
    ``source/geniesim/pyproject.toml``. This is the authoritative read
    in a dev checkout: edits to the umbrella's pyproject take effect
    immediately, no ``pip install`` needed to refresh.
@@ -28,7 +28,9 @@ Two read paths (in order):
    behind a freshly-edited source pyproject — which is why source is
    tried first.
 
-If both fail, ``tiers()`` raises ``RuntimeError`` with a clear message.
+3. **Bundled fallback** — the CLI wheel carries a copy of the umbrella's
+   pyproject, so diagnostics and recovery also work before it is installed.
+   The source file is a symlink to the canonical declaration, not a second list.
 
 The standalone script ``docker/collect_deps.py`` re-implements the same
 parse against the same pyproject (it runs at Docker build time, before
@@ -113,28 +115,36 @@ def _read_from_installed_metadata() -> tuple[list[str], dict[str, list[str]]] | 
 # --------------------------------------------------------------------------
 
 
-def _read_from_source_tree() -> tuple[list[str], dict[str, list[str]]] | None:
-    """Walk up from this module to find ``source/geniesim/pyproject.toml``
-    and parse it. Used pre-install (fresh clone, no pip install yet)."""
+def _source_pyproject() -> Path | None:
+    """Locate the umbrella in the CLI's checkout or the current checkout."""
     here = Path(__file__).resolve()
-    for parent in here.parents:
+    cwd = Path.cwd()
+    for parent in dict.fromkeys((*here.parents, cwd, *cwd.parents)):
         candidate = parent / "source" / "geniesim" / "pyproject.toml"
         if candidate.is_file():
-            with candidate.open("rb") as fh:
-                data = _tomllib().load(fh)
-            project = data.get("project", {}) or {}
-            tier1_list = [
-                _strip_specifier(r)
-                for r in (project.get("dependencies") or [])
-                if _is_geniesim_peer(_strip_specifier(r))
-            ]
-            tier2_map: dict[str, list[str]] = {}
-            for name, deps in (project.get("optional-dependencies") or {}).items():
-                peers = [_strip_specifier(d) for d in deps if _is_geniesim_peer(_strip_specifier(d))]
-                if peers:
-                    tier2_map[name] = peers
-            return tier1_list, tier2_map
+            return candidate
     return None
+
+
+def _read_project(path: Path) -> tuple[list[str], dict[str, list[str]]]:
+    with path.open("rb") as fh:
+        project = _tomllib().load(fh).get("project", {}) or {}
+    tier1_list = [
+        _strip_specifier(r)
+        for r in (project.get("dependencies") or [])
+        if _is_geniesim_peer(_strip_specifier(r))
+    ]
+    tier2_map: dict[str, list[str]] = {}
+    for name, deps in (project.get("optional-dependencies") or {}).items():
+        peers = [_strip_specifier(d) for d in deps if _is_geniesim_peer(_strip_specifier(d))]
+        if peers:
+            tier2_map[name] = peers
+    return tier1_list, tier2_map
+
+
+def _read_from_source_tree() -> tuple[list[str], dict[str, list[str]]] | None:
+    path = _source_pyproject()
+    return _read_project(path) if path is not None else None
 
 
 # --------------------------------------------------------------------------
@@ -146,17 +156,10 @@ def _read_from_source_tree() -> tuple[list[str], dict[str, list[str]]] | None:
 def _tiers() -> tuple[list[str], dict[str, list[str]]]:
     """Return ``(tier1, tier2)``. Source tree wins over installed
     metadata so a freshly-edited umbrella pyproject takes effect
-    without ``pip install``. Raises ``RuntimeError`` if neither path
-    resolves."""
+    without ``pip install``. The bundled declaration supports standalone installs."""
     result = _read_from_source_tree() or _read_from_installed_metadata()
     if result is None:
-        raise RuntimeError(
-            "Could not determine tier model: `geniesim` is not installed "
-            "and `source/geniesim/pyproject.toml` was not found by walking "
-            f"up from {Path(__file__).resolve()}. Either run `pip install "
-            "-e source/geniesim_cli/` from a checkout, or invoke from "
-            "inside the repo."
-        )
+        result = _read_project(Path(__file__).with_name("_umbrella.toml"))
     return result
 
 

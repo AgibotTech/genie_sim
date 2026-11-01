@@ -114,6 +114,16 @@ def inspect(spec: dict) -> dict:
     return info
 
 
+def health_issues(spec: dict, info: dict) -> list[str]:
+    """Shared status/doctor verdict; absence is allowed only for optional peers."""
+    if not info["installed"]:
+        return [] if spec.get("tier") == "optional" else ["not installed"]
+    issues = ["import failed"] if info["import_ok"] is False else []
+    issues.extend(f"runtime dependency: {name}" for name, _, ok, _ in info["deps"] if not ok)
+    issues.extend(f"submodule: {name}" for name, ok, _ in info["submodules"] if not ok)
+    return issues
+
+
 def _render_distribution_dag(rows: list[tuple[dict, dict]]) -> None:
     """Render the distribution-level dependency DAG as an ASCII tree.
 
@@ -216,20 +226,10 @@ def run(args: list[str]) -> None:
     for spec in DISTRIBUTIONS:
         info = inspect(spec)
         rows.append((spec, info))
-        is_optional = spec.get("tier") == "optional"
-        if not info["installed"]:
-            # Optional peers (tier-2, declared as umbrella extras) are
-            # allowed to be absent — they get a ⏭️  skip badge in the
-            # report, but don't flip the verdict.
-            if not is_optional:
-                any_missing = True
-                overall_ok = False
-        elif info["import_ok"] is False:
+        if health_issues(spec, info):
             overall_ok = False
-        if any(not ok for _, _, ok, _ in info["deps"]):
-            overall_ok = False
-        if any(not ok for _, ok, _ in info["submodules"]):
-            overall_ok = False
+        if not info["installed"] and spec.get("tier") != "optional":
+            any_missing = True
 
     print(f"{BOLD}📦 Distributions{RST}")
     last_dist_idx = len(rows) - 1
