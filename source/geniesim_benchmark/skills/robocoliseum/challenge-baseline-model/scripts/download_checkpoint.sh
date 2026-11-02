@@ -87,7 +87,7 @@ FINAL_DIR="$LOCAL_DIR/$CHECKPOINT_NAME"
 mkdir -p "$FINAL_DIR"
 
 TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 echo "========================================="
 echo "Downloading checkpoint: $CHECKPOINT_NAME"

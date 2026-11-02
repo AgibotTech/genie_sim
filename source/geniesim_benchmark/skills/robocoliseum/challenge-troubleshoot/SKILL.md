@@ -7,13 +7,13 @@ description: Use when something in the Simulation Challenge pipeline is misbehav
 
 When the user reports a problem, do this in order:
 
-1. **Reproduce / verify the symptom** with a read-only call (`/jobs`, `/result`, `/log`, `/current-user-info`) before doing anything destructive. For "what's the status" questions, `/jobs` is the only endpoint that carries one.
+1. **Reproduce / verify the symptom** with a read-only call (`/jobs`, `/result`, `/log`, `/current-user-info`) before doing anything destructive. For "what's the status" questions, ask `/jobs` (`detailed_status`); `/result` is for scores only.
 2. Match the symptom to the table below.
 3. Hand the user the next command from the **Action** column. Do NOT auto-resubmit jobs (quota cost) or auto-kill agents (loses in-flight cases) without explicit confirmation.
 
 ## Diagnostic heuristic: 4xx is never a network blip
 
-A structured `{"status":"error", ...}` body with HTTP **4xx** (400/401/403/404) is a **semantic rejection** by the platform — the request reached the server and was refused on its merits. Retrying it without changing the request gets the same answer and, for `POST /api/challenge/job`, **burns a daily submission slot each time**.
+A structured `{"status":"error", ...}` body with HTTP **4xx** (400/401/403/404) is a **semantic rejection** by the platform — the request reached the server and was refused on its merits. Retrying it without changing the request gets the same answer. A rejected request writes nothing, so it does not consume a daily submission slot — but the retry loop still wastes the user's time and the assistant's turns.
 
 Only these qualify as transient and may be retried with backoff:
 
@@ -43,13 +43,13 @@ Only after the token is confirmed valid (e.g. the same value just succeeded agai
 
 | # | Symptom | Likely cause | Action |
 |---|---------|--------------|--------|
-| 1 | `POST /api/challenge/job` returns **HTTP 400** `invalid board` / `no task templates for board` | `config.board` is missing or not in the currently-supported set | Today the supported values are `instruction` (default), `spatial`, `manip`, `robust`. Use one of those and resubmit. **Do not retry the same wrong board** — 400 is a semantic rejection, retrying burns a daily submission slot each time. This holds even when the user says "maybe a network blip" — see the heuristic above. If a contestant insists a new board exists, verify with the organizers first; `challenge-submit-job` Step 2 is the only list to trust. |
+| 1 | `POST /api/challenge/job` returns **HTTP 400** `invalid board` / `no task templates for board` | `config.board` is missing or not in the currently-supported set | Today the supported values are `instruction` (default), `spatial`, `manip`, `robust`. Use one of those and resubmit. **Do not retry the same wrong board** — 400 is a semantic rejection, so the retry gets the identical error. It does not burn a slot (nothing is written), but it gets you nowhere. This holds even when the user says "maybe a network blip" — see the heuristic above. If a contestant insists a new board exists, verify with the organizers first; `challenge-submit-job` Step 2 is the only list to trust. |
 | 2 | `POST /api/challenge/job` returns an "upload limit" error / `/api/challenge/submission/quota` returns `remaining: 0` | Today's submission quota is used up | Wait until Beijing midnight (UTC+8), or work with an existing job. Report the actual `used` / `limit` from the endpoint — don't quote a cap from memory. |
 | 3 | Any plain HTTP `/api/challenge/*` call (login, result, log, job, tunnel-endpoint) returns `401` | Invalid / expired `CHALLENGE_TOKEN` | `challenge-login` Step 3 to refresh; if refresh also 401s, fall back to Step 1 (email + password). This only affects the plain HTTP APIs — it does not touch a `JOB_TOKEN`-based tunnel dial. |
 | 3b | The WS handshake (`GET /api/challenge/tunnel`) returns `401` | When dialing with `JOB_TOKEN` (the default per `challenge-run-agent`), the handshake does **not** 401 on token expiry — `job_token`s don't expire. A `401` here means the `?job=` UUID is not owned by this account, the job is in a terminal state, **or** the `?job=` doesn't match the job the token was issued for. If still dialing with `CHALLENGE_TOKEN` (no `JOB_TOKEN` available, e.g. an older platform build), a `401` can additionally mean the login token itself expired | Verify `JOB_UUID` / `?job=` came from this account's `POST /api/challenge/job` and that the job isn't terminal. Only if dialing with `CHALLENGE_TOKEN`, also try `challenge-login` Step 3 to refresh. |
 | 4 | Agent connects, then immediately disconnects | Per-user `parallelism` cap exceeded — too many agents online | Reduce K in `challenge-run-agent`, or wait for older agents to finish. |
 | 5 | Job stuck at `detailed_status: pending` / `inference_disconnected`, or `progress` not advancing for minutes | No agent online, or all agents dropped past the 30 s window | `ps`/check the agent processes; relaunch via `challenge-run-agent` if needed. **`queued` is different** — it means the cluster has no free GPU; the agent is fine and you must keep it online. |
-| 6 | Agent disconnected unexpectedly mid-run | Network blip | Within the gateway-side **30 s reconnect window**, `tunnel.sh` redials **automatically** with the same `agent_id` to resume the open session. **Do not manually relaunch** in that window — you'd race the automatic redial and the gateway will reject the duplicate. Past 30 s the open session is gone; resubmitting a new job costs a daily submission slot — confirm before suggesting it. |
+| 6 | Agent disconnected unexpectedly mid-run | Network blip | Within the gateway-side **30 s reconnect window**, `tunnel.sh` redials **automatically** with the same `agent_id` to resume the open session. **Do not manually relaunch** in that window — you'd race the automatic redial and the gateway will reject the duplicate. Past 30 s the open session is gone; resubmitting a new job costs a daily submission slot — confirm before suggesting it. If it keeps happening, or the job failed with `failure_reason` 9, run `challenge-diagnose-connection` instead of assuming a blip. |
 | 7 | Received `drain` control frame | Platform finished dispatching cases and is asking for graceful shutdown | Let in-flight sessions finish, close the socket, and **do NOT reconnect**. |
 | 8 | Job ends at `detailed_status: failed` (list `status` = `4`) | A case exhausted its retries, which kills the whole job | `GET /api/challenge/job/$JOB_ID/log` (see `challenge-poll-result`). **Read `failure_reason` before any log text**: `5`/`6`/`7`/`8` are platform-side teardowns, not your bug — `8` in particular means a *different* case was the root cause. `9` (tunnel lost) is the opposite — it usually means your agent dropped the WebSocket; check `result.error` for the sub-reason and see rows #5/#6 above. For `1`/`3`/`4`, fetch `result.stdout` (usually a presigned URL, not inline text) and read the traceback. Common causes: handler exception during warmup (row #11), OOM, action-encoding mismatch. **Fix the bug locally before resubmitting** — resubmission costs a daily submission slot. |
 | 9 | `/api/challenge/tunnel/endpoint` returns empty string | Gateway not yet ready | Fall back to the fixed default `ws://120.92.88.78/api/challenge/tunnel`; the endpoint may simply be omitted because the host never changes. |
@@ -68,7 +68,7 @@ Run these in order when triaging an unclear failure:
 curl -fsS "$BASE_URL/api/challenge/current-user-info" \
   -H "Authorization: Bearer $CHALLENGE_TOKEN" | jq
 
-# 2. Job exists, what status? (status lives on the LIST — /result has no status field)
+# 2. Job exists, what status? (read detailed_status from the job LIST; /result only returns scores)
 curl -fsS "$BASE_URL/api/challenge/jobs?page=1&per-page=100" \
   -H "Authorization: Bearer $CHALLENGE_TOKEN" \
   | jq -c --argjson id "$JOB_ID" '.items[] | select(.id == $id)
@@ -94,11 +94,11 @@ to these paths yields `400 invalid job_id`, which `curl -fsS` hides behind a bar
 
 - The website/API domain is `robocoliseum.ai`, but the gateway host is **fixed at `120.92.88.78`** and is a separate host: `BASE_URL=https://robocoliseum.ai`, `TUNNEL_ENDPOINT=ws://120.92.88.78/api/challenge/tunnel`. **Do not** "fix" the tunnel URL by swapping in the website domain. Prefer a `tunnel_endpoint` from the job response if present, but the fixed default is a safe fallback.
 - **Do not** reconnect after a `drain` — the platform is finishing up, and the connection will be rejected.
-- **Do not** spam `POST /api/challenge/job` to "retry" — each call consumes one of the day's submission slots. **Remaining quota is not authorization to guess** (e.g. guessing a `board` because "quota 还有"). Skill rules forbid the guess itself, independent of remaining slots.
+- **Do not** spam `POST /api/challenge/job` to "retry" — a *successful* call consumes one of the day's submission slots, and a failing one just repeats the same rejection. **Remaining quota is not authorization to guess** (e.g. guessing a `board` because "quota 还有"). Skill rules forbid the guess itself, independent of remaining slots.
 - **Do not** state the daily cap from memory. Read `GET /api/challenge/submission/quota` and quote its `limit` / `used` / `remaining`; the limit is a platform setting and has changed before.
 - **Do not** kill running agents to "free a slot" without checking the job list first; you may be killing the agent that's about to finish your last case.
 - **Do not** retry a 4xx as if it were a network blip — see the diagnostic heuristic at the top of this file.
-- **Do not** poll `/result` for status — it returns only `{tasks, total}`. A loop that branches on `.status` there never terminates. Use `detailed_status` from `GET /api/challenge/jobs`.
+- **Do not** poll `/result` for status — it is the scores endpoint and returns only `{tasks, total}`. A loop that branches on `.status` there never terminates. Read `detailed_status` from `GET /api/challenge/jobs`.
 
 ## Reference
 

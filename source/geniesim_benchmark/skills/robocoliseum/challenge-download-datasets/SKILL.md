@@ -2,7 +2,7 @@
 name: challenge-download-datasets
 description: >
   Download the Simulation Challenge LeRobot v2.1 training datasets from ModelScope using
-  ./scripts/download_dataset.sh. Pulls task-suite data (instruction / manipulation / sim2real) from
+  scripts/download_dataset.sh bundled with this skill. Pulls task-suite data (instruction / manipulation / sim2real) from
   the agibot_world/GenieSim3.0-Dataset repo into a local dir. Trigger: When the user asks to
   "下载训练数据", "下载数据集", "拉取 lerobot 数据", "download training data", "download the dataset",
   "get the lerobot v2.1 data", "download task suite", mentions download_dataset.sh, ModelScope
@@ -19,9 +19,8 @@ ModelScope (`agibot_world/GenieSim3.0-Dataset`) via the bundled `download_datase
 organized into **task suites**; pick one or grab all of them.
 
 > **Self-contained:** the downloader ships with this skill at `scripts/download_dataset.sh` — you
-> don't need the genie-sim repo checked out. The repo also has it at `./scripts/download_dataset.sh`;
-> either works. Examples below use `$SKILL_DIR/scripts/download_dataset.sh` where `$SKILL_DIR` is
-> this skill's directory.
+> can also copy the skill directory without the Genie Sim checkout. Examples below use
+> `$SKILL_DIR/scripts/download_dataset.sh`; set `$SKILL_DIR` to the installed skill directory.
 
 This produces the training corpus consumed when training/finetuning a contestant model — once you
 have a checkpoint, hand off to `challenge-baseline-model` (provision/run inference) and the rest of
@@ -47,13 +46,18 @@ command -v modelscope >/dev/null || pip install modelscope
 
 Each suite is downloaded in **LeRobot v2.1** format.
 
+See [Benchmark task suites](../benchmark-task-suite.md) for evaluation tracks,
+board names, checkpoint selection and local task-list commands.
+
 ## Usage
 
 Signature: `download_dataset.sh [SUITE_NAME] [LOCAL_DIR]`. Resolve the bundled script path first
 (works regardless of cwd), then call it:
 
 ```bash
-SCRIPT="$(dirname "$0")/scripts/download_dataset.sh"   # or hard-code this skill's scripts/ path
+# From the Genie Sim checkout root; for a copied skill, use its installation directory.
+SKILL_DIR="$(pwd)/source/geniesim_benchmark/skills/robocoliseum/challenge-download-datasets"
+SCRIPT="$SKILL_DIR/scripts/download_dataset.sh"
 
 # Download ONE suite to ./data/<suite>/  (default LOCAL_DIR is ./data/)
 "$SCRIPT" instruction

@@ -23,7 +23,7 @@ tunnel, control frames, data-frame framing) is specified in the **appendix of
 
 > The gateway treats the payload as opaque bytes. The schema below is defined by the genie-sim
 > client, not the gateway. **Authoritative source:**
-> `main/source/geniesim/benchmark/policy/corobotpolicy.py`
+> `source/geniesim_benchmark/src/geniesim_benchmark/benchmark/policy/corobotpolicy.py`
 > — `get_payload()` builds the request, `_parse_result()` / `infer()` parse the response.
 > **Reference agent implementation:** `ACoT-VLA/scripts/tunnel_agent.py` — `_adapt_obs()` (input),
 > `_build_action_response()` (output).

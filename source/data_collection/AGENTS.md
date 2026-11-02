@@ -1,11 +1,9 @@
 # data_collection — Agent Development Guide
 
-## Scope and provenance
+## Scope
 
-This module contains the data collection and replay implementation imported
-from the standalone open-source branch at commit
-`d36a74d6b07cbfeca1fcf1ba4000fb2ad5835905`.
-The standalone test files are excluded from this monorepo import.
+This module owns independent Isaac Sim 5.1 data collection and replay.
+Its environment and images are configured separately from the umbrella peers.
 
 Read [README.md](README.md), [TASK_CONFIG_GUIDE.md](TASK_CONFIG_GUIDE.md),
 and [the replay guide](replay/README.md)
@@ -22,8 +20,9 @@ semantics unchanged; do not apply task-specific control patches globally.
 - Isaac Sim 5.1 and Python 3.11.
 - cuRobo v2, pinned to `3fd54dc782a82e5500a771cfd47856ea499d5fef`.
 - Assets are acquired separately; use `GENIESIM_ASSETS_PATH`/`SIM_ASSETS`, installed-package lookup, or nearby relative directories.
-- Default application image: `registry.agibot.com/genie-sim/geniesim3-data-collection:latest`; override with `DATA_COLLECTION_IMAGE`.
-- Default container name: `geniesim3-data-collection`; override through the launch arguments.
+- Direct scripts default to image `registry.agibot.com/genie-sim/geniesim3-data-collection:latest` and container `geniesim3-data-collection`.
+- The host CLI defaults to image `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and container `geniesim4-data-collection`.
+- Use `DATA_COLLECTION_IMAGE` and the owning launch arguments to select matching image/container names. These defaults are independent of the base image release line.
 - Supported robot families: G1, G2 (including CRS and 90D), ARX, and Aloha.
 - Recording conversion uses repository URDFs for forward kinematics.
 - cuRobo configuration lives only under `config/curobo/v2`; the Dockerfile

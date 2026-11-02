@@ -31,11 +31,9 @@ deps (PyTorch + SHARP + DA360) collide with the rest of the stack. Users
 spin up a dedicated conda env, generate a world, and consume the
 `.ply` / `.gsp` Gaussian output via `geniesim_world`'s own tooling.
 
-> 🚧 **RT Engine integration is W.I.P.** Loading the generated world
-> into a `scene_*.yaml` for `geniesim_ros` to render is on the
-> roadmap; it is **not** a supported flow today. Don't promise it in
-> downstream docs, and don't add a scene-yaml example that depends on
-> it.
+Loading the generated world into a `scene_*.yaml` for `geniesim_ros` is not
+supported. The [platform roadmap](../../docs/ROADMAP.md) tracks proposed
+integration. Document the package's current exports and debug tools.
 
 ---
 
@@ -131,7 +129,7 @@ non-namespaced vars or legacy `GENIE_*` names (those are deprecated).
    - When unset → EXR depth is **≥ 0** only (no global far clip).
 4. **Depth resize:** `resize_depth_map` treats unknown support as 0. Cube EXR refine pass clears masked depth. Equirect→cube uses linear interp + optional `--cube-depth-refine`.
 5. **CLI compat is a contract.** Preserve flag names + semantics across versions unless the user asks for breaking changes. README examples are the regression suite.
-6. **No legacy identifiers.** No `genie_sim_world_model`, no `GENIE_*` env vars, no pre-rename CLI names.
+6. **Use current identifiers.** The package is `geniesim_world`; configuration uses `GENIESIM_*` names and the current CLI surface.
 
 ---
 
@@ -159,7 +157,7 @@ non-namespaced vars or legacy `GENIE_*` names (those are deprecated).
 - Don't add this package to `geniesim bootstrap`'s default install set — its CUDA / SHARP / DA360 deps belong in a dedicated conda env, not the shared stack.
 - Don't update README example flags without re-running the example — flag drift between docs and reality is the #1 reported bug here.
 - Don't bypass `cli_pano.py` to call `predict_run.py` directly from a user-facing skill. The CLI is the public surface.
-- Don't promise features marked `*COMING SOON*` in README — text-to-3D and sparse-image-to-3D are research not product.
+- Keep unsupported text/sparse-image generation and RT Engine integration in the [platform roadmap](../../docs/ROADMAP.md).
 
 ---
 

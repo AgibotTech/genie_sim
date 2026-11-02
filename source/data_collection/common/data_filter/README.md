@@ -4,8 +4,8 @@ This document describes the parameters and usage of checkers and data filter rul
 
 ## Table of Contents
 
-1. [Runtime Checker](#runtime-checker-runtime-checker)
-2. [Data Filter Rules](#data-filter-rules-filter-rules)
+1. [Runtime Checker](#runtime-checker)
+2. [Data Filter Rules](#data-filter-rules)
 
 ---
 

@@ -227,7 +227,9 @@ implementation; old assets do not have the converter's stable visual names.
 Isaac 4.5/5.1's AS2 importer is unchanged and does not apply this extension.
 Use OVRtx or Isaac rendering for visual acceptance; Newton GL does not show PBR.
 
-## The base pin: runtime toggle {#base-pin-runtime-toggle}
+<a id="base-pin-runtime-toggle"></a>
+
+## The base pin: runtime toggle
 
 `robot.robot_source.pin_base_to_world` is a **runtime** flag, not a bake-time
 one, and `pin_base_mode` refines it. The cached `robot.usda` always carries a

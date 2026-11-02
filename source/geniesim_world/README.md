@@ -23,8 +23,11 @@ This project implements the methods from ***Genie Sim PanoRecon** - Fast Immersi
 
 - 🚀 Fast end-to-end pipeline (PanoRecon within seconds)
 - 🧠 Expand ml-sharp's ability to panorama image, creating photorealistic 360 consistent world
-- 🖼️ Generate diverse environments from text or image (*COMING SOON*) at low cost
-- 🧩 Seamlessly integrated into geniesim, providing SimReady scene assets (*COMING SOON*) for robot tasks
+- 🖼️ Generate 3D environments from a single equirectangular panorama
+- 🧩 Export PLY / Gaussian outputs for the package's debug tools and external viewers
+
+Text/sparse-image generation and RT Engine loading are tracked in the
+[platform roadmap](../../docs/ROADMAP.md).
 
 ## 🗂️ Expected Layout
 

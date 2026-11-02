@@ -377,8 +377,8 @@ gripper control; `G2_omnipicker` and `G2_crsB_omnipicker` use position control.
 The URDF, MC configuration, initial/reset pose and recording joint mapping follow
 that selection. Wuji uses the separate launcher and 20-joint glove input per hand.
 There is no separate 90D/Omnipicker launch switch, and `--robot_cfg` only checks
-consistency with the task. The legacy `G2_90d.json` family is not supported by
-this teleop path. A new scene or robot combination needs a matching task JSON,
+consistency with the task. Use one of the supported families listed above.
+A new scene or robot combination needs a matching task JSON,
 scene assets and `robot_init_states.py` entry; changing a name alone does not
 create them. For an external simulator, restart it with the same selected YAML
 and ROS domain; changing the control configuration does not reload its scene.

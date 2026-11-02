@@ -44,7 +44,7 @@ The platform will significantly accelerate model development, reduce reliance on
 - ⚡ **Genie Sim RT Engine (realtime, interactive)**: `geniesim_ros` brings physics, render, and the robot into ROS 2 natively — teleop, MoveIt, and ros2_control close the loop on one shared `sim_time`. Multiple physics backends (Isaac Sim PhysX, Newton-standalone) selectable per scene, with cloth + soft-body support on the Newton path.
 - 🎨 **High-Fidelity Sim-Ready Assets**: 5,140 validated 3D assets covering five real-world operation fields: retail, industry, catering, home and office. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSimAssets).
 - 🛰️ **3DGS-based Reconstruction Pipeline**: Integrate 3DGS-based reconstruction process with visual generative model to synthesize realistic simulation environment with high-precision meshes. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
-- 🌐 <b><big>Genie Sim World: A multimodal spatial world model which generates photorealistic 3D world from diverse input types in minutes.</big></b> [GitHub](source/geniesim_world).
+- 🌐 <b><big>Genie Sim World: A spatial world model which generates a photorealistic 3D world from an equirectangular panorama.</big></b> [GitHub](source/geniesim_world).
 - 💬 **LLM-Driven Scene Generation**: Natural language-driven generation and generalization which instantly generates diverse simulation scenes through conversational interaction.
 - 📦 **Large-Scale Synthetic Dataset**: Over 10,000 hours open-source synthetic data across 200+ loco-manipulation tasks with multi-sensor streams, alongside multi-dimensional variations.
 - 🛠️ **Synthetic Data Generation**: Efficient toolkit for data collection with error-recovery mechanism, supporting both low-latency teleoperation and automated data programming. [ModelScope](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset).
@@ -76,7 +76,7 @@ geniesim docker into                     # interactive shell inside the containe
 # === inside the container — sanity-check the stack ===
 geniesim status                          # per-distribution health probe
 geniesim doctor                          # diagnose & repair (rosdep, env, …)
-geniesim bootstrap                       # re-install tier-1 peers + opt-in tier-2
+geniesim bootstrap                       # install or repair required Tier-1 peers
 ```
 
 #### 🤖 With an AI assistant — just ask
@@ -94,7 +94,13 @@ The repo ships `AGENTS.md` + per-package `skills/<name>/SKILL.md` as machine-rea
 > and editable-installed by the entrypoint so every other peer can find it.
 >
 > Tier-2 peers (`geniesim_teleop` · `geniesim_scene_agent` · `geniesim_world`) have heavy stacks (VR / LLM / CUDA-ML) and are **not** auto-installed.
-> Install with `pip install -e "source/geniesim/[teleop|scene_agent|world|all]"` — or run `geniesim bootstrap` for an interactive re-install of the whole tree.
+> Install only the module you need, following its [teleop](source/geniesim_teleop/README.md),
+> [scene-agent](source/geniesim_scene_agent/README.md), or [World](source/geniesim_world/README.md)
+> setup guide. World uses a dedicated environment. `geniesim bootstrap` installs or repairs
+> required peers and skips these optional packages.
+>
+> `geniesim_dream` is a separately installed first-class package with its own environments;
+> it is outside the umbrella's Tier-1/Tier-2 extras. See the [module tiers](source/README.md#installation-tiers).
 
 ### 3.2 🧪 Benchmark — debug locally, compete globally on RoboColiseum
 
@@ -146,7 +152,7 @@ flowchart LR
   linkStyle 0,1,2 stroke:#c2410c,stroke-width:2px
 ```
 
-Turn an equirectangular panorama into an explorable photorealistic 3D world. _(Loading the output into the RT Engine is a 🚧 W.I.P. — for now the generated PLY / Gaussians are consumed by `geniesim_world`'s own tooling.)_
+Turn an equirectangular panorama into an explorable photorealistic 3D world. The generated PLY / Gaussians are consumed by `geniesim_world`'s own tooling. RT Engine scene loading is not supported; see the [platform roadmap](docs/ROADMAP.md) for proposed integration.
 
 ```bash
 cat source/geniesim_world/skills/generate-world/SKILL.md
@@ -337,7 +343,7 @@ flowchart LR
 - 📥 **Collection and post-training workflows** — independent Isaac Sim 5.1/cuRobo v2 collection and replay, scene-agent authoring workflows, and RLinf server/client integration.
 - 🔖 **Checkout package version** — all eight first-class Genie Sim distributions and owned ROS package metadata in this release checkout share `VERSION=3.5.0`. This package version does not relabel the dedicated 4.0 image line. Dependencies, recording formats, and independently maintained modules keep their own versions.
 
-See the [module index](source/README.md) and [benchmark task suites](docs/benchmark-task-suites.md) for workflow details.
+See the [module index](source/README.md) and [benchmark task commands](source/geniesim_benchmark/benchmark_test_docs.md) for workflow details.
 
 </details>
 

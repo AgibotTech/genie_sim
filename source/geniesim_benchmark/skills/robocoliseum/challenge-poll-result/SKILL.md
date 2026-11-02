@@ -32,10 +32,17 @@ The path segment is parsed as an unsigned integer. Passing the UUID returns
 only as exit code 22, which reads like a server fault. If a call fails, check you used the
 numeric id first.
 
-## Where status actually lives
+## Which endpoint answers which question
 
-**There is no single-job status endpoint, and `/result` carries no status field.** Status comes
-from the job list:
+| You want to know | Call | Read |
+|------------------|------|------|
+| Is it finished? Which state? How far along? | `GET /api/challenge/jobs` | `detailed_status`, `progress`, `score` on your job's item |
+| Per-task / per-step scores | `GET /api/challenge/job/{JOB_ID}/result` | `tasks`, `total` |
+| Why did it fail? | `GET /api/challenge/job/{JOB_ID}/log` | `failure_reason`, `result` |
+
+**Status is on the job list; `/result` is the scores endpoint and deliberately has no status
+field.** Don't tell the user "the API doesn't expose status" — it does, just not on `/result`.
+There is no single-job status endpoint, so fetch the list and pick your job by `id` (below).
 
 ```bash
 [ -f ~/.simubotix-challenge.env ] && . ~/.simubotix-challenge.env
@@ -150,7 +157,7 @@ curl -fsS "$BASE_URL/api/challenge/job/$JOB_ID/result" \
   -H "Authorization: Bearer $CHALLENGE_TOKEN" | jq
 ```
 
-Exact response shape — **two keys, no status, no job id**:
+Exact response shape — **two keys (`tasks`, `total`); status is on the job list, not here**:
 
 ```json
 {
@@ -170,8 +177,9 @@ Exact response shape — **two keys, no status, no job id**:
   still-running job means "not scored yet", not "scored zero".
 - A job with no episodes yet returns `{"tasks":{},"total":0}` — that is a success, not an error.
 
-Because there's no status in this body, **never** use `/result` to decide whether to keep
-polling. Call it once, after `detailed_status` reaches `completed`.
+`/result` answers "what are the scores", not "is it done", so **never** use it to decide whether
+to keep polling. Check `detailed_status` on the job list first, and call `/result` once it
+reaches `completed`.
 
 ## Fetch failed-job log
 

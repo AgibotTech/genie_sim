@@ -432,7 +432,7 @@ python3 -m geniesim_teleop.teleop --device_type=pico
 
 | Skill | Trigger |
 |---|---|
-| [run-teleop](skills/run-teleop/SKILL.md) | "start teleop", "启动遥操作", "VR 采集", "run the teleop loop" |
+| [run-teleop](skills/run-teleop/SKILL.md) | "start teleop", "run the teleop loop" |
 
 ---
 

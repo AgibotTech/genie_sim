@@ -52,7 +52,7 @@ and container. To inherit a custom server image, append
 `--build-arg SERVER_IMAGE=IMAGE` to the teleop build. The container uses host
 networking for Pico UDP, the web viewer, and server RPC. `up` reuses the image
 without building it. Lifecycle commands require matching checkout/profile
-labels; the removed `host_start_teleop_container.sh` is replaced by these commands.
+labels.
 
 To stop and remove the container, run on the simulation host:
 

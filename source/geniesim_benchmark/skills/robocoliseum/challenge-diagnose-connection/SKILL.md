@@ -99,7 +99,7 @@ separate process) lets the loop keep answering pings. No spikes → this is not 
 
 ```bash
 # From the Genie Sim checkout root; for a copied skill, use its installation directory.
-SKILL_DIR="$(pwd)/source/geniesim_benchmark/skills/agibot-world-challenge/challenge-diagnose-connection"
+SKILL_DIR="$(pwd)/source/geniesim_benchmark/skills/robocoliseum/challenge-diagnose-connection"
 bash "$SKILL_DIR/scripts/probe_gateway.sh" # ICMP loss/rtt, 20x GET /health, mtr if installed
 ```
 

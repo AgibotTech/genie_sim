@@ -12,9 +12,16 @@ start" diagram), see [`README.md`](README.md).
 
 ## 🧞 First-class Genie Sim packages
 
-Pip-installable distributions under `pip install -e source/<pkg>/`. The
-`geniesim` umbrella pulls them in as deps; `geniesim bootstrap` runs the
-installs in topological order.
+First-class distributions live under `source/<pkg>/`. The umbrella declares
+four required Tier-1 peers: `geniesim_cli`, `geniesim_assets`, `geniesim_benchmark`,
+and `geniesim_ros`. Install the CLI first; `geniesim bootstrap` installs or repairs
+the other required peers in dependency order, then the umbrella. Asset sources
+are downloaded separately.
+
+`geniesim_teleop`, `geniesim_scene_agent`, and `geniesim_world` are Tier-2 opt-in
+packages. `geniesim_dream` is separately installed outside the umbrella's extras.
+World and Dream require their own environments. The independently maintained
+modules below are outside both tiers. See [installation tiers](README.md#installation-tiers).
 
 | Directory | Distribution | README | AGENTS | Skills |
 |---|---|---|---|---|

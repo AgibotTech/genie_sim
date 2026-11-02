@@ -543,7 +543,7 @@ Used to generate task description text:
 
 ### checker (Checker)
 
-Used to verify whether a stage has been successfully completed. For detailed checker parameter descriptions, please refer to [Runtime Checker Description](./common/data_filter/README.md#runtime-checker-runtime-checker).
+Used to verify whether a stage has been successfully completed. For detailed checker parameter descriptions, please refer to [Runtime Checker Description](./common/data_filter/README.md#runtime-checker).
 
 **Basic Structure**:
 ```json
@@ -566,7 +566,7 @@ Used to verify whether a stage has been successfully completed. For detailed che
 - `distance_to_target`: Check distance between object and target
 - `local_axis_angle`: Check angle between object's local axis and target vector
 
-For detailed parameter descriptions and examples, please refer to [Runtime Checker Description](./common/data_filter/README.md#runtime-checker-runtime-checker).
+For detailed parameter descriptions and examples, please refer to [Runtime Checker Description](./common/data_filter/README.md#runtime-checker).
 
 ---
 
@@ -604,7 +604,7 @@ Supports placeholders (same as `action_description`).
 
 ### task_metric (Task Evaluation Metrics)
 
-Defines data filtering rules used to verify whether collected data meets quality requirements after data collection. For detailed filtering rule descriptions, please refer to [Data Filter Rules Description](./common/data_filter/README.md#data-filter-rules-filter-rules).
+Defines data filtering rules used to verify whether collected data meets quality requirements after data collection. For detailed filtering rule descriptions, please refer to [Data Filter Rules Description](./common/data_filter/README.md#data-filter-rules).
 
 **Basic Structure**:
 ```json
@@ -646,7 +646,7 @@ Defines data filtering rules used to verify whether collected data meets quality
 - `is_object_grasped_by_gripper`: Check if object is grasped by gripper
 - `is_object_relative_position_in_target`: Check object's relative position to target object
 
-For detailed parameter descriptions and examples, please refer to [Data Filter Rules Description](./common/data_filter/README.md#data-filter-rules-filter-rules).
+For detailed parameter descriptions and examples, please refer to [Data Filter Rules Description](./common/data_filter/README.md#data-filter-rules).
 
 ---
 

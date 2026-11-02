@@ -44,10 +44,10 @@ geniesim_cli      → install + docker
                             — interactive sim, MoveIt, teleop, recording
 ```
 
-> 🚧 **Roadmap.** `geniesim_benchmark` will be refactored into a benchmark
-> layer **on top of** `geniesim_ros` so both paths share one physics +
-> render stack. Until then, treat them as independent — don't unify their
-> scene formats or launch graphs.
+Benchmark and RT Engine configurations have separate schemas and launch graphs.
+Managed Newton and IPC tasks use the RT Engine client; direct Isaac and native
+MuJoCo tasks retain their own runtime entry points. Proposed convergence is
+tracked in the [platform roadmap](../docs/ROADMAP.md).
 
 Side branches:
 
@@ -58,6 +58,18 @@ Side branches:
 - **Generate robot videos with a world model** → [`geniesim_dream`](geniesim_dream/README.md) (separate installation)
 
 ---
+
+## Installation tiers
+
+The [umbrella metadata](geniesim/pyproject.toml) declares required peers and
+optional extras. First-class package status does not imply automatic installation.
+
+| Install group | Packages | Setup |
+|---|---|---|
+| Tier 1 — required | `geniesim_cli`, `geniesim_assets`, `geniesim_benchmark`, `geniesim_ros` | Install the CLI first; `geniesim bootstrap` installs or repairs required peers and the `geniesim` umbrella. Download asset sources separately. |
+| Tier 2 — opt-in | `geniesim_teleop`, `geniesim_scene_agent`, `geniesim_world` | Follow the owning module's setup guide. World uses a dedicated environment. Default bootstrap skips these packages. |
+| Separate first-class package | `geniesim_dream` | Install its world-model, policy and evaluation environments separately. It is outside the umbrella extras. |
+| Independently maintained | `agent2act`, `data_collection`, `rlinf_geniesim`, `scene_reconstruction` | Follow each module's installation guide; these are outside both tiers. |
 
 ## 🔗 Module dependency DAG
 

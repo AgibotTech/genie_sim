@@ -69,7 +69,7 @@ download_suite() {
     mkdir -p "$target_dir"
 
     TEMP_DIR=$(mktemp -d)
-    trap "rm -rf $TEMP_DIR" EXIT
+    trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
     echo "========================================="
     echo "Downloading task suite: $suite"
@@ -94,7 +94,7 @@ download_suite() {
         exit 1
     fi
 
-    rm -rf "$TEMP_DIR"
+    rm -rf -- "$TEMP_DIR"
     trap - EXIT
 }
 

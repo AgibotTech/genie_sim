@@ -39,7 +39,8 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim post-train teleop …` | Connect Pico debugging; see [teleoperation](../rlinf_geniesim/TELEOP_USAGE.md) |
 | `geniesim ros build {dev,release,cleanup}` | `colcon build` the ROS 2 workspace |
 | `geniesim ros doctor` | Repair rosdep |
-| `geniesim tool {deps-dag,ros-dag,docs} [--fix]` | Repo-maintenance audits (DAG + doc-coverage) |
+| `geniesim tool deps-dag` / `ros-dag` `[--fix]` | Verify or regenerate dependency diagrams |
+| `geniesim tool docs` | Audit documentation coverage, indexes, local links and package metadata |
 | `geniesim deploy [MODULE]` | Build pure-Python wheel(s) into `./deploy/` |
 | `geniesim benchmark {run,batch,list,…}` | Drive `geniesim_benchmark` tasks |
 | `geniesim teleop run` | Launch the teleop loop |
@@ -48,6 +49,17 @@ Run `geniesim -h` for the full list.
 
 
 ---
+
+## Installation tiers
+
+Tier 1 contains `geniesim_cli`, `geniesim_assets`, `geniesim_benchmark` and
+`geniesim_ros`. Install this CLI first; bootstrap installs or repairs the
+remaining required peers and the `geniesim` umbrella. Assets are acquired separately.
+
+Tier 2 contains optional `geniesim_teleop`, `geniesim_scene_agent` and
+`geniesim_world`; default bootstrap skips these packages. Dream is separately
+installed outside the umbrella extras. See the [module tiers](../README.md#installation-tiers)
+and each module's guide for environment requirements.
 
 ## 🚀 Fresh-machine setup
 

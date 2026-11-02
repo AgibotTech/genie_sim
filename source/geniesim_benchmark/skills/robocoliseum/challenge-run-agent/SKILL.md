@@ -58,7 +58,7 @@ Every Bash call in this skill should start with:
 - The platform enforces **at most `$PARALLELISM` concurrent agent processes** per user. Excess connections are closed immediately after the WS upgrade.
 - Each tunnel carries **at most one active session at a time** (1:1 contract). To run cases in parallel, run multiple agent processes — that's the whole point of `parallelism`.
 - Each process must use a **different GPU index** if launched on the same host. If the user's box has only `N` GPUs, `min(N, PARALLELISM)` is the real cap.
-- Each process must use a **different `agent_id`**. `tunnel.sh` auto-generates one — do not pass duplicates.
+- Each process must use a **different `agent_id`**. `tunnel.sh` derives it from the job and GPU index and persists it, so one process per GPU needs nothing extra. If you start **more than one process on the same GPU**, give each a distinct `AGENT_SLOT=0,1,2…` in its environment; otherwise they share an `agent_id` and the gateway rejects all but the first.
 
 ## Step 1 — Confirm the launch plan with the user
 
@@ -139,10 +139,18 @@ If you have to launch and poll from the same automation, run the loop with `nohu
 | Code | Meaning |
 |------|---------|
 | 0 | `drain` received → graceful shutdown. Job dispatch is finished; do **not** reconnect. |
-| 1 | Bad arguments / handler load error / reconnect retries exhausted. |
+| 1 | Bad arguments / model load error / inference kept failing / could not reconnect for 180 s. Relaunching the same command keeps the `agent_id`. |
+| 2 | The gateway refused the dial (HTTP 401/403/404): token invalid, or the job is no longer active. Do not relaunch — check job status first. |
 | 130 | Ctrl-C. |
 
-If a process dies abnormally, `tunnel.sh` will redial **automatically** with the same `agent_id` within the **gateway-side 30-second reconnect window** to resume the open session. **Do not manually relaunch** within that window — you'd race the automatic redial and the gateway will reject the second connection. Past 30 s, the open session is gone and the user must resubmit a new job (which consumes a **daily submission slot** — confirm before suggesting it, and re-probe `/api/challenge/submission/quota` first).
+If a process dies abnormally, **relaunch the same command** — `tunnel.sh` keeps the `agent_id` in
+`~/.simubotix/agent_<job_uuid>_<gpu>[-s<AGENT_SLOT>].id`, so a restart inside the **30-second reconnect window**
+reattaches the open session. Past 30 s the open case is failed and one of its 3 retries is
+consumed, but while the job is still `Ready`/`Running` a new dial is still accepted and the case is
+assigned again. Only when a case has no retries left does the job fail (dials then return 401) and
+the user must resubmit — which consumes a **daily submission slot**; confirm before suggesting it
+and re-probe `/api/challenge/submission/quota` first. Do not start a second copy while the first is
+still running: the gateway refuses the duplicate dial.
 
 ## After launch
 
@@ -262,16 +270,18 @@ One active session per tunnel, sequentially reused across cases: `session_open` 
 On an unclean close you get a **30-second reconnect window**: redial with the same
 `(job_uuid, agent_id)` and Bearer token and the open session is restored. There's no explicit
 "I'm reconnecting" handshake — the server matches on the pair. Frames the server tried to send
-while you were down are **dropped, not queued**. Past 30 s the tunnel is gone and further dials on
-that pair are rejected; the user must submit a new job. Never reconnect after `drain`.
+while you were down are **dropped, not queued**. Past 30 s the tunnel is gone and the in-flight case loses one retry; a new dial is still accepted while the job is active. Never reconnect after `drain`.
 
 ### A.6 Heartbeat
 
 Liveness is handled at the WebSocket library layer — **no application-level heartbeat.** The
-gateway pings every 20 s and enforces a 45 s read deadline; 45 s of silence opens the reconnect
-window. Most client libraries auto-reply to pings. Configure your own client-side ping to survive
-NATs that drop idle connections, e.g. Python `websockets`:
-`websockets.connect(url, ping_interval=20, ping_timeout=10)`.
+gateway pings every 20 s and enforces a 45 s read deadline; 45 s with no inbound bytes opens the
+reconnect window. While a multi-MB observation frame is downloading the gateway's ping is stuck
+behind it, so send an **unsolicited pong every ~15 s** (`await ws.pong()`) — it rides your upstream
+path and the gateway counts it as liveness. Do not let the client close on a missing pong; prefer
+no client ping at all: `websockets.connect(url, ping_interval=None, ping_timeout=None)`.
+The simulator waits at most 120 s per answer, and that includes downloading the frame (~6.5 MB with
+depth on): a slow downstream link fails cases even when the tunnel stays up.
 
 ### A.7 Minimal Python skeleton
 
@@ -287,7 +297,7 @@ async def run_agent(tunnel_url: str, token: str, job_uuid: str, agent_id: str | 
     headers = {"Authorization": f"Bearer {token}"}
 
     async with websockets.connect(ws_url, additional_headers=headers,
-                                  ping_interval=20, ping_timeout=10) as ws:
+                                  ping_interval=None, ping_timeout=None) as ws:
         async for msg in ws:
             if isinstance(msg, str):                       # control frame (A.2)
                 ctl = json.loads(msg)

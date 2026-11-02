@@ -40,9 +40,9 @@ REPO_DIR="${REPO_DIR:-$(pwd)}"
 # --- checkpoints ---
 # Downloaded from ModelScope (agibot_world/GenieSim3.0-Dataset, checkpoints/<name>) via the bundled
 # scripts/download_checkpoint.sh — NO rsync / SSH needed, only `pip install modelscope`.
-# The downloader ships with this skill at scripts/download_checkpoint.sh and is also in the
-# genie-sim repo at ./scripts/download_checkpoint.sh.
-DL_CKPT="$(dirname "$0")/scripts/download_checkpoint.sh"   # or hard-code this skill's scripts/ path
+# From the Genie Sim checkout root; for a copied skill, use its installation directory.
+SKILL_DIR="$(pwd)/source/geniesim_benchmark/skills/robocoliseum/challenge-baseline-model"
+DL_CKPT="$SKILL_DIR/scripts/download_checkpoint.sh"
 
 # Which checkpoints to fetch. Each name maps to a board (see table below). Pull only what the job
 # needs — list one or more of: instruction_and_robust_pi05 / manipulation_pi05 / spatial_pi05

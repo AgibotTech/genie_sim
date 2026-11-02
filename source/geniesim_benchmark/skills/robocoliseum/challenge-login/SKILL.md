@@ -27,19 +27,24 @@ When echoing this command back to the user, **redact the password** (show `[REDA
 ```bash
 # Helper (define once per shell; or inline at the top of each Bash call)
 challenge_save_var() {
-  local f=~/.simubotix-challenge.env key="$1" val="$2"
-  touch "$f" && chmod 600 "$f"
-  if [ -s "$f" ]; then
-    awk -v k="$key" '$0 !~ "^" k "="' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  local f=~/.simubotix-challenge.env key="$1" val="$2" tmp
+  (umask 077; touch "$f") || return 1
+  chmod 600 "$f" || return 1
+  tmp=$(mktemp "$f.XXXXXX") || return 1
+  if ! awk -v k="$key" '$0 !~ "^" k "="' "$f" > "$tmp"; then
+    rm -f -- "$tmp"
+    return 1
   fi
-  printf '%s=%q\n' "$key" "$val" >> "$f"
-  chmod 600 "$f"
+  printf '%s=%q\n' "$key" "$val" >> "$tmp"
+  mv -f -- "$tmp" "$f"
   export "$key=$val"
 }
 
+LOGIN_BODY=$(jq -n --arg email "$EMAIL" --arg password "$PASSWORD" \
+  '{email: $email, password: $password}')
 LOGIN_RESP=$(curl -fsS -X POST "$BASE_URL/api/challenge/login" \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+  --data-binary "$LOGIN_BODY")
 
 STATUS=$(echo "$LOGIN_RESP" | jq -r '.status // "error"')
 TOKEN=$(echo  "$LOGIN_RESP" | jq -r '.token  // empty')
