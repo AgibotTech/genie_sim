@@ -16,7 +16,6 @@ from isaacsim.core.utils.prims import (
 )
 from isaacsim.core.prims import SingleArticulation
 from isaacsim.core.utils.types import ArticulationAction
-from geniesim_benchmark.app.controllers.kinematics_solver import Kinematics_Solver
 from geniesim_benchmark.plugins.logger import Logger
 
 logger = Logger()  # Create singleton instance
@@ -33,6 +32,8 @@ class UIBuilder:
         self.reached = False
         self.cameras = []
         self.art_controllers = []
+        self.kinematics_solver = None
+        self._legacy_kinematics_cfg = None
 
     def _init_solver(self, robot, enable_curobo, batch_num):
         self.enable_curobo = enable_curobo
@@ -44,10 +45,23 @@ class UIBuilder:
         self.cameras = robot.cameras
         self.init_joint_position = robot.init_joint_position
         self.end_effector_prim_path = robot.end_effector_prim_path
-        self.initialize_articulation(batch_num)
         self.arm_type = robot.arm_type
         self.end_effector_name = robot.end_effector_name
         self.active_arm_joints = robot.active_arm_joints
+        self._legacy_kinematics_cfg = robot
+        self.kinematics_solver = None
+        self.initialize_articulation(batch_num)
+
+    def _ensure_legacy_kinematics_solver(self):
+        # Benchmark observations and EEF actions use the shared IK-SDK solver.
+        # Construct Lula only for the explicit legacy Cartesian API calls below.
+        if self.kinematics_solver is not None:
+            return
+        robot = self._legacy_kinematics_cfg
+        if robot is None or not robot.robot_description_path:
+            raise RuntimeError("The legacy Cartesian API requires a robot_description configuration")
+        from geniesim_benchmark.app.controllers.kinematics_solver import Kinematics_Solver
+
         if robot.robot_description_path:
             if robot.arm_type == "dual":
                 self.kinematics_solver = {
@@ -123,6 +137,7 @@ class UIBuilder:
                 self.currentImg["semantic"] = masks, ids
 
     def _get_ee_pose(self, is_right, is_local=False):
+        self._ensure_legacy_kinematics_solver()
         robot_base_translation, robot_base_orientation = self.articulation.get_world_pose()
         if is_local:
             robot_base_translation = np.array([0.0, 0.0, 0.0])
@@ -140,6 +155,7 @@ class UIBuilder:
         return self.kinematics_solver._articulation_kinematics_solver.compute_end_effector_pose()
 
     def _get_ik_status(self, target_position, target_orientation, isRight):
+        self._ensure_legacy_kinematics_solver()
         robot_base_translation, robot_base_orientation = self.articulation.get_world_pose()
         if self.arm_type == "dual":
             key = "left"
