@@ -203,6 +203,7 @@ def main(argv=None) -> int:
     parser.add_argument("--output-dir", "--benchmark.output_dir", type=Path)
     parser.add_argument("--max-steps", type=int)
     parser.add_argument("--episodes", "--benchmark.num_episode", type=int)
+    parser.add_argument("--benchmark.num_instances", dest="instances", type=int)
     parser.add_argument("--assets-root", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="print startup plan without launching ROS or physics")
     options = parser.parse_args(argv)
@@ -214,13 +215,11 @@ def main(argv=None) -> int:
         parser.error("this runner requires runtime: newton")
     max_steps = options.max_steps if options.max_steps is not None else config["max_steps"]
     episodes = options.episodes if options.episodes is not None else config.get("episodes", 1)
+    if options.instances is not None:
+        config.setdefault("benchmark", {})["num_instances"] = options.instances
     if type(max_steps) is not int or max_steps < 1 or type(episodes) is not int or episodes < 1:
         parser.error("max_steps and episodes must be positive integers")
     scoring_topic = config.get("task_progress_topic")
-    if scoring_topic and episodes != 1:
-        parser.error(
-            "Wuji scoring currently requires one episode; the original chef particle state has no reset contract"
-        )
     evaluation_timeout_s = config.get("evaluation_timeout_s", 30)
     if (
         isinstance(evaluation_timeout_s, bool)
@@ -231,6 +230,14 @@ def main(argv=None) -> int:
     for name in ("ready_timeout_s", "step_timeout_s", "observation_timeout_s", "inference_timeout_s"):
         if not math.isfinite(float(config[name])) or config[name] <= 0:
             parser.error(f"{name} must be finite and positive")
+    if "num_instances" in config.get("benchmark", {}) and "instance_id" not in config["benchmark"]:
+        from .instances import run_instances
+
+        config.update(max_steps=max_steps, episodes=episodes)
+        try:
+            return run_instances(options, config_path, config)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     if options.manifest is None or options.dry_run:
         from geniesim_benchmark.rt_engine.session import run_managed
 
@@ -293,6 +300,8 @@ def main(argv=None) -> int:
                                 event=record,
                             )
                         )
+                        if "instance_id" in config.get("benchmark", {}):
+                            results[-1]["instance_id"] = config["benchmark"]["instance_id"]
                         (options.output_dir / "results.json").write_text(
                             json.dumps(results, ensure_ascii=False, indent=2)
                         )

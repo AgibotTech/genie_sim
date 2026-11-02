@@ -25,38 +25,31 @@ robot:
       usda: robot/G2_crsB_wuji/robot.usda  # Visual assets from prebaked USD
       visual_only: true  # Physics uses staged URDF (/robot/... topology); only rendering uses this prebaked USD (/genie/... topology).
   init_base_pose: {x: 0.0, y: 0.0, z: 0.0, theta: 0.0}
-  # Revolute initial angles in degrees; shared by CPU MuJoCo and IPC FK.
-  # Fixed body/head angles are baked into welds; this does not unlock them.
+  # Supplied task pose: radians converted to degrees for the engine contract.
+  # Body/head remain welded at these angles; hand joint defaults are retained.
   init_joint_pos:
-    # Body / waist (fixed); user-supplied radians converted to degrees.
-    # Source: CLOTH_FOLD_G2_90D_STATES (geniesim_benchmark robot_init_states.py),
-    # applied here via math.degrees() per component.
-    idx01_body_joint1: -46.063659781496
-    idx02_body_joint2: 86.15538464332637
-    idx03_body_joint3: -19.564465575570807
-    idx04_body_joint4: 7.5071602088539045e-06
-    idx05_body_joint5: 0.0001689947590886671
-    # Head (fixed); user-supplied radians converted to degrees.
-    idx11_head_joint1: -7.35191893785123e-08
-    idx12_head_joint2: 1.1616341453386544e-08
-    idx13_head_joint3: 25.501843153130757
-    # Left arm
-    idx21_arm_l_joint1: 80.36682664249724
-    idx22_arm_l_joint2: -14.307356910097559
-    idx23_arm_l_joint3: -66.79177785577271
-    idx24_arm_l_joint4: -96.62172064064379
-    idx25_arm_l_joint5: -59.160188930064024
-    idx26_arm_l_joint6: -8.40459558502488
-    idx27_arm_l_joint7: -55.611000656177374
-    # Right arm
-    idx61_arm_r_joint1: -68.9067117813213
-    idx62_arm_r_joint2: -14.304968051435347
-    idx63_arm_r_joint3: 78.25351830197111
-    idx64_arm_r_joint4: -96.62219875388568
-    idx65_arm_r_joint5: 70.6340734526067
-    idx66_arm_r_joint6: -8.406684769137257
-    idx67_arm_r_joint7: 67.07559270635426
-    # Left hand
+    idx01_body_joint1: -46.00278137105379
+    idx02_body_joint2: 86.21868901128627
+    idx03_body_joint3: -19.589427015522844
+    idx04_body_joint4: 0.0
+    idx05_body_joint5: 0.0
+    idx11_head_joint1: 0.0
+    idx12_head_joint2: -0.057295779513082325
+    idx13_head_joint3: 25.783100780887047
+    idx21_arm_l_joint1: 43.44446752001515
+    idx22_arm_l_joint2: -42.0768745588174
+    idx23_arm_l_joint3: -86.4110309431117
+    idx24_arm_l_joint4: -87.37308437691586
+    idx25_arm_l_joint5: 16.067283561515136
+    idx26_arm_l_joint6: -52.72540977288278
+    idx27_arm_l_joint7: -48.49102248374793
+    idx61_arm_r_joint1: -43.44624368918006
+    idx62_arm_r_joint2: -42.07681726303788
+    idx63_arm_r_joint3: 86.40919747816727
+    idx64_arm_r_joint4: -87.37302708113636
+    idx65_arm_r_joint5: -16.067283561515136
+    idx66_arm_r_joint6: -52.725696251780334
+    idx67_arm_r_joint7: 48.49509048409337
     hand_l_thumb_joint1: 0.0
     hand_l_thumb_joint2: 0.0
     hand_l_thumb_joint3: 0.0
@@ -77,7 +70,6 @@ robot:
     hand_l_pinky_joint2: 0.0
     hand_l_pinky_joint3: 0.0
     hand_l_pinky_joint4: 0.0
-    # Right hand
     hand_r_thumb_joint1: 0.0
     hand_r_thumb_joint2: 0.0
     hand_r_thumb_joint3: 0.0
@@ -98,7 +90,6 @@ robot:
     hand_r_pinky_joint2: 0.0
     hand_r_pinky_joint3: 0.0
     hand_r_pinky_joint4: 0.0
-
 viewer_camera:
   pos: [2.2, -2.2, 1.6]
   lookat: [0.8, 0.1, 1.0]

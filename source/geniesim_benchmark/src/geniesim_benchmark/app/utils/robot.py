@@ -34,16 +34,11 @@ class RobotCfg(Robot):
         self.robot_prim_path = robot_cfg["robot"]["base_prim_path"]
         self.urdf_name = robot_cfg["robot"]["urdf_name"]
         self.arm_type = robot_cfg["robot"]["arm"]
-        self.profile = robot_cfg.get("profile")
         if robot_cfg["robot"]["arm"] == "single":
             self.is_single = True
         else:
             self.is_single = False
-        profile_arm = self.profile.get("arm") if isinstance(self.profile, dict) else None
-        profile_arm_joints = profile_arm.get("joint_names") if isinstance(profile_arm, dict) else None
-        if profile_arm_joints is not None:
-            self.active_arm_joints = profile_arm_joints
-        elif "active_arm_joints" in robot_cfg["robot"]:
+        if "active_arm_joints" in robot_cfg["robot"]:
             self.active_arm_joints = robot_cfg["robot"]["active_arm_joints"]
         else:
             self.active_arm_joints = None

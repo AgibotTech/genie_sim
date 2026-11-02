@@ -6,7 +6,6 @@ import time
 import os
 import logging
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 from .dummy_env import DummyEnv
 from .chassis_pose import SwervePosePlanner
@@ -33,14 +32,6 @@ except Exception as _osqp_err:
     logger.warning(f"osqp not available, swerve QP disabled: {_osqp_err}")
 
 from geniesim_benchmark.benchmark.tasks.llm_task import LLMTask
-from geniesim_benchmark.benchmark.tasks.control_task import ControlTask
-from geniesim_benchmark.control_observation import has_chassis_profile, has_control_profile
-from geniesim_benchmark.g2_90d_chassis_controller import (
-    ChassisMeasurement,
-    G290dChassisController,
-    TimedVelocityMeasurement,
-)
-from geniesim_benchmark.utils.name_utils import *
 from geniesim_benchmark.utils.ikfk_utils import ik_frame, arm_base_transform_from_poses
 
 _STEER_JOINT_NAMES = [
@@ -656,12 +647,7 @@ class _OptimalSwerveSolver:
 class PiEnv(DummyEnv):
     def __init__(self, api_core, task_file: str, init_task_config, need_setup=True):
         super().__init__(api_core, task_file, init_task_config, need_setup)
-        # The physics-thread observation producer uses the same solver as
-        # action planning. It must never reconstruct a second FK path.
-        self.api_core.control_kinematics = self.ikfk_solver
         self.load_task_setup()
-        # Legacy swerve paths still lazily log and configure their first drive.
-        # G2_90d uses the profile controller below and never enters that path.
         self._drive_props_logged = False
         self._robot_base_z = None
         self._reset_chassis_loop_state()
@@ -671,280 +657,6 @@ class PiEnv(DummyEnv):
         self._task_base_pose = self._pose_from_config(init_task_config.get("robot", {}).get("robot_init_pose"))
         if self._free_base and self._task_base_pose is None:
             logger.warning("free_base task has no robot.robot_init_pose; base will not be recentered between episodes")
-        self._g2_90d_chassis_controller = None
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        is_g2_90d = has_chassis_profile(profile) and (
-            getattr(self.api_core, "profile_control_enabled", False) or bool(init_task_config.get("control_mode"))
-        )
-        if is_g2_90d:
-            self._g2_90d_chassis_controller = G290dChassisController(profile)
-            self._joint_parking()
-            self.api_core.register_physics_tick_callback("g2_90d_chassis", self._guarded_g2_90d_chassis_physics_tick)
-            self.api_core.register_g2_90d_chassis_state_provider(self.get_g2_90d_chassis_control_state)
-        else:
-            self.api_core.unregister_physics_tick_callback("g2_90d_chassis")
-            self.api_core.register_g2_90d_chassis_state_provider(None)
-
-    def _guarded_g2_90d_chassis_physics_tick(self, *, physics_dt, sim_time_s):
-        """Fail closed and replace an old roll target after any callback error."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is None or not controller.requires_measurement():
-            return
-        parking = self._joint_parking()
-        failure_context = controller.failure_context() if parking is not None else None
-        try:
-            self._g2_90d_chassis_physics_tick(
-                physics_dt=physics_dt,
-                sim_time_s=sim_time_s,
-            )
-        except Exception as error:
-            if parking is None and not controller.requires_measurement():
-                return
-            state = controller.state() if callable(getattr(controller, "state", None)) else {}
-            if parking is not None:
-                with controller.authorize_failure_stop(failure_context) as allowed:
-                    if not allowed:
-                        logger.warning("Obsolete G2_90d failure did not stop or alter the replacement owner")
-                        return
-                    parking.mark_unknown(failure_context.authority, str(error))
-                    parking.record_failure_stop(self._attempt_g2_90d_zero_velocity())
-                    controller.fail_parking(parking.state())
-                logger.error(f"G2_90d parking failed_unknown; original owner retains recovery: {error}")
-                return
-            actuator_only = state.get("controller") == "analytic_4ws_timed_velocity"
-            fail = controller.fail_actuator_only if actuator_only else controller.fail
-            fail("physics_callback_failed")
-            logger.error(f"G2_90d chassis physics callback failed: {type(error).__name__}: {error}")
-            try:
-                held = self._apply_g2_90d_emergency_hold()
-            except Exception as hold_error:
-                held = False
-                logger.error("G2_90d emergency zero-roll hold failed: " f"{type(hold_error).__name__}: {hold_error}")
-            if not held:
-                fail("physics_callback_and_hold_failed")
-
-    def _attempt_g2_90d_zero_velocity(self):
-        """Caller holds the original guard; attempt zero without q, pose or gain reads."""
-        result = {"attempted": True, "zero_velocity_targets_verified": False, "physical_stop_confirmed": False}
-        try:
-            controller = self._g2_90d_chassis_controller
-            articulation = self.api_core._get_articulation()
-            if articulation is None:
-                raise RuntimeError("Articulation unavailable for original-owner zero target")
-            names = list(articulation.dof_names)
-            indices = [names.index(name) for name in controller.roll_joint_names]
-            positions = np.full(articulation.num_dof, np.nan)
-            velocities = np.full(articulation.num_dof, np.nan)
-            velocities[indices] = 0.0
-            self.api_core._apply_chassis_action(positions, velocities)
-            target = articulation.get_articulation_controller().get_applied_action()
-            if target is None:
-                raise RuntimeError("Zero target readback unavailable")
-            actual = target.joint_velocities
-            if hasattr(actual, "detach"):
-                actual = actual.detach().cpu().numpy()
-            actual = np.asarray(actual, dtype=float)
-            if actual.shape != (articulation.num_dof,) or np.any(actual[indices] != 0.0):
-                raise RuntimeError("Zero velocity targets are unconfirmed")
-            result["zero_velocity_targets_verified"] = True
-        except Exception as error:
-            result["error"] = str(error)
-        return result
-
-    def _apply_g2_90d_emergency_hold(self):
-        """Hold every resolvable steer DOF and command every roll DOF to zero."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        articulation = self.api_core._get_articulation()
-        if controller is None or articulation is None:
-            return False
-        names = {name: index for index, name in enumerate(articulation.dof_names)}
-        raw_positions = articulation.get_joint_positions()
-        if hasattr(raw_positions, "detach"):
-            raw_positions = raw_positions.detach().cpu().numpy()
-        current_positions = np.asarray(raw_positions, dtype=np.float64)
-        positions = np.full(articulation.num_dof, np.nan)
-        velocities = np.full(articulation.num_dof, np.nan)
-        for name in controller.steer_joint_names:
-            if name in names:
-                positions[names[name]] = current_positions[names[name]]
-        roll_indices = [names[name] for name in controller.roll_joint_names if name in names]
-        for index in roll_indices:
-            velocities[index] = 0.0
-        if len(roll_indices) != len(controller.roll_joint_names):
-            return False
-        self.api_core._apply_chassis_action(positions, velocities)
-        return True
-
-    def _g2_90d_chassis_physics_tick(self, *, physics_dt, sim_time_s):
-        """Read, calculate, and write one G2_90d command on the physics thread."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        articulation = self.api_core._get_articulation()
-        if controller is None:
-            return
-        if articulation is None:
-            raise RuntimeError("G2_90d chassis articulation is unavailable")
-        names = list(articulation.dof_names)
-        indices = {name: index for index, name in enumerate(names)}
-        try:
-            steer_indices = [indices[name] for name in controller.steer_joint_names]
-            roll_indices = [indices[name] for name in controller.roll_joint_names]
-        except KeyError as error:
-            raise RuntimeError(f"G2_90d chassis joint is unavailable: {error.args[0]}") from error
-
-        def array(raw):
-            if hasattr(raw, "detach"):
-                raw = raw.detach().cpu().numpy()
-            return np.asarray(raw, dtype=np.float64)
-
-        joint_positions = array(articulation.get_joint_positions())
-        joint_velocities = array(articulation.get_joint_velocities())
-        if joint_positions.shape != joint_velocities.shape or joint_positions.size != articulation.num_dof:
-            raise RuntimeError("G2_90d chassis articulation joint state is invalid")
-        if controller.is_timed_velocity():
-            measurement = TimedVelocityMeasurement.build(
-                steer_position_rad=[joint_positions[index] for index in steer_indices],
-                roll_position_rad=[joint_positions[index] for index in roll_indices],
-                roll_velocity_rad_s=[joint_velocities[index] for index in roll_indices],
-            )
-            command = controller.tick_timed_velocity(measurement, physics_dt=physics_dt, sim_time_s=sim_time_s)
-            if command is None:
-                return
-            positions = np.full(articulation.num_dof, np.nan)
-            velocities = np.full(articulation.num_dof, np.nan)
-            for index, value in zip(steer_indices, command.steer_position_rad):
-                positions[index] = value
-            for index, value in zip(roll_indices, command.roll_velocity_rad_s):
-                velocities[index] = value
-            with controller.authorize_write(command) as allowed:
-                if not allowed:
-                    controller.note_write(command, applied=False, failed=False)
-                    return
-                try:
-                    parking = self._joint_parking()
-                    parking_receipt = None
-                    if parking is not None:
-                        context = controller.command_context(command)
-                        if context["mode"] == "velocity":
-                            parking_receipt = parking.release(
-                                articulation, authority=context["authority"], reason="chassis_motion"
-                            )
-                    self.api_core._apply_chassis_action(positions, velocities)
-                    if parking is not None and context["mode"] == "stopping":
-                        parking_receipt = parking.hold(
-                            articulation,
-                            authority=context["authority"],
-                            reason="chassis_retirement",
-                            preserve_reference=True,
-                            standstill_window=context["standstill_window"],
-                        )
-                        self._confirm_joint_parking_observation(context["authority"], parking_receipt)
-                except Exception:
-                    controller.note_write(command, applied=False, failed=False)
-                    raise
-                if parking_receipt is None:
-                    controller.note_write(command, applied=True)
-                else:
-                    controller.note_write(command, applied=True, parking_receipt=parking_receipt)
-            return
-        base_position, base_orientation = self.api_core._get_link_world_pose("base_link")
-        linear_velocity = articulation.get_linear_velocity()
-        angular_velocity = articulation.get_angular_velocity()
-        measurement = ChassisMeasurement.build(
-            base_pose_xy_yaw=(
-                float(base_position[0]),
-                float(base_position[1]),
-                _quat_wxyz_to_yaw(base_orientation),
-            ),
-            base_linear_velocity_m_s=linear_velocity,
-            base_angular_velocity_rad_s=angular_velocity,
-            steer_position_rad=[joint_positions[index] for index in steer_indices],
-            roll_position_rad=[joint_positions[index] for index in roll_indices],
-            roll_velocity_rad_s=[joint_velocities[index] for index in roll_indices],
-        )
-        command = controller.tick(measurement, physics_dt=physics_dt, sim_time_s=sim_time_s)
-        if command is None:
-            return
-        positions = np.full(articulation.num_dof, np.nan)
-        velocities = np.full(articulation.num_dof, np.nan)
-        for index, value in zip(steer_indices, command.steer_position_rad):
-            positions[index] = value
-        for index, value in zip(roll_indices, command.roll_velocity_rad_s):
-            velocities[index] = value
-        with controller.authorize_write(command) as allowed:
-            if not allowed:
-                controller.note_write(command, applied=False, failed=False)
-                return
-            try:
-                self.api_core._apply_chassis_action(positions, velocities)
-            except Exception:
-                controller.note_write(command, applied=False, failed=False)
-                raise
-            controller.note_write(command, applied=True)
-
-    def get_g2_90d_chassis_control_state(self, *, after_tick_seq=0):
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is None:
-            return None
-        state = controller.state(after_tick_seq=after_tick_seq)
-        parking = getattr(self, "_g2_90d_joint_parking", None)
-        if parking is not None:
-            state["joint_parking"] = parking.state()
-        return state
-
-    def retire_g2_90d_chassis_goal(self, *, control_identity):
-        """Make one physically qualified chassis goal passive before its receipt."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        return controller.retire_goal(control_identity) if controller is not None else False
-
-    def apply_g2_90d_chassis_pulse(self, pulse):
-        """Start one explicit, guarded body-velocity pulse for control mode."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is None or not isinstance(pulse, dict):
-            return False
-        operation = pulse.get("operation")
-        direction = pulse.get("direction")
-        duration = pulse.get("duration_s")
-        if operation in {"chassis.move_distance", "chassis.turn_angle"}:
-            distance = operation == "chassis.move_distance"
-            if direction not in ({"forward", "back"} if distance else {"left", "right"}):
-                return False
-            write_guard = getattr(self, "_current_control_write_guard", None)
-            token = getattr(self, "_policy_control_write_token", None)
-            if write_guard is None or not isinstance(token, dict):
-                return False
-            sign = 1 if direction in {"forward", "left"} else -1
-            controller.start_encoder_segment(
-                axis=0 if distance else 2,
-                target=sign * pulse["distance_m" if distance else "angle_rad"],
-                speed=pulse["linear_velocity_m_s" if distance else "angular_velocity_rad_s"],
-                control_identity=token,
-                write_guard=write_guard,
-            )
-            return True
-        if operation == "chassis.move" and direction in {"forward", "back"}:
-            speed = float(pulse["linear_velocity_m_s"])
-            body_twist = (speed if direction == "forward" else -speed, 0.0, 0.0)
-        elif operation == "chassis.turn" and direction in {"left", "right"}:
-            speed = float(pulse["angular_velocity_rad_s"])
-            body_twist = (0.0, 0.0, speed if direction == "left" else -speed)
-        else:
-            return False
-        write_guard = getattr(self, "_current_control_write_guard", None)
-        token = getattr(self, "_policy_control_write_token", None)
-        if write_guard is None or not isinstance(token, dict):
-            return False
-        controller.start_timed_velocity(
-            body_twist,
-            duration,
-            control_identity=token,
-            write_guard=write_guard,
-        )
-        return True
 
     @staticmethod
     def _pose_from_config(pose):
@@ -953,82 +665,22 @@ class PiEnv(DummyEnv):
             return None
         return [float(v) for v in pose["position"]], [float(v) for v in pose["quaternion"]]
 
-    def _configured_chassis_joint_names(self):
-        """Return profile-owned G2 names or the legacy swerve fallback."""
-
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        if has_control_profile(profile) and not has_chassis_profile(profile):
-            # A fixed-base arm profile owns no steer or drive joints.
-            return [], [], False
-        is_g2_90d = (
-            has_chassis_profile(profile) or getattr(self, "robot_cfg", None) == "G2_90d"
-        ) and (
-            getattr(self.api_core, "profile_control_enabled", False)
-            or bool((getattr(self, "init_task_config", None) or {}).get("control_mode"))
-        )
-        if not is_g2_90d:
-            return list(_STEER_JOINT_NAMES), list(_DRIVE_JOINT_NAMES), False
-        if not has_chassis_profile(profile):
-            raise RuntimeError("G2_90d runtime has no physical profile")
-        chassis = profile.get("chassis")
-        if not isinstance(chassis, dict):
-            raise RuntimeError("G2_90d profile has no chassis joint configuration")
-        steer_names = chassis.get("steer_joints")
-        drive_names = chassis.get("drive_joints")
-        if any(
-            not isinstance(names, list) or len(names) != 4 or len(set(names)) != 4
-            for names in (steer_names, drive_names)
-        ):
-            raise RuntimeError("G2_90d profile must name four distinct steer and drive joints")
-        return list(steer_names), list(drive_names), True
-
     def _reset_chassis_joints(self):
-        """Clear the steer/drive targets the last episode left in the PhysX drives.
-
-        `_reset_chassis_loop_state` only clears this class's command cache; the
-        articulation keeps the last targets it was given, so releasing the base
-        anchor at the end of reset hands the wheels a stale command and the
-        robot drives itself off the pose it was just reset to.
-        """
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        steer_names, drive_names, is_g2_90d = self._configured_chassis_joint_names()
-        if not steer_names and not drive_names:
-            return  # fixed-base arm profile: no chassis joints to clear
+        """Clear the previous episode's steering and drive targets before release."""
         try:
-            steer_idx = [self.robot_joint_indices[n] for n in steer_names]
-            drive_idx = [self.robot_joint_indices[n] for n in drive_names]
-        except KeyError as error:
-            if is_g2_90d:
-                raise RuntimeError(
-                    f"G2_90d articulation is missing configured chassis joint {error.args[0]}"
-                ) from error
-            return  # not a swerve base
+            steer_idx = [self.robot_joint_indices[n] for n in _STEER_JOINT_NAMES]
+            drive_idx = [self.robot_joint_indices[n] for n in _DRIVE_JOINT_NAMES]
+        except KeyError:
+            return
         articulation = self.api_core._get_articulation()
         if articulation is None:
-            if is_g2_90d:
-                raise RuntimeError("G2_90d articulation is unavailable during chassis reset")
             return
-        if not is_g2_90d:
-            self._configure_chassis_steering(articulation, steer_idx)
-        # Some tasks (this robot's "living room" family included) rebuild the
-        # whole Workspace/articulation between episodes (see "Re-initialized
-        # robot articulation from scene" in the reset log) -- the fresh
-        # PhysX articulation VIEW starts back at the asset's default
-        # maxVelocity/maxEffort (those aren't USD-persisted, unlike
-        # stiffness/damping), silently undoing last episode's override.
-        # Re-apply drive configuration while the base is still welded. G2_90d
-        # owns its runtime steer gains in the profile; legacy robots retain the
-        # existing compatibility override.
-        if is_g2_90d:
-            from geniesim_benchmark.g2_90d_profile import apply_g2_90d_articulation_profile
-
-            apply_g2_90d_articulation_profile(articulation, profile)
-        else:
-            self._apply_chassis_drive_overrides(articulation, steer_idx)
+        self._configure_chassis_steering(articulation, steer_idx)
+        self._apply_chassis_drive_overrides(articulation, steer_idx)
         positions = np.full(articulation.num_dof, np.nan)
         velocities = np.full(articulation.num_dof, np.nan)
         for i in range(4):
-            positions[steer_idx[i]] = 0.0 if is_g2_90d else np.clip(0.0, *self._steer_limits[i])
+            positions[steer_idx[i]] = np.clip(0.0, *self._steer_limits[i])
             velocities[drive_idx[i]] = 0.0
         self.api_core.apply_chassis_action(positions, velocities)
         logger.info("chassis steer/drive targets cleared for reset")
@@ -1040,9 +692,13 @@ class PiEnv(DummyEnv):
         # Isaac's DOF properties are radians, unlike angular USD attributes.
         props = articulation.dof_properties
         limits = np.column_stack((props["lower"][steer_idx], props["upper"][steer_idx]))
-        if (limits.shape != (4, 2) or np.any(np.isnan(limits))
-                or np.any(limits[:, 0] > limits[:, 1])
-                or np.any(np.isposinf(limits[:, 0])) or np.any(np.isneginf(limits[:, 1]))):
+        if (
+            limits.shape != (4, 2)
+            or np.any(np.isnan(limits))
+            or np.any(limits[:, 0] > limits[:, 1])
+            or np.any(np.isposinf(limits[:, 0]))
+            or np.any(np.isneginf(limits[:, 1]))
+        ):
             raise ValueError(f"Invalid chassis steering joint limits: {limits}")
         self._steer_limits = np.asarray(limits, dtype=np.float64)
         self._pose_planner = None
@@ -1121,28 +777,15 @@ class PiEnv(DummyEnv):
     def _capture_robot_base_z(self):
         """Cache the base-link reset height once.
 
-        G2_90d derives this from its wheel geometry because the articulation
-        root pose is not the base-link pose. Other robots keep the observed
-        articulation height used by the existing reset path.
+        Use the observed articulation height for the episode reset.
         """
         if self._robot_base_z is not None:
             return
         try:
-            profile = getattr(self.api_core, "robot_profile", None) or {}
-            if has_chassis_profile(profile) and isinstance(profile.get("runtime_validation"), dict):
-                validation = profile["runtime_validation"]
-                self._robot_base_z = (
-                    float(validation["ground_plane_z_m"])
-                    + float(validation["wheel_radius_m"])
-                    - float(validation["wheel_center_from_base_z_m"])
-                )
-                logger.info(f"[g2-90d-profile] derived base_link reset height z={self._robot_base_z:.4f}m")
+            articulation = self.api_core._get_articulation()
+            if articulation is None:
                 return
-            else:
-                articulation = self.api_core._get_articulation()
-                if articulation is None:
-                    return
-                position, _ = articulation.get_world_pose()
+            position, _ = articulation.get_world_pose()
             self._robot_base_z = float(position[2])
             logger.info(f"[chassis-drive] captured robot standing height z={self._robot_base_z:.4f}m")
         except Exception as e:
@@ -1187,33 +830,14 @@ class PiEnv(DummyEnv):
         self._chassis_step_in_chunk = 0
 
     def load_task_setup(self):
-        # The selected llm_task supplies only the physical sub-stage in shared
-        # control. Its instruction target and checker stay outside the control
-        # process; the operator-owned public Goal arrives through user_text.
-        self.task = ControlTask(self) if self.init_task_config.get("control_mode") else LLMTask(self)
+        self.task = LLMTask(self)
 
     def get_observation(self, fetch_images=True):
         # C: single physics-loop round-trip for image + depth + joint_state,
         # vs serial run_on_physics_loop waits before. B: when fetch_images is
         # False (chunk replay between inferences) the policy won't consume
         # images, so we skip them.
-        # Control mode reads RGB + joint state only; benchmark mode keeps the
-        # original bundle so the inference payload is unchanged.
-        control_rgb_only = bool((getattr(self, "init_task_config", None) or {}).get("control_mode"))
-        control_observation_generation = getattr(self, "_control_observation_generation", 0)
-        control_depth = control_rgb_only and fetch_images and bool(getattr(self, "need_depth", False))
-        if control_rgb_only:
-            bundle = self.api_core.get_obs_bundle(
-                image_dirs=self.data_courier._camera_dirs() if fetch_images else None,
-                # Depth shares the RGB render only while control.depth_read waits.
-                depth_dirs=self.data_courier._camera_dirs() if control_depth else None,
-                link_names=(),
-                want_joint_state=True,
-            )
-        else:
-            bundle = self.data_courier.get_obs_bundle(
-                fetch_images=fetch_images,
-            )
+        bundle = self.data_courier.get_obs_bundle(fetch_images=fetch_images)
         self._update_chassis_motion(bundle.get("chassis_motion"))
         images = bundle.get("images", {})
         depth = bundle.get("depth") or {}
@@ -1222,16 +846,14 @@ class PiEnv(DummyEnv):
         def joint_values(names):
             return [full_joint_states[name] for name in names]
 
-        steer_names, _drive_names, is_g2_90d = self._configured_chassis_joint_names()
+        steer_names = _STEER_JOINT_NAMES
         try:
             self._last_steer_actual = np.array(
                 [float(full_joint_states[n]) for n in steer_names],
                 dtype=np.float64,
             )
             self._has_chassis = bool(steer_names)
-        except (KeyError, TypeError) as error:
-            if is_g2_90d:
-                raise RuntimeError("G2_90d observation is missing configured steer state") from error
+        except (KeyError, TypeError):
             self._has_chassis = False
 
         waist_joints = self.cfg["waist_joints"]
@@ -1240,10 +862,14 @@ class PiEnv(DummyEnv):
         # that never closes can be told apart from one the joint refuses to
         # follow. Same throttle, so the two lines interleave per step.
         _g_prev = getattr(self, "_gripper_obs_log", None)
-        if _g_prev is None or max(abs(a - b) for a, b in zip(gripper_values, _g_prev)) > 0.01 \
-                or self.current_step % 90 == 0:
-            logger.info(f"[gripper-obs] step={self.current_step} "
-                        f"actual={[round(float(v), 4) for v in gripper_values]}")
+        if (
+            _g_prev is None
+            or max(abs(a - b) for a, b in zip(gripper_values, _g_prev)) > 0.01
+            or self.current_step % 90 == 0
+        ):
+            logger.info(
+                f"[gripper-obs] step={self.current_step} " f"actual={[round(float(v), 4) for v in gripper_values]}"
+            )
             self._gripper_obs_log = list(gripper_values)
         # gripper_joints is [left..., right...]; split in half so multi-DOF
         # (dexterous) hands map their whole finger set per side, and the 2-value
@@ -1267,54 +893,32 @@ class PiEnv(DummyEnv):
         self.cur_arm = states["left_arm"] + states["right_arm"]
 
         obs = {"images": images, "states": states}
-        if control_depth and depth and bundle.get("calibration"):
-            obs["depth"] = depth
-            obs["calibration"] = bundle["calibration"]
-        if not control_rgb_only:
-            # The policy's current depth choice includes matching calibration;
-            # benchmark episodes enable it before their initial capture.
-            want_depth = bool(getattr(self, "need_depth", False))
-            obs["depth"] = depth if want_depth else None
-            if want_depth:
-                obs["calibration"] = bundle.get("calibration") or {}
-        if control_rgb_only or is_g2_90d:
-            # Control / G2_90d startup-validation evidence; kept out of the
-            # benchmark observation so the inference payload is unchanged.
-            if bundle.get("measured"):
-                obs["measured"] = bundle["measured"]
-            if bundle.get("camera_samples"):
-                obs["camera_samples"] = bundle["camera_samples"]
-            obs["_control_observation_generation"] = control_observation_generation
+        want_depth = bool(getattr(self, "need_depth", False))
+        obs["depth"] = depth if want_depth else None
+        if want_depth:
+            obs["calibration"] = bundle.get("calibration") or {}
         obs["eef"] = self.ikfk_solver.compute_eef(self.cur_arm)
-        if not control_rgb_only:
-            if ik_frame(getattr(self, "robot_cfg", "")) == "base_link":
-                # This embodiment's IK/FK already solves in base_link, so the two
-                # declared EEF frames name the same frame. Pin the transform to
-                # identity: arx has no arm_base_link link at all, and agilex's
-                # sits 0.15m up the chassis — reading either would reintroduce an
-                # offset the solver does not apply.
-                obs["arm_base_transform"] = np.eye(4)
-            else:
-                try:
-                    base_pos, base_rot = self.api_core._get_link_world_pose("base_link")
-                    arm_pos, arm_rot = self.api_core._get_link_world_pose("arm_base_link")
-                    obs["arm_base_transform"] = arm_base_transform_from_poses(base_pos, base_rot, arm_pos, arm_rot)
-                    if self._chassis_motion is None:
-                        self._last_base_xy = (float(base_pos[0]), float(base_pos[1]))
-                        self._last_base_yaw = _quat_wxyz_to_yaw(base_rot)
-                    if is_g2_90d:
-                        # G2_90d reset logging and the startup chassis probe
-                        # read the measured base pose.
-                        obs["base_pose"] = (base_pos, base_rot)
-                except Exception as e:
-                    logger.warning(f"arm_base_transform unavailable: {e}")
+        if ik_frame(getattr(self, "robot_cfg", "")) == "base_link":
+            # This embodiment's IK/FK already solves in base_link, so the two
+            # declared EEF frames name the same frame. Pin the transform to
+            # identity: arx has no arm_base_link link at all, and agilex's
+            # sits 0.15m up the chassis — reading either would reintroduce an
+            # offset the solver does not apply.
+            obs["arm_base_transform"] = np.eye(4)
+        else:
+            try:
+                base_pos, base_rot = self.api_core._get_link_world_pose("base_link")
+                arm_pos, arm_rot = self.api_core._get_link_world_pose("arm_base_link")
+                obs["arm_base_transform"] = arm_base_transform_from_poses(base_pos, base_rot, arm_pos, arm_rot)
+                if self._chassis_motion is None:
+                    self._last_base_xy = (float(base_pos[0]), float(base_pos[1]))
+                    self._last_base_yaw = _quat_wxyz_to_yaw(base_rot)
+            except Exception as e:
+                logger.warning(f"arm_base_transform unavailable: {e}")
         return obs
 
     def reset(self):
         self.api_core.run_on_physics_loop(self.api_core.set_chassis_servo_callback, None)
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is not None:
-            controller.reset()
         self._capture_robot_base_z()
         self._followed_objects = set()
         self._picked_objects = set()
@@ -1354,17 +958,14 @@ class PiEnv(DummyEnv):
             ]
         )
 
-        # Single polling loop with early exit on convergence. G2_90d keeps the
-        # base welded until every configured target has actually converged.
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        steer_names, _drive_names, is_g2_90d = self._configured_chassis_joint_names()
-        eps = float(profile["completion"]["joint_position_tolerance_rad"]) if is_g2_90d else 1e-2
+        # Poll initial targets with early exit on convergence.
+        steer_names = _STEER_JOINT_NAMES
+        eps = 1e-2
         init_arm_arr = np.array(self.init_arm)
         init_waist_arr = np.array(self.init_waist)
         init_head_arr = np.array(self.init_head)
         init_gripper_arr = np.array(init_gripper)
-        deadline = time.time() + (5.0 if is_g2_90d else 1.0)
-        converged = False
+        deadline = time.time() + 1.0
         while time.time() < deadline:
             time.sleep(0.02)
             js = self.data_courier.get_joint_state_dict()
@@ -1374,12 +975,8 @@ class PiEnv(DummyEnv):
                 arm = np.array([js[n] for n in self.cfg["arm_joints"]])
                 waist = np.array([js[n] for n in self.cfg["waist_joints"]])
                 gripper = np.array([js[n] for n in self.cfg["gripper_joints"]])
-                head = np.array([js[n] for n in self.cfg["head_joints"]]) if is_g2_90d else np.array([])
-            except KeyError as error:
-                if is_g2_90d:
-                    raise RuntimeError(
-                        f"G2_90d reset observation is missing configured joint {error.args[0]}"
-                    ) from error
+                head = np.array([])
+            except KeyError:
                 continue
             arm_ok = np.max(np.abs(arm - init_arm_arr)) < eps if arm.size else True
             waist_ok = np.max(np.abs(waist - init_waist_arr)) < eps if waist.size else True
@@ -1392,18 +989,11 @@ class PiEnv(DummyEnv):
             # must report every configured steer joint.
             try:
                 steer = np.array([js[n] for n in steer_names])
-                steer_ok = np.max(np.abs(steer)) < eps if steer.size else not is_g2_90d
-            except KeyError as error:
-                if is_g2_90d:
-                    raise RuntimeError(
-                        f"G2_90d reset observation is missing configured joint {error.args[0]}"
-                    ) from error
+                steer_ok = np.max(np.abs(steer)) < eps if steer.size else True
+            except KeyError:
                 steer_ok = True
             if arm_ok and waist_ok and head_ok and gripper_ok and steer_ok:
-                converged = True
                 break
-        if is_g2_90d and not converged:
-            raise RuntimeError("G2_90d reset joints did not converge before the fixed deadline")
         logger.info("Finish reset robot...")
 
         self.api_core.reset_env()
@@ -1416,9 +1006,7 @@ class PiEnv(DummyEnv):
             # is, right before unweld, so there is no residual error left for
             # a real (nonzero) drive stiffness to correct against a now-free
             # base -- see sync_drive_targets_to_current's docstring.
-            synchronized = self.api_core.sync_drive_targets_to_current(log_label="pre-unweld reset")
-            if is_g2_90d and synchronized is not True:
-                raise RuntimeError("G2_90d reset could not synchronize drive targets before unweld")
+            self.api_core.sync_drive_targets_to_current(log_label="pre-unweld reset")
             self.api_core.set_robot_base_anchored(False)
 
         try:
@@ -1427,169 +1015,18 @@ class PiEnv(DummyEnv):
             logger.warning("get_observation failed after reset (%s) — retrying same-world read once", e)
             time.sleep(1.0)
             obs = self.get_observation()
-        if has_chassis_profile(getattr(self.api_core, "robot_profile", None) or {}) and self._free_base and obs.get("base_pose"):
-            base_position, base_orientation = obs["base_pose"]
-            logger.info(
-                f"[g2-90d-profile] base_link post-reset position={list(map(float, base_position))} "
-                f"orientation_wxyz={list(map(float, base_orientation))}"
-            )
-        control_mode = bool((getattr(self, "init_task_config", None) or {}).get("control_mode"))
-        if controller is not None and self._free_base and not control_mode:
-            controller.request_parking("run.reset_complete")
         logger.info("Finish reset env...")
         return obs
 
-    def _g2_90d_chassis_probe_sample(self):
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        if profile.get("name") != "G2_90d":
-            raise RuntimeError("G2_90d chassis probe requires the G2_90d profile")
-        chassis = profile["chassis"]
-        steer_names = list(chassis["steer_joints"])
-        roll_names = list(chassis["drive_joints"])
-        if len(steer_names) != 4 or len(roll_names) != 4:
-            raise RuntimeError("G2_90d chassis probe requires four steer and four roll joints")
-        joint_state = self.data_courier.get_joint_state_dict()
-        missing = [name for name in steer_names + roll_names if name not in joint_state]
-        if missing:
-            raise RuntimeError(f"G2_90d chassis probe is missing joints: {missing}")
-        observation = self.get_observation(fetch_images=False)
-        pose = observation.get("base_pose")
-        if pose is None:
-            raise RuntimeError("G2_90d chassis probe has no base_link pose")
-        position, quaternion = pose
-        motion = self.api_core.get_robot_base_motion()
-        return {
-            "base": {
-                "position_m": [float(value) for value in position],
-                "quaternion_wxyz": [float(value) for value in quaternion],
-                "yaw_rad": float(_quat_wxyz_to_yaw(quaternion)),
-                "linear_velocity_m_s": [float(value) for value in motion["linear_velocity_m_s"]],
-                "angular_velocity_rad_s": [float(value) for value in motion["angular_velocity_rad_s"]],
-            },
-            "steer_position_rad": {name: float(joint_state[name]) for name in steer_names},
-            "roll_position_rad": {name: float(joint_state[name]) for name in roll_names},
-        }
-
     def apply_chassis_target(self, chassis, *, chunk_start=False):
-        """Apply one chassis pose target through the path used by step()."""
-
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is not None:
-            anchor = None
-            if self._last_base_xy is not None and self._last_base_yaw is not None:
-                anchor = (*self._last_base_xy, self._last_base_yaw)
-            controller.update_goal(
-                chassis,
-                new_chunk=chunk_start,
-                control_identity=getattr(self, "_policy_control_write_token", None),
-                write_guard=getattr(self, "_current_control_write_guard", None),
-                anchor_pose_xy_yaw=anchor,
-            )
-            return True
+        """Apply one benchmark chassis pose target."""
         self.api_core.check_chassis_servo()
         return self.api_core.run_on_physics_loop(self._submit_chassis_target, chassis, chunk_start)
 
-    def run_g2_90d_startup_chassis_probe(
-        self,
-        *,
-        duration_seconds,
-        linear_speed_tolerance_m_s,
-        angular_speed_tolerance_rad_s,
-    ):
-        """Send one small pose target and retain motion and stop evidence."""
-
-        if not self._free_base:
-            raise RuntimeError("G2_90d chassis probe requires robot.free_base=true")
-        controller = self._g2_90d_chassis_controller
-        if controller is None:
-            raise RuntimeError("G2_90d startup chassis probe has no profile controller")
-        config = self.api_core.robot_profile["chassis"]["controller"]
-        target = [0.015, 0.01, 0.02]
-        before = self._g2_90d_chassis_probe_sample()
-        first_tick_seq = int(controller.state()["tick_seq"])
-        self._current_control_write_guard = None
-        applied = self.apply_chassis_target(target, chunk_start=True)
-        if applied is False:
-            raise RuntimeError("G2_90d startup chassis target was rejected")
-        goal_completed = controller.wait_for_status(
-            {"reached", "failed", "cancelled"},
-            float(config["goal_timeout_s"]),
-        )
-        if not goal_completed:
-            controller.fail("goal_timeout")
-        motion_state = controller.state(after_tick_seq=first_tick_seq)
-        driven = self._g2_90d_chassis_probe_sample()
-
-        stop_first_tick_seq = int(controller.state()["tick_seq"])
-        controller.stop(reason="startup_validation")
-        stop_completed = controller.wait_for_status(
-            {"stopped", "failed", "cancelled"},
-            max(float(duration_seconds), 0.5),
-        )
-        stop_state = controller.state(after_tick_seq=stop_first_tick_seq)
-        settled = self._g2_90d_chassis_probe_sample()
-
-        steer_delta = {
-            name: driven["steer_position_rad"][name] - before["steer_position_rad"][name]
-            for name in before["steer_position_rad"]
-        }
-        roll_delta = {
-            name: driven["roll_position_rad"][name] - before["roll_position_rad"][name]
-            for name in before["roll_position_rad"]
-        }
-        base_before = np.asarray(before["base"]["position_m"], dtype=np.float64)
-        base_driven = np.asarray(driven["base"]["position_m"], dtype=np.float64)
-        return {
-            "production_helper": "PiEnv.apply_chassis_target",
-            "target_base_delta_xy_yaw": target,
-            "command_steps": len(motion_state["samples"]),
-            "before": before,
-            "driven": driven,
-            "settled": settled,
-            "settle_samples": [settled],
-            "goal_completed": goal_completed and motion_state["status"] == "reached",
-            "goal_status": motion_state["status"] if goal_completed else "timed_out",
-            "goal_controller_status": motion_state["status"],
-            "stop_completed": stop_completed and stop_state["status"] == "stopped",
-            "stop_status": stop_state["status"],
-            "stop_stable_samples": stop_state["stable_ticks"],
-            "stop_stable_duration_s": stop_state["stable_duration_s"],
-            "position_tolerance_m": motion_state["position_tolerance_m"],
-            "yaw_tolerance_rad": motion_state["yaw_tolerance_rad"],
-            "peak_path_deviation_m": motion_state["peak_path_deviation_m"],
-            "peak_yaw_error_rad": motion_state["peak_yaw_error_rad"],
-            "maximum_steer_motion_rad": motion_state["maximum_steer_motion_rad"],
-            "control_samples": motion_state["samples"],
-            "stop_control_samples": stop_state["samples"],
-            "steer_delta_rad": steer_delta,
-            "roll_delta_rad": roll_delta,
-            "base_xy_motion_m": float(np.linalg.norm(base_driven[:2] - base_before[:2])),
-        }
-
-    def set_policy_step_info(
-        self,
-        *,
-        chunk_started=False,
-        chunk_len=None,
-        control_action_guard=None,
-        control_write_token=None,
-    ):
-        self._policy_control_action_guard = control_action_guard
-        self._policy_control_write_token = control_write_token
-        # Chassis anchor cadence: track the policy's ACTUAL chunk length (in
-        # env-steps) instead of assuming the fixed _CHUNK_STEPS fallback. A
-        # real model's chunk size need not be 30 -- if the anchor only
-        # relocks every _CHUNK_STEPS while the policy's chunks are shorter,
-        # any reply after the first within that stale window commands the
-        # base back toward the OLD anchor once its own delta resets, which
-        # shows up as the base swaying back and forth / not tracking a
-        # straight line (see keyboard_mock_server.py's chassis notes for a
-        # concrete repro). chunk_len is only passed by policies that report
-        # real chunk boundaries (currently CoRobotPolicy); other policies
-        # leave it None and step() falls back to the old fixed-period logic.
-        if chunk_len is not None:
-            self._policy_chunk_started = bool(chunk_started)
-            self._policy_chunk_len_steps = max(1, int(chunk_len))
+    def set_policy_step_info(self, *, chunk_started=False, chunk_len=None):
+        self._policy_chunk_started = bool(chunk_started)
+        if chunk_len is not None and int(chunk_len) > 0:
+            self._policy_chunk_len_steps = int(chunk_len)
 
     def step(self, action):
         if action is None:
@@ -1599,382 +1036,53 @@ class PiEnv(DummyEnv):
         self.current_step += 1
         need_update = False
         if self.current_step != 1 and self.current_step % 30 == 0:
-            # Control sessions have no task checker or action_update cadence.
-            if not getattr(self, "control_mode", False):
-                self.task.step(self)
-                self.action_update()
-                need_update = True
+            self.task.step(self)
+            self.action_update()
+            need_update = True
 
-        # fmt: off
         arm = action.get("arm")
         gripper = action.get("gripper")
-        # Diagnostic: is the policy ever commanding a close? The collection data
-        # closes toward NEGATIVE (joints_action goes 0 -> -0.91, the joint itself
-        # only reaching ~-0.40 once it has the bottle), and
-        # process_gripper_action_passthrough hands the server's value straight
-        # through as the joint target, so a command that never leaves ~0 means
-        # the gripper was never told to close. Logged on change and on a slow
-        # heartbeat so a whole episode's open/close pattern is readable.
         if gripper is not None:
             g = [float(v) for v in gripper]
             prev = getattr(self, "_gripper_cmd_log", None)
-            if prev is None or max(abs(a - b) for a, b in zip(g, prev)) > 0.01 \
-                    or self.current_step % 90 == 0:
-                logger.info(f"[gripper-cmd] step={self.current_step} "
-                            f"cmd={[round(v, 4) for v in g]}")
+            if prev is None or max(abs(a - b) for a, b in zip(g, prev)) > 0.01 or self.current_step % 90 == 0:
+                logger.info(f"[gripper-cmd] step={self.current_step} cmd={[round(v, 4) for v in g]}")
                 self._gripper_cmd_log = g
         waist = action.get("waist")
         head = action.get("head")
         chassis = action.get("chassis")
-        chassis_kind = action.get("chassis_kind", "POSE_DELTA")
-        if chassis is not None and chassis_kind not in ("POSE_DELTA", "POSE_ABS_TELEPORT"):
-            raise ValueError(f"Unsupported chassis kind: {chassis_kind}")
-        chassis_pulse = action.get("chassis_pulse")
+        if chassis is not None and action.get("chassis_kind", "POSE_DELTA") != "POSE_DELTA":
+            raise ValueError(f"Unsupported chassis kind: {action['chassis_kind']}")
 
-        guard_factory = getattr(self, "_policy_control_action_guard", None)
-        control_write_token = getattr(self, "_policy_control_write_token", None)
-        write_guard = (
-            (lambda: guard_factory(control_write_token))
-            if callable(guard_factory)
-            else None
-        )
-        direct_duration = action.get("_direct_duration_s")
-        if direct_duration is not None:
-            from contextlib import contextmanager
-
-            @contextmanager
-            def direct_guard():
-                with guard_factory(control_write_token) as allowed:
-                    window = self.direct_window(control_write_token)
-                    yield allowed and not (window is not None and window["ended"])
-
-            write_guard = direct_guard
-        self._current_control_write_guard = write_guard
-        action_is_current = True
-
-        # Chunk boundary for the chassis anchor: prefer the policy's actual
-        # chunk-started signal (set_policy_step_info) over the fixed-period
-        # fallback, so the anchor relocks exactly once per real inference
-        # chunk regardless of that chunk's length.
         if hasattr(self, "_policy_chunk_len_steps"):
             chunk_start = self._policy_chunk_started
         else:
             chunk_start = (self.current_step - 1) % _CHUNK_STEPS == 0
         batch = []
         if arm is not None:
-            if "_direct_arms" not in action:
-                batch.append(([float(v) for v in arm], [self.robot_joint_indices[v] for v in self.cfg["arm_joints"]], True))
-            else:
-                per_side = len(self.cfg["arm_joints"]) // 2
-                for side in action["_direct_arms"]:
-                    start = 0 if side == "left" else per_side
-                    names = self.cfg["arm_joints"][start:start + per_side]
-                    batch.append(([float(v) for v in arm[start:start + per_side]], [self.robot_joint_indices[v] for v in names], True))
+            batch.append(([float(v) for v in arm], [self.robot_joint_indices[v] for v in self.cfg["arm_joints"]], True))
         if gripper is not None:
-            if "_direct_grippers" not in action:
-                batch.append(([float(v) for v in gripper], [self.robot_joint_indices[v] for v in self.cfg["gripper_joints"]], True))
-            else:
-                for side in action["_direct_grippers"]:
-                    index = 0 if side == "left" else 1
-                    batch.append(([float(gripper[index])], [self.robot_joint_indices[self.cfg["gripper_joints"][index]]], True))
+            batch.append(
+                ([float(v) for v in gripper], [self.robot_joint_indices[v] for v in self.cfg["gripper_joints"]], True)
+            )
         if waist is not None:
-            waist_joints = self.cfg["waist_joints"]
-            batch.append(([float(v) for v in waist], [self.robot_joint_indices[v] for v in waist_joints[:len(waist)]], True))
+            names = self.cfg["waist_joints"][: len(waist)]
+            batch.append(([float(v) for v in waist], [self.robot_joint_indices[v] for v in names], True))
         if head is not None:
-            head_joints = self.cfg["head_joints"]
-            batch.append(([float(v) for v in head], [self.robot_joint_indices[v] for v in head_joints[:len(head)]], True))
+            names = self.cfg["head_joints"][: len(head)]
+            batch.append(([float(v) for v in head], [self.robot_joint_indices[v] for v in names], True))
         if batch:
-            from geniesim_benchmark.direct_targets import DirectObservationRequired, check_direct_basis
+            self.api_core.set_joint_positions_batched(batch)
+        if chassis is not None and len(chassis) >= 3:
+            self.apply_chassis_target(chassis, chunk_start=chunk_start)
 
-            parking = self._joint_parking() if chassis_pulse is None else None
-            profile = getattr(self.api_core, "robot_profile", None) or {}
-            # Fixed-base arms have no chassis and so no joint parking; their
-            # Direct segments keep the basis check and window without it.
-            fixed_arm = parking is None and has_control_profile(profile) and not has_chassis_profile(profile)
-            if parking is not None or (fixed_arm and direct_duration is not None):
-                def ensure_parking():
-                    # This callback and the target batch run in one guarded physics tick.
-                    # Once started, this segment's own motion must not rebase its target.
-                    if direct_duration is not None and self.direct_window(control_write_token) is None:
-                        from geniesim_benchmark.control_observation import capture_measured
-
-                        try:
-                            basis = action.get("_direct_basis")
-                            if not isinstance(basis, dict):
-                                raise ValueError("Missing retained Direct observation")
-                            check_direct_basis(basis, capture_measured(self.api_core))
-                        except (KeyError, TypeError, ValueError, RuntimeError) as error:
-                            raise DirectObservationRequired(str(error)) from error
-                    if parking is None:
-                        self._begin_direct_window(control_write_token, guard_factory, direct_duration,
-                            [self.api_core._get_articulation().dof_names[index] for _, indices, _ in batch for index in indices])
-                        return
-                    try:
-                        receipt = parking.hold(self.api_core._get_articulation(), authority=control_write_token,
-                                               reason="non_chassis_write", preserve_reference=True)
-                        if receipt["status"] != "held":
-                            self._reset_chassis_control_state(actuator_only=True, control_identity=control_write_token,
-                                                              write_guard=write_guard)
-                            raise RuntimeError("Parking is braking; non-chassis target was not written")
-                        if direct_duration is not None:
-                            self._begin_direct_window(control_write_token, guard_factory, direct_duration,
-                                [self.api_core._get_articulation().dof_names[index] for _, indices, _ in batch for index in indices])
-                    except Exception:
-                        if parking.state()["status"] == "failed_unknown":
-                            self._g2_90d_chassis_controller.fail_parking(parking.state())
-                        raise
-                try:
-                    action_is_current = self.api_core.set_joint_positions_batched(
-                        batch, write_guard=write_guard, before_write=ensure_parking
-                    ) is not False
-                except DirectObservationRequired:
-                    # Recovery can queue a hold, so do it on the caller thread after
-                    # the physics callback released its write guard.
-                    self._direct_rejection_handler(control_write_token)
-                    action_is_current = False
-            else:
-                if direct_duration is not None:
-                    raise RuntimeError("Direct requires qualified physical joint parking")
-                action_is_current = self.api_core.set_joint_positions_batched(batch, write_guard=write_guard) is not False
-
-        if getattr(self, "control_mode", False) and chassis is not None:
-            action_is_current = False
-        if action_is_current and chassis is not None and len(chassis) >= 3:
-            if chassis_kind == "POSE_ABS_TELEPORT":
-                if chunk_start:
-                    self._teleport_chassis_abs(chassis)
-            else:
-                action_is_current = self.apply_chassis_target(chassis, chunk_start=chunk_start) is not False
-        if action_is_current and chassis_pulse is not None:
-            pulse = dict(chassis_pulse)
-            action_is_current = self.apply_g2_90d_chassis_pulse(pulse) is not False
-        self._current_control_write_guard = None
-        if not action_is_current:
-            self._reject_stale_control_action()
-            arm = gripper = waist = head = chassis = None
-        # fmt: on
-
-        # Wait only at the chunk's last waypoint, not on history-capture steps.
-        # Free-base WBC tasks need whole-body stability; fixed-base tasks keep
-        # the original arm-only wait and wall-clock budget.
         if getattr(self, "settle_due", self.need_infer):
-            if self._free_base and not getattr(self.api_core, "profile_control_enabled", False):
+            if self._free_base:
                 self._wait_robot_settled(arm=arm, waist=waist, head=head, gripper=gripper)
             elif arm is not None:
                 self._wait_arm_settled([float(v) for v in arm])
-
         next_obs = self.get_observation(fetch_images=self.need_infer or self.has_done)
         return next_obs, self.has_done, need_update, self.task.task_progress
-
-    def _reject_stale_control_action(self):
-        """Reject the old action; the current event owns its guarded hold."""
-        logger.warning("Rejected stale control action at the final robot write gate")
-        self.need_infer = True
-        self._current_control_write_guard = None
-
-    def _reset_chassis_control_state(
-        self,
-        *,
-        actuator_only=False,
-        control_identity=None,
-        write_guard=None,
-        reason="control_state_reset",
-    ):
-        controller = getattr(self, "_g2_90d_chassis_controller", None)
-        if controller is not None:
-            if actuator_only:
-                controller.cancel_actuator_only(
-                    reason,
-                    control_identity=control_identity,
-                    write_guard=write_guard,
-                )
-            else:
-                controller.cancel("control_state_reset")
-        self._chassis_prev_target = None
-        self._chassis_corr_prev = (0.0, 0.0, 0.0)
-        self._last_drive_cmd_lin = np.zeros_like(self._last_drive_cmd_lin)
-        self._twist_lpf = np.zeros_like(self._twist_lpf)
-
-    def _joint_parking(self):
-        profile = getattr(self.api_core, "robot_profile", None) or {}
-        control_mode = bool(
-            (getattr(self, "init_task_config", None) or {}).get("control_mode") or getattr(self, "control_mode", False)
-        )
-        if not has_chassis_profile(profile) or not control_mode:
-            return None
-        parking = getattr(self, "_g2_90d_joint_parking", None)
-        if parking is None:
-            from geniesim_benchmark.g2_90d_joint_parking import G290dJointParking
-
-            parking = G290dJointParking(profile)
-            self._g2_90d_joint_parking = parking
-        return parking
-
-    def _begin_direct_window(self, token, guard_factory, duration_s, controlled_joints=None):
-        """Start at the first actual physics write and retire on a physics tick."""
-        current = getattr(self, "_direct_window", None)
-        if current is not None and current["token"] == token:
-            return
-        world = self.api_core.ui_builder.my_world
-        start = float(world.current_time)
-        self._direct_window = {
-            "token": dict(token),
-            "start_s": start,
-            "end_s": start + duration_s,
-            "ended": False,
-            "hold_requested": False,
-            "started_at_s": time.time(),
-            "controlled_joints": controlled_joints,
-        }
-
-        def tick(*, physics_dt, sim_time_s):
-            state = self._direct_window
-            with guard_factory(token) as allowed:
-                if not allowed or state["token"] != token:
-                    self.api_core.unregister_physics_tick_callback("direct-segment")
-                    return
-                now = float(sim_time_s)
-                if now < state["start_s"] or now + 1e-12 >= state["end_s"]:
-                    state["ended"] = True
-                    state["ended_at_s"] = now
-                    state["ended_at_unix_s"] = time.time()
-                    self.api_core.unregister_physics_tick_callback("direct-segment")
-                    cutoff = getattr(self, "_direct_cutoff_handler", None)
-                    if cutoff is not None:
-                        state["transfer"] = cutoff(token)
-                    else:
-                        self.request_control_hold(token, guard_factory, "segment_window_ended", on_physics_tick=True)
-                    state["hold_requested"] = True
-
-        self.api_core.register_physics_tick_callback("direct-segment", tick)
-
-    def direct_window(self, token):
-        state = getattr(self, "_direct_window", None)
-        return (
-            dict(state)
-            if state is not None and token in (state["token"], (state.get("transfer") or {}).get("token"))
-            else None
-        )
-
-    def request_control_hold(self, token, guard_factory, reason, *, on_physics_tick=False):
-        """Fence and enqueue a hold without waiting for the next policy step."""
-
-        parking = self._joint_parking()
-        if parking is not None and reason == "idle_hold":
-            state = parking.state()
-            same_epoch = isinstance(token, dict) and all(
-                (state.get("authority") or {}).get(key) == token.get(key)
-                for key in ("service_id", "run_id", "generation")
-            )
-            if state["status"] == "failed_unknown" or (state["status"] == "held" and same_epoch):
-                # Empty inference revisions are not new parking owners. Leave
-                # all existing targets and observation freshness untouched.
-                return None
-        idle_epoch = (
-            tuple(token.get(key) for key in ("service_id", "run_id", "generation"))
-            if isinstance(token, dict)
-            else None
-        )
-        if parking is None and reason == "idle_hold" and idle_epoch == getattr(self, "_idle_hold_epoch", None):
-            # Without joint parking (fixed-base arms), re-sampling every drive
-            # target at its current, gravity-sagged position on each empty
-            # inference tick lets the arms droop away from the held pose. Keep
-            # the targets of the epoch's first hold or of the last command.
-            return None
-        current_generation = getattr(self, "_control_observation_generation", 0)
-        requested_generation = getattr(self, "_control_observation_requested_generation", current_generation)
-        observation_generation = max(current_generation, requested_generation) + 1
-        self._control_observation_requested_generation = observation_generation
-
-        def write_guard():
-            return guard_factory(token)
-
-        def apply_hold():
-            parking = self._joint_parking()
-            if parking is not None:
-                parking.check_hold_allowed(token, reason)
-            try:
-                if getattr(self, "_has_chassis", False):
-                    self._reset_chassis_control_state(
-                        actuator_only=True,
-                        control_identity=token,
-                        write_guard=write_guard,
-                        reason="command_completed" if reason == "command_completed" else "control_state_reset",
-                    )
-                synchronized = self.api_core.sync_drive_targets_to_current(
-                    log_label=f"control hold: {reason}",
-                    preserve_grippers=True,
-                    controlled_joints=(
-                        (getattr(self, "_direct_window", None) or {}).get("controlled_joints")
-                        if reason == "segment_window_ended"
-                        else None
-                    ),
-                )
-                if synchronized is not True:
-                    raise RuntimeError("control hold did not synchronize drive targets")
-                if parking is None:
-                    self._idle_hold_epoch = idle_epoch
-                if parking is not None:
-                    articulation = self.api_core._get_articulation()
-                    applied = articulation.get_articulation_controller().get_applied_action()
-                    targets = np.asarray(applied.joint_positions, dtype=float)
-                    velocities = np.asarray(applied.joint_velocities, dtype=float)
-                    if (
-                        targets.shape != (articulation.num_dof,)
-                        or velocities.shape != targets.shape
-                        or not np.isfinite(targets).all()
-                        or np.any(velocities != 0.0)
-                    ):
-                        raise RuntimeError("Synchronized control hold targets are unavailable")
-                    names = list(articulation.dof_names)
-                    chassis = self._g2_90d_chassis_controller
-                    steering = [targets[names.index(name)] for name in chassis.steer_joint_names]
-                    chassis.bind_stopping_steer_reference(steering, control_identity=token)
-                    self._joint_parking_observation_pending = (dict(token), observation_generation)
-                    receipt = parking.hold(
-                        articulation,
-                        authority=token,
-                        reason=reason,
-                        preserve_reference=reason in {"idle_hold", "command_completed"},
-                    )
-                    self._confirm_joint_parking_observation(token, receipt)
-                    return
-                self._control_observation_generation = max(
-                    getattr(self, "_control_observation_generation", 0),
-                    observation_generation,
-                )
-            except Exception as error:
-                if parking is not None:
-                    if parking.state()["status"] != "failed_unknown":
-                        parking.mark_unknown(token, str(error))
-                    parking.record_failure_stop(self._attempt_g2_90d_zero_velocity())
-                    self._g2_90d_chassis_controller.fail_parking(parking.state())
-                raise
-
-        if on_physics_tick:
-            with write_guard() as allowed:
-                if not allowed:
-                    raise RuntimeError("Direct cutoff lost its physical write owner")
-                apply_hold()
-        else:
-            self.api_core.enqueue_guarded_physics_write(
-                write_guard,
-                apply_hold,
-                label=f"control hold: {reason}",
-            )
-        return observation_generation
-
-    def _confirm_joint_parking_observation(self, authority, receipt):
-        pending = getattr(self, "_joint_parking_observation_pending", None)
-        if pending is None or receipt["status"] != "held":
-            return
-        token, generation = pending
-        if any(
-            token.get(key) != authority.get(key) for key in ("service_id", "run_id", "generation", "write_revision")
-        ):
-            return
-        self._control_observation_generation = max(getattr(self, "_control_observation_generation", 0), generation)
-        self._joint_parking_observation_pending = None
 
     def _wait_arm_settled(self, target_arm):
         """Poll until arm joints converge to target (or timeout). Mirrors the
@@ -2201,7 +1309,7 @@ class PiEnv(DummyEnv):
             self._last_base_yaw = _quat_wxyz_to_yaw(motion["orientation"])
 
     def _refresh_base_pose(self):
-        """Refresh worker-side pose without images, e.g. after teleport.
+        """Refresh worker-side pose without images.
 
         The persistent servo samples its own feedback on the physics thread;
         it must not use this potentially older observation cache for control.
@@ -2216,48 +1324,6 @@ class PiEnv(DummyEnv):
                 self._last_base_yaw = _quat_wxyz_to_yaw(base_rot)
         except Exception as e:
             logger.warning(f"refresh base pose for anchor failed: {e}")
-
-    def _teleport_chassis_abs(self, pose):
-        """Instantly move the chassis to a world-frame [x, y, yaw] absolute
-        target -- POSE_ABS_TELEPORT, unlike POSE_DELTA's incremental servo
-        (_apply_chassis_pose_target). z comes from _robot_base_z (the robot's
-        captured standing height at spawn) rather than pose[2] or the current
-        live z -- the teleport point list may have been harvested from a
-        different scene or embodiment whose floor height differs, and using a
-        mismatched z buries the wheels in the floor or leaves the base
-        floating; _robot_base_z is the one ground-truth measurement for this
-        episode's correct standing height.
-
-        Goes through api_core.teleport_robot_base_atomic (unanchor → move →
-        anchor → sync, no nested world.step) instead of the reset()-style
-        reset_robot_base: that one calls my_world.step() internally, which is
-        legal during reset (main loop is quiescent between episodes) but
-        reenters the physics loop mid-episode and makes PhysX reject the
-        drive-target writes, dropping the robot through the floor.
-        """
-        if getattr(self, "control_mode", False):
-            raise RuntimeError("Teleport is unavailable in control mode without an owned preparation action")
-        if not self._has_chassis:
-            return
-        self.api_core.run_on_physics_loop(self.api_core.set_chassis_servo_callback, None)
-        self._servo_delta = None
-        x, y, yaw = float(pose[0]), float(pose[1]), float(pose[2])
-        # Always use the robot's own standing height rather than the z from
-        # the teleport point list -- z can vary between scenes/embodiments
-        # and using a wrong one buries wheels or floats the base.
-        z = self._robot_base_z if self._robot_base_z is not None else 0.04
-        quat_wxyz = R.from_euler("z", yaw).as_quat(scalar_first=True).tolist()
-        self.api_core.teleport_robot_base_atomic([x, y, z], quat_wxyz)
-        # The delta-servo anchor/target are relative to wherever the chassis
-        # WAS; leaving them set would make the next POSE_DELTA chunk fight
-        # this jump. Refresh from the pose just set and drop them so the next
-        # chunk's _lock_chassis_anchor() relocks cleanly onto the new spot.
-        self._refresh_base_pose()
-        self._chunk_anchor_xy = None
-        self._chunk_anchor_yaw = None
-        self._chassis_anchor = None
-        self._chassis_prev_target = None
-        logger.info(f"[chassis-teleport] moved to x={x:.3f} y={y:.3f} yaw={np.degrees(yaw):+.1f}°")
 
     def _lock_chassis_anchor(self, physics_thread=False):
         """Lock x1 = current base pose at the start of each action chunk.
@@ -2278,8 +1344,8 @@ class PiEnv(DummyEnv):
             exy = float(np.hypot(ex, ey))
             eyaw = _normalize_angle(tyaw - self._last_base_yaw)
             delta = self._chassis_pose_delta
-            distance = np.linalg.norm(delta[:2]) if delta is not None else 0.
-            turn = abs(delta[2]) if delta is not None else 0.
+            distance = np.linalg.norm(delta[:2]) if delta is not None else 0.0
+            turn = abs(delta[2]) if delta is not None else 0.0
             xy_relative = f"{100 * exy / distance:.2f}%" if distance > 1e-9 else "n/a"
             yaw_relative = f"{100 * abs(eyaw) / turn:.2f}%" if turn > 1e-9 else "n/a"
             logger.info(
@@ -2321,25 +1387,34 @@ class PiEnv(DummyEnv):
         measured_drive = [motion["joint_names"].index(n) for n in _DRIVE_JOINT_NAMES]
         stiffness = motion["drive_stiffness"][measured_steer]
         damping = motion["drive_damping"][measured_steer]
-        if (not np.all(np.isfinite(stiffness)) or not np.all(np.isfinite(damping))
-                or np.any(stiffness <= 0) or np.any(damping <= 0)):
+        if (
+            not np.all(np.isfinite(stiffness))
+            or not np.all(np.isfinite(damping))
+            or np.any(stiffness <= 0)
+            or np.any(damping <= 0)
+        ):
             raise ValueError("Pose control requires driven steering joints")
         # Read live tensor gains: authored USD overrides are not necessarily
         # reflected by an already-created PhysX articulation.
         steer_tau = damping / stiffness
         if self._pose_planner is None:
             self._pose_planner = SwervePosePlanner(
-                self._steer_limits, _WHEEL_POSITIONS, _WHEEL_RADIUS,
-                _STEER_MAX_VELOCITY, steer_tau, dt=_STEP_DT,
-                max_speed=_MAX_LINEAR_SPEED, max_yaw_rate=_MAX_ANGULAR_SPEED,
+                self._steer_limits,
+                _WHEEL_POSITIONS,
+                _WHEEL_RADIUS,
+                _STEER_MAX_VELOCITY,
+                steer_tau,
+                dt=_STEP_DT,
+                max_speed=_MAX_LINEAR_SPEED,
+                max_yaw_rate=_MAX_ANGULAR_SPEED,
             )
         else:
             self._pose_planner.steer_tau = steer_tau
         (ax, ay), ayaw = self._chassis_anchor
         ca, sa = np.cos(ayaw), np.sin(ayaw)
-        target = np.array([ax + ca * delta[0] - sa * delta[1],
-                           ay + sa * delta[0] + ca * delta[1],
-                           _normalize_angle(ayaw + delta[2])])
+        target = np.array(
+            [ax + ca * delta[0] - sa * delta[1], ay + sa * delta[0] + ca * delta[1], _normalize_angle(ayaw + delta[2])]
+        )
         xy = motion["position"][:2] if physics_thread else self._last_base_xy
         yaw = _quat_wxyz_to_yaw(motion["orientation"]) if physics_thread else self._last_base_yaw
         c, s = np.cos(yaw), np.sin(yaw)
@@ -2358,13 +1433,12 @@ class PiEnv(DummyEnv):
         # commands. Zero components retain the geometric weighting; their
         # tracking error is reported as absolute drift, not a percentage.
         distance, turn = np.linalg.norm(delta[:2]), abs(float(delta[2]))
-        self._pose_planner.yaw_weight = distance / turn if distance > 1e-6 and turn > 1e-6 else .35
+        self._pose_planner.yaw_weight = distance / turn if distance > 1e-6 and turn > 1e-6 else 0.35
         if remaining is None:
             # Standalone deterministic controller tests supply one call per tick.
             remaining = (self._chassis_active_chunk_len - self._chassis_step_in_chunk) * _STEP_DT
             self._chassis_step_in_chunk += 1
-        angles, wheel_velocities = self._pose_planner.solve(
-            error, state, remaining, motion["wheel_acceleration"])
+        angles, wheel_velocities = self._pose_planner.solve(error, state, remaining, motion["wheel_acceleration"])
         positions = np.full(articulation.num_dof, np.nan)
         velocities = np.full(articulation.num_dof, np.nan)
         positions[steer_idx] = angles
@@ -2379,8 +1453,6 @@ class PiEnv(DummyEnv):
         self._chassis_prev_target = tuple(target)
 
     def _apply_chassis_velocity(self, vx, vy, omega, closed_loop=True, smooth=True):
-        if getattr(self, "_g2_90d_chassis_controller", None) is not None:
-            raise RuntimeError("G2_90d chassis velocity must use its fixed-tick profile controller")
         try:
             steer_idx = [self.robot_joint_indices[n] for n in _STEER_JOINT_NAMES]
             drive_idx = [self.robot_joint_indices[n] for n in _DRIVE_JOINT_NAMES]
@@ -2501,7 +1573,6 @@ class PiEnv(DummyEnv):
         applied = self.api_core.apply_chassis_action(
             positions,
             velocities,
-            write_guard=getattr(self, "_current_control_write_guard", None),
         )
         if applied is False:
             return False

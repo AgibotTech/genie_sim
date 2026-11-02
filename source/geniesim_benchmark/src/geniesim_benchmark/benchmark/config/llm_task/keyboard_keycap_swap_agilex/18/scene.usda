@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.70435536, 0, 0, 0.70984757)
+            quatf xformOp:orient = (0.7459776, 0, 0, -0.66597104)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.14235807506227782, -0.13316763677163698, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.29153473868057933, -0.9565602417738498, 0, 0), (0.9565602417738499, -0.29153473868057933, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.08133221449404465, -0.1192147557937461, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.14913580123620246, -0.09660785510788644, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1021,10 +1022,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.7506384, 0, 0, -0.66071326)
+            quatf xformOp:orient = (-0.7006565, 0, 0, 0.7134988)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1269748311221865, 0.16426163830154228, 0.7432891217007136)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.2781042773151433, -0.9605508893020829, 0, 0), (0.9605508893020829, 0.2781042773151433, 0, 0), (0, 0, 1.0000000000000002, 0), (-0.11283126238213577, 0.13053257291172457, 0.7432891217007136, 1) )
+            double3 xformOp:translate = (-0.11830694360562696, 0.1664493400315544, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1097,10 +1099,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.6577637, 0, 0, 0.7532243)
+            quatf xformOp:orient = (0.71928304, 0, 0, -0.6947171)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12323405479650423, -0.26545811239832773, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.10483159854590933, -0.9944899878562425, 0, 0), (0.9944899878562425, -0.10483159854590934, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.16083988769513213, -0.22437577653816404, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.17173513472609292, -0.29516425799704493, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1174,10 +1177,11 @@ def cleanup(db):
 
         def Xform "puller_holder_000"
         {
-            quatf xformOp:orient = (0.7506384, 0, 0, -0.66071326)
+            quatf xformOp:orient = (-0.7006565, 0, 0, 0.7134988)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1095631118090086, 0.050565880903768935, 0.7323891221373175)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.2781042773151433, -0.9605508893020829, 0, 0), (0.9605508893020829, 0.2781042773151433, 0, 0), (0, 0, 1.0000000000000002, 0), (-0.07812408334989715, 0.020872621501383505, 0.7323891221373175, 1) )
+            double3 xformOp:translate = (-0.1175545673894854, 0.05143052787578743, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             def Xform "entity" (
                 prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>

@@ -22,36 +22,31 @@ robot:
     urdf:
       inertia_source: sysid
   init_base_pose: {x: 0.0, y: 0.0, z: 0.0, theta: 0.0}
-  # Revolute initial angles in degrees; shared by CPU MuJoCo and IPC FK.
-  # Fixed body/head angles are baked into welds; this does not unlock them.
+  # Supplied task pose: radians converted to degrees for the engine contract.
+  # Body/head remain welded at these angles; hand joint defaults are retained.
   init_joint_pos:
-    # Body / waist (fixed); user-supplied radians converted to degrees.
     idx01_body_joint1: -46.00278137105379
     idx02_body_joint2: 86.21868901128627
-    idx03_body_joint3: -40.0  # Hanger-specific override in degrees.
+    idx03_body_joint3: -40.000017143027186
     idx04_body_joint4: 0.0
     idx05_body_joint5: 0.0
-    # Head (fixed); user-supplied radians converted to degrees.
     idx11_head_joint1: 0.0
-    idx12_head_joint2: -0.05729577951308232
+    idx12_head_joint2: -0.057295779513082325
     idx13_head_joint3: 25.783100780887047
-    # Left arm
-    idx21_arm_l_joint1: -20.0
-    idx22_arm_l_joint2: -45.0
-    idx23_arm_l_joint3: 0.0
-    idx24_arm_l_joint4: -75.0
-    idx25_arm_l_joint5: 0.0
-    idx26_arm_l_joint6: -55.0
-    idx27_arm_l_joint7: 0.0
-    # Right arm
-    idx61_arm_r_joint1: 20.0
-    idx62_arm_r_joint2: -45.0
-    idx63_arm_r_joint3: 0.0
-    idx64_arm_r_joint4: -75.0
-    idx65_arm_r_joint5: 0.0
-    idx66_arm_r_joint6: -55.0
-    idx67_arm_r_joint7: 0.0
-    # Left hand
+    idx21_arm_l_joint1: 43.6294755920629
+    idx22_arm_l_joint2: -41.847347666087984
+    idx23_arm_l_joint3: -86.54212368663764
+    idx24_arm_l_joint4: -87.52583492509774
+    idx25_arm_l_joint5: 16.04006806624642
+    idx26_arm_l_joint6: -52.8661282073669
+    idx27_arm_l_joint7: -48.451717579001965
+    idx61_arm_r_joint1: -43.63142364856635
+    idx62_arm_r_joint2: -41.846832004072375
+    idx63_arm_r_joint3: 86.5402329259137
+    idx64_arm_r_joint4: -87.52583492509774
+    idx65_arm_r_joint5: -16.040125362025936
+    idx66_arm_r_joint6: -52.893057223738055
+    idx67_arm_r_joint7: 48.43641960587197
     hand_l_thumb_joint1: 0.0
     hand_l_thumb_joint2: 0.0
     hand_l_thumb_joint3: 0.0
@@ -72,7 +67,6 @@ robot:
     hand_l_pinky_joint2: 0.0
     hand_l_pinky_joint3: 0.0
     hand_l_pinky_joint4: 0.0
-    # Right hand
     hand_r_thumb_joint1: 0.0
     hand_r_thumb_joint2: 0.0
     hand_r_thumb_joint3: 0.0
@@ -93,7 +87,6 @@ robot:
     hand_r_pinky_joint2: 0.0
     hand_r_pinky_joint3: 0.0
     hand_r_pinky_joint4: 0.0
-
 viewer_camera:
   pos: [2.2, -2.2, 1.6]
   lookat: [0.8, 0.1, 1.0]

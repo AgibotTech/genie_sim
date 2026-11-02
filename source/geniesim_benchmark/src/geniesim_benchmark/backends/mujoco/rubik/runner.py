@@ -23,6 +23,7 @@ from .native import NativeEnvironment, PhysicsError, TaskFailure
 from .policy import HoldPolicy, WebsocketPolicy, PolicyError, InferenceError, parse_actions, payload_for
 from .scoring import RubikScorer, summarize
 from .viewer import ViewerClosed
+from .scenes import episode_scenes
 
 
 def write_json(path, value):
@@ -224,10 +225,9 @@ def run(cfg):
     try:
         env = NativeEnvironment(cfg.rubik)
         env.task_name = cfg.benchmark.task_name
-        scenes = (
-            env.scene_catalog.select(cfg.benchmark.task_name, cfg.benchmark.seed, cfg.benchmark.num_episode)
-            if env.scene_catalog is not None
-            else None
+        scenes = episode_scenes(
+            env.scene_catalog, cfg.benchmark.task_name, cfg.benchmark.seed,
+            cfg.benchmark.num_instances, cfg.benchmark.num_episode,
         )
         env.reset(cfg.rubik.scramble or "R'", scenes[0] if scenes else None)
         env.configure_renderer(cfg.app.headless, out)
@@ -282,10 +282,13 @@ def run(cfg):
             else WebsocketPolicy(cfg.benchmark.infer_host, cfg.rubik.inference_timeout_seconds)
         )
         tokens = np.random.default_rng(cfg.benchmark.seed).permutation([f + s for f in "URFDLB" for s in ("", "'")])
-        for index in range(cfg.benchmark.num_episode):
+        for index in range(cfg.benchmark.num_instances * cfg.benchmark.num_episode):
             scramble = cfg.rubik.scramble or str(tokens[index % len(tokens)])
             scene = scenes[index] if scenes else None
             result = run_episode(env, cfg, policy, index, scramble, out / f"episode-{index:04d}", scene)
+            result.update(instance_id=index // cfg.benchmark.num_episode,
+                          attempt_index=index % cfg.benchmark.num_episode)
+            write_json(out / f"episode-{index:04d}" / "result.json", result)
             episodes.append(result)
             statistics = summarize(episodes)
             if scenes:

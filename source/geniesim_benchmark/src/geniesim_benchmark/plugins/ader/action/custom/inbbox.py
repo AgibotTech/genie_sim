@@ -101,9 +101,6 @@ class InBBox(EvaluateAction):
         return is_inside
 
     def update(self, delta_time: float) -> float:
-        if not self.is_running() or not self.claim_observation():
-            return 0.0
-
         candidates = self.obj_name_list
         if not candidates:
             # Placeholder not yet populated: nothing to check this tick.

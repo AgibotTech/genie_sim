@@ -43,58 +43,23 @@ robot:
     y: 0.0
     z: 0.04
     theta: 0.0
-  # Start pose: LEFT arm in a T-pose, RIGHT five-finger hand cupped under the
-  # wok handle, palm up — the way a person reaches under a wok to lift it.
-  #
-  # LEFT ARM = all zeros IS the T-pose on this robot: at zero, FK puts
-  # arm_l_end_link at (0.2585, 0.9435, 1.3139), i.e. the same x and z as
-  # arm_base_link and 0.94 m straight out to the left.  Nothing to solve.
-  #
-  # RIGHT ARM solved offline against the URDF for two conditions:
-  #   1. the hand's grasp centre (where the thumb and finger pads meet when
-  #      closed, = (0.050, -0.007, 0.095) in hand_r_base_link) lands on the wok
-  #      handle centre, world (0.749, 0, 1.0711);
-  #   2. the PALM faces up.  The palm normal is +x of hand_r_base_link — derived
-  #      empirically, not guessed: flexing the four fingers moves their pads
-  #      toward +x, and the thumb/index pads meet at x≈0.05.  Via the
-  #      hand_r_base_joint mount (rpy 0,0,-pi/2) that is -y of arm_r_end_link.
-  #      The handle axis is put along the hand's y (the index→pinky spread
-  #      direction) so all four fingers can wrap the same cylinder.
-  # The redundant IK degree of freedom is selected for a natural palm-up reach:
-  # shoulder axial rotation (joint3) stays near neutral, elbow joint4 bends in
-  # its ordinary negative direction, and the required palm-up rotation happens
-  # mainly at forearm joint5 instead of twisting the shoulder.  The unrounded
-  # solution has numerical-zero pose residual and >=9.6 deg of limit headroom.
-  # Re-solve if the wok home pose moves — and solve with NO base offset (see
-  # init_base_pose above).
-  #
-  # RIGHT HAND is NOT at zero: at zero the thumb is splayed flat and pokes ~11 mm
-  # INTO the wok bowl (the open thumb points along world +X, straight at the
-  # bowl wall), which would kick the wok on the first physics step.  Every
-  # finger joint sits at 25% of its dominant limit instead — verified to clear
-  # the bowl on all five fingertips, and it reads as a hand about to close
-  # rather than a flat paddle.  The other four fingers were never the problem.
-  #
-  # pin_base_to_world + welded chassis/head/body keep the robot stable; the wok
-  # is its own free body (see scene_flat_g2_sp_chef.py header).
+  # Supplied task pose: radians converted to degrees for the engine contract.
+  # Body/head remain welded at these angles; hand joint defaults are retained.
   init_joint_pos:
-    # --- left arm: T-pose ---
-    idx21_arm_l_joint1: 0
-    idx22_arm_l_joint2: 0
-    idx23_arm_l_joint3: 0
-    idx24_arm_l_joint4: 0
-    idx25_arm_l_joint5: 0
-    idx26_arm_l_joint6: 0
-    idx27_arm_l_joint7: 0
-    # --- right arm: palm-up under the wok handle ---
-    idx61_arm_r_joint1: -7.24
-    idx62_arm_r_joint2: -73.74
-    idx63_arm_r_joint3: -10.00
-    idx64_arm_r_joint4: -41.72
-    idx65_arm_r_joint5: 131.97
-    idx66_arm_r_joint6: 48.36
-    idx67_arm_r_joint7: 50.78
-    # --- right hand: pre-grasp (25% of each joint's dominant limit) ---
+    idx21_arm_l_joint1: 99.23405558125758
+    idx22_arm_l_joint2: -65.96491743230925
+    idx23_arm_l_joint3: -91.6157222583006
+    idx24_arm_l_joint4: -108.86897115995701
+    idx25_arm_l_joint5: -24.07694705854648
+    idx26_arm_l_joint6: 0.23325111839775814
+    idx27_arm_l_joint7: 0.0444042291226388
+    idx61_arm_r_joint1: -98.99255387060992
+    idx62_arm_r_joint2: -65.72719724310947
+    idx63_arm_r_joint3: 91.72836576082331
+    idx64_arm_r_joint4: -108.81614445124595
+    idx65_arm_r_joint5: 24.18792898346332
+    idx66_arm_r_joint6: -0.07557313317775559
+    idx67_arm_r_joint7: -0.039362200525487556
     hand_r_thumb_joint1: 22.97
     hand_r_thumb_joint2: 13.36
     hand_r_thumb_joint3: 22.38
@@ -115,7 +80,14 @@ robot:
     hand_r_pinky_joint2: 5.30
     hand_r_pinky_joint3: 22.19
     hand_r_pinky_joint4: 22.54
-    idx03_body_joint3: 20
+    idx03_body_joint3: 20.000008571513593
+    idx01_body_joint1: 0.0
+    idx02_body_joint2: 0.0
+    idx04_body_joint4: 0.0
+    idx05_body_joint5: 0.0
+    idx11_head_joint1: 0.0
+    idx12_head_joint2: 0.0
+    idx13_head_joint3: 0.0
 
 # Newton GL viewer / OVRtx FreeCam initial pose.  Z-up world frame; lookat
 # sets the orbit pivot.  Frames the G2 chassis (~1.4 m tall) from

@@ -24,13 +24,13 @@ deterministic tag inference without having to maintain per-file
 metadata.
 
 The task runtime selects the interpreter in the combo image: legacy Isaac
-tasks use bundled 5.1 through ``omni_python``; the Newton wok task uses
-system ``python3.12`` with Isaac 6.2 and ROS Jazzy. Generic
+tasks use bundled 5.1 through ``omni_python``; libuipc cloth/bag tasks and the
+Newton wok task use system ``python3.12`` with Isaac 6.2 and ROS Jazzy. Generic
 ``GENIESIM_PY_CMD`` container defaults do not override this task selection.
 A custom prepared Python path still applies. Newton tasks load their built ROS
-overlay automatically before exec.
-Native MuJoCo tasks use ``benchmark.python`` or the CLI interpreter and bypass
-the Isaac and ROS bootstrap.
+overlay automatically before exec; IPC tasks use the caller's sourced overlay.
+Native MuJoCo tasks use ``benchmark.python`` or the CLI interpreter and run
+without the Isaac or ROS bootstrap.
 """
 
 from __future__ import annotations
@@ -141,7 +141,7 @@ def _prepared_python_override() -> str | None:
 
 
 def _rt_python_cmd() -> str:
-    """Select the system 3.12 ABI for Isaac 6.2, ROS Jazzy runtime."""
+    """Select the system 3.12 ABI for Isaac 6.2, ROS Jazzy and native IPC."""
     override = _prepared_python_override()
     if override:
         return override
@@ -311,7 +311,7 @@ def _build_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | No
             "--config",
             str(config_path),
         ]
-    elif runtime == "newton":
+    elif runtime in ("newton", "libuipc"):
         cmd = [_rt_python_cmd(), "-m", f"geniesim_benchmark.{runtime}.runner", "--config", str(config_path)]
     elif runtime == "isaac":
         cmd = [_python_cmd(), str(_app_py()), "--config", str(config_path)]

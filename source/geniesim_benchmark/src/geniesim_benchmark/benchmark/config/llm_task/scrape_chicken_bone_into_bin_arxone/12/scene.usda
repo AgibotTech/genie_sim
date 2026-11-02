@@ -41,8 +41,9 @@ def Xform "World"
         {
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.012654458718970866, 0.003020186191757805, 0.370070784393069)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-0.0041571921543368025, -0.0019861789997025923, 0.3703631054742124, 1) )
+            double3 xformOp:translate = (-0.002673895449594576, 0.00562359011835885, 0.369509198560427)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -57,10 +58,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/scraper/benchmark_scraper_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.4040453, 0, 0, 0.91473895)
+            quatf xformOp:orient = (0.42690697, 0, 0, 0.90429556)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.18241281558014452, -0.20100499979970918, 0.7406612849509623)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.6512139790699648, 0.758894164863496, 0, 0), (-0.7588941648634961, -0.6512139790699647, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.20826523124394095, -0.24838408546394686, 0.7409536060321056, 1) )
+            double3 xformOp:translate = (-0.21504009828629064, 0.1537386431486413, 0.7400996991183203)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -88,10 +90,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.8705621, 0, 0, -0.4920586)
+            quatf xformOp:orient = (0.980709, 0, 0, -0.1954732)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1020561836026609, 0.23436271615972804, 0.7511514799698434)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.9962122775792541, 0.08695457434980207, 0, 0), (-0.08695457434980206, 0.9962122775792541, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.12517739806981132, 0.29177608706465497, 0.7514438010502088, 1) )
+            double3 xformOp:translate = (-0.18279637383759, 0.01476873574213665, 0.7505898941372015)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -108,14 +111,31 @@ def Xform "World"
         {
             quatf xformOp:orient = (6.123234e-17, 0, 0, 1)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.3939370690156892, 0.12824674202429512, 0.6348138822766282)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-1, 1.2246468e-16, 0, 0), (-1.2246468e-16, -1, 0, 0), (0, 0, 1, 0), (-0.38543980245105514, 0.1761845116805822, 0.6351062033577716, 1) )
+            double3 xformOp:translate = (-0.3839565057463129, 0.12688938707636185, 0.6342522964439862)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI"]
             )
             {
                 bool physics:kinematicEnabled = 1
+            }
+        }
+
+        def Xform "trash_apple_000" (
+            prepend payload = @/geniesim_assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda@
+        )
+        {
+            matrix4d xformOp:transform = ( (1.1820814770675121e-16, -3.7871801790207636e-17, -0.9999999999999999, 0), (0.44149785575956074, 0.897262304657735, 5.551115123125782e-17, 0), (0.8972623046577349, -0.44149785575956063, 2.2204460492503128e-16, 0), (-0.1228925035591911, 0.048645413461416306, 0.771212686970006, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+
+            over "entity" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                bool physics:kinematicEnabled = 0
+                float physics:mass = 0.01
             }
         }
     }

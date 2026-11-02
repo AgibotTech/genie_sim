@@ -14,8 +14,14 @@ from typing import Any, Mapping, Sequence
 
 
 def canonical_score_layout(name: str) -> str:
-    """Read the former bowl layout identifier without duplicating its profile."""
-    return "stack_bowls_pickup" if name == "stack_bowls_pickup_v1" else name
+    """Read former layout identifiers without duplicating their profiles."""
+    aliases = {
+        "stack_bowls_pickup_v1": "stack_bowls_pickup",
+        "wuji_ipc_cloth_hanger": "cloth_hanger",
+        "wuji_ipc_fold_cloth": "fold_cloth",
+        "wuji_ipc_drawstring_bag": "drawstring_bag",
+    }
+    return aliases.get(name, name)
 
 
 def canonical_weight_version(version: str) -> str:

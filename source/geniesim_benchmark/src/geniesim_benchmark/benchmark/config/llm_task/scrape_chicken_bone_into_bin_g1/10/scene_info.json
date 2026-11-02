@@ -1,12 +1,12 @@
 {
-  "scene_id": 53,
-  "seed": 11520861118857594927,
+  "scene_id": 10,
+  "seed": 575137414,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.06491253217149089,
-        -0.057473880041585164,
+        0.07279223745750733,
+        -0.04612220364599904,
         0.5012739611059119
       ],
       "xyzw": [
@@ -38,15 +38,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.16057698015123606,
-        0.2138426337030334,
+        -0.05468299751291647,
+        -0.2487703458257744,
         0.871085974907975
       ],
       "xyzw": [
-        -0.004659991330070866,
-        -0.0017178588781072907,
-        0.9385884494734648,
-        -0.34500297963448945
+        -0.004747382987113259,
+        -0.0014590795369325343,
+        0.956135494846272,
+        -0.2928826538679836
       ],
       "tags": [
         "root_scene",
@@ -71,15 +71,15 @@
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.02330641941167414,
-        -0.23313012451215853,
-        0.8764446973800659
+        0.11087533217333077,
+        -0.0892825571693113,
+        0.8767591223826816
       ],
       "xyzw": [
-        0.9932875105166995,
-        -0.06164744871592437,
-        0.09321414902570967,
-        -0.029843524251798523
+        0.9947356892375883,
+        -0.030354489596519988,
+        0.09222868328429126,
+        -0.032762531922926635
       ],
       "tags": [
         "root_scene",
@@ -106,8 +106,8 @@
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.29672854467070736,
-        -0.15413980532530946,
+        -0.29001428703718096,
+        -0.18978956652601553,
         0.7388004266742709
       ],
       "xyzw": [
@@ -141,15 +141,15 @@
     "trash_apple_000": {
       "usd": "benchmark_trash_029",
       "xyz": [
-        0.14771429472602904,
-        -0.013604618364140966,
-        0.8981090784072876
+        -0.1547173073531121,
+        0.18268282182128615,
+        0.8980392129528616
       ],
       "xyzw": [
-        -0.5946945270474346,
-        0.40515686373229537,
-        0.6873192881033947,
-        0.09888645747260393
+        -0.6212261225605797,
+        0.3631690644560867,
+        0.6925033690210406,
+        0.05123884429753133
       ],
       "tags": [
         "root_scene",
@@ -175,17 +175,44 @@
     }
   },
   "relations": [],
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 0,
-    "source_scene_sha256": "257557b505610f2b0779b540ef500799b9e5ad24f419724964568f9277f34288",
-    "seed": 11520861118857594927,
-    "translation_m": [
-      0.0,
-      0.010789782155275165,
-      0.0
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.1435627686503463,
+    "handle_outward_deg": 34.061378416247805,
+    "trash": [
+      "trash_bone_000",
+      "trash_apple_000"
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 10,
+    "source_instance": 2,
+    "source_scene_sha256": "d32e081b1bcde564b69f2fc99cb7f9e7e5d16ea5f7d7f51be065cd1619cd140f",
+    "seed": 575137414,
+    "visual_pool_index": 41,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.157843463289736,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

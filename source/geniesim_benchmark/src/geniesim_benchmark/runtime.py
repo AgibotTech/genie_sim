@@ -25,6 +25,6 @@ def runtime_for_config(path: Path, overrides=()) -> str:
         if backend not in ("isaacsim", "mujoco"):
             raise ValueError(f"Unsupported benchmark backend: {backend!r}")
         runtime = "mujoco" if backend == "mujoco" else "isaac"
-    if runtime not in ("isaac", "newton", "mujoco"):
+    if runtime not in ("isaac", "newton", "libuipc", "mujoco"):
         raise ValueError(f"Unsupported benchmark runtime: {runtime!r}")
     return runtime

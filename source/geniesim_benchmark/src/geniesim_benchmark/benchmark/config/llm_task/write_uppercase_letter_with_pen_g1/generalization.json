@@ -1,7 +1,6 @@
 {
-  "version": 1,
-  "source_revision": "4ab0d95e8dbbf434cc4a8469c95312a270aad009",
-  "source_instances": [
+  "schema": "geniesim.multi_embodiment_generalization.v3",
+  "protected_instances": [
     0,
     1,
     2,
@@ -13,7 +12,7 @@
     8,
     9
   ],
-  "added_instances": [
+  "new_instances": [
     10,
     11,
     12,
@@ -25,486 +24,355 @@
     18,
     19
   ],
-  "method": "bounded_xy_convex_hull_nonincreasing_edge_overhang",
-  "interpolation_factor": 0.35,
-  "maximum_group_translation_m": 0.005,
-  "z_and_orientations": "preserved",
+  "reference_archive_sha256": "1b231a45cac0ec365a1fe464f168764be82acb9cce42d821b7172174d2581594",
+  "cohort": "independent second ten; no ordinal pairing with first ten",
+  "range_adaptations": {
+    "keycap": {
+      "g1": {
+        "xy_m": 0.045,
+        "yaw_deg": 18,
+        "tool_xy_m": 0,
+        "tool_yaw_deg": 0
+      },
+      "other": {
+        "xy_m": 0.05,
+        "yaw_deg": 25,
+        "tool_xy_m": 0.035,
+        "tool_yaw_deg": 18
+      }
+    },
+    "writing": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "scrape": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "pour": {
+      "layout_center_multiplier": 1.5,
+      "offset_jitter_m": 0.035,
+      "yaw_jitter_deg": 15,
+      "scale": 0.8,
+      "vessel_footprint_gap_m": 0.005
+    },
+    "trash": {
+      "paper_x_m": [
+        -0.19,
+        -0.06
+      ],
+      "paper_y_m": [
+        -0.28,
+        -0.11
+      ],
+      "minimum_bin_paper_origin_distance_m": 0.16
+    }
+  },
+  "pool_size_per_slot": 160,
+  "acceptance": "static proposals only; native thumbnail review required",
   "instances": [
     {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.06777098104320772,
+        -0.06720160808999814
+      ],
+      "yaw_delta_deg": -17.083047895722615,
+      "letter": "T",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
       "instance_id": 10,
-      "source_instance": 0,
-      "target_letter": "A",
-      "translations_m": {
-        "paper": [
-          0.002069980529893788,
-          -0.00010747803656884352,
-          0.0
-        ]
-      },
-      "source_files_sha256": {
-        "scene.usda": "307b4661dc19b22f95ce45dbabe7342a2a0dba6fe971c5f6d9f41670a769b6a7",
-        "writing_guide.json": "89cdc9aec591e07cd9e3bcc74b1ca091cc727a2ebd2c9ea109981a2cce1e8280",
-        "instructions.json": "e34c9ddec6b5a0e3fff9c9a00f543186c2fc1a01c2f3a6403a325b5e4fc9537c",
-        "scene_info.json": "acd8c47c1a8a3745d14a46efd4c03dc122c8ccd5cae5d805e19c701237f067ab",
-        "problems.json": "4e9ab29d89a0c21b62084c233634f2ab582e358e69fe3c2a029a77483fc9ad52"
-      },
-      "output_files_sha256": {
-        "scene.usda": "2779a95256baf5f4c7ce4b687071520727e5da7c13be2b0a5a8b409c609b1033",
-        "writing_guide.json": "40f0bd399a072f56a6a15271760d188e25cf086f20d395d316876c42a33c52af",
-        "instructions.json": "f12f6d91b223e603230eca46ec1570228d536d834936ea4868b0c8e3a9386077",
-        "scene_info.json": "9ae6b8fe570f08ebb3fcb3a6030c5ccbea53916824391fb69fa3b66d38edd304",
-        "problems.json": "4e9ab29d89a0c21b62084c233634f2ab582e358e69fe3c2a029a77483fc9ad52"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.05386519791282179,
-          -0.27623893786068465
-        ],
-        "upper_delta_xy_m": [
-          0.3573417902605037,
-          0.5901231996254175
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.06826168892499784,
-          -0.1569411941285626
-        ]
-      },
-      "source_grasp_parameters_preserved": true
-    },
-    {
-      "instance_id": 11,
-      "source_instance": 1,
-      "target_letter": "B",
-      "translations_m": {
-        "paper": [
-          -0.0032082263569803374,
-          0.000669858109007397,
-          0.0
-        ]
-      },
-      "source_files_sha256": {
-        "scene.usda": "aa84a0f5cd759acb951982fb5a2e4c84bee545b09090bbab198527738209f443",
-        "writing_guide.json": "245bd11d8a20dc69518fe26de045c94bab3069cb78e596839a3d196a8bd45aea",
-        "instructions.json": "91b0d0e94facafe51fb1914afda27e75c93cf3f61f876799cb6308f872343dde",
-        "scene_info.json": "6d4d60ac4ba59c64356bbb6f61c4fdf80fe6cc76607439275f8faf9d81ec070f",
-        "problems.json": "e60bb7343bcf72db222c7c5621cf742836fa35c97f6cfef3835a59aea8c41f7d"
-      },
-      "output_files_sha256": {
-        "scene.usda": "750c4945831b70a5701bf43974ced835d4c3515470ca42f8736f79458bc8d51a",
-        "writing_guide.json": "c8371eb9fa0b35d2e758f87ba69a0d33b85ff63669362e7f43dd78a947b53dbb",
-        "instructions.json": "a0a9c045ccda25053bf9a7276e423ce499caf791ca5f0817cb6c3aaacb856d4c",
-        "scene_info.json": "afe232d3dedf39e203255a8074cd71f667fa3e82d54f83e7196d2c0fa4e10e07",
-        "problems.json": "e60bb7343bcf72db222c7c5621cf742836fa35c97f6cfef3835a59aea8c41f7d"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.07179174628274686,
-          -0.2784883157107711
-        ],
-        "upper_delta_xy_m": [
-          0.3451071564197194,
-          0.596814498307368
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.08334228003035249,
-          -0.15916215454449473
-        ]
-      },
-      "source_grasp_parameters_preserved": true
-    },
-    {
-      "instance_id": 12,
-      "source_instance": 2,
-      "target_letter": "G",
-      "translations_m": {
-        "paper": [
-          -0.004421554851191151,
-          6.980658186776927e-05,
-          0.0
-        ]
-      },
-      "source_files_sha256": {
-        "scene.usda": "a288041cf9ef3137324fe8c474939841262d552fc52fd31f39995f53c7ba139a",
-        "writing_guide.json": "8e2042b9c5001c9b5b68572fc6fc2cb7ee82ca4783e858ca6c3b49cb37debc69",
-        "instructions.json": "22b63a568ff98b909924275bfe0c246ee62aec39d183728913ddaf81c005c5cf",
-        "scene_info.json": "3ca2b61b113b738ed74710124e11bffc2e0913362ba658ecd2ab3a77702a2658",
-        "problems.json": "8628f1ef5a0b4f1728bd7b28eb00553bd9f6ca3b533f38660bf2e057fc1b175d"
-      },
-      "output_files_sha256": {
-        "scene.usda": "3cc0d9bba22eae42cc397ed2a441c648169247ec2cbf5603dad7ef7b89e8dec8",
-        "writing_guide.json": "12992b6f9a1873c3a835bb71f16ff873c2ce245b24f2c1202ae03afcf07245df",
-        "instructions.json": "d0ba9d634514adeedc6908f24fd2fd0f735caede61745fdbeb15146bb2ce4bd9",
-        "scene_info.json": "aae7fead99091a7d8c634b65e5c3205bf4dd4175bb11c616baccff1c88b1b912",
-        "problems.json": "8628f1ef5a0b4f1728bd7b28eb00553bd9f6ca3b533f38660bf2e057fc1b175d"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.07282697949365209,
-          -0.2763974422305706
-        ],
-        "upper_delta_xy_m": [
-          0.33920908394942006,
-          0.5912947589577985
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.08680893287095481,
-          -0.15744772160981008
-        ]
-      },
-      "source_grasp_parameters_preserved": true
-    },
-    {
-      "instance_id": 13,
-      "source_instance": 3,
-      "target_letter": "I",
-      "translations_m": {
-        "paper": [
-          0.0033641786723143767,
-          -0.001480568095185389,
-          0.0
-        ]
-      },
-      "source_files_sha256": {
-        "scene.usda": "61fbf8c187c66d1d45ec3ef6ea1d2626c4a4402cea994ff8e4adbca2de5b8153",
-        "writing_guide.json": "e1c8a9f7b74c0280593bcde380e6ca30f50fb879985432a8b54689c94f858b8a",
-        "instructions.json": "2264fe7ca547dfbb7baa028d44cd1ff0256ad3999ff436ec4eb6428db42d8cf5",
-        "scene_info.json": "82cef8b549eff197f9fce092c5c649bad3eaf5e24e480837f98f017b3d58dad8",
-        "problems.json": "9907528db896e309e03f267d41308266c88c74221210b912cc78d794266a9df0"
-      },
-      "output_files_sha256": {
-        "scene.usda": "d144de760affaf50612c70d941a0ffc2e911bb8f8f177bab3802f2ee7ad2fd6c",
-        "writing_guide.json": "5975cfc1aa60ec9088e500d60f738c62d822f86891e7a6f596f5b71b357b7f1a",
-        "instructions.json": "528011d06b8aa2e3efdce722629ddb63c6179af91c9c0462179523fd4fbc5547",
-        "scene_info.json": "db34e185869f45a819026d03829faf1d069702d20da27cea45f9941901da5f3c",
-        "problems.json": "9907528db896e309e03f267d41308266c88c74221210b912cc78d794266a9df0"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.05089946716156127,
-          -0.2813329292714047
-        ],
-        "upper_delta_xy_m": [
-          0.36177147746593225,
-          0.5873709621297573
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.0645639799466533,
-          -0.15301807967537248
-        ]
-      },
-      "source_grasp_parameters_preserved": true
-    },
-    {
-      "instance_id": 14,
-      "source_instance": 4,
-      "target_letter": "O",
-      "translations_m": {
-        "paper": [
-          0.0013307933466474011,
-          -0.0007352899721821821,
-          0.0
-        ]
-      },
-      "source_files_sha256": {
-        "scene.usda": "74d21a4398a4f2f117e45ea377abedf481cc01cf18268f464380d893281ce60b",
-        "writing_guide.json": "9e5687a5c951a65fe35a3765efbb44778360c7d48c88fa5620b0691df0849dc2",
-        "instructions.json": "bf088a74096a0d7bb3b7296dde828bb182e22351f4afbdcaf71f8e947cf989e1",
-        "scene_info.json": "c3ec45ddf57237af94e486a8dc05919a205af112f1718c59e5f336d5a2eb3e4d",
-        "problems.json": "e9f6accab5074755ddc2bcbc468dc39d85d97faeec55c1a64f0101e00f5ffc00"
-      },
-      "output_files_sha256": {
-        "scene.usda": "59d9591f53bbee4b0a581057e2e00605010dd148b31254f7878abf54c53dd7ed",
-        "writing_guide.json": "41d2c078d47ce4b299a3c909196eb14c199da1dbc5ae8d6ff4349188980a6ac9",
-        "instructions.json": "9fe8f344228afa9a4551a84203c20765764a802950faa4b9fa47dfa3caaf4570",
-        "scene_info.json": "f00cc04a49b2a570845a98e582072c65de6d27c4711efe0035d25ef9b48ec4cf",
-        "problems.json": "e9f6accab5074755ddc2bcbc468dc39d85d97faeec55c1a64f0101e00f5ffc00"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.05870595097158651,
-          -0.28232308928114797
-        ],
-        "upper_delta_xy_m": [
-          0.35795861655786043,
-          0.5926198542709473
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.0703736523057018,
-          -0.15514744574109593
-        ]
-      },
-      "source_grasp_parameters_preserved": true
-    },
-    {
-      "instance_id": 15,
       "source_instance": 5,
-      "target_letter": "T",
-      "translations_m": {
-        "paper": [
-          -0.000838665341266876,
-          0.00022966946888725303,
-          0.0
-        ]
+      "source_scene_sha256": "dddac74b455a97cc5944edeb22e9b373b3310df60ec7214fa670030b15d50507",
+      "seed": 2803147321,
+      "visual_pool_index": 82,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.1360449833581434,
+      "source_slot": {
+        "letter": "T"
       },
-      "source_files_sha256": {
-        "scene.usda": "dddac74b455a97cc5944edeb22e9b373b3310df60ec7214fa670030b15d50507",
-        "writing_guide.json": "9dd8860e45a5eb3c8e3caae196209f7ef487c13d8252429697beabd0d39f520a",
-        "instructions.json": "38d59d9007a66c4811175937f187415cf67c59be9766152050ba9846349577ac",
-        "scene_info.json": "51772f1394487366240c8694ebdd303a228e8981069ee849b15e87152200a43f",
-        "problems.json": "7862cf2f09146acba3916de966172c1ded175a2c5d9248060a0ceb95b40bb85c"
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "output_files_sha256": {
-        "scene.usda": "30f0448032f546dc48cc07e3335469ec52b7d33fe6d17225683bb96d5e5a4c48",
-        "writing_guide.json": "4311fa111ec64372a3b32e4df270570c86c2849d7b57d6bc6bf5b9646498cf3e",
-        "instructions.json": "db0cacf0938e9d8fb526d0aeb028e8ddc7a85a937c188b17ec37f280e4e54292",
-        "scene_info.json": "8a2265d171e785e344cd934fd08c763ca37e7af44e2ac2b3e3136110597f3c49",
-        "problems.json": "7862cf2f09146acba3916de966172c1ded175a2c5d9248060a0ceb95b40bb85c"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.06449239871424499,
-          -0.2789307290071865
-        ],
-        "upper_delta_xy_m": [
-          0.3513481575124374,
-          0.5947415479459541
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.0765721056997426,
-          -0.15790447271558003
-        ]
-      },
-      "source_grasp_parameters_preserved": true
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 16,
-      "source_instance": 6,
-      "target_letter": "A",
-      "translations_m": {
-        "paper": [
-          0.0006574708675258605,
-          0.0005549836192920696,
-          0.0
-        ]
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.06365244779641982,
+        0.058475184771671934
+      ],
+      "yaw_delta_deg": -23.45064875438494,
+      "letter": "G",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 11,
+      "source_instance": 2,
+      "source_scene_sha256": "a288041cf9ef3137324fe8c474939841262d552fc52fd31f39995f53c7ba139a",
+      "seed": 4184643501,
+      "visual_pool_index": 127,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.1729780455422807,
+      "source_slot": {
+        "letter": "G"
       },
-      "source_files_sha256": {
-        "scene.usda": "268ef69cec2c4d5849783d122279a542bb041ac5a601fb1eb79caa4f8634bc75",
-        "writing_guide.json": "36372b9a1c17086b0d620314ffaeab230e041e96bc168f8deea74d7b951d4ad0",
-        "instructions.json": "e34c9ddec6b5a0e3fff9c9a00f543186c2fc1a01c2f3a6403a325b5e4fc9537c",
-        "scene_info.json": "8f04df86c761b4455aba779b5e30808e4525b138a695c6c899c64d34bff9d181",
-        "problems.json": "4e9ab29d89a0c21b62084c233634f2ab582e358e69fe3c2a029a77483fc9ad52"
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "output_files_sha256": {
-        "scene.usda": "1f130795c6a42d2553f7fff20404d6a40cadb0937fc4fa31acc9a852171acde1",
-        "writing_guide.json": "2ce4225e193549f3c0c09acb01175861346e87969252385666127f2f74236409",
-        "instructions.json": "80aeb7eb3246c086cd155a9e0fd0632653e632585ae2f57e4a16c850d3893c30",
-        "scene_info.json": "af7827fc8083037965087f793fd483e5d337d8de9d6644a604e516cc72971442",
-        "problems.json": "4e9ab29d89a0c21b62084c233634f2ab582e358e69fe3c2a029a77483fc9ad52"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.06042874841516199,
-          -0.2783271832702685
-        ],
-        "upper_delta_xy_m": [
-          0.35583385697788433,
-          0.5959969402113494
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.07229743081747764,
-          -0.15883394171673665
-        ]
-      },
-      "source_grasp_parameters_preserved": true
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 17,
-      "source_instance": 7,
-      "target_letter": "B",
-      "translations_m": {
-        "paper": [
-          -0.003610140189067163,
-          0.0017348308701608777,
-          0.0
-        ]
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.05932294622005188,
+        0.06235025151481258
+      ],
+      "yaw_delta_deg": 22.902185429362973,
+      "letter": "B",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 12,
+      "source_instance": 1,
+      "source_scene_sha256": "aa84a0f5cd759acb951982fb5a2e4c84bee545b09090bbab198527738209f443",
+      "seed": 797460163,
+      "visual_pool_index": 133,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.9589183535980945,
+      "source_slot": {
+        "letter": "B"
       },
-      "source_files_sha256": {
-        "scene.usda": "f814ed863967c40dcef14c4004f2fc76ff0ed609b4a38a15495fd87497b2a0e0",
-        "writing_guide.json": "8215cd94166cf00432774aa50ad329c74eea22ec4265f68de0d3acf08864ac05",
-        "instructions.json": "91b0d0e94facafe51fb1914afda27e75c93cf3f61f876799cb6308f872343dde",
-        "scene_info.json": "2a596904f9e29a0978fe86b271c2aee0713ea4214589e2fde942ea5362f57264",
-        "problems.json": "e60bb7343bcf72db222c7c5621cf742836fa35c97f6cfef3835a59aea8c41f7d"
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "output_files_sha256": {
-        "scene.usda": "fc590f43d225d91f4c2900ce92cad30999386a3633a48ef4e529948a29c559bf",
-        "writing_guide.json": "ca3136acfaad84893e48fc9e9c26a04cb8d75d8e377285144fce19d15ee9cef5",
-        "instructions.json": "fb7080c682490fb1e9ad194bc46983789b43f928a4e5cd8345f11ba479887171",
-        "scene_info.json": "4d908c9d1b2b88eef2e5207f03fd6c26da1b868fc0b7c1f4e00331d58cd35fff",
-        "problems.json": "e60bb7343bcf72db222c7c5621cf742836fa35c97f6cfef3835a59aea8c41f7d"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.07291169821173449,
-          -0.2754019930453113
-        ],
-        "upper_delta_xy_m": [
-          0.3439304578796395,
-          0.5998137342770713
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.08449060526488628,
-          -0.1622049338620761
-        ]
-      },
-      "source_grasp_parameters_preserved": true
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 18,
-      "source_instance": 8,
-      "target_letter": "G",
-      "translations_m": {
-        "paper": [
-          0.0006521774946061646,
-          -0.001343860609247069,
-          0.0
-        ]
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        -0.04604385758046515,
+        0.0680842782454138
+      ],
+      "yaw_delta_deg": 6.389794964748784,
+      "letter": "O",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 13,
+      "source_instance": 4,
+      "source_scene_sha256": "74d21a4398a4f2f117e45ea377abedf481cc01cf18268f464380d893281ce60b",
+      "seed": 1961163590,
+      "visual_pool_index": 147,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.8447202392731115,
+      "source_slot": {
+        "letter": "O"
       },
-      "source_files_sha256": {
-        "scene.usda": "ca5238ec4e869c247c39ccc67a652f5e54eab9e9b28bf6a298439ddfddc2c4db",
-        "writing_guide.json": "fbd6692f65cfcc55cf9005fb546ec1c78503e60eba4fd83585a56581839d6b06",
-        "instructions.json": "22b63a568ff98b909924275bfe0c246ee62aec39d183728913ddaf81c005c5cf",
-        "scene_info.json": "e9eb5be604c2eb4766623602bf85a812f1d43970a1fc664e4ac3bc51514a9329",
-        "problems.json": "8628f1ef5a0b4f1728bd7b28eb00553bd9f6ca3b533f38660bf2e057fc1b175d"
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "output_files_sha256": {
-        "scene.usda": "f4fa4b2bbe5045421d378231e52279ac522c5c1b92eb75a1e9f193b858050612",
-        "writing_guide.json": "2eead99f7c7ef5cc09bab54c66dfec642aac1fd6d005d86a1d806a4cc3335fe6",
-        "instructions.json": "c5d35dc14ed0a9bcd9b69f95e4ac818385a67e91b77d830ce8857a31abf4f01e",
-        "scene_info.json": "c66c3b3cfdd3adce6c43e19150996e94b00c50794509d590491aa1ac4a56911b",
-        "problems.json": "8628f1ef5a0b4f1728bd7b28eb00553bd9f6ca3b533f38660bf2e057fc1b175d"
-      },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.0585241314250273,
-          -0.28074522927008294
-        ],
-        "upper_delta_xy_m": [
-          0.3538989921424942,
-          0.5875644477623687
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.07231255474010534,
-          -0.1534086724923391
-        ]
-      },
-      "source_grasp_parameters_preserved": true
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 19,
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        -0.01711589134755634,
+        0.06806867976116046
+      ],
+      "yaw_delta_deg": -21.917192523995897,
+      "letter": "A",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 14,
+      "source_instance": 0,
+      "source_scene_sha256": "307b4661dc19b22f95ce45dbabe7342a2a0dba6fe971c5f6d9f41670a769b6a7",
+      "seed": 3395245065,
+      "visual_pool_index": 94,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.5742445679160662,
+      "source_slot": {
+        "letter": "A"
+      },
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.06944008070113084,
+        -0.04630339311940081
+      ],
+      "yaw_delta_deg": 24.360142936561566,
+      "letter": "I",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 15,
       "source_instance": 9,
-      "target_letter": "I",
-      "translations_m": {
-        "paper": [
-          0.004003985827517946,
-          0.0004080480639680292,
-          0.0
-        ]
+      "source_scene_sha256": "d6ef96152f6ec25e3859abb915f8be76c53d2abb21e86ee2970f3e647fd4ff06",
+      "seed": 2174810519,
+      "visual_pool_index": 154,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.7592646953159279,
+      "source_slot": {
+        "letter": "I"
       },
-      "source_files_sha256": {
-        "scene.usda": "d6ef96152f6ec25e3859abb915f8be76c53d2abb21e86ee2970f3e647fd4ff06",
-        "writing_guide.json": "5d21687fcede74e94b1d94a0309fed7f1c2ea65b07562a05d6441c5abdcb876b",
-        "instructions.json": "2264fe7ca547dfbb7baa028d44cd1ff0256ad3999ff436ec4eb6428db42d8cf5",
-        "scene_info.json": "db570832198ddce636303199bb9133bf03788d4f0ab8639284f9f0e50adbdd78",
-        "problems.json": "9907528db896e309e03f267d41308266c88c74221210b912cc78d794266a9df0"
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "output_files_sha256": {
-        "scene.usda": "89dddaab6177ba0eee915dc7b379ea2f4c56efc8446dbbbce37a4b66f0503c67",
-        "writing_guide.json": "99c6e41922d287229ffdf472260186691bafadd43c0ad0e7df9ac574860d9060",
-        "instructions.json": "9f6b4f9d65ad9ae0af1214c12ac7e27017e7593971a3553214f0b931ee363223",
-        "scene_info.json": "c1f84652f8b02839ce5131f4522232bf3ac8a1fcdba71f7ee035892579471f14",
-        "problems.json": "9907528db896e309e03f267d41308266c88c74221210b912cc78d794266a9df0"
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        -0.008651130684028459,
+        0.05821520512415482
+      ],
+      "yaw_delta_deg": 19.621802359824827,
+      "letter": "G",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 16,
+      "source_instance": 2,
+      "source_scene_sha256": "a288041cf9ef3137324fe8c474939841262d552fc52fd31f39995f53c7ba139a",
+      "seed": 2637459581,
+      "visual_pool_index": 2,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.5423851611863484,
+      "source_slot": {
+        "letter": "G"
       },
-      "placement_constraints": {
-        "lower_delta_xy_m": [
-          -0.050985623319802914,
-          -0.27892931011257127
-        ],
-        "upper_delta_xy_m": [
-          0.36551367451105143,
-          0.5957594353089433
-        ],
-        "source_edge_overhang_m": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "source_paper_xy_m": [
-          0.06273595950321453,
-          -0.15841412584438225
-        ]
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
       },
-      "source_grasp_parameters_preserved": true
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.049908821821297675,
+        0.0011414357321204854
+      ],
+      "yaw_delta_deg": -22.513967087873972,
+      "letter": "T",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 17,
+      "source_instance": 5,
+      "source_scene_sha256": "dddac74b455a97cc5944edeb22e9b373b3310df60ec7214fa670030b15d50507",
+      "seed": 2165124529,
+      "visual_pool_index": 37,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.4548245574255692,
+      "source_slot": {
+        "letter": "T"
+      },
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.01089535368485485,
+        0.04234415910134838
+      ],
+      "yaw_delta_deg": -21.637054517525616,
+      "letter": "B",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 18,
+      "source_instance": 1,
+      "source_scene_sha256": "aa84a0f5cd759acb951982fb5a2e4c84bee545b09090bbab198527738209f443",
+      "seed": 2397587629,
+      "visual_pool_index": 94,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.2734127785157143,
+      "source_slot": {
+        "letter": "B"
+      },
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "bounded_paper_adapter",
+      "translation_m": [
+        0.05585172165354019,
+        0.05373552283511712
+      ],
+      "yaw_delta_deg": 8.123478617313786,
+      "letter": "A",
+      "original_bulk_generator_available": false,
+      "pen_and_holder_fixed": true,
+      "instance_id": 19,
+      "source_instance": 0,
+      "source_scene_sha256": "307b4661dc19b22f95ce45dbabe7342a2a0dba6fe971c5f6d9f41670a769b6a7",
+      "seed": 2817967494,
+      "visual_pool_index": 57,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.149430405264165,
+      "source_slot": {
+        "letter": "A"
+      },
+      "distribution_adjustment": {
+        "paper_xy_m": 0.07,
+        "paper_yaw_delta_deg": 25,
+        "pen_and_holder_fixed": true,
+        "complete_source_generator_available": false
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     }
-  ],
-  "groups": {
-    "paper_and_gray_glyph": "shared XY translation; guide world origin follows",
-    "sampling_envelope": "source paper-position XY convex hull",
-    "robot_pen_pen_holder_grasp_calibration_local_glyph_geometry_and_scoring": "preserved",
-    "table": "fixed; paper overhang at each edge does not increase from its selected source"
-  }
+  ]
 }

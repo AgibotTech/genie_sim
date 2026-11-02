@@ -24,6 +24,10 @@ At build (end of ``_phase_finalize_init_state``) we snapshot:
     it stays a stable init reference for the engine's lifetime.
   * ``control.joint_target_q`` — the init PD targets (copied, so later
     ``apply_commands`` writes don't disturb the snapshot).
+  * ``model.particle_q`` — initial particle positions for single-world scenes.
+    The first finite settled snapshot updates particle and joint baselines
+    together. Particle reset restores both existing buffers in place and
+    clears particle velocities and forces before committing the reset epoch.
 
 ``episode_reset(env_ids)`` rewrites, for each selected world's slice (world-major
 from ``replicate``):
@@ -214,6 +218,7 @@ class _LifecycleMixin:
     def _snapshot_reset_state(self) -> None:
         self._reset_init_joint_q = None
         self._reset_init_target = None
+        self._reset_init_particle_q = None
         # reset_epoch causal credential: incremented by ``episode_reset()`` below only
         # after a whole reset batch has been fully applied. The main loop writes
         # the current value into the header.frame_id of every /joint_states, so
@@ -224,6 +229,9 @@ class _LifecycleMixin:
         try:
             if self._model is not None and self._model.joint_q is not None:
                 self._reset_init_joint_q = self._model.joint_q.numpy().copy()
+            particles = getattr(self._model, "particle_q", None)
+            if particles is not None:
+                self._reset_init_particle_q = particles.numpy().copy()
             ctl = self._control
             if ctl is not None and getattr(ctl, "joint_target_q", None) is not None:
                 self._reset_init_target = ctl.joint_target_q.numpy().copy()
@@ -461,7 +469,15 @@ class _LifecycleMixin:
                     "is no longer trustworthy, restarting the task is advised."
                 )
                 return
+            particles = getattr(s0, "particle_q", None)
+            points = None
+            if particles is not None:
+                points = particles.numpy()
+                if not _finite(points):
+                    raise ValueError("settled particles are non-finite; keeping the build-time particle baseline")
             self._reset_init_joint_q = jq_now.copy()
+            if points is not None:
+                self._reset_init_particle_q = points.copy()
             ctl = self._control
             if ctl is not None and getattr(ctl, "joint_target_q", None) is not None:
                 self._reset_init_target = ctl.joint_target_q.numpy().copy()
@@ -1309,6 +1325,22 @@ class _LifecycleMixin:
                         f"observations."
                     )
 
+            # Scene-plugin builds with particles are single-world (native
+            # replication rejects these builds). Restore both ping-pong
+            # buffers in place before the shared commit flushes render mirrors;
+            # replacing arrays would invalidate captured CUDA graph pointers.
+            points = getattr(self, "_reset_init_particle_q", None)
+            if points is not None and len(points):
+                if ne != 1:
+                    raise NotImplementedError("particle reset requires a single-world particle build")
+                for state in (self._state_0, self._state_1):
+                    if state is None:
+                        continue
+                    state.particle_q.assign(points)
+                    state.particle_qd.zero_()
+                    if getattr(state, "particle_f", None) is not None:
+                        state.particle_f.zero_()
+
             self._commit_state_write(
                 env_ids, jq, qd, tgt=tgt, base_mocap_off=base_mocap_off if _mocap_base_active else None, label="reset"
             )
@@ -1329,7 +1361,7 @@ class _LifecycleMixin:
                     child_arr = getattr(self._model, "joint_child", None)
                     bp = list(getattr(self._model, "body_label", []) or [])
                     ch = child_arr.numpy() if child_arr is not None else None
-                    for slc in (jindex2.slices() if jindex2 else []):
+                    for slc in jindex2.slices() if jindex2 else []:
                         if slc.joint_type != 4 or ch is None:
                             continue
                         bi = int(ch[slc.joint_index])

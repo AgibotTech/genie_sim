@@ -87,8 +87,10 @@ def load_plans(
             raise ValueError("layout_id must be a unique nonnegative integer")
         ids.add(layout_id)
         scene, evaluation, launcher = (_bundle_file(root, item[key]) for key in ("scene", "evaluation", "launcher"))
-        expected = Path("background/common/runtime") / scene.stem / "manifest.json"
-        legacy = (Path("scenes") / scene.stem / "manifest.json").as_posix()
+        expected = Path("scenes") / scene.stem / "manifest.json"
+        # Previously generated bundles retain their index; assembly and reads
+        # always use the current scenes directory, even for those bundles.
+        legacy = (Path("background/common/runtime") / scene.stem / "manifest.json").as_posix()
         if item.get("manifest_subpath") not in (expected.as_posix(), legacy) or scene.stem in stems:
             raise ValueError("each layout needs its own scene stem and matching manifest_subpath")
         stems.add(scene.stem)
@@ -110,8 +112,8 @@ def load_plans(
         config = yaml.safe_load(evaluation.read_text())
         if config.get("runtime") != "newton" or config.get("task_name") != "wok_flip":
             raise ValueError("layout evaluations require runtime newton and task_name wok_flip")
-        if type(config.get("episodes")) is not int or config["episodes"] != 1:
-            raise ValueError("layout evaluations require episodes: 1; food has no reset contract")
+        if type(config.get("episodes")) is not int or config["episodes"] < 1:
+            raise ValueError("layout evaluations require a positive episode count")
         if not config.get("task_progress_topic"):
             raise ValueError("layout evaluations require authoritative task_progress_topic")
         if (evaluation.parent / config["launcher"]).resolve() != launcher:
@@ -417,17 +419,24 @@ def run_batch(
                 if code != 0:
                     raise RuntimeError(f"runner exited with code {code}; see runner.log")
                 results = json.loads((plan.run_dir / "results.json").read_text())
-                if not isinstance(results, list) or len(results) != 1:
-                    raise RuntimeError("runner must produce exactly one episode result")
-                result = results[0]
-                session = result["evaluation"]["session_id"]
+                episodes = yaml.safe_load(plan.runtime_evaluation.read_text())["episodes"]
+                if not isinstance(results, list) or len(results) != episodes:
+                    raise RuntimeError(f"runner must produce exactly {episodes} episode results")
+                session = results[0]["evaluation"]["session_id"]
                 if not isinstance(session, str) or not session or session in sessions:
                     raise RuntimeError("evaluation reused an engine session")
+                for result in results:
+                    if result["evaluation"]["session_id"] != session:
+                        raise RuntimeError("episode results must share the layout engine session")
+                    if type(result.get("score")) is not int or result["score"] not in (0, 1, 2):
+                        raise RuntimeError("runner result has no valid observed task score")
                 sessions.add(session)
-                if type(result.get("score")) is not int or result["score"] not in (0, 1, 2):
-                    raise RuntimeError("runner result has no valid observed task score")
+                # Preserve every attempt; existing scalar fields describe the final attempt.
+                result = results[-1]
                 row.update(
                     status="evaluated",
+                    episode_count=len(results),
+                    episode_results=results,
                     score=result["score"],
                     max_score=result["max_score"],
                     task_success=result["task_success"],

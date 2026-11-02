@@ -119,8 +119,8 @@ def load_config(path, overrides=()):
         raise ValueError("This backend supports Rubik scene tasks on g2_crsb_wuji")
     if not r.prompt.strip():
         raise ValueError("rubik.prompt must be nonempty")
-    if b.num_episode < 1 or b.num_instances != 1 or b.seed < 0:
-        raise ValueError("Require positive num_episode, nonnegative seed and num_instances=1")
+    if b.num_episode < 1 or b.num_instances < 1 or b.seed < 0:
+        raise ValueError("Require positive num_episode/num_instances and nonnegative seed")
     if b.policy not in ("websocket", "hold"):
         raise ValueError("policy must be websocket or hold (interface smoke test)")
     r.package_root = r.package_root or os.environ.get("RUBIK_PACKAGE_ROOT", "")

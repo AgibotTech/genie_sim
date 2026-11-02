@@ -124,8 +124,6 @@ class AppConfig:
     # collide with the cloth.
     enable_gripper_collision: bool = False
     # Optional independent pose stream for the keyboard mock server's map.
-    teleop_telemetry_endpoint: str = ""
-    teleop_telemetry_rate_hz: float = 10.0
     # Exit the process (code 1) when one main-loop world.step() runs longer
     # than this; it can hang forever inside Kit's native app.update(). 0 disables.
     main_loop_stall_timeout_s: float = 300.0
@@ -148,14 +146,6 @@ class BenchmarkConfig:
     infer_host: str = "localhost:8999"
     model_arc: str = "pi"
     interactive: bool = False
-    startup_validation_seconds: float = 0.0
-    startup_validation_result: str = ""
-    # A dedicated G2 shared-control session. It uses the CoRobot transport but
-    # does not use benchmark instruction, scoring, or completion routing.
-    control_mode: bool = False
-    # Operator-owned text for the shared-control observation. This is kept
-    # separate from benchmark prompts and is intentionally empty by default.
-    control_user_text: str = ""
     seed: int = 1
     preview: bool = False
     enable_vec: int = 0
@@ -165,8 +155,7 @@ class BenchmarkConfig:
     # 0 (default) means "use all instances under llm_task/<sub_task>/".
     num_instances: int = 0
     # Exact comma-separated instance ids, in caller order. An explicit value
-    # takes precedence over num_instances and keeps supervised control pinned
-    # to the scenario revision recorded by its launcher.
+    # takes precedence over num_instances.
     instance_ids: str = ""
     # realprobe evals target the real robot: CoRobotPolicy drops the "_sim"
     # suffix from the reported robot_type (e.g. g2a_sim -> g2a) so the

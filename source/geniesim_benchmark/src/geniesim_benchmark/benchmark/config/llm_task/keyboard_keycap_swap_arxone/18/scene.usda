@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.697456, 0, 0, 0.7166276)
+            quatf xformOp:orient = (-0.6848649, 0, 0, 0.72867006)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.091345000327642, -0.1299808597096052, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.4124255814848816, -0.9109912950938978, 0, 0), (0.9109912950938978, -0.4124255814848816, 0, 0), (0, 0, 1, 0), (-0.14124219840395513, -0.07437011967712537, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.13135796642231848, -0.10254245973900264, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1021,10 +1022,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.6909949, 0, 0, 0.7228596)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12249729490613681, 0.13965248263511235, 0.7432891217007136)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.20374355800262137, -0.9790242911043795, 0, 0), (0.9790242911043794, -0.20374355800262137, 0, 0), (0, 0, 1, 0), (-0.14683593136417444, 0.17925406528755655, 0.7432891217007136, 1) )
+            double3 xformOp:translate = (-0.10625594128974247, 0.13762526906995182, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1097,10 +1099,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.6796249, 0, 0, 0.7335598)
+            quatf xformOp:orient = (0.71536756, 0, 0, -0.69874835)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.15130111828890708, -0.2510093019437762, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.07621389403516936, -0.9970914914670551, 0, 0), (0.997091491467055, 0.07621389403516936, 0, 0), (0, 0, 1, 0), (-0.1914761228558579, -0.23134716616222664, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.14082609324485482, -0.2565385264803075, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1174,10 +1177,11 @@ def cleanup(db):
 
         def Xform "puller_holder_000"
         {
-            quatf xformOp:orient = (-0.6909949, 0, 0, 0.7228596)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12483943202810896, 0.02465505825788507, 0.7323891221373175)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.20374355800262137, -0.9790242911043795, 0, 0), (0.9790242911043794, -0.20374355800262137, 0, 0), (0, 0, 1, 0), (-0.1674821120087366, 0.06610094582332643, 0.7323891221373175, 1) )
+            double3 xformOp:translate = (-0.11915586308692738, 0.023329664441774024, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             def Xform "entity" (
                 prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>

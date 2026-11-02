@@ -76,11 +76,11 @@ def export_render_model(env, directory):
     if not robot_usd.is_file():
         raise RuntimeError("Standard G2_crsB_wuji USD asset is missing: " + str(robot_usd))
     environment_usd = (
-        assets_root / "background/sphere_hdr_backgrounds/sphere_hdr_industrial_workshop_foundry_4k/background.usda"
+        assets_root / "background/sphere_hdr_backgrounds/sphere_hdr_shucaichang/background.usda"
     )
-    hdr_texture = assets_root / "background/common/HDR/room/industrial_workshop_foundry_4k.hdr"
+    hdr_texture = assets_root / "background/common/HDR/shucaichang.hdr"
     if not environment_usd.is_file() or not hdr_texture.is_file():
-        raise RuntimeError("Collection-matched industrial HDR background assets are missing")
+        raise RuntimeError("Collection-matched shucaichang HDR background assets are missing")
     scene = {
         "environment_usd": str(environment_usd),
         "environment_usd_sha256": hashlib.sha256(environment_usd.read_bytes()).hexdigest(),

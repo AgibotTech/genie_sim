@@ -1,13 +1,13 @@
 {
-  "scene_id": 808,
-  "seed": 2032289816811275545,
+  "scene_id": 19,
+  "seed": 1488730468,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.13252466522647907,
-        -0.0009723914221965191,
-        0.4132951233489185
+        0.12571242596671522,
+        0.0018224080184870083,
+        0.41752820652500705
       ],
       "xyzw": [
         0.0,
@@ -38,15 +38,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        0.13110395174473524,
-        0.21147089826641557,
-        0.7831050062950252
+        -0.02558637543853779,
+        -0.15739515180248168,
+        0.7873380894530196
       ],
       "xyzw": [
-        -0.004635615870368572,
-        0.0017825908063360436,
-        0.9336926603699128,
-        0.3580409884452818
+        -0.004341748856507696,
+        0.0024115927219875524,
+        0.8746427582401507,
+        0.4847425903461254
       ],
       "tags": [
         "root_scene",
@@ -71,15 +71,15 @@
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.06031848104179927,
-        -0.21274056973168676,
-        0.7924414426181418
+        0.13716169768392011,
+        0.19497828125811142,
+        0.7966745257651074
       ],
       "xyzw": [
-        0.09474132964681412,
-        0.020017640685472116,
-        0.9921345124768536,
-        0.0793251767754556
+        0.09561821982667457,
+        0.015289906975863687,
+        0.9869735540371184,
+        0.12847792967349106
       ],
       "tags": [
         "root_scene",
@@ -105,9 +105,9 @@
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.24875794657352093,
-        0.1979429456225495,
-        0.6780382237284146
+        -0.2555701858332848,
+        0.17046795301071044,
+        0.6822713069045031
       ],
       "xyzw": [
         7.2441173060155556e-09,
@@ -189,17 +189,43 @@
       ]
     }
   },
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 9,
-    "source_scene_sha256": "997df62faf0fecbade2633fe3dd39bb93055ce4ef32de1c02c8217ab662e5647",
-    "seed": 2032289816811275545,
-    "translation_m": [
-      0.0,
-      0.014028904016594856,
-      0.0
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.16875014063222596,
+    "handle_outward_deg": 57.992497563749836,
+    "trash": [
+      "trash_bone_000"
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 19,
+    "source_instance": 8,
+    "source_scene_sha256": "10cbdc13e50105b05ef95c698f950917b0b23e19846aa33e917deb48bc2bc36e",
+    "seed": 1488730468,
+    "visual_pool_index": 24,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.9515395273901601,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

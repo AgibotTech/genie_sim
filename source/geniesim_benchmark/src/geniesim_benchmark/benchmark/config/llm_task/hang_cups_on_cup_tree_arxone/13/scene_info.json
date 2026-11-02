@@ -1,8 +1,8 @@
 {
-  "scene_id": "hang_cups_on_cup_tree_arx",
-  "seed": 12902542099987688747,
+  "scene_id": 13,
+  "seed": 2656875264,
   "layout": {
-    "table_403eac3b": {
+    "table_eccf02ce": {
       "usd": "table_000",
       "xyz": [
         0.0,
@@ -16,9 +16,9 @@
         1.0
       ],
       "tags": [
-        "root_scene_33a5e6fc",
-        "hang_cups_on_cup_tree_arx_b71b619d",
-        "table_403eac3b"
+        "root_scene_609315f3",
+        "hang_cups_on_cup_tree_arx_0ad5823b",
+        "table_eccf02ce"
       ],
       "keywords": [
         "table",
@@ -58,50 +58,50 @@
         ]
       }
     },
-    "benchmark_cup_holder_cc568953": {
+    "benchmark_cup_holder_44bcf7c6": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
-        -0.16531264742134344,
-        0.02221586674185064,
-        0.907
+        -0.18252183930223173,
+        -0.01787199752885875,
+        0.9070824611567659
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.5886500232887324,
-        0.8083879947662354
+        -0.6261629913346406,
+        0.7796921881632873
       ],
       "tags": [
-        "root_scene_33a5e6fc",
-        "hang_cups_on_cup_tree_arx_b71b619d",
-        "benchmark_cup_holder_cc568953"
+        "root_scene_609315f3",
+        "hang_cups_on_cup_tree_arx_0ad5823b",
+        "benchmark_cup_holder_44bcf7c6"
       ],
       "keywords": [
         "cup_tree",
         "cup_holder",
         "target_placement",
         "unmovable",
-        "POSITION_TAG_center"
+        "POSITION_TAG_left"
       ],
       "description": {}
     },
-    "benchmark_cup_f3c92132": {
-      "usd": "benchmark_cup_123",
+    "benchmark_cup_df937404": {
+      "usd": "benchmark_cup_119",
       "xyz": [
-        -0.07131264742134343,
-        -0.18878413325814936,
-        0.781
+        -0.024271092641522357,
+        -0.1673621858311362,
+        0.7630572534427985
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9627865382162788,
-        0.2702629864215852
+        0.9802068006223132,
+        0.19797633195351538
       ],
       "tags": [
-        "root_scene_33a5e6fc",
-        "hang_cups_on_cup_tree_arx_b71b619d",
-        "benchmark_cup_f3c92132"
+        "root_scene_609315f3",
+        "hang_cups_on_cup_tree_arx_0ad5823b",
+        "benchmark_cup_df937404"
       ],
       "keywords": [
         "cup_hang_0",
@@ -113,7 +113,18 @@
         "task_side_right",
         "POSITION_TAG_right"
       ],
-      "description": {}
+      "description": {
+        "semantic_name": [
+          "handled cup"
+        ],
+        "object_category": [
+          "cup",
+          "mug"
+        ],
+        "full_description": [
+          "A handled cup; appearance and dimensions are defined by the selected original-scale asset."
+        ]
+      }
     }
   },
   "relations": {
@@ -125,10 +136,10 @@
       },
       "nodes": [
         {
-          "id": "root_scene_33a5e6fc"
+          "id": "root_scene_609315f3"
         },
         {
-          "id": "hang_cups_on_cup_tree_arx_b71b619d"
+          "id": "hang_cups_on_cup_tree_arx_0ad5823b"
         },
         {
           "tags": [
@@ -137,7 +148,7 @@
             "workspace",
             "POSITION_TAG_center"
           ],
-          "id": "table_403eac3b"
+          "id": "table_eccf02ce"
         },
         {
           "tags": [
@@ -145,9 +156,9 @@
             "cup_holder",
             "target_placement",
             "unmovable",
-            "POSITION_TAG_center"
+            "POSITION_TAG_left"
           ],
-          "id": "benchmark_cup_holder_cc568953"
+          "id": "benchmark_cup_holder_44bcf7c6"
         },
         {
           "tags": [
@@ -160,40 +171,62 @@
             "task_side_right",
             "POSITION_TAG_right"
           ],
-          "id": "benchmark_cup_f3c92132"
+          "id": "benchmark_cup_df937404"
         }
       ],
       "edges": [
         {
-          "source": "root_scene_33a5e6fc",
-          "target": "hang_cups_on_cup_tree_arx_b71b619d"
+          "source": "root_scene_609315f3",
+          "target": "hang_cups_on_cup_tree_arx_0ad5823b"
         },
         {
-          "source": "hang_cups_on_cup_tree_arx_b71b619d",
-          "target": "table_403eac3b"
+          "source": "hang_cups_on_cup_tree_arx_0ad5823b",
+          "target": "table_eccf02ce"
         },
         {
-          "source": "hang_cups_on_cup_tree_arx_b71b619d",
-          "target": "benchmark_cup_holder_cc568953"
+          "source": "hang_cups_on_cup_tree_arx_0ad5823b",
+          "target": "benchmark_cup_holder_44bcf7c6"
         },
         {
-          "source": "hang_cups_on_cup_tree_arx_b71b619d",
-          "target": "benchmark_cup_f3c92132"
+          "source": "hang_cups_on_cup_tree_arx_0ad5823b",
+          "target": "benchmark_cup_df937404"
         }
       ]
     }
   },
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 3,
-    "source_scene_sha256": "012ebfd0540e927812ad24666762287f5e91ad60939de33f22adce8b51fbc068",
-    "seed": 12902542099987688747,
-    "translation_m": [
-      0.0026873525786565745,
-      -0.007784133258149357,
-      0.0
+  "benchmark_generalization": {
+    "method": "robot_specific_cup_asset_side_relative_layout",
+    "cup_asset": "benchmark_cup_119",
+    "side": "right",
+    "holder_xy_m": [
+      -0.18252182440107054,
+      -0.017871967726536334
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "holder_yaw_deg": -77.53519784973938,
+    "cup_yaw_deg": 157.1627093576521,
+    "footprint_separation_m": 0.01,
+    "proposal_holder": {
+      "xy_m": [
+        0.15191182403256343,
+        -0.017871967726536334
+      ],
+      "yaw_deg": 57.44508576220218
+    },
+    "source_line_fraction": 0.4289471630805645,
+    "instance_id": 13,
+    "source_instance": 7,
+    "source_scene_sha256": "ca6a699231ecbdc46d96f1d7d880d0f867e0cf3bb7a12228cbce713b1ce7107d",
+    "seed": 2656875264,
+    "visual_pool_index": 12,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.7923242111433368,
+    "source_slot": {
+      "cup_asset_index": 3,
+      "side": "right"
+    },
+    "distribution_adjustment": null,
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

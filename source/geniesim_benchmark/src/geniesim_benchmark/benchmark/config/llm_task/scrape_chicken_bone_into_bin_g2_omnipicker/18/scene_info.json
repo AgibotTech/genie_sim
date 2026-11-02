@@ -1,13 +1,13 @@
 {
-  "scene_id": 926,
-  "seed": 13895123572922140119,
+  "scene_id": 18,
+  "seed": 1502027884,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.060898259028619076,
-        -0.006357880920667412,
-        0.37008249331089293
+        0.0462982335161566,
+        -0.001469833003353278,
+        0.3629384444551436
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.1285103464871645,
-        0.21689076821901138,
-        0.7406729938687863
+        -0.14092416958477494,
+        -0.25284583079988937,
+        0.7335289450130369
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9560397436848896,
-        -0.2932371199131009
+        0.9656523162376577,
+        0.259837649590753
       ],
       "tags": [
         "root_scene",
@@ -76,24 +76,24 @@
       ],
       "authored_requested_xyzw": [
         0.0,
-        -0.0,
-        -0.956039745660512,
-        0.29323711347198816
+        0.0,
+        0.9042955431347308,
+        0.42690698128124166
       ],
-      "usd_quatf_rotation_quantization_rad": 1.3474571236571364e-08
+      "usd_quatf_rotation_quantization_rad": 1.804209059930173e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        0.13274637067690492,
-        -0.20835308924667306,
-        0.7511631888876674
+        -0.04674734103553625,
+        0.18520650777326764,
+        0.7440191400311401
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.3112187460115857,
-        0.9503383040428162
+        0.02983261573901684,
+        0.9995549084658472
       ],
       "tags": [
         "root_scene",
@@ -102,7 +102,8 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table"
+        "on_table",
+        "garbage"
       ],
       "description": {},
       "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
@@ -118,23 +119,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.31121877838467393,
-        0.9503382934412099
+        -0.19547318981835718,
+        0.9807090455697024
       ],
-      "usd_quatf_rotation_quantization_rad": 6.81296086213479e-08
+      "usd_quatf_rotation_quantization_rad": 2.992390086831176e-07
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.3203843512680993,
-        -0.1473343586732742,
-        0.6348255911944521
+        -0.33498437678056175,
+        0.11905913380435894,
+        0.6276815423387028
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        6.123233995736766e-17
+        6.123234e-17
       ],
       "tags": [
         "root_scene",
@@ -173,61 +174,82 @@
         6.123234e-17
       ],
       "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
-    }
-  },
-  "relations": {
-    "graph": {
-      "directed": true,
-      "multigraph": false,
-      "graph": {},
-      "nodes": [
-        {
-          "id": "root_scene"
-        },
-        {
-          "id": "table_000"
-        },
-        {
-          "id": "scraper_000"
-        },
-        {
-          "id": "trash_bone_000"
-        },
-        {
-          "id": "trash_can_000"
-        }
+    },
+    "trash_apple_000": {
+      "usd": "benchmark_trash_029",
+      "xyz": [
+        0.15985568737169487,
+        -0.08246979717832334,
+        0.7637880259509373
       ],
-      "links": [
-        {
-          "source": "root_scene",
-          "target": "table_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "scraper_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_bone_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_can_000"
-        }
+      "xyzw": [
+        0.18310427652327432,
+        0.6829881579638759,
+        -0.18310427652327432,
+        0.682988157963876
+      ],
+      "tags": [
+        "root_scene",
+        "trash_apple_000"
+      ],
+      "keywords": [
+        "trash",
+        "garbage",
+        "apple_core",
+        "on_table"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
+      "physics": {
+        "kinematic": false,
+        "mass_kg": 0.01
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
       ]
     }
   },
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 8,
-    "source_scene_sha256": "d855429a08f0503623fa0c91f26f513a32a10d9923d7863e1a24a52ac125b8a6",
-    "seed": 13895123572922140119,
-    "translation_m": [
-      0.0,
-      0.013755983045550532,
-      0.0
+  "relations": [],
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.12063356174254848,
+    "handle_outward_deg": 30.12124966349121,
+    "trash": [
+      "trash_bone_000",
+      "trash_apple_000"
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 18,
+    "source_instance": 0,
+    "source_scene_sha256": "d6f53e62b68952c463466b246c252e89d31a38165f981e3046e02d38505394db",
+    "seed": 1502027884,
+    "visual_pool_index": 24,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.0934648445655966,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

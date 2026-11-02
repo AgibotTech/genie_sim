@@ -19,8 +19,8 @@ inputs:
     desc: Task config (basename, full path, or unique substring)
     required: true
   - name: infer_host
-    desc: "IP:PORT of the inference server"
-    required: true
+    desc: "IP:PORT of the inference server; required for live policy execution, omitted for preview/setup or supported hold checks"
+    required: false
   - name: headless
     desc: GUI off (required on remote / batch hosts)
     required: false
@@ -52,14 +52,15 @@ Do **not** use for:
 
 ## Critical Patterns
 
-1. **Always collect three required inputs first**:
-   - Task config (basename, full path, or substring — the CLI resolves all three).
-   - Inference IP.
-   - Inference port.
-2. **The runtime needs `omni_python` / Isaac Sim on the host.** Inside the
-   Genie Sim Docker image (`geniesim docker up` → `geniesim docker into`),
-   that's already the case. Outside the container the user needs Isaac Sim
-   installed system-wide.
+1. **Resolve the task and requested validation level first.** Collect inference
+   IP/port for live policy execution. Preview, setup checks and supported hold
+   checks do not require a real policy endpoint.
+2. **Select the runtime from the task config.** Ordinary Isaac tasks use bundled
+   5.1 `omni_python`; Newton/deformable tasks use system Python 3.12 / Isaac 6.2,
+   and Rubik selects its prepared native MuJoCo interpreter. Follow the canonical
+   [quick start and smoke guide](../../benchmark_test_docs.md#ai-smoke-testing) for build,
+   source-path checks, backend-specific commands and result locations.
+   Do not forward Isaac preview flags to every `dexmanip` entry.
 3. **Working directory**: anywhere under the repo root works — the CLI
    walks up to find `scripts/` and uses `find_spec` to locate the
    benchmark package.
@@ -78,7 +79,7 @@ geniesim benchmark robots          # show robot counts
 geniesim benchmark list --robot=<R> --category=<C>
 ```
 
-Then ask via `AskUserQuestion`:
+Resolve any missing task or live-policy inputs from the user's request:
 - **Task config**: free-text (use the basename — e.g. `g2op_if_pick_block_color`).
 - **Inference host** as `ip:port`.
 
@@ -142,4 +143,6 @@ geniesim benchmark run <CONFIG> --infer-host=<IP>:<PORT>
 - If `geniesim` isn't on `$PATH` (the launcher wasn't installed), substitute `python3 -m geniesim_cli benchmark …` — same args, same behaviour.
 - `<CONFIG>` accepts the bare basename (`g2op_if_pick_block_color`), a full path, or a unique substring.
 - For batch evaluations, prefer `geniesim benchmark batch --category=… --robot=…` over a shell loop — it forwards extras consistently and prints a per-config pass/fail summary.
+- Batch extras must be supported by every selected backend. Use per-entry commands
+  for mixed-runtime `dexmanip`; CLI exit success alone is not E2E task success.
 - The new CLI replaces the older ad-hoc `omni_python app/app.py --config …` invocation. The new form normalizes interpreter selection, host shorthand, and config resolution.

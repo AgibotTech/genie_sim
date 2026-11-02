@@ -42,6 +42,7 @@ class IPCMesh:
     triangles: np.ndarray
     xform: np.ndarray
     tets: np.ndarray | None = None
+    rest_points: np.ndarray | None = None
 
     def world_points(self) -> np.ndarray:
         """Return world-space points."""
@@ -74,6 +75,13 @@ def read_usd_mesh(stage: Any, path: str) -> IPCMesh:
         raise KeyError(f"{path} is not a Mesh in {stage.GetRootLayer().identifier}")
     mesh = UsdGeom.Mesh(prim)
     points = np.asarray(mesh.GetPointsAttr().Get(), dtype=np.float64)
+    initial_values = prim.GetAttribute("geniesim:initialPoints").Get()
+    rest_points = None
+    if initial_values is not None:
+        rest_points = points
+        points = np.asarray(initial_values, dtype=np.float64)
+        if points.shape != rest_points.shape or not np.isfinite(points).all() or not np.isfinite(rest_points).all():
+            raise ValueError(f"{path} geniesim:initialPoints must match finite reference points")
     counts = np.asarray(mesh.GetFaceVertexCountsAttr().Get(), dtype=np.int64)
     indices = np.asarray(mesh.GetFaceVertexIndicesAttr().Get(), dtype=np.int64)
     triangles = []
@@ -105,7 +113,7 @@ def read_usd_mesh(stage: Any, path: str) -> IPCMesh:
         if not np.isfinite(volume6).all() or np.any(volume6 <= 0):
             raise ValueError(f"{path} has nonpositive or nonfinite tetrahedron volume")
         tets = tets.astype(np.int32)
-    return IPCMesh(path, points, np.asarray(triangles, dtype=np.int32), xform, tets)
+    return IPCMesh(path, points, np.asarray(triangles, dtype=np.int32), xform, tets, rest_points)
 
 
 def select_robot_collision_bodies(

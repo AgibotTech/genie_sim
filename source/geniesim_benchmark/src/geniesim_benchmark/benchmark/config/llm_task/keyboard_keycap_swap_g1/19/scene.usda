@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.72322816, 0, 0, -0.69060916)
+            quatf xformOp:orient = (0.72178936, 0, 0, -0.6921128)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12905614643309526, -0.1385250773101091, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.18167495098251654, -0.9833586386387725, 0, 0), (0.9833586386387725, 0.18167495098251654, 0, 0), (0, 0, 1, 0), (-0.16894864354646957, -0.1347190512528985, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.12369509172453963, -0.12134658683537343, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1023,7 +1024,7 @@ def cleanup(db):
         {
             quatf xformOp:orient = (-0.70710677, 0, 0, 0.70710677)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.13085816748795434, 0.14206234752441513, 0.7432891217007136)
+            double3 xformOp:translate = (-0.12, 0.153210211593883, 0.7432891217007136)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -1097,10 +1098,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.7170595, 0, 0, -0.697012)
+            quatf xformOp:orient = (0.7299567, 0, 0, -0.68349344)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.16559859218033207, -0.2971571212029248, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.1002516551949982, -0.9949621126609111, 0, 0), (0.9949621126609111, 0.1002516551949982, 0, 0), (0, 0, 1, 0), (-0.13408359814818083, -0.23022042562094094, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.16593755172944452, -0.2885032150641053, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1176,7 +1178,7 @@ def cleanup(db):
         {
             quatf xformOp:orient = (-0.70710677, 0, 0, 0.70710677)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12801706712801894, 0.02707616849215492, 0.7323891221373175)
+            double3 xformOp:translate = (-0.1171588996400646, 0.038224032561622795, 0.7323891221373175)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             def Xform "entity" (

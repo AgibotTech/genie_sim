@@ -12,7 +12,7 @@ import pytest
 from geniesim_cli.commands import benchmark
 
 
-@pytest.mark.parametrize("runtime", [None, "isaac", "newton"])
+@pytest.mark.parametrize("runtime", [None, "isaac", "newton", "libuipc"])
 def test_runtime_selection_preserves_config_and_forwarded_arguments(monkeypatch, tmp_path, runtime):
     package = tmp_path / "benchmark with spaces"
     config = package / "config/task.yaml"
@@ -30,8 +30,8 @@ def test_runtime_selection_preserves_config_and_forwarded_arguments(monkeypatch,
     result = benchmark._build_app_cmd(config, ["--literal", "value with spaces"], "localhost:8999")
 
     expected = (
-        ["newton-python", "-m", "geniesim_benchmark.newton.runner"]
-        if runtime == "newton"
+        ["newton-python", "-m", f"geniesim_benchmark.{runtime}.runner"]
+        if runtime in ("newton", "libuipc")
         else ["isaac-python", str(package / "app/app.py")]
     )
     assert result == [

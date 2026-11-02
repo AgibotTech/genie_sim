@@ -26,6 +26,9 @@ JOINT_GROUPS = {
     "head": tuple(f"idx{11 + i:02d}_head_joint{i + 1}" for i in range(3)),
 }
 
+# The existing chef generalization contract: replace XY, preserve Z/yaw/joints.
+DEFAULT_RULES = 'BASE_XY_RANGE = 0.05\nrandom.uniform(-BASE_XY_RANGE, BASE_XY_RANGE)\nf"{d:.4f}"\n'
+
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -103,8 +106,8 @@ def generate_layouts(
     source_launcher: Path,
     source_evaluation: Path,
     pose_path: Path | None = None,
-    rules_path: Path,
-    count: int = 20,
+    rules_path: Path | None = None,
+    count: int = 10,
     seed: int = 20261021,
 ) -> dict:
     """Write a portable bundle following the supplied script's XY-only rule.
@@ -125,11 +128,12 @@ def generate_layouts(
         "scene": Path(source_scene).expanduser().resolve(strict=True),
         "launcher": Path(source_launcher).expanduser().resolve(strict=True),
         "evaluation": Path(source_evaluation).expanduser().resolve(strict=True),
-        "rules": Path(rules_path).expanduser().resolve(strict=True),
     }
+    if rules_path is not None:
+        inputs["rules"] = Path(rules_path).expanduser().resolve(strict=True)
     if pose_path is not None:
         inputs["pose"] = Path(pose_path).expanduser().resolve(strict=True)
-    rules = inputs["rules"].read_text()
+    rules = inputs["rules"].read_text() if rules_path is not None else DEFAULT_RULES
     ranges = re.findall(r"^BASE_XY_RANGE\s*=\s*([0-9.eE+-]+)\b", rules, re.MULTILINE)
     if len(ranges) != 1 or float(ranges[0]) != 0.05 or "random.uniform(-BASE_XY_RANGE, BASE_XY_RANGE)" not in rules:
         raise ValueError("rules must contain the supported BASE_XY_RANGE = 0.05 uniform XY rule")
@@ -148,8 +152,8 @@ def generate_layouts(
     else:
         pose, joints = _pose(inputs["pose"])
         pose_snapshot = inputs["pose"].read_bytes()
-    if evaluation.get("episodes") != 1:
-        raise ValueError("each layout requires one fresh-engine episode")
+    if type(evaluation.get("episodes")) is not int or evaluation["episodes"] < 1:
+        raise ValueError("each layout requires a positive episode count")
     params = launcher["genie_sim_engine"]["ros__parameters"]
     if params.get("physics_engine_visualizer") != "isaacsim":
         raise ValueError("Wuji layouts require the Isaac Sim renderer")
@@ -210,7 +214,7 @@ def generate_layouts(
             (staging / folder).mkdir()
         shutil.copyfile(inputs["plugin"], staging / "scenes" / plugin_name)
         (staging / "initial_pose.yaml").write_bytes(pose_snapshot)
-        shutil.copyfile(inputs["rules"], staging / "generalization_rules.sh")
+        (staging / "generalization_rules.sh").write_text(rules)
         for layout_id, (raw, (x, y)) in enumerate(samples):
             stem_prefix = "scene_wuji_chef_oldpose_layout" if preserve_source_pose else "scene_wuji_chef_layout"
             stem = f"{stem_prefix}_{layout_id:02d}"
@@ -233,6 +237,8 @@ def generate_layouts(
             ] = f"layout_{layout_id:02d}_isaac.log"
             (staging / paths["launcher"]).write_text(yaml.safe_dump(run_launcher, allow_unicode=True, sort_keys=False))
             run_evaluation = copy.deepcopy(evaluation)
+            if "num_instances" in run_evaluation.get("benchmark", {}):
+                run_evaluation["benchmark"].update(num_instances=1, instance_id=layout_id)
             run_evaluation["launcher"] = f"../{paths['launcher']}"
             (staging / paths["evaluation"]).write_text(
                 yaml.safe_dump(run_evaluation, allow_unicode=True, sort_keys=False)
@@ -241,7 +247,7 @@ def generate_layouts(
                 {
                     "layout_id": layout_id,
                     **paths,
-                    "manifest_subpath": f"background/common/runtime/{stem}/manifest.json",
+                    "manifest_subpath": f"scenes/{stem}/manifest.json",
                     "base_pose": expected["robot"]["init_base_pose"],
                     "raw_base_xy": list(raw),
                     "sha256": {key: _sha256(staging / path) for key, path in paths.items()},
@@ -303,7 +309,7 @@ def _bringup_config() -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--rules", type=Path, required=True, help="reference run_chef_scene.sh; never executed")
+    parser.add_argument("--rules", type=Path, help="reference run_chef_scene.sh; default: built-in XY-only rule")
     parser.add_argument(
         "--pose", type=Path, help="explicit 22-joint radians override; default preserves the source scene pose"
     )
@@ -312,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--evaluation", type=Path, default=Path(__file__).parents[1] / "config/g2crsbwuji_dexmanip_wok_flip.yaml"
     )
-    parser.add_argument("--count", type=int, default=20)
+    parser.add_argument("--count", type=int, default=10)
     parser.add_argument("--seed", type=int, default=20261021)
     options = parser.parse_args(argv)
     config_dir = _bringup_config() if options.scene is None or options.launcher is None else None

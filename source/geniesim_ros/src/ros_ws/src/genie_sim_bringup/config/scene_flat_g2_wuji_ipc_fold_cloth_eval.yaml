@@ -1,7 +1,7 @@
 # Opt-in fold_cloth evaluation, derived from scene_flat_g2_wuji_ipc_fold_cloth.yaml.
 # CPU600/barrier10 couples to launcher IPC60; only the renderer freezes snapshots.
 # Robot/sysid geometry, drives and task materials retain the target canonical definition.
-# Robot initial joint/base task state follows the pinned original evaluator scene.
+# Robot initial joint angles use the supplied task pose; revolute values are degrees.
 # Episode owner injects a unique state_recording output directory.
 robot:
   robot_name: G2_crsB_wuji
@@ -27,6 +27,8 @@ robot:
     y: 0.0
     z: 0.0
     theta: 0.0
+  # Supplied task pose: radians converted to degrees for the engine contract.
+  # Body/head remain welded at these angles; hand joint defaults are retained.
   init_joint_pos:
     idx01_body_joint1: -46.00278137105379
     idx02_body_joint2: 86.21868901128627
@@ -34,22 +36,22 @@ robot:
     idx04_body_joint4: 0.0
     idx05_body_joint5: 0.0
     idx11_head_joint1: 0.0
-    idx12_head_joint2: -0.05729577951308232
+    idx12_head_joint2: -0.057295779513082325
     idx13_head_joint3: 25.783100780887047
-    idx21_arm_l_joint1: -20.0
-    idx22_arm_l_joint2: -45.0
-    idx23_arm_l_joint3: 0.0
-    idx24_arm_l_joint4: -75.0
-    idx25_arm_l_joint5: 0.0
-    idx26_arm_l_joint6: -55.0
-    idx27_arm_l_joint7: 0.0
-    idx61_arm_r_joint1: 20.0
-    idx62_arm_r_joint2: -45.0
-    idx63_arm_r_joint3: 0.0
-    idx64_arm_r_joint4: -75.0
-    idx65_arm_r_joint5: 0.0
-    idx66_arm_r_joint6: -55.0
-    idx67_arm_r_joint7: 0.0
+    idx21_arm_l_joint1: 43.44446752001515
+    idx22_arm_l_joint2: -42.0768745588174
+    idx23_arm_l_joint3: -86.4110309431117
+    idx24_arm_l_joint4: -87.37308437691586
+    idx25_arm_l_joint5: 16.067283561515136
+    idx26_arm_l_joint6: -52.72540977288278
+    idx27_arm_l_joint7: -48.49102248374793
+    idx61_arm_r_joint1: -43.44624368918006
+    idx62_arm_r_joint2: -42.07681726303788
+    idx63_arm_r_joint3: 86.40919747816727
+    idx64_arm_r_joint4: -87.37302708113636
+    idx65_arm_r_joint5: -16.067283561515136
+    idx66_arm_r_joint6: -52.725696251780334
+    idx67_arm_r_joint7: 48.49509048409337
     hand_l_thumb_joint1: 0.0
     hand_l_thumb_joint2: 0.0
     hand_l_thumb_joint3: 0.0

@@ -16,6 +16,9 @@ from geniesim_cli.commands import benchmark
 CONFIGS = Path(__file__).resolve().parents[2] / "geniesim_benchmark/src/geniesim_benchmark/config"
 RT_TASKS = {
     "g2crsbwuji_dexmanip_wok_flip": "newton",
+    "g2crsbwuji_dexmanip_cloth_hanger": "libuipc",
+    "g2crsbwuji_dexmanip_fold_cloth": "libuipc",
+    "g2crsbwuji_dexmanip_drawstring_bag": "libuipc",
 }
 
 
@@ -38,7 +41,7 @@ class BenchmarkRuntimeTests(unittest.TestCase):
                     with self.subTest(default=default, task=config.stem):
                         runtime = runtime_for_config(config)
                         cmd = benchmark._build_app_cmd(config, [], "localhost:8999")
-                        if runtime in ("newton",):
+                        if runtime in ("newton", "libuipc"):
                             selected_rt[config.stem] = runtime
                             self.assertEqual(cmd[:3], ["/usr/bin/python3.12", "-m", f"geniesim_benchmark.{runtime}.runner"])
                         elif runtime == "isaac":

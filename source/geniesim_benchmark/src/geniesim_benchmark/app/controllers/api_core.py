@@ -34,20 +34,14 @@ from isaacsim.core.utils.stage import get_current_stage
 from isaacsim.core.utils.xforms import get_world_pose
 
 from geniesim_benchmark.camera_calibration import capture_calibrations
-from geniesim_benchmark.control_observation import has_chassis_profile, has_control_profile
 from geniesim_benchmark.plugins.logger import Logger
-from geniesim_benchmark.g2_90d_chassis_profile import (
-    observe_g2_90d_chassis_state,
-    set_g2_90d_chassis_mode,
-)
-from geniesim_benchmark.benchmark.shared_control import guarded_control_write
 from geniesim_benchmark.app.render_scheduler import RenderCallTimeout, RenderLoopScheduler
-from geniesim_benchmark.startup_trace import StartupTrace
 
 logger = Logger()  # Create singleton instance
 from geniesim_benchmark.app.utils import RobotCfg
 from geniesim_benchmark.app.utils import material_changer, Light
 from geniesim_benchmark.app.controllers.cloth_pin import ClothPinController
+from geniesim_benchmark.app.controllers.fluid_reset import snapshot_fluid_particles, restore_fluid_particles
 from geniesim_benchmark.app.controllers.wheel_parking import AssetWheelParking
 from geniesim_benchmark.app.utils.utils import (
     get_rotation_matrix_from_quaternion,
@@ -56,6 +50,7 @@ from geniesim_benchmark.app.utils.utils import (
     rotation_matrix_to_quaternion,
 )
 from geniesim_benchmark.utils import system_utils
+from geniesim_benchmark.utils.sandbox_physics import prepare_sandbox_physics
 from geniesim_benchmark.utils.usd_utils import *
 from geniesim_benchmark.utils.ros_nodes.server_node import *
 from geniesim_benchmark.config.params import Config
@@ -92,7 +87,6 @@ class APICore:
         self.task_queue_on_physics_loop = queue.Queue()
         self._physics_tick_callbacks = {}
         self._physics_tick_callback_lock = threading.Lock()
-        self._g2_90d_chassis_state_provider = None
         self.benchmark_ros_node = None
         self.exit = False
         # Set by TaskBenchmark when the run hits an unrecoverable error (a
@@ -108,7 +102,6 @@ class APICore:
         self._shutdown_requested = threading.Event()
         self._shutdown_request = None
         self._shutdown_lock = threading.RLock()
-        self._shutdown_receipt = {}
         self.ui_builder: UIBuilder = ui_builder
         self.data = None
         self.Command = 0
@@ -132,9 +125,6 @@ class APICore:
         # (robot_cfg, scene_usd_path) of the robot+/World already on the stage.
         # Lets serial instances reuse them and swap only /Workspace.
         self._loaded_scene_key = None
-        self._teleop_epoch = 0
-        self._teleop_instance_id = ""
-        self._teleop_loading = True
         self.trajectory_list = None
         self.trajectory_index = 0
         self.trajectory_reached = False
@@ -181,10 +171,6 @@ class APICore:
         self.log_jaw_pocket_counts = getattr(config.app, "log_jaw_pocket_counts", False)
         self.enable_gripper_collision = getattr(config.app, "enable_gripper_collision", False)
 
-        self.profile_control_enabled = bool(getattr(config.benchmark, "control_mode", False)) or float(
-            getattr(config.benchmark, "startup_validation_seconds", 0.0) or 0.0
-        ) > 0.0
-        self.ui_builder.profile_control_enabled = self.profile_control_enabled
         self._is_vec_mode = getattr(config.benchmark, "enable_vec", 0) > 0
         # Vec mode forces on_demand_render: shared-cam renders are explicit
         # via render_once(); main-loop world.step(render=...) is wasted work.
@@ -226,6 +212,7 @@ class APICore:
         self.add_object_flag = False
         self.reset_flag = False
         self.init_frame_info = {}
+        self._fluid_reset_state = {}
         self.sensor_base_initialized = False
         self.robot_initialized = False
         self.index = 0
@@ -268,12 +255,24 @@ class APICore:
 
     def resume_physics(self):
         if self._physics_paused.is_set():
-            self._physics_paused.clear()
-            import omni.timeline
+            # In on-demand mode, timeline.play needs a Kit update before
+            # physics callbacks can run. Keep rendering requested until the
+            # main-thread scheduler has serviced that update.
+            resume_render = bool(self.on_demand_render)
+            if resume_render:
+                self.request_render()
+            try:
+                self._physics_paused.clear()
+                import omni.timeline
 
-            omni.timeline.get_timeline_interface().play()
-            self._main_loop_wake.set()
-            logger.info("[api_core] physics resumed")
+                omni.timeline.get_timeline_interface().play()
+                self._main_loop_wake.set()
+                if resume_render:
+                    self.run_on_render_loop(lambda: None)
+                logger.info("[api_core] physics resumed")
+            finally:
+                if resume_render:
+                    self.release_render()
 
     @property
     def physics_paused(self) -> bool:
@@ -350,17 +349,6 @@ class APICore:
             raise result["error"]
         return result.get("value")
 
-    def enqueue_guarded_physics_write(self, write_guard, write, *, label="control hold"):
-        """Queue a fenced write without waiting for the physics loop."""
-
-        def wrapper():
-            try:
-                guarded_control_write(write_guard, write)
-            except Exception as e:
-                logger.warning(f"{label} failed on physics loop: {e}")
-
-        self.task_queue_on_physics_loop.put(wrapper)
-
     def render_step(self):
         self._on_recording()
         self._on_playback()
@@ -376,35 +364,10 @@ class APICore:
         with self._physics_tick_callback_lock:
             self._physics_tick_callbacks.pop(str(name), None)
 
-    def register_g2_90d_chassis_state_provider(self, provider):
-        """Expose the controller's same-tick sample to observation capture."""
-
-        self._g2_90d_chassis_state_provider = provider
-
-    def get_g2_90d_chassis_control_state(self, after_tick_seq=0):
-        provider = self._g2_90d_chassis_state_provider
-        return provider(after_tick_seq=after_tick_seq) if provider is not None else None
-
     def physics_step(self, dt=None):
-        if dt is not None:
-            self._control_sim_time = getattr(self, "_control_sim_time", 0.0) + float(dt)
         world = self.ui_builder.my_world
         physics_dt = float(world.get_physics_dt())
         sim_time = float(world.current_time)
-        from geniesim_benchmark.control_observation import (
-            has_chassis_profile,
-            sample_roll_position_window,
-            sample_steer_position_window,
-        )
-
-        if has_chassis_profile(getattr(self, "robot_profile", None)) or getattr(
-            self, "_control_roll_position_window", None
-        ) is not None:
-            sample_roll_position_window(self)
-        if has_chassis_profile(getattr(self, "robot_profile", None)) or getattr(
-            self, "_control_steer_position_window", None
-        ) is not None:
-            sample_steer_position_window(self)
         with self._physics_tick_callback_lock:
             callbacks = tuple(self._physics_tick_callbacks.items())
         for name, callback in callbacks:
@@ -418,7 +381,6 @@ class APICore:
             task = None
         if task is not None:
             task()
-        # Persistent control must also run when no worker is submitting tasks.
         callback = getattr(self, "_chassis_servo_callback", None)
         if callback is not None and dt is not None:
             try:
@@ -467,7 +429,6 @@ class APICore:
         init_rotation,
         sub_task_name="",
         free_base=False,
-        collision_revision=None,
     ):
         self.run_on_render_loop(
             self._init_robot_cfg,
@@ -477,7 +438,6 @@ class APICore:
             init_rotation,
             sub_task_name,
             free_base,
-            collision_revision,
             timeout=_ROBOT_INITIALIZATION_TIMEOUT_SECONDS,
         )
 
@@ -495,7 +455,6 @@ class APICore:
 
     def _set_robot_cfg(self, robot_cfg: RobotCfg) -> None:
         self.robot_cfg = robot_cfg
-        self.robot_profile = robot_cfg.profile
 
     def init_robot_cfg_multi(
         self,
@@ -506,12 +465,8 @@ class APICore:
         sub_usd_paths,
         n_envs,
         env_spacing=20.0,
-        collision_revision=None,
     ):
         """Vec-mode entry point: build N cloned envs on a single stage."""
-        if collision_revision is not None:
-            raise ValueError("Control floor collision revisions require the scalar control scene")
-        self._require_no_floor_collision_for_vector()
         return self.run_on_render_loop(
             self._init_robot_cfg_multi,
             robot_cfg,
@@ -533,7 +488,6 @@ class APICore:
         n_envs,
         env_spacing,
     ):
-        self._require_no_floor_collision_for_vector()
         from omni.isaac.cloner import GridCloner
 
         self._set_robot_cfg(RobotCfg(str(system_utils.app_root_path()) + "/robot_cfg/" + robot_cfg))
@@ -551,6 +505,7 @@ class APICore:
         add_reference_to_stage(scene_usd_path, env0)
         # Filter on env0 first; cloner copies edits to other env clones.
         self._filter_objects(scene_usd_path, world_root=env0)
+        prepare_sandbox_physics(self._stage, scene_usd_path, world_root=env0)
 
         self.usd_objects["robot"] = SingleXFormPrim(
             prim_path=robot_prim_in_env0,
@@ -1145,46 +1100,14 @@ class APICore:
     def set_joint_positions(self, target_pose, joint_indices, is_trajectory):
         self.run_on_physics_loop(self._set_joint_positions, target_pose, joint_indices, is_trajectory)
 
-    def set_joint_positions_batched(self, items, write_guard=None, before_write=None):
-        """Batched variant: submit multiple (target_pose, joint_indices,
-        is_trajectory) groups in a single physics-loop round-trip.
+    def set_joint_positions_batched(self, items):
+        """Apply joint target groups together in one physics-loop round-trip."""
+        items = [item for item in items if item is not None and item[0] is not None]
+        if items:
+            return self.run_on_physics_loop(self._set_joint_positions_batched, items)
 
-        Saves N-1 physics-tick waits when an env step writes arm + gripper
-        + waist targets — instead of three serial run_on_physics_loop
-        hand-offs, the positions and indices are concatenated and applied
-        in one ArticulationAction.
-
-        Groups are split into trajectory and non-trajectory buckets: in
-        trajectory mode the articulation's controller integrates targets,
-        so we can safely concatenate; in non-trajectory mode the call is a
-        direct set, also safe to concatenate. Mixed trajectory flags fall
-        back to sequential execution within one physics tick.
-
-        ``before_write`` is a trusted caller's prerequisite on that same
-        physics tick, inside ``write_guard``. A failure prevents the joint
-        batch; any prerequisite side effects retain their own recovery facts.
-        """
-        items = [it for it in items if it is not None and it[0] is not None]
-        if not items:
-            return True
-
-        def apply():
-            if before_write is not None:
-                before_write()
-            self._set_joint_positions_batched(items)
-
-        return self.run_on_physics_loop(
-            guarded_control_write,
-            write_guard,
-            apply,
-        )
-
-    def apply_chassis_action(self, positions, velocities, write_guard=None):
-        return self.run_on_physics_loop(
-            guarded_control_write,
-            write_guard,
-            lambda: self._apply_chassis_action(positions, velocities),
-        )
+    def apply_chassis_action(self, positions, velocities):
+        return self.run_on_physics_loop(self._apply_chassis_action, positions, velocities)
 
     def add_usd_obj(
         self,
@@ -1292,86 +1215,11 @@ class APICore:
         with self._shutdown_lock:
             return copy.deepcopy(self._shutdown_request)
 
-    def update_shutdown_receipt(self, **fields):
-        with self._shutdown_lock:
-            self._shutdown_receipt.update(copy.deepcopy(fields))
-
-    def shutdown_receipt(self):
-        with self._shutdown_lock:
-            receipt = copy.deepcopy(self._shutdown_receipt)
-        journal = getattr(self, "_shutdown_motion_journal", None)
-        if journal is not None:
-            receipt["raw_motion"] = journal.receipt()
-        return receipt
-
     def physics_queue_empty(self):
         return self.task_queue_on_physics_loop.empty()
 
     def render_receipt(self):
         return self._render_scheduler.receipt()
-
-    def _shutdown_motion_source(self):
-        from geniesim_benchmark.shutdown_motion import profile_revision
-
-        return {
-            "receipt_id": os.environ.get("GENIESIM_CONTROL_RECEIPT_ID"),
-            "source_sha": os.environ.get("GENIESIM_SOURCE_SHA"),
-            "assets_sha": os.environ.get("GENIESIM_ASSETS_SHA"),
-            "profile_revision": profile_revision(self.robot_profile),
-        }
-
-    def create_shutdown_motion_journal(self):
-        """Standstill journal for the G2_90d shutdown contract, or None when the
-        robot has no calibrated profile (the contract is profile-derived). The
-        contract measures whole-G2-body standstill including the chassis, so a
-        fixed-base arm profile has none and its shutdown stays unqualified."""
-        if not has_chassis_profile(getattr(self, "robot_profile", None)):
-            self._shutdown_motion_journal = None
-            return None
-        from geniesim_benchmark.g2_90d_joint_names import G2_90D_WAIST_JOINTS, G2_90D_HEAD_JOINTS
-        from geniesim_benchmark.shutdown_motion import ShutdownMotionJournal, shutdown_contract
-
-        self._shutdown_motion_journal = ShutdownMotionJournal(
-            source=self._shutdown_motion_source(),
-            **shutdown_contract(
-                self.robot_profile,
-                waist_joint_names=G2_90D_WAIST_JOINTS,
-                head_joint_names=G2_90D_HEAD_JOINTS,
-                robot_root=self.robot_prim_path,
-            ),
-        )
-        return self._shutdown_motion_journal
-
-    def measure_shutdown_motion(self):
-        """Detach the native measurement after the worker and queues have drained."""
-        from geniesim_benchmark.shutdown_motion import capture_shutdown_sample
-
-        errors = []
-        articulation = world = None
-        source = {}
-        try:
-            articulation = self._get_articulation()
-            world = self.ui_builder.my_world
-            source = self._shutdown_motion_source()
-        except Exception as error:
-            errors.append(f"initial shutdown context: {type(error).__name__}: {error}"[:512])
-        sample = capture_shutdown_sample(
-            articulation,
-            world,
-            source,
-            read_stage_id=lambda: omni.usd.get_context().get_stage_id(),
-        )
-        try:
-            if (
-                articulation is not self._get_articulation()
-                or world is not self.ui_builder.my_world
-                or source != self._shutdown_motion_source()
-            ):
-                errors.append("shutdown physical source changed during capture")
-        except Exception as error:
-            errors.append(f"final shutdown context: {type(error).__name__}: {error}"[:512])
-        sample["errors"].extend(errors)
-        return sample
 
     def post_process(self):
         pass
@@ -1547,9 +1395,7 @@ class APICore:
             return self._read_shared_depths(dir)
         return self.run_on_physics_loop(self._get_observation_depth, dir)
 
-    def get_obs_bundle(
-        self, image_dirs=None, depth_dirs=None, link_names=None, want_joint_state=True, optional_depth=False, **kwargs
-    ):
+    def get_obs_bundle(self, image_dirs=None, depth_dirs=None, link_names=None, want_joint_state=True, **kwargs):
         """Fetch image / depth / joint_state / link poses in one physics-loop
         round-trip. Each component is optional — pass ``None`` (or an empty
         sequence for ``link_names``) to skip it.
@@ -1557,7 +1403,7 @@ class APICore:
         The single-tick batching saves N-1 physics-tick waits per
         env.step() vs calling get_observation_image/depth/joint_state/
         link_world_pose serially. See pi_env.PiEnv.get_observation."""
-        args = (image_dirs, depth_dirs, link_names, want_joint_state, optional_depth)
+        args = (image_dirs, depth_dirs, link_names, want_joint_state)
         if (
             image_dirs is None
             or depth_dirs is None
@@ -1681,58 +1527,6 @@ class APICore:
         self.ui_builder.my_world.step(render=False)
         logger.info(f"robot base reset to pos={list(map(float, position))} quat={list(map(float, orientation))}")
 
-    def teleport_robot_base_atomic(self, pos, quat):
-        """Teleport robot base mid-episode without nested world.step().
-
-        Same semantics as reset_robot_base but safe to call during env.step()
-        (doesn't trigger PhysX reentry errors). Sequence: unanchor → move →
-        re-anchor → sync drive targets, all in one render-loop task.
-        """
-        return self.run_on_render_loop(self._teleport_robot_base_atomic, pos, quat)
-
-    def _teleport_robot_base_atomic(self, pos, quat):
-        """Inner atomic teleport: unanchor → move → anchor → sync → release.
-
-        Mirrors reset()'s free-base teleport sequence: temporarily weld the
-        base to prevent tipping while drive targets snap to the new pose, sync
-        those targets to eliminate residual error, then release so the chassis
-        can drive. Without the final unanchor, the base stays welded to the
-        world and ignores all subsequent wheel commands.
-        """
-        self._clear_wheel_parking(self._get_articulation())
-        # 1. Unanchor
-        self._set_robot_base_anchored(False)
-
-        # 2. Move (stripped-down _reset_robot_base without world.step)
-        articulation = self._get_articulation()
-        if articulation is None or getattr(self, "env_root", ""):
-            self._update_robot_base(pos, quat)
-        else:
-            position = np.asarray(pos, dtype=np.float32)
-            orientation = np.asarray(quat, dtype=np.float32)
-            try:
-                articulation.set_world_pose(position, orientation)
-                articulation.set_linear_velocity(np.zeros(3, dtype=np.float32))
-                articulation.set_angular_velocity(np.zeros(3, dtype=np.float32))
-                num_dof = articulation.num_dof
-                if num_dof:
-                    articulation.set_joint_velocities(np.zeros(num_dof, dtype=np.float32))
-            except Exception as e:
-                logger.warning(f"articulation teleport failed ({e}); xform fallback")
-                self._update_robot_base(pos, quat)
-
-        # 3. Re-anchor (prevents base tipping during drive-target snap)
-        self._set_robot_base_anchored(True)
-
-        # 4. Sync drive targets to the new pose (no residual error = no kick)
-        if articulation is not None:
-            self.sync_drive_targets_to_current(articulation, log_label="teleport")
-
-        # 5. Release the anchor so the chassis can drive
-        self._set_robot_base_anchored(False)
-
-        logger.info(f"[teleport-atomic] base → ({pos[0]:.3f}, {pos[1]:.3f}, {pos[2]:.3f})")
-
     def set_robot_base_anchored(self, anchored: bool):
         """Weld / release the robot base against the world.
 
@@ -1816,9 +1610,6 @@ class APICore:
     def get_robot_base_motion(self):
         return self.run_on_physics_loop(self._get_robot_base_motion)
 
-    def get_g2_90d_chassis_state(self):
-        return self.run_on_render_loop(self._get_g2_90d_chassis_state)
-
     def _get_robot_base_motion(self):
         articulation = self._get_articulation()
         if articulation is None:
@@ -1836,9 +1627,6 @@ class APICore:
 
     def _robot_base_anchored(self):
         """True/False if the robot carries a world weld, None if it has none."""
-        profile = getattr(self, "robot_profile", None) or {}
-        if has_chassis_profile(profile) and getattr(self, "profile_control_enabled", False):
-            return self._get_g2_90d_chassis_state()["anchor"]["enabled"]
         stage = get_current_stage()
         root_path = getattr(self, "robot_prim_path", None)
         root = stage.GetPrimAtPath(root_path) if root_path else None
@@ -1857,23 +1645,6 @@ class APICore:
 
     def _set_robot_base_anchored(self, anchored: bool) -> int:
         stage = get_current_stage()
-        profile = getattr(self, "robot_profile", None) or {}
-        if has_chassis_profile(profile) and getattr(self, "profile_control_enabled", False):
-            evidence = set_g2_90d_chassis_mode(
-                stage,
-                profile,
-                self._env_path,
-                anchored=anchored,
-                prepare_anchor=self._realign_world_anchor_checked if anchored else None,
-            )
-            transition_id = int(getattr(self, "_g2_90d_chassis_transition_id", 0)) + 1
-            self._g2_90d_chassis_transition_id = transition_id
-            evidence["transition_id"] = transition_id
-            self._last_g2_90d_chassis_profile_evidence = evidence
-            logger.info(
-                f"G2_90d base {'anchored' if anchored else 'released'} " f"by atomic chassis transition {transition_id}"
-            )
-            return 1
 
         root_path = getattr(self, "robot_prim_path", None)
         root = stage.GetPrimAtPath(root_path) if root_path else None
@@ -1894,23 +1665,6 @@ class APICore:
             count += 1
         logger.info(f"robot base {'anchored' if anchored else 'released'} ({count} world fixed joint(s))")
         return count
-
-    def _get_g2_90d_chassis_state(self):
-        profile = getattr(self, "robot_profile", None) or {}
-        if not has_chassis_profile(profile):
-            raise RuntimeError("chassis state requested without a chassis control profile")
-        state = observe_g2_90d_chassis_state(
-            get_current_stage(),
-            profile,
-            self._env_path,
-        )
-        state["transition_id"] = int(getattr(self, "_g2_90d_chassis_transition_id", 0))
-        state["last_transition"] = getattr(
-            self,
-            "_last_g2_90d_chassis_profile_evidence",
-            None,
-        )
-        return state
 
     @staticmethod
     def _pose_matrix(pos, quat_wxyz) -> "Gf.Matrix4d":
@@ -2084,9 +1838,7 @@ class APICore:
         for prim in stage.Traverse():
             if prim.IsA(UsdGeom.Xform):
                 for mesh_prim in Usd.PrimRange(prim):
-                    if mesh_prim.IsA(UsdGeom.Mesh) or (
-                        include_geom_subsets and mesh_prim.IsA(UsdGeom.Subset)
-                    ):
+                    if mesh_prim.IsA(UsdGeom.Mesh) or (include_geom_subsets and mesh_prim.IsA(UsdGeom.Subset)):
                         mesh_path = str(mesh_prim.GetPath())
 
                         if mesh_path in processed_meshes:
@@ -2140,6 +1892,7 @@ class APICore:
                 update_stage()
                 time.sleep(0.01)
             self.init_frame_info = store_init_physics(robot_articulation, self._physics_info)
+        self._fluid_reset_state = snapshot_fluid_particles(get_current_stage(), getattr(self, "env_root", ""))
 
     def _get_joint_state_dict(self):
         # Vec view: read from per-env articulation.
@@ -2206,39 +1959,19 @@ class APICore:
             self.robot_prim_path + "/base_link",
         )
 
-    def _get_obs_bundle(self, image_dirs, depth_dirs, link_names, want_joint_state, optional_depth=False):
+    def _get_obs_bundle(self, image_dirs, depth_dirs, link_names, want_joint_state):
         out = {}
         if image_dirs is not None:
             out["images"] = self.robot_interface.get_observation_image(image_dirs)
             out["camera_samples"] = self.robot_interface.get_camera_samples(image_dirs)
         if depth_dirs is not None:
-            try:
-                depth = self.robot_interface.get_observation_depth(depth_dirs)
-                if optional_depth and image_dirs is not None:
-                    after_depth_samples = self.robot_interface.get_camera_samples(image_dirs)
-                    if after_depth_samples != out.get("camera_samples"):
-                        out["private_depth_unavailable"] = True
-                    else:
-                        out["depth"] = depth
-                else:
-                    out["depth"] = depth
-            except Exception:
-                if not optional_depth:
-                    raise
-                out["private_depth_unavailable"] = True
+            out["depth"] = self.robot_interface.get_observation_depth(depth_dirs)
         if image_dirs is not None and out.get("depth") and getattr(self, "want_camera_calibration", False):
-            out["calibration"] = self._get_observation_calibration(
-                image_dirs, out.get("images") or {}, out["depth"]
-            )
+            out["calibration"] = self._get_observation_calibration(image_dirs, out.get("images") or {}, out["depth"])
         if want_joint_state:
-            out["simulation_time"] = getattr(self, "_control_sim_time", 0.0)
+            out["simulation_time"] = float(self.ui_builder.my_world.current_time)
             out["joint_state"] = self.robot_interface.get_joint_state_dict()
-            if not getattr(self, "profile_control_enabled", False):
-                out["chassis_motion"] = self._get_chassis_motion_state()
-            if (getattr(self, "robot_profile", None) or {}).get("name"):
-                from geniesim_benchmark.control_observation import capture_measured
-
-                out["measured"] = capture_measured(self)
+            out["chassis_motion"] = self._get_chassis_motion_state()
         if link_names:
             poses = {}
             for name in link_names:
@@ -2316,15 +2049,6 @@ class APICore:
         self.gripper_type = robot.gripper_type
         self.gripper_max_force = robot.gripper_max_force
         self.init_joint_position = robot.init_joint_position
-        self.robot_profile = robot.profile
-        if self.profile_control_enabled and has_chassis_profile(self.robot_profile):
-            # Normalize the asset to the anchored chassis state before the
-            # articulation view is created (see prepare_anchored_wheel_collisions).
-            from geniesim_benchmark.g2_90d_chassis_profile import prepare_anchored_wheel_collisions
-
-            prepared = prepare_anchored_wheel_collisions(get_current_stage(), self.robot_profile, self._env_path)
-            if prepared:
-                logger.info(f"wheel collisions deactivated before articulation initialization: {prepared}")
         self.ui_builder._init_solver(robot, enable_curobo, 0)
         self.past_position = [0, 0, 0]
         self.past_rotation = [1, 0, 0, 0]
@@ -2355,9 +2079,7 @@ class APICore:
             self.sensor_base.publish_joint(robot_prim=self.robot_prim_path)
             self.ros_node_initialized = True
 
-    def _reload_scenes(self, sub_usd_path, startup_trace):
-        self._teleop_epoch += 1
-        self._teleop_instance_id = os.path.basename(os.path.dirname(sub_usd_path)) if sub_usd_path else ""
+    def _reload_scenes(self, sub_usd_path):
 
         ws_prim = get_prim_at_path("/Workspace")
         workspace_replaced = False
@@ -2377,19 +2099,10 @@ class APICore:
                 if robot_obj is not None:
                     self.usd_objects["robot"] = robot_obj
 
-            startup_trace.run_phase(
-                "workspace_reference",
-                add_reference_to_stage,
-                sub_usd_path,
-                "/Workspace",
-                details={"usd_path": str(sub_usd_path), "prim_path": "/Workspace"},
-            )
+            add_reference_to_stage(sub_usd_path, "/Workspace")
             logger.info(f"Added new Workspace from: {sub_usd_path}")
         if workspace_replaced:
-            startup_trace.run_phase(
-                "workspace_reinitialization",
-                self._reinitialize_workspace,
-            )
+            self._reinitialize_workspace()
 
     def _reinitialize_workspace(self):
         # A timeline stop reverts every simulated prim to its authored USD
@@ -2454,6 +2167,7 @@ class APICore:
     def _add_background_reference(self, scene_usd_path):
         add_reference_to_stage(scene_usd_path, "/World")
         self._filter_objects(scene_usd_path)
+        prepare_sandbox_physics(self._stage, scene_usd_path)
 
     def _configure_physics_scene(self):
         self.scene = UsdPhysics.Scene.Define(self._stage, Sdf.Path("/physicsScene"))
@@ -2555,59 +2269,14 @@ class APICore:
         self,
         robot_cfg,
         scene_usd,
-        init_position=[0, 0, 0],
-        init_rotation=[1, 0, 0, 0],
+        init_position=(0, 0, 0),
+        init_rotation=(1, 0, 0, 0),
         sub_usd_path="",
         free_base=False,
-        collision_revision=None,
-    ):
-        render_call = self.render_receipt().get("running")
-        render_call_sampled_at_monotonic_ns = time.monotonic_ns()
-        startup_trace = StartupTrace.from_environment(
-            render_call=render_call,
-            render_call_sampled_at_monotonic_ns=render_call_sampled_at_monotonic_ns,
-            error_sink=lambda error: logger.warning(
-                f"Startup phase trace disabled after write failure: {type(error).__name__}: {error}"
-            ),
-        )
-        with startup_trace.startup(
-            details={
-                "robot_cfg": str(robot_cfg),
-                "scene_usd": str(scene_usd),
-                "workspace_usd": str(sub_usd_path),
-                "free_base": bool(free_base),
-                "collision_revision": collision_revision,
-            }
-        ):
-            return self._init_robot_cfg_traced(
-                robot_cfg,
-                scene_usd,
-                init_position,
-                init_rotation,
-                sub_usd_path,
-                free_base,
-                startup_trace,
-                collision_revision,
-            )
-
-    def _init_robot_cfg_traced(
-        self,
-        robot_cfg,
-        scene_usd,
-        init_position,
-        init_rotation,
-        sub_usd_path,
-        free_base,
-        startup_trace,
-        collision_revision=None,
     ):
         scene_usd = str(np.random.choice(scene_usd)) if type(scene_usd) == list else scene_usd
         scene_usd_path = str(system_utils.assets_path()) + "/" + str(scene_usd)
-        scene_key = self._robot_scene_key(robot_cfg, scene_usd_path, free_base, collision_revision)
-        self._validate_floor_collision_request(collision_revision, scene_key, sub_usd_path)
-        if collision_revision is not None and self._loaded_scene_key is None:
-            self._floor_collision_attempted = True
-        self._teleop_loading = True
+        scene_key = self._robot_scene_key(robot_cfg, scene_usd_path, free_base)
         self._clear_wheel_parking()
 
         # Robot + /World background are loaded once per scene and reused across
@@ -2616,15 +2285,11 @@ class APICore:
         # run hangs. A different scene (e.g. a list-valued scene_usd re-rolled
         # for background generalization) falls through to a full reload.
         if self._loaded_scene_key == scene_key:
-            self._reload_scenes(sub_usd_path, startup_trace)
-            startup_trace.run_phase(
-                "final_articulation_scan",
-                self._initialize_all_scene_articulations,
-            )
-            self._teleop_loading = False
+            self._reload_scenes(sub_usd_path)
+            self._initialize_all_scene_articulations()
             return
 
-        self._reload_scenes(sub_usd_path, startup_trace)
+        self._reload_scenes(sub_usd_path)
         self._set_robot_cfg(RobotCfg(str(system_utils.app_root_path()) + "/robot_cfg/" + robot_cfg))
         robot_usd_path = str(system_utils.assets_path()) + "/" + self.robot_cfg.robot_usd
         # A full reload re-adds /World and the robot prim. add_reference_to_stage
@@ -2634,48 +2299,22 @@ class APICore:
         for stale_path in ("/World", self.robot_cfg.robot_prim_path):
             if self._stage.GetPrimAtPath(stale_path).IsValid():
                 delete_prim(stale_path)
-        startup_trace.run_phase(
-            "robot_reference",
-            add_reference_to_stage,
-            robot_usd_path,
-            self.robot_cfg.robot_prim_path,
-            details={"usd_path": robot_usd_path, "prim_path": self.robot_cfg.robot_prim_path},
-        )
+        add_reference_to_stage(robot_usd_path, self.robot_cfg.robot_prim_path)
         self._apply_gripper_drive_max_force()
         init_position = list(init_position)
-        # G2_90d with a calibrated profile spawns at the profile's height.
-        # Other mobile-base (free_base) robots: the floor-plan init z is a 0
+        # For mobile-base (free_base) robots, the floor-plan init z is a 0
         # placeholder, but the chassis asset's authored root sits at its real
         # standing height (e.g. wheels at translate z=0.04). Read the authored z
         # BEFORE the SingleXFormPrim call overwrites it with 0, or every reset
         # spawns the chassis wheels through the floor mesh. Fixed-base arm tasks
         # (g2op_if etc.) keep the caller's z untouched.
-        if free_base and self.robot_cfg.profile:
-            init_position[2] = float(self.robot_cfg.profile["runtime_validation"]["robot_spawn_world_m"][2])
-        elif free_base or getattr(self, "task_config", {}).get("robot", {}).get("free_base", False):
+        if free_base or getattr(self, "task_config", {}).get("robot", {}).get("free_base", False):
             try:
                 authored_position, _ = get_world_pose(self.robot_cfg.robot_prim_path)
                 init_position[2] = float(authored_position[2])
             except Exception as e:
                 logger.warning(f"Failed to read robot's authored standing height, keeping caller z: {e}")
-        startup_trace.run_phase(
-            "background_reference",
-            self._add_background_reference,
-            scene_usd_path,
-            details={"usd_path": scene_usd_path, "prim_path": "/World"},
-        )
-        if collision_revision is not None:
-            from geniesim_benchmark.scene_floor import FloorCollisionLayer, THICKNESS_M
-
-            self._floor_collision_layer = startup_trace.run_phase(
-                "floor_collision_revision",
-                FloorCollisionLayer,
-                self._stage,
-                self.ui_builder.my_world,
-                THICKNESS_M,
-                details={"revision": collision_revision, "thickness_m": THICKNESS_M},
-            )
-            self._floor_collision_revision = collision_revision
+        self._add_background_reference(scene_usd_path)
         self.usd_objects["robot"] = SingleXFormPrim(
             prim_path=self.robot_cfg.robot_prim_path,
             position=init_position,
@@ -2692,11 +2331,7 @@ class APICore:
         self.robot_name = self.robot_cfg.robot_name
         self.material_changer = material_changer()
         # physics_scene settings
-        startup_trace.run_phase(
-            "physics_setup",
-            self._configure_physics_scene,
-            details={"prim_path": "/physicsScene"},
-        )
+        self._configure_physics_scene()
 
         with rep.get.prims(path_pattern=self.robot_cfg.robot_prim_path, prim_types=["Xform"]):
             rep.modify.semantics([("class", "robot")])
@@ -2725,48 +2360,14 @@ class APICore:
                 "/robot/split_aloha/split_aloha_mid_360_with_piper/split_aloha_mid_360_with_piper/top_camera_link/head"
             )
         time.sleep(1)
-        startup_trace.run_phase("world_play_robot_init", self._play)
+        self._play()
         time.sleep(1)
-        startup_trace.run_phase(
-            "final_articulation_scan",
-            self._initialize_all_scene_articulations,
-        )
+        self._initialize_all_scene_articulations()
         self._loaded_scene_key = scene_key
-        self._teleop_loading = False
 
     @staticmethod
-    def _robot_scene_key(robot_cfg, scene_usd_path, free_base, collision_revision=None):
-        return robot_cfg, scene_usd_path, bool(free_base), collision_revision
-
-    def _validate_floor_collision_request(self, revision, scene_key, sub_usd_path):
-        from geniesim_benchmark.scene_floor import validate_revision
-
-        validate_revision(revision)
-        active_revision = getattr(self, "_floor_collision_revision", None)
-        if self._loaded_scene_key is None and getattr(self, "_floor_collision_attempted", False):
-            raise RuntimeError("Incomplete control floor initialization requires a new cold process")
-        if revision is None and active_revision is None:
-            return
-        if self._loaded_scene_key is not None:
-            if self._loaded_scene_key != scene_key or active_revision != revision:
-                raise RuntimeError("Changing a control floor scene requires a new cold process")
-            return
-        if active_revision is not None:
-            raise RuntimeError("Incomplete control floor initialization requires a new cold process")
-        world = self.ui_builder.my_world
-        if world.is_playing() or world.current_time_step_index != 0:
-            raise RuntimeError("Control floor collision revision requires a cold world")
-        # Replacing an existing Workspace calls world.play() before the
-        # background is loaded. Reject that path before it can change the scene.
-        if sub_usd_path and get_prim_at_path("/Workspace").IsValid():
-            raise RuntimeError("Control floor collision revision requires a fresh Workspace")
-
-    def _require_no_floor_collision_for_vector(self):
-        if (
-            getattr(self, "_floor_collision_attempted", False)
-            or getattr(self, "_floor_collision_revision", None) is not None
-        ):
-            raise RuntimeError("Switching a control floor scene to vector mode requires a new cold process")
+    def _robot_scene_key(robot_cfg, scene_usd_path, free_base):
+        return robot_cfg, scene_usd_path, bool(free_base)
 
     def _set_joint_positions(self, target_pose, target_joint_indices, is_trajectory):
         # Vec view: write to per-env articulation directly.
@@ -3362,13 +2963,22 @@ class APICore:
         logger.info(f"Recording info saved to {file_path}")
 
     def _reset_env(self):
-        self._teleop_epoch += 1
         robot_articulation = self._get_articulation()
         self._clear_wheel_parking(robot_articulation)
         # init_frame_info may be empty in vec mode pre-collect_init_physics.
         if robot_articulation and getattr(self, "init_frame_info", None):
             reset_one_frame(robot_articulation, self.init_frame_info)
             self.reset_flag = False
+
+        # PBD fluid sets are not rigid bodies and are absent from init_frame_info.
+        # Restore their physical particle positions and clear momentum before
+        # the next simulation tick, without rebuilding articulation/camera views.
+        restore_fluid_particles(get_current_stage(), self._fluid_reset_state)
+        if self._fluid_reset_state and robot_articulation is not None:
+            # Joint position writes do not clear articulation momentum. The
+            # liquid scene must restart its robot at rest as well as its fluid.
+            # Preserve the historical reset path for rigid-only tasks.
+            robot_articulation.set_joint_velocities(np.zeros_like(robot_articulation.get_joint_velocities()))
 
         # reset_one_frame only covers rigidbody/articulation prims; the cloth
         # FEM mesh is neither, so it needs its own restore path. _reset_env
@@ -3487,10 +3097,7 @@ class APICore:
 
         articulation = self._get_articulation()
         action = ArticulationAction(joint_positions=positions, joint_velocities=velocities)
-        parking = (
-            None if getattr(self, "profile_control_enabled", False)
-            else self._get_wheel_parking_controller(articulation)
-        )
+        parking = self._get_wheel_parking_controller(articulation)
         if parking is not None:
             action = parking.filter_action(action)
         articulation.apply_action(action)
@@ -3511,9 +3118,7 @@ class APICore:
         return parking
 
     def _clear_wheel_parking(self, articulation=None):
-        paths = (
-            [articulation.prim_path] if articulation is not None else list(self._wheel_parking_controllers)
-        )
+        paths = [articulation.prim_path] if articulation is not None else list(self._wheel_parking_controllers)
         for path in paths:
             parking = self._wheel_parking_controllers.pop(path, None)
             if parking is not None:
@@ -4019,85 +3624,25 @@ class APICore:
             return self._current_articulation
         return self.ui_builder.articulation
 
-    def sync_drive_targets_to_current(
-        self, articulation=None, log_label="", *, preserve_grippers=False, controlled_joints=None
-    ):
-        """Command every joint's drive target to wherever it ACTUALLY is right
-        now, at zero velocity, so there is no residual position error left to
-        correct. Call this right before releasing a world-anchor weld: any
-        DOF with a real (nonzero) drive stiffness will otherwise snap toward
-        whatever stale target it was last given the instant the base is free
-        to move -- see _reload_scenes' call site for the failure mode this
-        was written for (a physics timeline stop/play reverting joint angles
-        to their authored USD state without also updating the drive target
-        that survives the reload untouched).
-
-        G2_90d (calibrated profile) treats any failure as fatal so an unweld
-        never follows a failed write. Every other robot only logs a warning
-        and returns False, keeping the benchmark path non-fatal."""
-        from geniesim_benchmark.control_observation import has_control_profile
-
-        strict = (
-            has_control_profile(getattr(self, "robot_profile", None))
-            and getattr(self, "profile_control_enabled", False)
-        )
+    def sync_drive_targets_to_current(self, articulation=None, log_label=""):
+        """Align drive targets with measured joint positions before releasing the base."""
         art = articulation if articulation is not None else self._get_articulation()
-        label = f" after {log_label}" if log_label else ""
         if art is None:
-            if strict:
-                raise RuntimeError(f"Cannot sync drive targets{label}: robot articulation is unavailable")
             return None
-        if not getattr(self, "profile_control_enabled", False):
-            self._clear_wheel_parking(art)
+        self._clear_wheel_parking(art)
         try:
             from isaacsim.core.utils.types import ArticulationAction
 
             current_positions = np.asarray(art.get_joint_positions(), dtype=float)
-            if current_positions.ndim != 1 or current_positions.size == 0:
+            if current_positions.ndim != 1 or current_positions.size == 0 or not np.all(np.isfinite(current_positions)):
                 raise RuntimeError("joint position sample is empty or malformed")
-            if not np.all(np.isfinite(current_positions)):
-                raise RuntimeError("joint position sample contains non-finite values")
-            if controlled_joints is not None:
-                previous = np.asarray(
-                    art.get_articulation_controller().get_applied_action().joint_positions, dtype=float
-                )
-                if previous.shape != current_positions.shape or not np.isfinite(previous).all():
-                    raise RuntimeError("Uncontrolled joint target readback is unavailable")
-                for index, name in enumerate(art.dof_names):
-                    if name not in controlled_joints:
-                        current_positions[index] = previous[index]
-            if preserve_grippers:
-                profile = getattr(self, "robot_profile", None) or {}
-                if not has_control_profile(profile):
-                    raise RuntimeError("Gripper hold requires a calibrated profile")
-                applied = art.get_articulation_controller().get_applied_action()
-                previous = np.asarray(applied.joint_positions, dtype=float)
-                if previous.shape != current_positions.shape:
-                    raise RuntimeError("Gripper target readback is unavailable")
-                names = list(art.dof_names)
-                for side in ("left", "right"):
-                    joint = profile["gripper"][side]["control_joint"]
-                    index = names.index(joint)
-                    target = previous[index]
-                    from geniesim_benchmark.control_observation import gripper_travel
-
-                    open_position, closed_position, _unit = gripper_travel(profile["gripper"][side])
-                    low, high = sorted((closed_position, open_position))
-                    if not np.isfinite(target) or not low - 1e-6 <= target <= high + 1e-6:
-                        raise RuntimeError("Gripper target readback is outside calibrated limits")
-                    current_positions[index] = target
             art.apply_action(
-                ArticulationAction(
-                    joint_positions=current_positions,
-                    joint_velocities=np.zeros_like(current_positions),
-                )
+                ArticulationAction(joint_positions=current_positions, joint_velocities=np.zeros_like(current_positions))
             )
         except Exception as error:
-            if strict:
-                raise RuntimeError(f"Failed to sync drive targets to current joint state{label}: {error}") from error
             logger.warning(f"Failed to sync drive targets to current joint state ({log_label}): {error}")
             return False
-        logger.debug(f"Synced drive targets to actual joint state{label}")
+        logger.debug(f"Synced drive targets to actual joint state after {log_label}")
         return True
 
     # 3. The whole body joints move to the specified angle, Input:np.array([None])*28

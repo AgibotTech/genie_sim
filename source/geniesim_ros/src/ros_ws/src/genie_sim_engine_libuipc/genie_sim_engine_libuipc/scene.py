@@ -174,6 +174,7 @@ class IPCScene:
         self._meshes = {}
         self._bindings = []
         self._ranges = {}
+        self._rest_positions = []
         self._viewer_collider_shapes = ()
         self._cpu_model_bytes = None
         self._recording_body_bindings = {}
@@ -279,6 +280,7 @@ class IPCScene:
                 if obj.get("expected_particle_count", count) != count:
                     raise ValueError(f"{name} has {count} vertices; expected {obj['expected_particle_count']}")
                 start = builder.particle_count
+                reference = mesh.points if mesh.rest_points is None else mesh.rest_points
                 common = dict(pos=wp.vec3(*pos), rot=wp.quat(*rot), scale=scale, vel=wp.vec3(), label=name)
                 if kind == "tet_mesh":
                     youngs = obj["youngs_modulus"] * scale ** obj.get("youngs_modulus_scale_power", 0.0)
@@ -288,7 +290,7 @@ class IPCScene:
                     builder.add_soft_mesh(
                         **common,
                         mesh=newton.TetMesh(
-                            mesh.points, mesh.tets.flatten(), mu, lam, obj.get("damping", 0.0), obj["density"]
+                            reference, mesh.tets.flatten(), mu, lam, obj.get("damping", 0.0), obj["density"]
                         ),
                         add_surface_mesh_edges=True,
                         particle_radius=obj["particle_radius"] * scale,
@@ -300,7 +302,7 @@ class IPCScene:
                     density = obj["density"] if "density" in obj else obj["volume_density"] * thickness
                     builder.add_cloth_mesh(
                         **common,
-                        vertices=mesh.points,
+                        vertices=reference,
                         indices=mesh.triangles.flatten(),
                         density=density,
                         tri_kd=0.0,
@@ -310,6 +312,13 @@ class IPCScene:
                         particle_radius=0.5 * thickness,
                         **params,
                     )
+                if mesh.rest_points is not None:
+                    # Builder computes mass/elastic metrics from the reference first.
+                    # Model/state positions, rendering and native frame-zero recovery
+                    # must instead start from the authored collapsed configuration.
+                    rest_world = np.hstack((reference, np.ones((count, 1)))) @ mesh.xform[:, :3]
+                    self._rest_positions.append((start, rest_world))
+                    builder.particle_q[start : start + count] = [wp.vec3(*v) for v in mesh.world_points()]
                 self._bindings.append(
                     {
                         "mesh_prim_path": mesh.path,
@@ -349,6 +358,12 @@ class IPCScene:
         model.ipc_viewer_collider_shapes = self._viewer_collider_shapes
         model.ipc_recording_body_bindings = self._recording_body_bindings
         model.ipc_length_scale = self._length_scale
+        if self._rest_positions:
+            reference = model.particle_q.numpy().astype(np.float64)
+            for start, positions in self._rest_positions:
+                reference[start : start + len(positions)] = positions
+            reference.setflags(write=False)
+            model.ipc_rest_particle_q = reference
         if self._cpu_model_bytes is not None:
             model.ipc_cpu_model_bytes = self._cpu_model_bytes
         if self._deformable_publish_cfg is not None:

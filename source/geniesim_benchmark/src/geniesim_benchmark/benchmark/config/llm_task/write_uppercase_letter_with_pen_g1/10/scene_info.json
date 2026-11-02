@@ -22,15 +22,15 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        0.07033166945489164,
-        -0.15704867216513146,
+        0.14434308674295032,
+        -0.22510608080557817,
         0.9005
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.038942034525949465,
-        0.9992414712905884
+        -0.1308902720104891,
+        0.9913968613491875
       ],
       "keywords": [
         "paper",
@@ -93,7 +93,7 @@
   },
   "auxiliary_prims": [
     "/World/Objects/Ink",
-    "/World/Objects/paper/entity/writing_template_A"
+    "/World/Objects/paper/entity/writing_template"
   ],
   "writing_contract": {
     "grasp_index": 46,
@@ -205,8 +205,8 @@
     "grasp_description": "Same15mmTCPinsertion; task-localstaticangularcontactconfirmationand1mradpreload, actualsourcepad-depth>=10mm gate",
     "additional_TCP_insertion_depth_m": 0.015,
     "pregrasp_description": "Standardinit unchanged; openfingers. First40mmworldZraise, continuousCartesianmove toabove-penhover, thendescend. Allfingertip/sourcepen geometry checkedwith>=1mmgap beforeintentionalclosure.",
-    "target_letter": "G",
-    "stroke_count": 1
+    "target_letter": "T",
+    "stroke_count": 2
   },
   "host_physics_contract": {
     "source_definitions": [],
@@ -221,9 +221,9 @@
     "expected_physics_index_delta_per_step": 1
   },
   "copybook": {
-    "target_letter": "A",
-    "guide_prim": "/World/Objects/paper/entity/writing_template_A",
-    "target_sha256": "8781aae8e29454bffb22bd2729c8fd803a360d0d502b689d4494b388f0333b92",
+    "target_letter": "T",
+    "guide_prim": "/World/Objects/paper/entity/writing_template",
+    "target_sha256": "33c4f2126691fc7053e277d01c07a4b17d6fa2a80c4114399736544c5cfa05c9",
     "gray_geometry_authored_in_scene": true,
     "visual_only": true,
     "overlap_metrics": [
@@ -231,95 +231,75 @@
       "dice",
       "target_coverage",
       "ink_precision"
-    ]
+    ],
+    "physical_validation": "pending new physical trial"
   },
-  "scene_id": "write_uppercase_letter_with_pen_g1_10",
-  "task_name": "trace_copybook_a_g1_op_20261023",
-  "target_letter": "A",
+  "scene_id": 10,
+  "task_name": "trace_copybook_t_g1_op_20261023",
+  "target_letter": "T",
+  "physical_validation": {
+    "passed": false,
+    "status": "new layout; physical trial pending"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "generalization": {
-    "method": "bounded_xy_convex_hull_nonincreasing_edge_overhang",
-    "source_instance": 0,
-    "source_scene_sha256": "307b4661dc19b22f95ce45dbabe7342a2a0dba6fe971c5f6d9f41670a769b6a7",
-    "translations_m": {
-      "paper": [
-        0.002069980529893788,
-        -0.00010747803656884352,
-        0.0
+    "batch": "writing_generalization_4000_20261023",
+    "seed": 20261023,
+    "robot": "G1_OP",
+    "anchor": "G1_OP/v11/B",
+    "jitter_xy_m_yaw_deg": [
+      -0.0024278943002573506,
+      0.0020955272844199644,
+      -0.9590480913452923
+    ],
+    "anchor_variation": {
+      "paper_xy_m": [
+        0.004,
+        -0.01
+      ],
+      "paper_yaw_deg": 3,
+      "holder_xy_m": [
+        0,
+        0
       ]
     },
-    "z_and_orientations_preserved": true,
-    "source_group_convex_hull": "paper",
-    "grasp_and_robot_initial_state_preserved": true,
-    "source_table_edge_overhang_m": [
-      0.0,
-      0.0,
-      0.0,
-      0.0
-    ]
+    "accepted_attempt": 3,
+    "source_scene_sha256": "43ae15d02f9eedab2809b8962ccc1e6883755ec4908ee6b842755d8e3b9977ad",
+    "target_sha256": "33c4f2126691fc7053e277d01c07a4b17d6fa2a80c4114399736544c5cfa05c9",
+    "initial_robot_joints_unchanged": true,
+    "paper_height_unchanged": true,
+    "physical_success": false,
+    "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
   },
-  "authored_scene_state": {
-    "guide_origin_world_m": [
-      0.07033166945489164,
-      -0.15704867216513146,
-      0.9010199999999999
+  "seed": 2803147321,
+  "benchmark_generalization": {
+    "method": "bounded_paper_adapter",
+    "translation_m": [
+      0.06777098104320772,
+      -0.06720160808999814
     ],
-    "paper_translation_world_m": [
-      0.07033166945489164,
-      -0.15704867216513146,
-      0.9005
-    ],
-    "writing_contract_frame": "Source grasp calibration is retained; authored paper and guide transforms are recorded separately.",
-    "paper_root_world_column": [
-      [
-        0.9969670358939595,
-        0.07782499174951726,
-        0.0,
-        0.07033166945489164
-      ],
-      [
-        -0.07782499174951726,
-        0.9969670358939595,
-        0.0,
-        -0.15704867216513146
-      ],
-      [
-        0.0,
-        0.0,
-        1.0,
-        0.9005
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ]
-    ],
-    "paper_entity_world_column": [
-      [
-        0.9969670358939595,
-        0.07782499174951726,
-        0.0,
-        0.07033166945489164
-      ],
-      [
-        -0.07782499174951726,
-        0.9969670358939595,
-        0.0,
-        -0.15704867216513146
-      ],
-      [
-        0.0,
-        0.0,
-        1.0,
-        0.9005
-      ],
-      [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ]
-    ]
-  }
+    "yaw_delta_deg": -17.083047895722615,
+    "letter": "T",
+    "original_bulk_generator_available": false,
+    "pen_and_holder_fixed": true,
+    "instance_id": 10,
+    "source_instance": 5,
+    "source_scene_sha256": "dddac74b455a97cc5944edeb22e9b373b3310df60ec7214fa670030b15d50507",
+    "seed": 2803147321,
+    "visual_pool_index": 82,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.1360449833581434,
+    "source_slot": {
+      "letter": "T"
+    },
+    "distribution_adjustment": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending"
 }

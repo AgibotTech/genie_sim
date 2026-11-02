@@ -47,17 +47,10 @@ Sends a saved corobot `.pkl` payload to `ws://<HOST>:<PORT>` and validates the r
 1. Loads the payload.
 2. Connects to the WebSocket server using msgpack-numpy.
 3. Sends one request, receives one action chunk.
-4. Validates: schema (key presence), per-dim min/max/mean/std, NaN/Inf flags, out-of-range checks (kind-aware: JOINT_ABS in radians, EEF_ABS in meters+quat, gripper in [0,1]), large jumps from the input state.
+4. Requires `left_arm`, `right_arm`, `left_effector` and `right_effector` with nonempty numeric `(steps, dims)` chunks of equal length. Arm blocks contain `values` and use matching `JOINT_ABS` (the default) or `EEF_ABS` kinds; effector chunks are arrays.
+5. Checks per-dim min/max/mean/std, NaN/Inf, kind-aware soft bounds and large jumps from the input state. Grippers report their observed range without bounds checks.
 
 The payload is a corobot JSON-RPC envelope — `{"method": "infer", "params": {...}}` — and the server replies with `{"result": {"left_arm": …, "right_arm": …, …}}` (or `{"error": …}`).
-
-Required actions match the benchmark's corobot consumer: `left_arm` and
-`right_arm` contain numeric `values` chunks and matching `kind` values
-(`JOINT_ABS` by default, or `EEF_ABS`); `left_effector` and `right_effector`
-are numeric chunks. Each chunk has shape `[steps, dimensions]`, is non-empty,
-and has the same step count. `EEF_ABS` arm poses contain seven values
-(xyz + xyzw quaternion). Head and waist actions are optional. Numeric metadata
-such as scores or history settings cannot substitute for actions.
 
 ## Required Input
 
@@ -112,10 +105,11 @@ The script prints structured sections:
 
 | Outcome | Meaning |
 |---|---|
-| `✅ PASS — …` | Server is up and returning sane actions. |
+| `✅ PASS — …` | Server returned all required action fields and passed numeric checks on every requested iteration; this does not establish task success. |
 | `❌ Connection refused / timed out` | Server isn't listening on that host:port. Verify it's running and the firewall is open. |
 | `❌ … NaN / Inf …` | Server responded but model output is broken. Check the policy checkpoint and normalization stats — not a network problem. |
 | `❌ response missing 'result' dict` | Server schema mismatch — it isn't speaking the corobot JSON-RPC protocol the probe expects. |
+| `❌ response action schema mismatch: …` | Required action fields are missing or malformed; numeric metadata alone cannot pass. |
 | `❌ server error: …` | The server returned a JSON-RPC error; read the message. |
 | `⚠️  OOB[…]` flags | Action is finite but outside the kind's expected range. Could be a units bug (radians vs degrees) or an unnormalized output. |
 
@@ -130,6 +124,7 @@ It does **not** need Isaac Sim — pure-Python deps only. The CLI deliberately u
 
 ## Resources
 
+- [Quick start and smoke tests](../../benchmark_test_docs.md#ai-smoke-testing) — use the correct embodiment payload and keep transport checks separate from task success
 - **Script source**: `source/geniesim_benchmark/src/geniesim_benchmark/scripts/check_inference.py` (resolved via the `geniesim_benchmark` package)
 - **CLI dispatcher**: `source/geniesim_cli/src/geniesim_cli/commands/benchmark.py` (`_do_check_inference`)
 - **Payload dump hook**: `source/geniesim_benchmark/src/geniesim_benchmark/benchmark/policy/corobotpolicy.py`

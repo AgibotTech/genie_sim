@@ -188,7 +188,7 @@ AGILEX_GRIPPER_JOINT_NAMES = [
     "gripper_fr_active_joint",
 ]
 
-_EAGER_ROBOT_CONFIGS = {
+ROBOT_CONFIGS = {
     "G1_omnipicker": {
         "arm_joints": G1_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G1_LEFT_ARM_JOINT_NAMES,
@@ -250,6 +250,20 @@ _EAGER_ROBOT_CONFIGS = {
         "limit_val": 0.78,
         "label_state": label_state_omnipicker,
         "process_gripper_action": process_gripper_action_relabel,
+        "obs_extra_joints": [],
+        "init_gripper_open": [1.0, 1.0],
+    },
+    "G2_90d": {
+        "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
+        "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
+        "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
+        "gripper_joints": GP_90D_AJ_NAMES,
+        "waist_joints": G2_WAIST_JOINT_NAMES,
+        "head_joints": G2_HEAD_JOINT_NAMES,
+        "gripper_offset": 0.0,
+        "limit_val": 0.78,
+        "label_state": label_state_passthrough,
+        "process_gripper_action": process_gripper_action_passthrough,
         "obs_extra_joints": [],
         "init_gripper_open": [1.0, 1.0],
     },
@@ -339,72 +353,6 @@ _EAGER_ROBOT_CONFIGS = {
         "init_gripper_open": [0.04, 0.04],
     },
 }
-
-
-def _g2_90d_robot_config():
-    # Joint tables and gripper open positions come from the validated
-    # G2_90d.json profile. Imported here so other robots never read it.
-    from geniesim_benchmark.g2_90d_joint_config import G2_90D_RUNTIME_JOINTS
-    from geniesim_benchmark.g2_90d_profile import G2_90D_PROFILE
-
-    return {
-        **{name: list(joints) for name, joints in G2_90D_RUNTIME_JOINTS.items()},
-        "gripper_offset": 0.0,
-        "label_state": label_state_passthrough,
-        "process_gripper_action": process_gripper_action_passthrough,
-        "obs_extra_joints": [],
-        "init_gripper_open": [G2_90D_PROFILE["gripper"][side]["open_position_rad"] for side in ("left", "right")],
-    }
-
-
-class _RobotConfigs(dict):
-    """Robot config table whose profile-backed entries are built on first lookup."""
-
-    def __init__(self, eager, lazy):
-        super().__init__(eager)
-        self._lazy = dict(lazy)
-
-    def _materialize(self, key):
-        factory = self._lazy.pop(key, None)
-        if factory is not None:
-            dict.__setitem__(self, key, factory())
-
-    def _materialize_all(self):
-        for key in list(self._lazy):
-            self._materialize(key)
-
-    def __getitem__(self, key):
-        self._materialize(key)
-        return super().__getitem__(key)
-
-    def get(self, key, default=None):
-        self._materialize(key)
-        return super().get(key, default)
-
-    def __contains__(self, key):
-        return key in self._lazy or super().__contains__(key)
-
-    def __iter__(self):
-        self._materialize_all()
-        return super().__iter__()
-
-    def __len__(self):
-        return super().__len__() + len(self._lazy)
-
-    def keys(self):
-        self._materialize_all()
-        return super().keys()
-
-    def values(self):
-        self._materialize_all()
-        return super().values()
-
-    def items(self):
-        self._materialize_all()
-        return super().items()
-
-
-ROBOT_CONFIGS = _RobotConfigs(_EAGER_ROBOT_CONFIGS, {"G2_90d": _g2_90d_robot_config})
 
 DEFAULT_ROBOT_CONFIG = {
     "gripper_offset": 0.0,

@@ -14,6 +14,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from geniesim_benchmark.plugins.logger import Logger
+from geniesim_benchmark.utils.instance_base_pose import instance_base_pose
 from geniesim_benchmark.utils.name_utils import (
     G1_DUAL_ARM_JOINT_NAMES,
     G2_DUAL_ARM_JOINT_NAMES,
@@ -318,32 +319,16 @@ def apply_material_generalization(api_core, task_config):
     # door/table scope. Collect-then-bind only offers materials that already
     # live in each mesh's own Looks scope, so a keyword match never leaks
     # materials across unrelated assets.
-    material_change_list = material_config.get("targets", ["door", "table"])
-
     # Some tables (notably edited/table_000) bind their tabletop material on
     # a GeomSubset rather than its parent Mesh. Opt in for those assets; the
     # default keeps the existing material choices for other tasks unchanged.
     material_info = api_core.collect_material_info(
         include_geom_subsets=material_config.get("include_geom_subsets", False)
     )
-    allowed_names = set(material_config.get("allowed_materials", []))
-    share_by_parent = material_config.get("share_by_parent", False)
-    chosen_by_parent = {}
-    for mesh_path, material_list in material_info.items():
-        if not any(keyword in mesh_path for keyword in material_change_list):
-            continue
-        choices = sorted(
-            path for path in material_list
-            if not allowed_names or path.rsplit("/", 1)[-1] in allowed_names
-        )
-        if not choices:
-            raise ValueError(f"No allowed materials for {mesh_path}: {sorted(allowed_names)}")
-        # A tabletop may have several GeomSubsets; use one sampled material
-        # across them so it appears as a single continuous surface.
-        group = mesh_path.rsplit("/", 1)[0] if share_by_parent else mesh_path
-        if group not in chosen_by_parent:
-            chosen_by_parent[group] = np.random.choice(choices)
-        material_path = chosen_by_parent[group]
+    from geniesim_benchmark.material_selection import select_materials
+
+    for selection in select_materials(material_info, material_config):
+        mesh_path, material_path = selection["mesh_path"], selection["material_path"]
         logger.info(f"Material replaced: mesh='{mesh_path}' -> material='{material_path}'")
         api_core.change_material(mesh_path, material_path)
 
@@ -382,7 +367,11 @@ def update_init_env(env, task_config, episode_content):
     gen_task_config = task_config.get("generalization", {})
 
     # Handle robot_init_pose (init_base generalization)
-    robot_init_pose = gen_config.get("robot_init_pose")
+    # Explicit per-foreground starts take precedence over a shared generated
+    # episode file. Configs without this opt-in retain their original behavior.
+    robot_init_pose = instance_base_pose(task_config)
+    if robot_init_pose is None:
+        robot_init_pose = gen_config.get("robot_init_pose")
     if robot_init_pose is None and gen_task_config.get("init_base", {}).get("enable", False):
         # Dynamic sampling when not pre-generated
         init_base = gen_task_config.get("init_base", {})

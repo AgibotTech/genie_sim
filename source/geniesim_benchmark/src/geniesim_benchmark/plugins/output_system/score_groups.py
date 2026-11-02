@@ -188,8 +188,8 @@ def episode_complete(result, scores, layout):
             return False
     complete = goal_tree_complete(result.get("progress", []))
     if complete is not None:
-        # Subtask checkers are instantiated lazily. A complete partial tree
-        # cannot stand in for later configured milestones that do not exist yet.
+        # A complete exported tree cannot stand in for configured milestones
+        # missing from that export.
         declared = score_layout_steps([{**row, "progress": {"SCORE": 1}} for row in result["progress"]], layout)
         return complete and all(step["score"] == 1 for step in declared)
     if any(s["step"] != i or s["name"] != name or s["score"] != 1.0 for i, (s, name) in enumerate(zip(scores, layout))):

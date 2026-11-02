@@ -1,8 +1,5 @@
 {
-  "schema": "geniesim.instance_generalization.v1",
-  "base_commit": "4ab0d95e8dbbf434cc4a8469c95312a270aad009",
-  "method": "coupled_horizontal_translation",
-  "seed": 20261029,
+  "schema": "geniesim.multi_embodiment_generalization.v3",
   "protected_instances": [
     0,
     1,
@@ -27,193 +24,450 @@
     18,
     19
   ],
-  "translation_bounds_m": {
-    "x": [
-      0,
-      0
-    ],
-    "y": [
-      -0.015,
-      0.015
-    ],
-    "z": [
-      0,
-      0
-    ]
+  "reference_archive_sha256": "1b231a45cac0ec365a1fe464f168764be82acb9cce42d821b7172174d2581594",
+  "cohort": "independent second ten; no ordinal pairing with first ten",
+  "range_adaptations": {
+    "keycap": {
+      "g1": {
+        "xy_m": 0.045,
+        "yaw_deg": 18,
+        "tool_xy_m": 0,
+        "tool_yaw_deg": 0
+      },
+      "other": {
+        "xy_m": 0.05,
+        "yaw_deg": 25,
+        "tool_xy_m": 0.035,
+        "tool_yaw_deg": 18
+      }
+    },
+    "writing": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "scrape": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "pour": {
+      "layout_center_multiplier": 1.5,
+      "offset_jitter_m": 0.035,
+      "yaw_jitter_deg": 15,
+      "scale": 0.8,
+      "vessel_footprint_gap_m": 0.005
+    },
+    "trash": {
+      "paper_x_m": [
+        -0.19,
+        -0.06
+      ],
+      "paper_y_m": [
+        -0.28,
+        -0.11
+      ],
+      "minimum_bin_paper_origin_distance_m": 0.16
+    }
   },
-  "fixed_objects": [
-    "table"
-  ],
-  "preserved": [
-    "asset models",
-    "scales",
-    "orientations",
-    "initial object/joint states",
-    "gripper sides",
-    "instructions",
-    "score thresholds and budgets"
-  ],
-  "validation_level": "static_geometry",
+  "pool_size_per_slot": 160,
+  "acceptance": "static proposals only; native thumbnail review required",
   "instances": [
     {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.1255363980387247,
+      "handle_outward_deg": 56.34887502738664,
+      "trash": [
+        "trash_bone_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
       "instance_id": 10,
-      "source_instance": 0,
-      "seed": 16263456609571237005,
-      "translation_m": [
-        0.0,
-        0.009591391716554324,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "e9787c47f458eb4239785568480610d5a7d00565be03d5a9602f05aacc4c086a",
-        "scene_info.json": "c843e301d367908698f259172aa02bdc9e98ddd5e5a3617ceed44f81bf509733",
-        "instructions.json": "1d69cca3f3c196b38940af3db9554774cea165ffa2b22bc1c50280271d5327b3",
-        "problems.json": "05ebce0e14bd5d9d5e794022f4db9b87da89b0b08fb62058c2c12508a3cc3d97"
-      }
-    },
-    {
-      "instance_id": 11,
-      "source_instance": 1,
-      "seed": 12601474053159663857,
-      "translation_m": [
-        0.0,
-        -0.011075495688143273,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "4abd7089b00f37337ee8ce06d747fdfd9862ace2210482b4c336b2bc89fa9081",
-        "scene_info.json": "12ceee479fbd6d748c23432274037bb0b28eec46bfaac85e6cb36c13eafd3152",
-        "instructions.json": "1d69cca3f3c196b38940af3db9554774cea165ffa2b22bc1c50280271d5327b3",
-        "problems.json": "05ebce0e14bd5d9d5e794022f4db9b87da89b0b08fb62058c2c12508a3cc3d97"
-      }
-    },
-    {
-      "instance_id": 12,
-      "source_instance": 2,
-      "seed": 8664084978278638792,
-      "translation_m": [
-        0.0,
-        0.012908337119697313,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "e2756dd5350193b31f11586736ab3d9e3c663ad1e949be3e8933c2895243dc45",
-        "scene_info.json": "cae9ab7330c7e3d0e1458145abc72de34817bdeb02cd0c9259cf01b0a857fbdb",
-        "instructions.json": "1d69cca3f3c196b38940af3db9554774cea165ffa2b22bc1c50280271d5327b3",
-        "problems.json": "05ebce0e14bd5d9d5e794022f4db9b87da89b0b08fb62058c2c12508a3cc3d97"
-      }
-    },
-    {
-      "instance_id": 13,
-      "source_instance": 3,
-      "seed": 578538909828546549,
-      "translation_m": [
-        0.0,
-        -0.010472659362756154,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "00ac159231f4a62ab3fe311079d034382ceafc46ba98eded4d2590c30ccf9e90",
-        "scene_info.json": "c121bfca85a501dca9ea822930e1bc42d2ecb6acf6fb9e5dd9fd89ca6254d990",
-        "instructions.json": "236126f7d3d3439e6b2caf9ddc64280588aa8c77126996d6b859264cd29e0ef3",
-        "problems.json": "7827b91c68f62a433cfaee72ebae043b6823c5a26d6e7f6bc8b3fa3717641715"
-      }
-    },
-    {
-      "instance_id": 14,
-      "source_instance": 4,
-      "seed": 9255013468174361394,
-      "translation_m": [
-        0.0,
-        0.008598432017515378,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "e1c48509569b6be0aae1a54388872d546238c0b3d6138b716a7a384bc960e6f8",
-        "scene_info.json": "32080583de5f0aeefd26c02e6090aa4f66346cc78e11bec03c2e24eeb54378bc",
-        "instructions.json": "236126f7d3d3439e6b2caf9ddc64280588aa8c77126996d6b859264cd29e0ef3",
-        "problems.json": "7827b91c68f62a433cfaee72ebae043b6823c5a26d6e7f6bc8b3fa3717641715"
-      }
-    },
-    {
-      "instance_id": 15,
       "source_instance": 5,
-      "seed": 16090972644997306903,
-      "translation_m": [
-        0.0,
-        0.013543130548020397,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "346b5a7024e248845443babcddfc8bd151f917c8582f6e2518d31561834f2ea8",
-        "scene_info.json": "d4f7e2d5e03b1946c6793a3150d876a61dbd6b8dda63add80ed38350291923c8",
-        "instructions.json": "75fe4b836ab1256b23d1289cc99a3e2a435dd38bcfdf3d2f60f0d9dba893acaf",
-        "problems.json": "05ebce0e14bd5d9d5e794022f4db9b87da89b0b08fb62058c2c12508a3cc3d97"
-      }
+      "source_scene_sha256": "346b5a7024e248845443babcddfc8bd151f917c8582f6e2518d31561834f2ea8",
+      "seed": 1651763425,
+      "visual_pool_index": 109,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.2964871010141445,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 16,
-      "source_instance": 6,
-      "seed": 4355545688160172153,
-      "translation_m": [
-        0.0,
-        0.012548273331831495,
-        0.0
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.17353934789581368,
+      "handle_outward_deg": 37.86481461260054,
+      "trash": [
+        "trash_bone_000",
+        "trash_apple_000"
       ],
-      "source_hashes": {
-        "scene.usda": "cee10cd9d535c3e998e0b10482d03e568f8c5f740094a662fa2c11b8c4d34d28",
-        "scene_info.json": "e77fba59cc734d0ba50f8615bbc865f5cca80f0fe280ca105380264588ed1898",
-        "instructions.json": "f2845cb1ead7509eb5f7cbaf4ad38c1a165ed3fb5b7b8d0b8b8d35f832173de3",
-        "problems.json": "7827b91c68f62a433cfaee72ebae043b6823c5a26d6e7f6bc8b3fa3717641715"
-      }
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 11,
+      "source_instance": 3,
+      "source_scene_sha256": "00ac159231f4a62ab3fe311079d034382ceafc46ba98eded4d2590c30ccf9e90",
+      "seed": 1042531684,
+      "visual_pool_index": 141,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.9539943272863434,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 17,
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.15188720445196402,
+      "handle_outward_deg": 37.07401647768404,
+      "trash": [
+        "trash_bone_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 12,
       "source_instance": 7,
-      "seed": 6154002068489528258,
-      "translation_m": [
-        0.0,
-        -0.01186363867894549,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "5d2bc7663a43aa425fd1b76afee0b430b00f4bacfeccb0d6c58f87f97da82d4f",
-        "scene_info.json": "f6e280d89a63aa9e3990323f876a110ca67fc88a5029781693efe508f21e0a80",
-        "instructions.json": "75fe4b836ab1256b23d1289cc99a3e2a435dd38bcfdf3d2f60f0d9dba893acaf",
-        "problems.json": "05ebce0e14bd5d9d5e794022f4db9b87da89b0b08fb62058c2c12508a3cc3d97"
-      }
+      "source_scene_sha256": "5d2bc7663a43aa425fd1b76afee0b430b00f4bacfeccb0d6c58f87f97da82d4f",
+      "seed": 1788218767,
+      "visual_pool_index": 77,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.9615667727217687,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 18,
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.17264147266483176,
+      "handle_outward_deg": 43.41790756502371,
+      "trash": [
+        "trash_bone_000",
+        "trash_apple_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 13,
       "source_instance": 8,
-      "seed": 15097395751397415843,
-      "translation_m": [
-        0.0,
-        0.007126190532084475,
-        0.0
-      ],
-      "source_hashes": {
-        "scene.usda": "6b76921e22341404d37ad3eeee02ef26728ee70270ce1a135f68a368160505f9",
-        "scene_info.json": "0fc54dff86a1ab2431112f9132e0d565d23371cfe1e97fd0d3b2c074790e824b",
-        "instructions.json": "f2845cb1ead7509eb5f7cbaf4ad38c1a165ed3fb5b7b8d0b8b8d35f832173de3",
-        "problems.json": "7827b91c68f62a433cfaee72ebae043b6823c5a26d6e7f6bc8b3fa3717641715"
-      }
+      "source_scene_sha256": "6b76921e22341404d37ad3eeee02ef26728ee70270ce1a135f68a368160505f9",
+      "seed": 3840329033,
+      "visual_pool_index": 63,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.1723427584341697,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     },
     {
-      "instance_id": 19,
-      "source_instance": 9,
-      "seed": 16085786688408046440,
-      "translation_m": [
-        0.0,
-        0.011242347020594175,
-        0.0
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.17551863539280657,
+      "handle_outward_deg": 53.81273555506998,
+      "trash": [
+        "trash_bone_000"
       ],
-      "source_hashes": {
-        "scene.usda": "4d320654ba274816ad2cfb7377be5f7297daed9e2424895999113f4a0aa743e7",
-        "scene_info.json": "8455a770b95fa3ad8d9f9d6994e89e8d617c67d1c3a616b67a22b0608df9e98c",
-        "instructions.json": "f2845cb1ead7509eb5f7cbaf4ad38c1a165ed3fb5b7b8d0b8b8d35f832173de3",
-        "problems.json": "7827b91c68f62a433cfaee72ebae043b6823c5a26d6e7f6bc8b3fa3717641715"
-      }
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 14,
+      "source_instance": 1,
+      "source_scene_sha256": "4abd7089b00f37337ee8ce06d747fdfd9862ace2210482b4c336b2bc89fa9081",
+      "seed": 3191030657,
+      "visual_pool_index": 5,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.015594841671413,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.1280234046250628,
+      "handle_outward_deg": 30.16849747992093,
+      "trash": [
+        "trash_bone_000",
+        "trash_apple_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 15,
+      "source_instance": 4,
+      "source_scene_sha256": "e1c48509569b6be0aae1a54388872d546238c0b3d6138b716a7a384bc960e6f8",
+      "seed": 3064093474,
+      "visual_pool_index": 103,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.1756340879467495,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.143051462556676,
+      "handle_outward_deg": 30.63647992824758,
+      "trash": [
+        "trash_bone_000",
+        "trash_apple_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 16,
+      "source_instance": 4,
+      "source_scene_sha256": "e1c48509569b6be0aae1a54388872d546238c0b3d6138b716a7a384bc960e6f8",
+      "seed": 4246747985,
+      "visual_pool_index": 121,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.9968020095126175,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.15383163580504475,
+      "handle_outward_deg": 36.428112839748316,
+      "trash": [
+        "trash_bone_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 17,
+      "source_instance": 5,
+      "source_scene_sha256": "346b5a7024e248845443babcddfc8bd151f917c8582f6e2518d31561834f2ea8",
+      "seed": 200627078,
+      "visual_pool_index": 1,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 1.9809163553188174,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.12854358679722772,
+      "handle_outward_deg": 31.452626018232966,
+      "trash": [
+        "trash_bone_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 18,
+      "source_instance": 7,
+      "source_scene_sha256": "5d2bc7663a43aa425fd1b76afee0b430b00f4bacfeccb0d6c58f87f97da82d4f",
+      "seed": 2681194013,
+      "visual_pool_index": 156,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.2510625407856386,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
+    },
+    {
+      "method": "template_neighborhood_independent_yaw_and_trash_xy",
+      "bin_abs_table_y_m": 0.1766322907638486,
+      "handle_outward_deg": 59.63298649550447,
+      "trash": [
+        "trash_bone_000",
+        "trash_apple_000"
+      ],
+      "tool_xy_jitter_bound_m": 0.055,
+      "trash_xy_jitter_bound_m": [
+        0.035,
+        0.025
+      ],
+      "instance_id": 19,
+      "source_instance": 8,
+      "source_scene_sha256": "6b76921e22341404d37ad3eeee02ef26728ee70270ce1a135f68a368160505f9",
+      "seed": 2827026456,
+      "visual_pool_index": 8,
+      "selection": "maximin_against_all_old_and_selected_new",
+      "selection_feature_distance": 2.2890227540859898,
+      "source_slot": {},
+      "distribution_adjustment": {
+        "tool_xy_jitter_m": 0.055,
+        "trash_xy_jitter_m": [
+          0.035,
+          0.025
+        ],
+        "bin_abs_table_y_m": [
+          0.12,
+          0.18
+        ],
+        "handle_outward_deg": [
+          30,
+          60
+        ]
+      },
+      "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+      "validation_level": "authored_geometry; native IK and physical success unverified"
     }
   ]
 }

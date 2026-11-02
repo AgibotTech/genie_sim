@@ -126,18 +126,6 @@ class BaseEnv(AderEnv):
         ``[0, 0]`` closed placeholder, so using it would start every grasp task
         with the jaw shut.
         """
-        # Profile gripper limits apply only to shared control or explicit
-        # validation; ordinary benchmarks retain their upstream open sentinel.
-        if getattr(self.api_core, "profile_control_enabled", False) or self.init_task_config.get("control_mode"):
-            from geniesim_benchmark.control_observation import gripper_travel, has_control_profile
-
-            profile = getattr(self.api_core, "robot_profile", None)
-            if has_control_profile(profile):
-                targets = {
-                    gripper["control_joint"]: gripper_travel(gripper)[0]
-                    for gripper in profile["gripper"].values()
-                }
-                return [targets[name] for name in self.cfg["gripper_joints"]]
         cfgs = self.cfg.get("gripper_joints") or []
         task_hand = getattr(self, "init_gripper", None)
         if task_hand and len(task_hand) == len(cfgs) and len(cfgs) > 2:

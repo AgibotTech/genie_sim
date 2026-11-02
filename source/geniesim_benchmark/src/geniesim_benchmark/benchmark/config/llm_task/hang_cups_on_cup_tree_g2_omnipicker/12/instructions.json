@@ -5,26 +5,26 @@
       "gripper": {
         "1": {
           "handover": false,
-          "side": "right"
+          "side": "left"
         }
       },
       "target": {
-        "id1": "benchmark_cup_58550426",
-        "id2": "benchmark_cup_holder_77e6b0fe"
+        "id1": "benchmark_cup_3a2feb57",
+        "id2": "benchmark_cup_holder_0ed2b190"
       }
     }
   ],
   "subtask_steps": [
     {
       "checker": {
-        "PickUpOnGripper": "benchmark_cup_58550426|any_gripper"
+        "PickUpOnGripper": "benchmark_cup_3a2feb57|any_gripper"
       },
-      "instruction": "right gripper picks up the cup by its handle",
+      "instruction": "left gripper picks up the cup by its handle",
       "step_out": 450
     },
     {
       "checker": {
-        "Hang": "benchmark_cup_58550426|0.825|8|0.01"
+        "Hang": "benchmark_cup_3a2feb57|0.82|8|0.01"
       },
       "instruction": "hooks the cup's handle onto the rack, then opens the gripper so the cup hangs still",
       "step_out": 750

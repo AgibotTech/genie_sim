@@ -1,161 +1,294 @@
 {
-  "generalization": {
-    "init_base": {
-      "enable": true,
-      "num": 1,
-      "x_thresh": 0.25,
-      "y_thresh": 0.5
-    }
-  },
-  "objects": {
-    "constraints": null,
-    "extra_objects": [],
-    "fix_objects": [],
-    "task_related_objects": []
-  },
-  "problem_instance": 0,
-  "recording_setting": {
-    "camera_list": [
-      "/genie/head_link3/head_front_Camera",
-      "/genie/gripper_l_camera_link/Left_Camera",
-      "/genie/gripper_r_camera_link/Right_Camera"
+    "generalization": {
+        "init_base": {
+            "enable": true,
+            "num": 0,
+            "x_thresh": 0.25,
+            "y_thresh": 0.5,
+            "pose_seed": 20261102,
+            "poses_by_instance": {
+                "0": {
+                    "position": [
+                        -0.05933443,
+                        -1.35356224,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "1": {
+                    "position": [
+                        -0.06501458,
+                        -1.15576283,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "2": {
+                    "position": [
+                        -0.07268122,
+                        -0.97057516,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "3": {
+                    "position": [
+                        -0.05116289,
+                        -0.7476622,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "4": {
+                    "position": [
+                        -0.04823583,
+                        -0.49303755,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "5": {
+                    "position": [
+                        0.3621772,
+                        -1.35394585,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "6": {
+                    "position": [
+                        0.36754106,
+                        -1.14285646,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "7": {
+                    "position": [
+                        0.36162317,
+                        -0.93763224,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "8": {
+                    "position": [
+                        0.35589405,
+                        -0.7178668,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                },
+                "9": {
+                    "position": [
+                        0.36144289,
+                        -0.50271936,
+                        0.05
+                    ],
+                    "quaternion": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                }
+            }
+        }
+    },
+    "objects": {
+        "constraints": null,
+        "extra_objects": [],
+        "fix_objects": [],
+        "task_related_objects": []
+    },
+    "problem_instance": 0,
+    "recording_setting": {
+        "camera_list": [
+            "/genie/head_link3/head_front_Camera",
+            "/genie/gripper_l_camera_link/Left_Camera",
+            "/genie/gripper_r_camera_link/Right_Camera"
+        ],
+        "fps": 30,
+        "num_of_episode": 6
+    },
+    "robot": {
+        "arm": "right",
+        "robot_cfg": "G2_crsB_90d_wbc.json",
+        "robot_id": "G2",
+        "robot_init_pose": {
+            "workspace_00": {
+                "position": [
+                    0.14867,
+                    -0.94781,
+                    0.05
+                ],
+                "quaternion": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        "robot_init_joints": {
+            "left": [
+                1.7323838256725361,
+                -1.4511636983067924,
+                -1.5990512941697577,
+                -1.8002556445282796,
+                -0.2202215732473698,
+                0.004033890103143022,
+                0.0007744206133841417
+            ],
+            "right": [
+                -1.7281721695666301,
+                -1.4470093667433506,
+                1.6010198229527115,
+                -1.79933501637105,
+                0.2221582239920755,
+                -0.001358531735271221,
+                -0.0006869357715750387
+            ],
+            "body": [
+                -0.6981123166979405,
+                1.3523379066598955,
+                -0.6,
+                0,
+                0
+            ],
+            "head": [
+                0,
+                0,
+                0.34921301919614245
+            ]
+        },
+        "free_base": true
+    },
+    "scene": {
+        "function_space_objects": {
+            "workspace_00": {
+                "material_obj_prim": {},
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1,
+                    0,
+                    0,
+                    0
+                ],
+                "size": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "workspace_00_extra": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1,
+                    0,
+                    0,
+                    0
+                ],
+                "size": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "workspace_00_ground": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1,
+                    0,
+                    0,
+                    0
+                ],
+                "size": [
+                    0.9,
+                    1,
+                    1
+                ]
+            }
+        },
+        "scene_id": "open_the_door/workspace_00",
+        "scene_info_dir": "background/home/open_the_door/",
+        "scene_usd": [
+            "background/home/open_the_door/background.usda"
+        ]
+    },
+    "stages": [
+        {
+            "action": "pick",
+            "active": {
+                "object_id": "gripper",
+                "primitive": null
+            },
+            "extra_params": {
+                "pick_up_direction": "x",
+                "pick_up_distance": 0.12
+            },
+            "passive": {
+                "object_id": "",
+                "primitive": null
+            }
+        }
     ],
-    "fps": 30,
-    "num_of_episode": 6
-  },
-  "robot": {
-    "arm": "right",
-    "free_base": true,
-    "robot_cfg": "G2_crsB_90d_wbc.json",
-    "robot_id": "G2",
-    "robot_init_joints": {
-      "body": [
-        -0.6981123166979405,
-        1.3523379066598955,
-        -0.6,
-        0,
-        0
-      ],
-      "head": [
-        0,
-        0,
-        0.34921301919614245
-      ],
-      "left": [
-        1.7323838256725361,
-        -1.4511636983067924,
-        -1.5990512941697577,
-        -1.8002556445282796,
-        -0.2202215732473698,
-        0.004033890103143022,
-        0.0007744206133841417
-      ],
-      "right": [
-        -1.7281721695666301,
-        -1.4470093667433506,
-        1.6010198229527115,
-        -1.79933501637105,
-        0.2221582239920755,
-        -0.001358531735271221,
-        -0.0006869357715750387
-      ]
-    },
-    "robot_init_pose": {
-      "workspace_00": {
-        "position": [
-          0.14867,
-          -0.94781,
-          0.05
-        ],
-        "quaternion": [
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ]
-      }
-    }
-  },
-  "scene": {
-    "function_space_objects": {
-      "workspace_00": {
-        "material_obj_prim": {},
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1,
-          0,
-          0,
-          0
-        ],
-        "size": [
-          0,
-          0,
-          0
-        ]
-      },
-      "workspace_00_extra": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1,
-          0,
-          0,
-          0
-        ],
-        "size": [
-          0,
-          0,
-          0
-        ]
-      },
-      "workspace_00_ground": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1,
-          0,
-          0,
-          0
-        ],
-        "size": [
-          0.9,
-          1,
-          1
-        ]
-      }
-    },
-    "scene_id": "open_the_door/workspace_00",
-    "scene_info_dir": "background/home/open_the_door/",
-    "scene_usd": [
-      "background/home/open_the_door/background.usda"
-    ]
-  },
-  "stages": [
-    {
-      "action": "pick",
-      "active": {
-        "object_id": "gripper",
-        "primitive": null
-      },
-      "extra_params": {
-        "pick_up_direction": "x",
-        "pick_up_distance": 0.12
-      },
-      "passive": {
-        "object_id": "",
-        "primitive": null
-      }
-    }
-  ],
-  "task": "open_the_door_g2_90d"
+    "task": "open_the_door_g2_90d"
 }

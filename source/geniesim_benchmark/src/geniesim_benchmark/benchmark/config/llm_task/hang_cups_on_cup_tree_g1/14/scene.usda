@@ -9,7 +9,7 @@ def "World"
 {
     def "Objects"
     {
-        def Xform "table_7ffcd6a2" (
+        def Xform "table_899f6f98" (
             prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
         )
         {
@@ -19,24 +19,26 @@ def "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_cup_holder_4f78155d" (
+        def Xform "benchmark_cup_holder_cc56c441" (
             prepend payload = @/geniesim_assets/objects/benchmark/cup_holder/benchmark_cup_holder_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.554509, 0, 0, 0.832178)
+            quatf xformOp:orient = (0.996388, 0, 0, 0.084916)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.0010209755109331885, -0.009435554133386731, 0.907)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.9152606677427783, 0.40286214774168566, 0, 0), (-0.40286214774168566, 0.9152606677427783, 0, 0), (0, 0, 1, 0), (0.012368513769754936, 0.03929720844411587, 0.9070824611567659, 1) )
+            double3 xformOp:translate = (0.04, -0.039, 0.907)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
         }
 
-        def Xform "benchmark_cup_ae49a3e7" (
-            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_122/Aligned.usda@
+        def Xform "benchmark_cup_643a4ea5" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_120/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.839149, 0, 0, 0.543901)
+            quatf xformOp:orient = (0.875915, 0, 0, -0.482466)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.08097902448906683, -0.19543555413338673, 0.77)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.4903718362413798, -0.8715133172942668, -0, 0), (0.8715133172942668, 0.4903718362413798, 0, 0), (0, -0, 1, 0), (-0.08870582714501901, 0.25299956554474073, 0.782147847317646, 1) )
+            double3 xformOp:translate = (-0.054, 0.168, 0.779)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
         }
     }
 }

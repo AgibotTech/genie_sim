@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.7137042, 0, 0, -0.7004472)
+            quatf xformOp:orient = (-0.6848649, 0, 0, 0.72867006)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12305734290687728, -0.13134783515583998, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.02124130206990804, -0.9997743780905644, 0, 0), (0.9997743780905644, -0.021241302069908038, 0, 0), (0, 0, 1, 0), (-0.15750043583241927, -0.16660995050144337, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.13135796642231848, -0.10254245973900264, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1021,10 +1022,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.75703514, 0, 0, -0.65337414)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.11075829635809435, 0.1621735333101266, 0.7432891217007136)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.20104292325113757, -0.9795824329838899, 0, 0), (0.97958243298389, -0.2010429232511376, 0, 0), (0, 0, 1, 0), (-0.12756851599113755, 0.18408320459029334, 0.7432891217007136, 1) )
+            double3 xformOp:translate = (-0.10625594128974247, 0.13762526906995182, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1097,10 +1099,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.71871483, 0, 0, -0.695305)
+            quatf xformOp:orient = (0.71536756, 0, 0, -0.69874835)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.18473777021488505, -0.3110852838214127, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.42011339359632993, -0.9074716174740538, 0, 0), (0.9074716174740538, 0.42011339359633, 0, 0), (0, 0, 1, 0), (-0.13202953729327227, -0.31757417449732583, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.14082609324485482, -0.2565385264803075, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1174,10 +1177,11 @@ def cleanup(db):
 
         def Xform "puller_holder_000"
         {
-            quatf xformOp:orient = (0.75703514, 0, 0, -0.65337414)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.09113623408801179, 0.048838331841371846, 0.7323891221373175)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.20104292325113757, -0.9795824329838899, 0, 0), (0.97958243298389, -0.2010429232511376, 0, 0), (0, 0, 1, 0), (-0.14790257522441067, 0.07087357931579664, 0.7323891221373175, 1) )
+            double3 xformOp:translate = (-0.11915586308692738, 0.023329664441774024, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             def Xform "entity" (
                 prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>

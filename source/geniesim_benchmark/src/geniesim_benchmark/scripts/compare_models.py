@@ -312,44 +312,27 @@ def write_csv(path, fields, rows):
 # --------------------------------------------------------------------------- #
 # Per-rollout score
 # --------------------------------------------------------------------------- #
-def _rollout_scalar(detail, metric, layout=None):
-    """Use the episode's complete layout; never infer a shorter denominator."""
-    from geniesim_benchmark.plugins.output_system.eval_utils import get_task_steps, extract_scores
-    from geniesim_benchmark.plugins.output_system.score_groups import episode_complete, score_layout_steps
-
-    result = detail.get("result", {})
-    if result.get("code", 0) not in (0, 2):
-        raise ValueError("Evaluation contains an interrupted/invalid episode; compare complete runs")
-    layout = (
-        result.get("score_layout")
-        or get_task_steps(
-            detail.get("score_layout_name") or detail.get("sub_task_name", ""), detail.get("instruction_mode", "full")
-        )
-        or layout
-    )
-    if not layout:
-        raise ValueError("Missing scoring layout; cannot recover the episode denominator")
-    # Old exports may contain the #200-compressed STEPS. Prefer the original
-    # progress when available; ambiguous legacy grouping is rejected explicitly.
-    if result.get("score_schema_version") is None and result.get("progress"):
-        steps = score_layout_steps(result["progress"], layout)
-    else:
-        steps = extract_scores(result, layout)
-    scores = result.get("scores", {})
+def _rollout_scalar(detail, metric):
+    """Scalar score of one rollout, or None if unscorable."""
+    scores = detail.get("result", {}).get("scores", {})
     if metric == "e2e":
-        return float(episode_complete(result, steps, layout))
+        v = scores.get("E2E")
+        return float(v) if isinstance(v, (int, float)) else None
     if metric == "weighted":
         v = scores.get("WEIGHTED")
         if not isinstance(v, (int, float)) or isinstance(v, bool) or not np.isfinite(v) or not 0 <= v <= 1:
             raise ValueError("Missing/invalid WEIGHTED score; reweight the input evaluation file first")
         return float(v)
-    return sum(s["score"] for s in steps) / len(layout)
+    steps = scores.get("STEPS")  # step_mean == mean of per-step scores
+    if not isinstance(steps, list) or not steps:
+        return None
+    vals = [s["score"] for s in steps if isinstance(s, dict) and isinstance(s.get("score"), (int, float))]
+    return float(np.mean(vals)) if vals else None
 
 
 def _weighted_profile(detail):
     from geniesim_benchmark.plugins.output_system.weighted_scoring import (
-        canonical_score_layout,
-        canonical_weight_version,
+        canonical_score_layout, canonical_weight_version,
     )
 
     config = detail.get("result", {}).get("weighted_scoring")
@@ -423,7 +406,7 @@ def load_task_scores(root, metric):
                 continue
             task_name = task_name or detail.get("task_name")
             sub_name = sub_name or detail.get("sub_task_name")
-            v = _rollout_scalar(detail, metric, [s["name"] for s in stats.get("weighted_step_scores", [])])
+            v = _rollout_scalar(detail, metric)
             if metric == "weighted":
                 profile = _weighted_profile(detail)
                 if file_profile is not None and profile != file_profile:

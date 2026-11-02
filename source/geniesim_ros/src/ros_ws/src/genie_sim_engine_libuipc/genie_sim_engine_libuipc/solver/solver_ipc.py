@@ -1180,6 +1180,14 @@ class SolverIPC(SolverBase):
         p1 = particle_q[tet_indices[:, 1]]
         p2 = particle_q[tet_indices[:, 2]]
         p3 = particle_q[tet_indices[:, 3]]
+        # Initial deformation must also remain non-inverted when a separate
+        # elastic reference is supplied by the USD importer.
+        reference = getattr(model, "ipc_rest_particle_q", None)
+        if reference is not None:
+            initial_volume6 = np.einsum("ij,ij->i", p1 - p0, np.cross(p2 - p0, p3 - p0))
+            if not np.isfinite(initial_volume6).all() or np.any(initial_volume6 <= 0):
+                raise ValueError("SolverIPC initial tet positions have non-positive or nonfinite volume")
+            p0, p1, p2, p3 = (reference[tet_indices[:, i]] for i in range(4))
         # `tet_poses` (the rest-pose inverse used by the VBD/XPBD solvers) is not trustworthy
         # here: it is computed once at `add_tetrahedron()` time and never revalidated against
         # `tet_indices`/`particle_q`, so a test (or a user) that mutates either after the fact
@@ -1965,7 +1973,8 @@ class SolverIPC(SolverBase):
         global_vertices.sort()
         local_triangles = np.searchsorted(global_vertices, global_triangles).astype(np.int32)
 
-        mesh = uipc.geometry.trimesh(particle_q[global_vertices], local_triangles)
+        reference = getattr(model, "ipc_rest_particle_q", particle_q)
+        mesh = uipc.geometry.trimesh(reference[global_vertices], local_triangles)
         uipc.geometry.label_surface(mesh)
 
         lame = uipc.constitution.ElasticModuli2D.lame(1.0, 1.0)
@@ -2035,7 +2044,7 @@ class SolverIPC(SolverBase):
         self._partition_for_mas(mesh)
 
         obj = self._scene.objects().create("cloth")
-        obj.geometries().create(mesh)
+        self._create_fem_geometry(obj, mesh, particle_q[global_vertices])
 
         self._fem_vertex_to_particle.extend(int(g) for g in global_vertices)
 
@@ -2104,7 +2113,8 @@ class SolverIPC(SolverBase):
                 )
             density = total_mass / total_volume
 
-            vertices = particle_q[global_indices]
+            reference = getattr(model, "ipc_rest_particle_q", particle_q)
+            vertices = reference[global_indices]
             mesh = uipc.geometry.tetmesh(vertices, local_tet_indices)
             uipc.geometry.label_surface(mesh)
 
@@ -2134,10 +2144,18 @@ class SolverIPC(SolverBase):
             self._partition_for_mas(mesh)
 
             obj = self._scene.objects().create(f"tet_{comp}")
-            obj.geometries().create(mesh)
+            self._create_fem_geometry(obj, mesh, particle_q[global_indices])
             self._tet_geometries.append(mesh)
 
             self._fem_vertex_to_particle.extend(int(g) for g in global_indices)
+
+    def _create_fem_geometry(self, obj, mesh, initial_positions):
+        """Keep elastic reference metrics while native frame zero starts deformed."""
+        if getattr(self.model, "ipc_rest_particle_q", None) is None:
+            return obj.geometries().create(mesh)
+        rest_mesh = mesh.copy()
+        self._uipc.view(mesh.vertices().find(self._uipc.builtin.position)).reshape(-1, 3)[:] = initial_positions
+        return obj.geometries().create(mesh, rest_mesh)
 
     def _write_state_from_uipc(self, state: State, *, state_in: State | None = None) -> None:
         body_count = self.model.body_count

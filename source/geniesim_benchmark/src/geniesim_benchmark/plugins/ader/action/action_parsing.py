@@ -5,48 +5,68 @@
 import json
 import os
 from .common_actions import *
-from .custom import (
-    PickUpOnGripper,
-    Inside,
-    InBBox,
-    FluidInside,
-    Onfloor,
-    Ontop,
-    Cover,
-    CheckParticleInBBox,
-    PushPull,
-    Follow,
-    OnShelf,
-    TriggerAction,
-    CheckStainClean,
-    GripperPassing,
-    Approach,
-    VLM,
-    LiftUp,
-    Upright,
-    Rotated,
-    StableGrasp,
-    ChassisAtTarget,
-    Stack,
-    RelativePositionChecker,
-    MixedRules,
-    PlaceOnRivet,
-    RobotNearObject,
-    Erased,
-    FoldCycle1,
-    FoldCycle2,
-    FoldCycle3,
-    FoldCycle1Tshirt006,
-    FoldCycle2Tshirt006,
-    FoldCycle3Tshirt006,
-    PlugInserted,
-    Hang,
-    InkOverlap,
-    PourVolume,
-    ScissorsHandleInserted,
-    ScissorsHandleActuated,
-)
-import geniesim_benchmark.utils.system_utils as system_utils
+from . import custom
+
+
+class _LazySystemUtils:
+    # Keep the ordinary parser's public helper replaceable by integrations.
+    # Pure physical replay never needs asset catalogue initialization.
+    def __getattr__(self, name):
+        from importlib import import_module
+
+        return getattr(import_module("geniesim_benchmark.utils.system_utils"), name)
+
+
+system_utils = _LazySystemUtils()
+
+
+def _lazy_checker(name):
+    def create(*args, **kwargs):
+        return getattr(custom, name)(*args, **kwargs)
+
+    return create
+
+
+PickUpOnGripper = _lazy_checker("PickUpOnGripper")
+Inside = _lazy_checker("Inside")
+InBBox = _lazy_checker("InBBox")
+FluidInside = _lazy_checker("FluidInside")
+Onfloor = _lazy_checker("Onfloor")
+Ontop = _lazy_checker("Ontop")
+Cover = _lazy_checker("Cover")
+CheckParticleInBBox = _lazy_checker("CheckParticleInBBox")
+PushPull = _lazy_checker("PushPull")
+Follow = _lazy_checker("Follow")
+OnShelf = _lazy_checker("OnShelf")
+TriggerAction = _lazy_checker("TriggerAction")
+CheckStainClean = _lazy_checker("CheckStainClean")
+GripperPassing = _lazy_checker("GripperPassing")
+Approach = _lazy_checker("Approach")
+VLM = _lazy_checker("VLM")
+LiftUp = _lazy_checker("LiftUp")
+Upright = _lazy_checker("Upright")
+Rotated = _lazy_checker("Rotated")
+StableGrasp = _lazy_checker("StableGrasp")
+ChassisAtTarget = _lazy_checker("ChassisAtTarget")
+Stack = _lazy_checker("Stack")
+RelativePositionChecker = _lazy_checker("RelativePositionChecker")
+MixedRules = _lazy_checker("MixedRules")
+PlaceOnRivet = _lazy_checker("PlaceOnRivet")
+RobotNearObject = _lazy_checker("RobotNearObject")
+Erased = _lazy_checker("Erased")
+FoldCycle1 = _lazy_checker("FoldCycle1")
+FoldCycle2 = _lazy_checker("FoldCycle2")
+FoldCycle3 = _lazy_checker("FoldCycle3")
+FoldCycle1Tshirt006 = _lazy_checker("FoldCycle1Tshirt006")
+FoldCycle2Tshirt006 = _lazy_checker("FoldCycle2Tshirt006")
+FoldCycle3Tshirt006 = _lazy_checker("FoldCycle3Tshirt006")
+PlugInserted = _lazy_checker("PlugInserted")
+Hang = _lazy_checker("Hang")
+InkOverlap = _lazy_checker("InkOverlap")
+PourVolume = _lazy_checker("PourVolume")
+ScissorsHandleInserted = _lazy_checker("ScissorsHandleInserted")
+ScissorsHandleActuated = _lazy_checker("ScissorsHandleActuated")
+
 from geniesim_benchmark.plugins.output_system.policy_budget import PolicyBudgetError
 
 
@@ -86,7 +106,8 @@ def get_object_scope(object_terms):
 
 def do_parsing(env, task_definitions_path):
     from geniesim_benchmark.plugins.output_system.policy_budget import (
-        configured_scoring_action, select_scoring_problem,
+        configured_scoring_action,
+        select_scoring_problem,
     )
 
     # ScoreLayout is an explicit problem-level selection. Reset it on every
@@ -155,19 +176,46 @@ def record_act_obj(act, task_progress, spec=None):
 
 def parse_action(obj: dict, task_progress, env, stage_step_out=None) -> ActionBase:
     for key, value in obj.items():
+        if key in (
+            "WujiFoldLeftSide",
+            "WujiFoldRightSide",
+            "WujiFoldHemToCollar",
+            "WujiLiftCloth",
+            "WujiLiftHanger",
+            "WujiHangerNearCollar",
+            "WujiHangerInserted",
+            "WujiGarmentHung",
+            "WujiBagPlaced",
+            "WujiBottle1InBin",
+            "WujiBottle2InBin",
+            "WujiBothBottlesInBag",
+            "WujiBagCinched",
+        ):
+            act = getattr(custom, key)(env, **value)
+            record_act_obj(act, task_progress, value)
+            return act
         if key == "PolicyDispatchBudget":
             from .policy_dispatch_budget import PolicyDispatchBudget
 
             try:
                 required = {"version", "step", "action"}
-                if (not isinstance(value, dict) or not required <= set(value)
-                        or set(value) - required - {"points", "step_out"}):
+                if (
+                    not isinstance(value, dict)
+                    or not required <= set(value)
+                    or set(value) - required - {"points", "step_out"}
+                ):
                     raise ValueError("PolicyDispatchBudget requires version, step, action; optional points, step_out")
                 if "step_out" in value and (stage_step_out is None or value["step_out"] != stage_step_out):
                     raise ValueError("PolicyDispatchBudget.step_out must match the enclosing native StepOut")
                 stage = parse_action(value["action"], task_progress, env, stage_step_out)
-                act = PolicyDispatchBudget(env, stage, value["step"], value["version"],
-                                           points=value.get("points"), step_out=value.get("step_out"))
+                act = PolicyDispatchBudget(
+                    env,
+                    stage,
+                    value["step"],
+                    value["version"],
+                    points=value.get("points"),
+                    step_out=value.get("step_out"),
+                )
                 record_act_obj(act, task_progress, value)
                 # Declare every stage before execution, retaining unknown counts
                 # for stages that never start. No native SCORE is added here.

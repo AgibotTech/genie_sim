@@ -10,7 +10,10 @@ from dataclasses import dataclass
 from geniesim_benchmark.plugins.ader import ActionManager
 from geniesim_benchmark.plugins.ader import ActionBase
 from geniesim_benchmark.plugins.ader.action.action_parsing import do_parsing
-from geniesim_benchmark.app.controllers.api_core import APICore
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from geniesim_benchmark.app.controllers.api_core import APICore
 
 
 @dataclass
@@ -27,9 +30,7 @@ class AderEnv(object):
         self.params = params
         self.has_done = False
         self.execute_action = None
-        # Cache of placeholder values set during this episode. Subtask-mode
-        # checkers are built lazily; this lets us replay already-set
-        # placeholders onto newly-registered action objects.
+        # Cache placeholder values assigned by this episode's checker tree.
         self._placeholders = {}
 
     def do_action(self, slot: str, name: str, action: ActionBase):
@@ -42,8 +43,6 @@ class AderEnv(object):
         return self.action_executor.exist_action("eval")
 
     def do_eval_action(self):
-        if getattr(self.task, "instruction_mode", "full") == "subtask":
-            return
         self.do_action("eval", self.params.task_name, self.execute_action)
 
     def cancel_eval(self):
@@ -61,10 +60,6 @@ class AderEnv(object):
         return self.action_executor.exist_action("eval")
 
     def action_update(self):
-        # LLMTask.step drives the subtask checkers and their local deadlines.
-        # Starting the original tree would compete for placeholders and exits.
-        if getattr(self.task, "instruction_mode", "full") == "subtask":
-            return
         if not self.exist_eval_action():
             self.has_done = True
             return

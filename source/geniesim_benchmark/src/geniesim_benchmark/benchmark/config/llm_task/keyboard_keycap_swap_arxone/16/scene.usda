@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.6512987, 0, 0, 0.7588215)
+            quatf xformOp:orient = (-0.6848649, 0, 0, 0.72867006)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1007318812156998, -0.10764773663429544, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.4056179458472505, -0.9140427134476029, 0, 0), (0.9140427134476029, 0.4056179458472505, 0, 0), (0, 0, 1, 0), (-0.08891466824091279, -0.1718805574877589, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.13135796642231848, -0.10254245973900264, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1021,10 +1022,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.67910045, 0, 0, 0.7340453)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.13759302122881004, 0.18482034702662511, 0.7432891217007136)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.1388608689769296, -0.9903118998916313, 0, 0), (0.9903118998916313, -0.1388608689769296, 0, 0), (0, 0, 1, 0), (-0.09981896210604779, 0.17444347927983217, 0.7432891217007136, 1) )
+            double3 xformOp:translate = (-0.10625594128974247, 0.13762526906995182, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1097,10 +1099,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.75189984, 0, 0, -0.6592773)
+            quatf xformOp:orient = (0.71536756, 0, 0, -0.69874835)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1680999863512968, -0.26114143153501795, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.35959618835891377, -0.9331080223198925, 0, 0), (0.9331080223198925, -0.35959618835891377, 0, 0), (0, 0, 1, 0), (-0.13394236212283595, -0.303519185392214, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.14082609324485482, -0.2565385264803075, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1174,10 +1177,11 @@ def cleanup(db):
 
         def Xform "puller_holder_000"
         {
-            quatf xformOp:orient = (-0.67910045, 0, 0, 0.7340453)
+            quatf xformOp:orient = (-0.6570148, 0, 0, 0.7538777)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1436886078042184, 0.06996070640383749, 0.7323891221373175)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.1388608689769296, -0.9903118998916313, 0, 0), (0.9903118998916313, -0.1388608689769296, 0, 0), (0, 0, 1, 0), (-0.11297246096255516, 0.060176779460829416, 0.7323891221373175, 1) )
+            double3 xformOp:translate = (-0.11915586308692738, 0.023329664441774024, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             def Xform "entity" (
                 prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>

@@ -57,6 +57,21 @@ EVAL_TEMPLATE = {
     "operator": "",
 }
 TASK_STEPS = {
+    "cloth_hanger": [
+        "WujiLiftCloth",
+        "WujiLiftHanger",
+        "WujiHangerNearCollar",
+        "WujiHangerInserted",
+        "WujiGarmentHung",
+    ],
+    "fold_cloth": ["WujiFoldLeftSide", "WujiFoldRightSide", "WujiFoldHemToCollar"],
+    "drawstring_bag": [
+        "WujiBagPlaced",
+        "WujiBottle1InBin",
+        "WujiBottle2InBin",
+        "WujiBothBottlesInBag",
+        "WujiBagCinched",
+    ],
     "bimanual_chip_handover": ["Upright"],
     "clean_the_desktop": ["Inside", "PushPull", "Inside", "RelativePositionChecker", "Upright"],
     "hold_pot": ["LiftUp", "InBBox", "Upright"],
@@ -167,11 +182,8 @@ TASK_STEPS = {
     "take_the_book": ["Rotated", "MixedRules"],
     # Whole-body-control: robot drives to the trash, picks it up, drives to
     # the bin, drops it in, in the home_b_aligned living-room background.
-    # 6 个 G2 crsB 90d WBC（全身协同）任务, 2026-10-02 搭建完成
-    # 见 llm_task/<task>/0/problems.json 的 Acts 树; 每个 ActionSetWaitAny 内的
-    # 左右手/多候选变体只在这里列一次(score_layout_steps 的 best-of 规则会处理),
-    # 同一个 checker 类名在不同步骤重复出现(如 open_the_door 的两次 PushPull)则按
-    # 实际步数各写一次。
+    # Whole-body layouts retain one slot per logical goal. The live ADER tree
+    # distinguishes either-hand alternatives from independent repeated goals.
     "sending_food": ["LiftUp", "ChassisAtTarget", "Ontop", "Ontop"],
     "pick_up_trash_wbc": [
         "RobotNearObject",
@@ -343,6 +355,8 @@ class TaskEvaluation:
         if score_layout_name is not None and not self.sub_steps:
             raise ValueError(f"Unknown ScoreLayout: {score_layout_name}")
         self.weight_profile = get_weight_profile(scoring_task, self.sub_steps, self.instruction_mode)
+        self.task_success: bool | None = None
+        self.task_tree_finished: bool | None = None
         self.policy_dispatch_count: int | None = None
         self._policy_dispatch_start: int | None = None
 
@@ -421,14 +435,15 @@ class TaskEvaluation:
     def summarize_scores(self):
         self.result["score_schema_version"] = SCORE_SCHEMA_VERSION
         self.result["score_layout"] = list(self.sub_steps)
-        if len(self.sub_steps) != 0:
-            self.result["scores"] = {
-                "STEPS": score_layout_steps(self.result["progress"], self.sub_steps),
-                "E2E": 0,
-            }
-            self.result["scores"]["E2E"] = int(
-                episode_complete(self.result, self.result["scores"]["STEPS"], self.sub_steps)
-            )
+        if self.sub_steps:
+            scores = score_layout_steps(self.result["progress"], self.sub_steps)
+            complete = episode_complete(self.result, scores, self.sub_steps)
+            if self.score_layout_name is not None:
+                # Explicit task layouts also require every declared checkpoint.
+                complete = complete and all(step["score"] == 1.0 for step in scores)
+                if self.score_layout_name in {"fold_cloth", "cloth_hanger", "drawstring_bag"}:
+                    complete = complete and self.task_success is True and self.task_tree_finished is True
+            self.result["scores"] = {"STEPS": scores, "E2E": int(complete)}
         else:
             logger.warning(f"No substeps defined for task {self.task_name}")
         add_weighted_score(self.result, self.result.get("scores", {}).get("STEPS", []), self.weight_profile)

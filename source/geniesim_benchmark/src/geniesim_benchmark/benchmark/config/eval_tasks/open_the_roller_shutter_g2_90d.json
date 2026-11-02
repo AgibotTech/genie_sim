@@ -1,164 +1,297 @@
 {
-  "generalization": {
-    "init_base": {
-      "enable": true,
-      "num": 0,
-      "x_thresh": 0.8,
-      "y_thresh": 1.0
+    "generalization": {
+        "init_base": {
+            "enable": true,
+            "num": 0,
+            "x_thresh": 0.8,
+            "y_thresh": 1.0,
+            "pose_seed": 20261102,
+            "poses_by_instance": {
+                "0": {
+                    "position": [
+                        0.29247581,
+                        -2.53567359,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.34906293857,
+                        0.0,
+                        0.0,
+                        0.937099282316
+                    ]
+                },
+                "1": {
+                    "position": [
+                        0.27429936,
+                        -2.14319454,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.286481854847,
+                        0.0,
+                        0.0,
+                        0.9580856678
+                    ]
+                },
+                "2": {
+                    "position": [
+                        0.24976609,
+                        -1.77089425,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.215627959346,
+                        0.0,
+                        0.0,
+                        0.976475592705
+                    ]
+                },
+                "3": {
+                    "position": [
+                        0.31862475,
+                        -1.33823352,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.089345395502,
+                        0.0,
+                        0.0,
+                        0.996000702963
+                    ]
+                },
+                "4": {
+                    "position": [
+                        0.32799135,
+                        -0.85483408,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.038471800033,
+                        0.0,
+                        0.0,
+                        -0.999259686269
+                    ]
+                },
+                "5": {
+                    "position": [
+                        1.41731303,
+                        -2.53628736,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.242411329231,
+                        0.0,
+                        0.0,
+                        0.970173565637
+                    ]
+                },
+                "6": {
+                    "position": [
+                        1.4344774,
+                        -2.12254434,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.183417851321,
+                        0.0,
+                        0.0,
+                        0.983035040991
+                    ]
+                },
+                "7": {
+                    "position": [
+                        1.41554014,
+                        -1.71818559,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.124313807164,
+                        0.0,
+                        0.0,
+                        0.992242952783
+                    ]
+                },
+                "8": {
+                    "position": [
+                        1.39720696,
+                        -1.29056088,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.062868667034,
+                        0.0,
+                        0.0,
+                        0.998021808732
+                    ]
+                },
+                "9": {
+                    "position": [
+                        1.41496326,
+                        -0.87032497,
+                        0.05
+                    ],
+                    "quaternion": [
+                        0.005970338592,
+                        0.0,
+                        0.0,
+                        -0.99998217737
+                    ]
+                }
+            }
+        },
+        "init_joint": {
+            "enable": true,
+            "num": 0,
+            "thresh": 0.1
+        }
     },
-    "init_joint": {
-      "enable": true,
-      "num": 0,
-      "thresh": 0.1
-    }
-  },
-  "objects": {
-    "constraints": null,
-    "extra_objects": [],
-    "fix_objects": [],
-    "task_related_objects": []
-  },
-  "problem_instance": 0,
-  "recording_setting": {
-    "camera_list": [
-      "/genie/head_link3/head_front_Camera",
-      "/genie/gripper_l_camera_link/Left_Camera",
-      "/genie/gripper_r_camera_link/Right_Camera"
+    "objects": {
+        "constraints": null,
+        "extra_objects": [],
+        "fix_objects": [],
+        "task_related_objects": []
+    },
+    "problem_instance": 0,
+    "recording_setting": {
+        "camera_list": [
+            "/genie/head_link3/head_front_Camera",
+            "/genie/gripper_l_camera_link/Left_Camera",
+            "/genie/gripper_r_camera_link/Right_Camera"
+        ],
+        "fps": 30,
+        "num_of_episode": 6
+    },
+    "robot": {
+        "arm": "right",
+        "robot_cfg": "G2_crsB_90d_wbc.json",
+        "robot_id": "G2",
+        "robot_init_pose": {
+            "workspace_00": {
+                "position": [
+                    0.84609,
+                    -1.73447,
+                    0.05
+                ],
+                "quaternion": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ]
+            }
+        },
+        "robot_init_joints": {
+            "left": [
+                0.5263913024,
+                -0.51888638662,
+                -1.0937978422,
+                -1.5954054692,
+                -1.1487757137,
+                0.33859387489,
+                -1.180540706
+            ],
+            "right": [
+                -0.52516957193,
+                -0.51940998539,
+                1.094321441,
+                -1.5957545351,
+                1.1482521149,
+                0.33929200659,
+                1.1808897719
+            ],
+            "body": [
+                -0.81594142531,
+                1.5138985932,
+                -0.14662238945,
+                0,
+                0
+            ],
+            "head": [
+                0.0,
+                0.0,
+                0.11464
+            ]
+        },
+        "free_base": true
+    },
+    "scene": {
+        "function_space_objects": {
+            "workspace_00": {
+                "material_obj_prim": {},
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "workspace_00_extra": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "workspace_00_ground": {
+                "position": [
+                    0,
+                    0,
+                    0
+                ],
+                "quaternion": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "size": [
+                    0.9,
+                    1,
+                    1
+                ]
+            }
+        },
+        "scene_id": "open_the_roller_shutter/workspace_00",
+        "scene_info_dir": "background/warehouse/warehouse_2/",
+        "scene_usd": "background/warehouse/warehouse_2/background.usda"
+    },
+    "stages": [
+        {
+            "action": "pick",
+            "active": {
+                "object_id": "gripper",
+                "primitive": null
+            },
+            "extra_params": {
+                "pick_up_direction": "x",
+                "pick_up_distance": 0.12
+            },
+            "passive": {
+                "object_id": "",
+                "primitive": null
+            }
+        }
     ],
-    "fps": 30,
-    "num_of_episode": 6
-  },
-  "robot": {
-    "arm": "right",
-    "free_base": true,
-    "robot_cfg": "G2_crsB_90d_wbc.json",
-    "robot_id": "G2",
-    "robot_init_joints": {
-      "body": [
-        -0.81594142531,
-        1.5138985932,
-        -0.14662238945,
-        0,
-        0
-      ],
-      "head": [
-        0.0,
-        0.0,
-        0.11464
-      ],
-      "left": [
-        0.5263913024,
-        -0.51888638662,
-        -1.0937978422,
-        -1.5954054692,
-        -1.1487757137,
-        0.33859387489,
-        -1.180540706
-      ],
-      "right": [
-        -0.52516957193,
-        -0.51940998539,
-        1.094321441,
-        -1.5957545351,
-        1.1482521149,
-        0.33929200659,
-        1.1808897719
-      ]
-    },
-    "robot_init_pose": {
-      "workspace_00": {
-        "position": [
-          0.84609,
-          -1.73447,
-          0.05
-        ],
-        "quaternion": [
-          0.0,
-          0.0,
-          0.0,
-          1.0
-        ]
-      }
-    }
-  },
-  "scene": {
-    "function_space_objects": {
-      "workspace_00": {
-        "material_obj_prim": {},
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          0,
-          0,
-          0
-        ]
-      },
-      "workspace_00_extra": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          0,
-          0,
-          0
-        ]
-      },
-      "workspace_00_ground": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "quaternion": [
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ],
-        "size": [
-          0.9,
-          1,
-          1
-        ]
-      }
-    },
-    "scene_id": "open_the_roller_shutter/workspace_00",
-    "scene_info_dir": "background/warehouse/warehouse_2/",
-    "scene_usd": "background/warehouse/warehouse_2/background.usda"
-  },
-  "stages": [
-    {
-      "action": "pick",
-      "active": {
-        "object_id": "gripper",
-        "primitive": null
-      },
-      "extra_params": {
-        "pick_up_direction": "x",
-        "pick_up_distance": 0.12
-      },
-      "passive": {
-        "object_id": "",
-        "primitive": null
-      }
-    }
-  ],
-  "task": "open_the_roller_shutter_g2_90d"
+    "task": "open_the_roller_shutter_g2_90d"
 }

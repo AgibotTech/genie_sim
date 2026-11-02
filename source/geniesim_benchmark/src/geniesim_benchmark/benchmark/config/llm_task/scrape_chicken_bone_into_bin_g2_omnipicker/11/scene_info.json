@@ -1,13 +1,13 @@
 {
-  "scene_id": 94,
-  "seed": 4964123427750995296,
+  "scene_id": 11,
+  "seed": 846810443,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.03959590827268831,
-        -0.005419133067429898,
-        0.3712736559509297
+        0.045546961018904056,
+        -0.001395313372721091,
+        0.36375508691001684
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        0.15188944192603232,
-        0.19872652239253036,
-        0.741864156508823
+        0.17225967838675438,
+        0.0645194493861773,
+        0.7343455874679101
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9468860791173799,
-        0.3215692043304442
+        0.9547258484986464,
+        -0.297487065615532
       ],
       "tags": [
         "root_scene",
@@ -77,23 +77,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.9468860778054748,
-        0.32156920819345297
+        0.9042955431347308,
+        0.42690698128124166
       ],
-      "usd_quatf_rotation_quantization_rad": 8.159394826456888e-09
+      "usd_quatf_rotation_quantization_rad": 1.804209059930173e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.11154372667893768,
-        -0.24721547732974183,
-        0.7523543515277042
+        -0.13851173623675142,
+        0.2977661500471641,
+        0.7448357824860133
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9427828299882353,
-        -0.3334074616432188
+        -0.1023066395039234,
+        0.9947529097788125
       ],
       "tags": [
         "root_scene",
@@ -102,7 +102,8 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table"
+        "on_table",
+        "garbage"
       ],
       "description": {},
       "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
@@ -118,23 +119,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        -0.9427828296888393,
-        0.3334074624898266
+        -0.19547318981835718,
+        0.9807090455697024
       ],
-      "usd_quatf_rotation_quantization_rad": 1.795976256602216e-09
+      "usd_quatf_rotation_quantization_rad": 2.992390086831176e-07
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.34168670202403006,
-        0.1523210200918949,
-        0.6360167538344889
+        -0.3357356492778143,
+        -0.13996383717650046,
+        0.628498184793576
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        6.123233995736766e-17
+        -6.123234e-17
       ],
       "tags": [
         "root_scene",
@@ -173,61 +174,82 @@
         6.123234e-17
       ],
       "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
-    }
-  },
-  "relations": {
-    "graph": {
-      "directed": true,
-      "multigraph": false,
-      "graph": {},
-      "nodes": [
-        {
-          "id": "root_scene"
-        },
-        {
-          "id": "table_000"
-        },
-        {
-          "id": "scraper_000"
-        },
-        {
-          "id": "trash_bone_000"
-        },
-        {
-          "id": "trash_can_000"
-        }
+    },
+    "trash_apple_000": {
+      "usd": "benchmark_trash_029",
+      "xyz": [
+        -0.04292862460043723,
+        -0.1869904774753927,
+        0.7646046684058105
       ],
-      "links": [
-        {
-          "source": "root_scene",
-          "target": "table_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "scraper_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_bone_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_can_000"
-        }
+      "xyzw": [
+        -0.10168198647473886,
+        0.6997576534962306,
+        0.10168198647473882,
+        0.6997576534962309
+      ],
+      "tags": [
+        "root_scene",
+        "trash_apple_000"
+      ],
+      "keywords": [
+        "trash",
+        "garbage",
+        "apple_core",
+        "on_table"
+      ],
+      "description": {},
+      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
+      "physics": {
+        "kinematic": false,
+        "mass_kg": 0.01
+      },
+      "scale": [
+        1.0,
+        1.0,
+        1.0
       ]
     }
   },
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 1,
-    "source_scene_sha256": "c03375681aac60caaf455930220bf6823b2f867b4d04b18ee6acd2d67500ac28",
-    "seed": 4964123427750995296,
-    "translation_m": [
-      0.0,
-      0.006909697373334672,
-      0.0
+  "relations": [],
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.1384639288689436,
+    "handle_outward_deg": 34.613074083101246,
+    "trash": [
+      "trash_bone_000",
+      "trash_apple_000"
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 11,
+    "source_instance": 7,
+    "source_scene_sha256": "8d13a6aeee8b18973bf736529dae1d505050b4ee301765f940256363c6890f73",
+    "seed": 846810443,
+    "visual_pool_index": 70,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.035756944228093,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

@@ -6,19 +6,11 @@ import os
 import threading
 from typing import Optional
 
-from pathlib import Path
-
+import ik_solver
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 from geniesim_benchmark.plugins.logger import Logger
-from geniesim_benchmark.utils.arm_planner import (
-    SIDES,
-    ProfileArmPlanner,
-    _IKNonConvergence,
-    _joint_constraints,
-    profile_arm_joints,
-)
 
 logger = Logger()
 
@@ -186,7 +178,7 @@ class _StubIKFKSolver:
         )
 
 
-class IKFKSolver(ProfileArmPlanner):
+class IKFKSolver:
     """IK/FK for one robot config.
 
     Thread-safety: ``get_shared_ikfk_solver`` hands the SAME instance to every
@@ -200,27 +192,10 @@ class IKFKSolver(ProfileArmPlanner):
     perfectly plausible-looking joints. ``_lock`` serializes the whole
     mutating region; the cost is negligible (the EEF_ABS path is only taken
     when the served policy returns ``kind == "EEF_ABS"`` at all).
-
-    With a control ``profile`` (fixed-base arm robots such as arx and agilex in
-    a shared-control session) the solver also plans selected-arm Cartesian
-    segments. Planning and the published arm FK then use one float64 chain
-    read from the same URDF, checked against the vendor FK at construction;
-    IK is a bounded local least-squares step validated by the shared planner.
     """
 
-    def __init__(
-        self,
-        arm_init_joint_position,
-        head_init_position,
-        waist_init_position,
-        robot_cfg="G1_omnipicker",
-        *,
-        profile=None,
-    ):
-        # Imported here so G2_90d (Lula solver) runs without the vendor wheel.
-        import ik_solver
-
-        self._lock = threading.RLock()
+    def __init__(self, arm_init_joint_position, head_init_position, waist_init_position, robot_cfg="G1_omnipicker"):
+        self._lock = threading.Lock()
         spec = resolve_ik_spec(robot_cfg)
         urdf_path = spec["urdf"]
         config_path = spec["config"]
@@ -239,101 +214,6 @@ class IKFKSolver(ProfileArmPlanner):
         self.left_solver.set_debug_mode(False)
         self.right_solver.set_debug_mode(False)
         self._sync_targets(arm_init_joint_position)
-        self.loaded_profile = None
-        if profile is not None:
-            self._bind_control_profile(profile, spec, arm_init_joint_position)
-
-    def _bind_control_profile(self, profile, spec, arm_init_joint_position):
-        """Bind this solver to one fixed-base control profile and its URDF chain."""
-
-        import copy
-
-        import yaml
-
-        from geniesim_benchmark.body_kinematics import BodyKinematics
-
-        name = profile.get("name") if isinstance(profile, dict) else None
-        if not isinstance(name, str) or name != self.robot_cfg:
-            raise ValueError(f"control profile {name!r} does not describe robot_cfg {self.robot_cfg!r}")
-        self._name = name
-        self._profile = copy.deepcopy(profile)
-        self._dof = self.arm_dof
-        self._arm_joints = profile_arm_joints(profile, dof=self._dof)
-        frame_contract = profile.get("frame_contract")
-        if not isinstance(frame_contract, dict) or frame_contract.get("base_frame") != "arm_base_link":
-            raise ValueError(f"{name} profile frame contract must name the arm_base_link contract frame")
-        base_link = frame_contract.get("base_frame_link", "arm_base_link")
-        endpoints = frame_contract.get("kinematic_endpoints")
-        if not isinstance(endpoints, dict) or set(endpoints) != set(SIDES):
-            raise ValueError(f"{name} profile frame contract has invalid kinematic endpoints")
-        solver_config = yaml.safe_load(Path(spec["config"]).read_text())
-        for side in SIDES:
-            active = tuple(solver_config["active_joints"][f"{side}_arm"])
-            links = solver_config["target_links"][f"{side}_arm"]
-            if active != self._arm_joints[side]:
-                raise ValueError(f"{name} {side} solver joints {active} disagree with the profile")
-            if links["base"] != base_link or list(links["target"]) != [endpoints[side]]:
-                raise ValueError(f"{name} {side} solver chain disagrees with the profile frame contract")
-        self._base_link = base_link
-        self._end_frames = {side: endpoints[side] for side in SIDES}
-        self._load_motion_contract(profile)
-        self._load_motion_continuity(profile)
-        self._joint_limits, self._joint_velocity_limits = _joint_constraints(
-            Path(spec["urdf"]), self._arm_joints, robot=name
-        )
-        self.body_kinematics = BodyKinematics(Path(spec["urdf"]).read_bytes())
-        # The float64 URDF chain must reproduce the vendor FK it replaces for
-        # planning, or the plan and the solver would describe different arms.
-        state = np.zeros(2 * self._dof, dtype=np.float64)
-        given = np.asarray(arm_init_joint_position, dtype=np.float64).ravel()[: 2 * self._dof]
-        state[: given.size] = given
-        for side in SIDES:
-            joints = state[self._arm_slice(side)]
-            vendor = self.left_solver if side == "left" else self.right_solver
-            expected = np.asarray(vendor.compute_fk(joints.astype(np.float32)), dtype=np.float64).reshape(4, 4)
-            actual = self._relative_end_transform(side, joints)
-            if not np.allclose(actual, expected, atol=1e-4):
-                raise RuntimeError(f"{name} {side} URDF chain disagrees with the vendor FK")
-        self.loaded_profile = copy.deepcopy(profile)
-
-    def _relative_end_transform(self, side, joints):
-        state = dict(zip(self._arm_joints[side], np.asarray(joints, dtype=np.float64).tolist()))
-        base = self.body_kinematics.transform(self._base_link, state)
-        end = self.body_kinematics.transform(self._end_frames[side], state)
-        return np.linalg.inv(base) @ end
-
-    def _solve_side_transform_locked(self, side, arm_base_from_target, seed, *, row_index):
-        from scipy.optimize import least_squares
-
-        limits = self._joint_limits[side]
-        target_rotation = arm_base_from_target[:3, :3]
-
-        def residual(joints):
-            current = self._relative_end_transform(side, joints)
-            return np.concatenate(
-                [
-                    current[:3, 3] - arm_base_from_target[:3, 3],
-                    R.from_matrix(target_rotation.T @ current[:3, :3]).as_rotvec(),
-                ]
-            )
-
-        start = np.clip(np.asarray(seed, dtype=np.float64), limits[:, 0] + 1e-10, limits[:, 1] - 1e-10)
-        solution = least_squares(
-            residual,
-            start,
-            bounds=(limits[:, 0], limits[:, 1]),
-            max_nfev=200,
-            ftol=1e-12,
-            xtol=1e-12,
-            gtol=1e-12,
-        ).x
-        error = residual(solution)
-        if (
-            np.linalg.norm(error[:3]) > self._ik_position_tolerance_m
-            or np.linalg.norm(error[3:]) > self._ik_rotation_tolerance_rad
-        ):
-            raise _IKNonConvergence(f"{self._name} IK failed for {side} arm at action row {row_index}")
-        return self._validated_solution(side, solution, seed, arm_base_from_target, row_index=row_index)
 
     def _sync_targets(self, arm_joint_states):
         """Seed both solvers' IK targets from the current joint state.
@@ -377,12 +257,8 @@ class IKFKSolver(ProfileArmPlanner):
         right_joints = np.asarray(arm_joint_states[dof : 2 * dof], dtype=np.float32)
 
         with self._lock:
-            if self.loaded_profile is not None:
-                left_mat = self._relative_end_transform("left", arm_joint_states[:dof])
-                right_mat = self._relative_end_transform("right", arm_joint_states[dof : 2 * dof])
-            else:
-                left_mat = np.asarray(self.left_solver.compute_fk(left_joints), dtype=np.float64).reshape(4, 4)
-                right_mat = np.asarray(self.right_solver.compute_fk(right_joints), dtype=np.float64).reshape(4, 4)
+            left_mat = np.asarray(self.left_solver.compute_fk(left_joints), dtype=np.float64).reshape(4, 4)
+            right_mat = np.asarray(self.right_solver.compute_fk(right_joints), dtype=np.float64).reshape(4, 4)
 
         left_pos = left_mat[:3, 3]
         left_quat = _as_quat_wxyz(R.from_matrix(left_mat[:3, :3]))
@@ -431,16 +307,6 @@ class IKFKSolver(ProfileArmPlanner):
         return joint_actions
 
 
-def _control_profile_solver(robot_cfg: str) -> bool:
-    """True when a shared-control session runs a robot with its own control profile."""
-
-    if not os.environ.get("GENIESIM_CONTROL_TASK_DIR", "").strip():
-        return False
-    from geniesim_benchmark.control_observation import known_control_profile_names
-
-    return robot_cfg in known_control_profile_names()
-
-
 def get_shared_ikfk_solver(
     arm_init_joint_position,
     head_init_position,
@@ -450,9 +316,6 @@ def get_shared_ikfk_solver(
 ) -> Optional[IKFKSolver]:
     """Process-wide shared IKFKSolver for the given robot_cfg.
 
-    G2_90d defaults to the Lula solver built from its G2_90d.json profile;
-    benchmark runs may explicitly select cuRobo. Shared-control profiles
-    always use Lula and propagate construction failures.
     arx and agilex now have a real IK-SDK config (see _IK_SPECS) and go
     through the same construction path as G1/G2. Falls back to None if
     construction fails for any robot_cfg, rather than killing the caller —
@@ -467,49 +330,12 @@ def get_shared_ikfk_solver(
     with _IKFK_SOLVER_CACHE_LOCK:
         solver = _IKFK_SOLVER_CACHE.get(cache_key)
         if solver is None:
-            if robot_cfg == "G2_90d" and (ik_backend != "curobo" or _control_profile_solver(robot_cfg)):
-                from geniesim_benchmark.utils.g2_lula_ikfk import G2LulaIKFKSolver
-
-                solver = G2LulaIKFKSolver(
-                    arm_init_joint_position,
-                    head_init_position,
-                    waist_init_position,
-                )
-            elif _control_profile_solver(robot_cfg):
-                # A shared-control session (GENIESIM_CONTROL_TASK_DIR is the
-                # control-mode marker task_benchmark requires) plans Cartesian
-                # arm segments through the solver its profile names: the
-                # profile-bound Lula solver for G2 bodies, exactly as G2_90d
-                # does, or this module's IKFKSolver bound to the profile for
-                # fixed-base arms without Lula descriptions (arx, agilex).
-                # Benchmark runs of the same robot keep the vendor path below.
-                from geniesim_benchmark.control_observation import load_control_profile
-
-                profile = load_control_profile(robot_cfg)
-                solver_type = (profile.get("ik_solver") or {}).get("type")
-                if solver_type == "urdf_local_least_squares":
-                    solver = IKFKSolver(
-                        arm_init_joint_position,
-                        head_init_position,
-                        waist_init_position,
-                        robot_cfg=robot_cfg,
-                        profile=profile,
-                    )
-                else:
-                    from geniesim_benchmark.utils.g2_lula_ikfk import G2LulaIKFKSolver
-
-                    solver = G2LulaIKFKSolver(
-                        arm_init_joint_position,
-                        head_init_position,
-                        waist_init_position,
-                        profile=profile,
-                        robot_cfg=robot_cfg,
-                    )
-            elif "lift2" in robot_cfg or "split_aloha" in robot_cfg:
+            if "lift2" in robot_cfg or "split_aloha" in robot_cfg:
                 solver = _StubIKFKSolver(robot_cfg=robot_cfg)
             elif ik_backend == "curobo":
                 try:
                     from geniesim_benchmark.utils.curobo_ikfk_utils import CuroboIKFKSolver
+
                     solver = CuroboIKFKSolver(
                         arm_init_joint_position,
                         head_init_position,
@@ -517,10 +343,7 @@ def get_shared_ikfk_solver(
                         robot_cfg=robot_cfg,
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"cuRobo IK init failed for robot_cfg='{robot_cfg}': {e}; "
-                        "falling back to ik_sdk"
-                    )
+                    logger.warning(f"cuRobo IK init failed for robot_cfg='{robot_cfg}': {e}; " "falling back to ik_sdk")
                     try:
                         solver = IKFKSolver(
                             arm_init_joint_position,

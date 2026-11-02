@@ -1,13 +1,13 @@
 {
-  "scene_id": 100,
-  "seed": 16263456609571237005,
+  "scene_id": 10,
+  "seed": 1651763425,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        -0.09898839670519927,
-        0.007922204741512605,
-        0.3667519822321028
+        -0.09101523843254128,
+        -0.005932129083498017,
+        0.36572427372491545
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.2751187545564026,
-        -0.19403824602120415,
-        0.7373424827899961
+        0.020609963335569005,
+        -0.15552458920184364,
+        0.7363147742828087
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9311145522365566,
-        0.36472687125206
+        0.8815125794160217,
+        -0.47216053660943746
       ],
       "tags": [
         "root_scene",
@@ -76,24 +76,24 @@
       ],
       "authored_requested_xyzw": [
         0.0,
-        0.0,
-        0.9311145550776732,
-        0.3647268639989475
+        -0.0,
+        -0.9116880475203994,
+        0.4108830782697702
       ],
-      "usd_quatf_rotation_quantization_rad": 1.557942019836389e-08
+      "usd_quatf_rotation_quantization_rad": 2.025117962212164e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.04276969718933106,
-        0.2549235269720029,
-        0.7478326778088773
+        -0.2997592012960758,
+        0.29446916461191475,
+        0.7468049693009119
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.7044472223357697,
-        0.7097563743591307
+        0.7756062496176122,
+        -0.6312170352217233
       ],
       "tags": [
         "root_scene",
@@ -118,17 +118,17 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.7044472366798061,
-        0.7097563601223911
+        -0.8037360116676621,
+        0.5949860700458118
       ],
-      "usd_quatf_rotation_quantization_rad": 4.041960599554529e-08
+      "usd_quatf_rotation_quantization_rad": 2.7565121074601965e-08
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.48027100700191766,
-        0.14798461738056445,
-        0.631495080115662
+        -0.4722978487292596,
+        -0.1315731220570585,
+        0.6304673716084747
       ],
       "xyzw": [
         0.0,
@@ -217,17 +217,43 @@
       ]
     }
   },
-  "generalization": {
-    "method": "coupled_horizontal_translation",
-    "source_instance": 0,
-    "source_scene_sha256": "e9787c47f458eb4239785568480610d5a7d00565be03d5a9602f05aacc4c086a",
-    "seed": 16263456609571237005,
-    "translation_m": [
-      0.0,
-      0.009591391716554324,
-      0.0
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.1255363980387247,
+    "handle_outward_deg": 56.34887502738664,
+    "trash": [
+      "trash_bone_000"
     ],
-    "fixed_support": "table",
-    "validation_level": "static_geometry"
-  }
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 10,
+    "source_instance": 5,
+    "source_scene_sha256": "346b5a7024e248845443babcddfc8bd151f917c8582f6e2518d31561834f2ea8",
+    "seed": 1651763425,
+    "visual_pool_index": 109,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.2964871010141445,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

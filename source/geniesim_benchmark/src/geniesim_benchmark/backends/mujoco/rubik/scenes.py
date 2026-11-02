@@ -60,6 +60,25 @@ def read_matrix(text, name):
     return matrix
 
 
+def episode_scenes(catalog, task_name, seed, num_instances, num_episode):
+    """Select each declared instance once, then repeat only its requested attempts.
+
+    The historical single-instance entrypoint sampled one scene per episode;
+    retain that behavior for old configs instead of reinterpreting their runs.
+    """
+    if catalog is None:
+        if num_instances != 1:
+            raise ValueError("multiple Rubik instances require a scene catalog")
+        return None
+    count = num_instances if num_instances > 1 else num_episode
+    selected = catalog.select(task_name, seed, count)
+    if num_instances > 1:
+        if len({scene.identifier for scene in selected}) != num_instances:
+            raise ValueError("num_instances exceeds the unique scenes in the catalog")
+        return [scene for scene in selected for _ in range(num_episode)]
+    return selected
+
+
 class SceneCatalog:
     def __init__(self, archive):
         self.archive = Path(archive).expanduser().resolve()

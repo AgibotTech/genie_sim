@@ -18,22 +18,24 @@
   },
   "robot": {
     "arm": "right",
-    "free_base": true,
     "robot_cfg": "G2_crsB_90d_wbc.json",
     "robot_id": "G2",
+    "robot_init_pose": {
+      "workspace_00": {
+        "position": [
+          -1.54687,
+          0.03701,
+          0.05
+        ],
+        "quaternion": [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
     "robot_init_joints": {
-      "body": [
-        -1.0,
-        2.3385,
-        -1.254,
-        0,
-        0
-      ],
-      "head": [
-        0,
-        0,
-        0.2
-      ],
       "left": [
         1.7323838256725361,
         -1.4511636983067924,
@@ -51,23 +53,21 @@
         0.2221582239920755,
         -0.001358531735271221,
         -0.0006869357715750387
+      ],
+      "body": [
+        -1.0,
+        2.3385,
+        -1.254,
+        0,
+        0
+      ],
+      "head": [
+        0,
+        0,
+        0.2
       ]
     },
-    "robot_init_pose": {
-      "workspace_00": {
-        "position": [
-          -1.54687,
-          0.03701,
-          0.05
-        ],
-        "quaternion": [
-          1.0,
-          0.0,
-          0.0,
-          0.0
-        ]
-      }
-    }
+    "free_base": true
   },
   "scene": {
     "function_space_objects": {

@@ -30,10 +30,11 @@ def Xform "World"
             prepend references = @/geniesim_assets/objects/benchmark/keyboard/benchmark_keyboard_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.70417243, 0, 0, 0.710029)
+            quatf xformOp:orient = (-0.6658239, 0, 0, 0.74610895)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.11388191760246286, -0.09574189877868415, 0.7443891222416303)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.40578692907529085, -0.913967706317704, 0, 0), (0.913967706317704, -0.4057869290752908, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.17481018806591875, -0.16544854393638475, 0.7443891222416303, 1) )
+            double3 xformOp:translate = (-0.11581380445523676, -0.13406193115220902, 0.7443891222416303)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1021,10 +1022,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap_puller/benchmark_keycap_puller_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.7623039, 0, 0, -0.6472193)
+            quatf xformOp:orient = (-0.6564671, 0, 0, 0.75435466)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.12418980294761243, 0.1848783657681713, 0.7432891217007136)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.10911698791443755, -0.9940289145434761, 0, 0), (0.9940289145434761, 0.10911698791443755, 0, 0), (0, 0, 1, 0), (-0.09244015954632372, 0.11858676155403822, 0.7432891217007136, 1) )
+            double3 xformOp:translate = (-0.10282431359981033, 0.1646065241363657, 0.7432891217007136)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1097,10 +1099,11 @@ def cleanup(db):
             prepend references = @/geniesim_assets/objects/benchmark/keycap/benchmark_keycap_002/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (-0.6588541, 0, 0, 0.7522707)
+            quatf xformOp:orient = (0.7247589, 0, 0, -0.6890026)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.16064221284830146, -0.2682139993246432, 0.7353891221634257)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.27616803258615114, -0.9611093682705909, 0, 0), (0.9611093682705909, 0.27616803258615114, 0, 0), (0, 0, 0.9999999999999999, 0), (-0.15476436891796944, -0.30949277548832477, 0.7353891221634257, 1) )
+            double3 xformOp:translate = (-0.18762365981097898, -0.27343633127609046, 0.7353891221634257)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity"
             {
@@ -1174,10 +1177,11 @@ def cleanup(db):
 
         def Xform "puller_holder_000"
         {
-            quatf xformOp:orient = (0.7623039, 0, 0, -0.6472193)
+            quatf xformOp:orient = (-0.6564671, 0, 0, 0.75435466)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.10273391792784302, 0.0718759842989622, 0.7323891221373175)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.10911698791443755, -0.9940289145434761, 0, 0), (0.9940289145434761, 0.10911698791443755, 0, 0), (0, 0, 1, 0), (-0.07706907673192247, 0.0045971873254841075, 0.7323891221373175, 1) )
+            double3 xformOp:translate = (-0.11589025022976472, 0.050329778821860696, 0.7323891221373175)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             def Xform "entity" (
                 prepend references = @/geniesim_assets/objects/benchmark/keycap_swap_fixture/benchmark_keycap_swap_fixture_001/Aligned.usda@</World/entity/body/ToolRack>
