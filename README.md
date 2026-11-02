@@ -114,7 +114,7 @@ flowchart LR
 
 The Genie Sim Benchmark is the engine behind [**RoboColiseum**](https://robocoliseum.ai/) — and the same tool you use to get ready for it:
 
-- **🏆 It's a competition.** RoboColiseum ranks embodied-AI policies on four boards (`instruction` / `robust` / `manip` / `spatial`). The boards and their baseline scores are in the [Genie Sim Benchmark Leaderboard](#52--genie-sim-benchmark-leaderboard) below.
+- **🏆 It's a competition.** RoboColiseum ranks embodied-AI policies on four boards (`instruction` / `robust` / `manip` / `spatial`).
 - **🧪 Debug locally → submit remotely.** Run the benchmark tasks on your own machine to debug your policy against your own inference server, then launch a model evaluation on the official leaderboard with the _same_ server — no blind submissions.
 - **🤖 Agent-friendly one-click SKILLs.** The whole competition pipeline — download datasets, fetch the π<sub>0.5</sub> baseline weights, run an example leaderboard service, submit & track results — ships under [`source/geniesim_benchmark/skills/robocoliseum/`](source/geniesim_benchmark/skills/robocoliseum/); just ask an AI agent (Claude Code, Cursor, …) to drive them.
 
@@ -158,25 +158,7 @@ Turn an equirectangular panorama into an explorable photorealistic 3D world. The
 cat source/geniesim_world/skills/generate-world/SKILL.md
 ```
 
-### 3.5 🧱 Scene Reconstruction — `scene_reconstruction`
-
-```mermaid
-flowchart LR
-  input(["📥 LiDAR and Images"]) ==> align(["📐 Pixel-level<br/> Alignment of Point Cloud and <br/>Camera Pose"]) ==> gs(["🌈 3DGS"]) ==> world(["🌍 3D world<br/>(PLY · Gaussians)"])
-  classDef step fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e,font-weight:bold
-  class input,align,gs,world step
-  linkStyle 0,1,2 stroke:#0369a1,stroke-width:2px
-```
-
-Reconstruct high-fidelity 3D scene assets from real-world LiDAR scans and camera images. The pipeline aligns point clouds with camera poses at pixel level, trains 3D Gaussian Splatting, and produces simulation-ready assets.
-
-```bash
-cat source/scene_reconstruction/AGENTS.md
-```
-
-See [`source/scene_reconstruction/README.md`](source/scene_reconstruction/README.md) for the full pipeline details and [`AGENTS.md`](AGENTS.md) for the per-subsystem agent guides.
-
-### 3.6 💬 Generate a scene from a prompt — `geniesim_scene_agent`
+### 3.5 💬 Generate a scene from a prompt — `geniesim_scene_agent`
 
 ```mermaid
 flowchart LR
@@ -200,7 +182,7 @@ cat source/geniesim_scene_agent/skills/geniesim-scene-to-data/SKILL.md
 
 See [the scene-agent guide](source/geniesim_scene_agent/README.md) for scene generation and optional task orchestration, [the container guide](source/geniesim_scene_agent/docker/README.md) for rendering, and [the example library](source/geniesim_scene_agent/examples/README.md) for task and scene references. The [module map](source/README.md) lists each package's docs and skills.
 
-### 3.7 🎮 Teleoperation — `geniesim_teleop`
+### 3.6 🎮 Teleoperation — `geniesim_teleop`
 
 ```mermaid
 flowchart LR
@@ -224,7 +206,7 @@ Isaac 6.2 mode (`--isaac-version 6.2`, the default) uses `geniesim4` and starts 
 
 See [`source/geniesim_teleop/README.md`](source/geniesim_teleop/README.md) for the controller button map, Pico setup, and task configuration.
 
-### 3.8 📥 Data collection — `data_collection`
+### 3.7 📥 Data collection — `data_collection`
 
 ```mermaid
 flowchart LR
@@ -253,7 +235,7 @@ The image defaults to `registry.agibot.com/genie-sim/geniesim4-data-collection:l
 
 Episodes land in `source/data_collection/recording_data/`. See [the collection guide](source/data_collection/README.md), [task configuration](source/data_collection/TASK_CONFIG_GUIDE.md), and [replay](source/data_collection/replay/README.md) for the runtime and output contracts.
 
-### 3.9 Agent2Act — LLM-to-action runtime
+### 3.8 🧠 Agent2Act — LLM-to-action runtime
 
 Agent2Act is a closed-loop framework that connects multimodal LLMs to robot actions in
 Genie Sim. It supports motion generation, policy backends such as π0.5 / OpenPI, and automatic
@@ -262,13 +244,13 @@ routing between execution modes, using visual observations and robot feedback to
 See [`source/agent2act/README.md`](source/agent2act/README.md) for installation, configuration,
 and usage instructions.
 
-### 3.10 🌙 World-model inference — `geniesim_dream`
+### 3.9 🌙 World-model inference — `geniesim_dream`
 
 Generate G1/G2 robot videos from recorded actions or a pi0.5 policy loop, with optional VLM evaluation. Dream provides a browser UI and 20 example bundles. It uses separate world-model, policy and evaluator environments, outside the default `geniesim bootstrap` flow.
 
 See [the Dream quick start](source/geniesim_dream/README.md), [installation](source/geniesim_dream/docs/setup.md), and [model assets](source/geniesim_dream/docs/assets.md). Its pinned Cosmos Framework and OpenPI dependencies are Git submodules; checkpoints are downloaded separately.
 
-### 3.11 Post-training server
+### 3.10 Post-training server
 
 ```mermaid
 flowchart LR
@@ -320,17 +302,6 @@ flowchart LR
   class v35 current
   class next future
 ```
-
-## 🎯 Next
-
-- [ ] Upload all assets and dataset on Huggingface
-- [ ] Extend deformable benchmark qualification and vision-language-navigation (VLN) task coverage
-- [ ] Support more tasks and larger models for RLinf
-- [ ] More Newton solvers — broaden the rigid + deformable solver in the Newton-standalone
-- [ ] Continue moving benchmark execution onto the RT Engine client interfaces — see [`.agent/geniesim_benchmark.md`](.agent/geniesim_benchmark.md)
-- [ ] Data recorder improvements (today: `ros2 bag` via the [`record-episode`](source/geniesim_ros/skills/record-episode/SKILL.md) SKILL)
-- [ ] Wire `geniesim_world` outputs into the RT Engine (load `.ply` / `.gsp` Gaussians from a `scene_*.yaml`)
-- [ ] Expand Isaac Sim 6.2 backend and scene qualification
 
 ## 📜 Release log
 
@@ -403,109 +374,13 @@ See the [module index](source/README.md) and [benchmark task commands](source/ge
 Please refer to these links to download assets and dataset:
 
 - [Assets](https://modelscope.cn/datasets/agibot_world/GenieSimAssets)
-- [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset)
+- [Dataset](https://modelscope.cn/datasets/agibot_world/GenieSim3.0-Dataset) (New Benchmark Dataset coming soon)
 
-## 5.2 🏆 Genie Sim Benchmark Leaderboard
-
-The four tables below are the **[RoboColiseum](https://robocoliseum.ai/)** boards — `instruction`, `robust`, `manip`, `spatial` — reporting baseline scores for four reference models. The final **GenieSim-Sim2Real** table is not a competition board; it quantifies the simulation-to-reality fidelity of the benchmark. Each task is evaluated under a 2×2 design that crosses the training-data source (simulation vs. real) with the evaluation environment (simulation vs. real), yielding the sim-to-sim, real-to-sim, sim-to-real, and real-to-real conditions. The close agreement between corresponding simulated and physical success rates indicates that evaluation in Genie Sim is a faithful proxy for real-world evaluation.
-
-Baseline model repositories:
-
-| Model                                 | Repository                                                                                                                 |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| &pi;<sub>0.5</sub> / &pi;<sub>0</sub> | [Anonymous-694/ACoT-VLA @ `agibot_world_challenge`](https://github.com/Anonymous-694/ACoT-VLA/tree/agibot_world_challenge) |
-| acot                                  | [AgibotTech/ACoT-VLA](https://github.com/AgibotTech/ACoT-VLA)                                                              |
-| GR00T-N1.7                            | [MiaoMieu/Isaac-GR00T](https://github.com/MiaoMieu/Isaac-GR00T)                                                            |
-
-<table>
-<tr>
-<td valign="top">
-
-### GenieSim-Instruction
-
-| Tasks                | &pi;<sub>0.5</sub> | ACoT-VLA | GR00T-N1.7 | &pi;<sub>0</sub> |
-| :------------------- | :----------------: | :------: | :--------: | :--------------: |
-| pick_billiards_color |        0.83        | **0.91** |    0.73    |       0.50       |
-| pick_block_color     |        0.87        | **0.96** |    0.80    |       0.49       |
-| pick_block_number    |      **0.82**      |   0.76   |    0.61    |       0.40       |
-| pick_block_shape     |      **0.55**      |   0.52   |    0.44    |       0.20       |
-| pick_block_size      |        0.79        | **0.83** |    0.62    |       0.34       |
-| pick_common_sense    |        0.59        |   0.66   |  **0.68**  |       0.19       |
-| pick_follow_logic_or |      **0.81**      |   0.79   |    0.72    |       0.39       |
-| pick_object_type     |      **0.80**      | **0.80** |    0.72    |       0.42       |
-| pick_specific_object |        0.81        | **0.83** |    0.69    |       0.37       |
-| straighten_object    |      **0.59**      |   0.51   |    0.45    |       0.38       |
-| **Avg.**             |        0.75        | **0.76** |    0.65    |       0.37       |
-
-</td>
-<td valign="top">
-
-### GenieSim-Robust
-
-| Perturbation    | &pi;<sub>0.5</sub> | ACoT-VLA  | GR00T-N1.7 | &pi;<sub>0</sub> |
-| :-------------- | :----------------: | :-------: | :--------: | :--------------: |
-| Instruction     |       0.689        | **0.739** |   0.678    |      0.332       |
-| Robot Pose      |       0.492        | **0.543** |   0.429    |      0.240       |
-| Background      |       0.709        | **0.737** |   0.646    |      0.381       |
-| Image Quality   |     **0.599**      |   0.589   |   0.489    |      0.307       |
-| Camera Position |     **0.575**      |   0.504   |   0.449    |      0.303       |
-| **Avg.**        |       0.613        | **0.622** |   0.538    |      0.313       |
-
-</td>
-</tr>
-</table>
-
-### GenieSim-Manipulation
-
-| Tasks                       | &pi;<sub>0.5</sub> | ACoT-VLA | GR00T-N1.7 | &pi;<sub>0</sub> |
-| :-------------------------- | :----------------: | :------: | :--------: | :--------------: |
-| Open Door                   |      **0.95**      |   0.55   |    0.90    |       0.90       |
-| Hold Pot                    |      **0.55**      |   0.45   |    0.11    |       0.20       |
-| Pour Workpiece              |      **0.93**      | **0.93** |    0.87    |       0.07       |
-| Stock and Straighten Shelf  |      **0.40**      |   0.18   |    0.24    |       0.18       |
-| Take Wrong Item Shelf       |      **0.85**      | **0.85** |    0.77    |       0.65       |
-| Scoop Popcorn               |      **0.95**      | **0.95** |    0.77    |       0.87       |
-| Clean the Desktop           |        0.00        |   0.00   |  **0.02**  |       0.00       |
-| Place Block into Box        |      **0.58**      | **0.58** |    0.50    |       0.45       |
-| Sorting Packages            |      **0.51**      |   0.28   |    0.20    |       0.15       |
-| Sorting Packages Continuous |      **0.10**      |   0.00   |    0.00    |       0.00       |
-| **Avg.**                    |      **0.58**      |   0.48   |    0.44    |       0.35       |
-
-### GenieSim-Spatial
-
-| Tasks                                | &pi;<sub>0.5</sub> | ACoT-VLA | GR00T-N1.7 | &pi;<sub>0</sub> |
-| :----------------------------------- | :----------------: | :------: | :--------: | :--------------: |
-| Pick Object Absolute Position        |        0.80        | **0.81** |    0.55    |       0.46       |
-| Pick Object Relative Position        |      **0.65**      |   0.60   |    0.43    |       0.20       |
-| Place Beverage to Another's Position |        0.40        | **0.53** |    0.35    |       0.11       |
-| Place Object Relative Position       |        0.50        | **0.51** |    0.43    |       0.21       |
-| Sort Cubes by Size                   |        0.00        | **0.30** |    0.10    |       0.00       |
-| Sort Number                          |        0.00        | **0.13** |  **0.13**  |       0.06       |
-| Stack Bowls                          |      **0.20**      |   0.00   |    0.00    |       0.00       |
-| Stack Three Building Blocks          |      **0.30**      | **0.30** |    0.00    |       0.00       |
-| **Avg.**                             |        0.36        | **0.40** |    0.25    |       0.13       |
-
-### GenieSim-Sim2Real
-
-| Tasks                   | Sim Env<br>_Sim Data_<br>(sim-to-sim) | Sim Env<br>_Real Data_<br>(real-to-sim) | Real Env<br>_Sim Data_<br>(sim-to-real) | Real Env<br>_Real Data_<br>(real-to-real) |
-| :---------------------- | :-----------------------------------: | :-------------------------------------: | :-------------------------------------: | :---------------------------------------: |
-| Select Color            |               **0.86**                |                  0.75                   |                **0.85**                 |                   0.73                    |
-| Recognize Size          |               **0.93**                |                  0.75                   |                **0.94**                 |                   0.75                    |
-| Grasp Targets           |               **0.72**                |                  0.54                   |                **0.71**                 |                   0.58                    |
-| Organize Items          |               **0.48**                |                  0.45                   |                **0.60**                 |                   0.40                    |
-| Pack in Supermarket     |                 0.94                  |                **1.00**                 |                **0.95**                 |                 **0.95**                  |
-| Sort Fruit              |               **0.90**                |                **0.90**                 |                **1.00**                 |                 **1.00**                  |
-| Place Block into Drawer |                 0.80                  |                **0.90**                 |                  0.85                   |                 **0.90**                  |
-| Bimanual Chip Handover  |               **0.80**                |                  0.70                   |                **0.73**                 |                   0.71                    |
-| **Avg.**                |               **0.80**                |                  0.75                   |                **0.83**                 |                   0.75                    |
-
-> <sup>&dagger;</sup> _Sim Data: 500~1500 episodes of simulation data. Real Data: 500 episodes of real-world data. All models are post-trained from the &pi;<sub>0.5</sub> baseline._
-
-## 5.3 💬 Support
+## 5.2 💬 Support
 
 <img src="./docs/feishu.png" width="30%"/>
 
-## 5.4 📄 License and Citation
+## 5.3 📄 License and Citation
 
 All the data and code within `source/geniesim_*` and `source/data_collection` are under `Mozilla Public License 2.0` unless licensed specifically. The `source/scene_reconstruction` project contains code under multiple licenses, for complete and updated licensing details, please see the LICENSE files
 
@@ -523,7 +398,7 @@ Please consider citing our work either way below if it helps your research.
 }
 ```
 
-## 5.5 🔗 References
+## 5.4 🔗 References
 
 1. PDDL Parser (2020). Version 1.1. [Source code]. https://github.com/pucrs-automated-planning/pddl-parser.
 2. BDDL. Version 1.x.x [Source code]. https://github.com/StanfordVL/bddl
