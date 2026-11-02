@@ -103,3 +103,12 @@ or renderer acceptance.
 ## Lifecycle pause barrier
 
 `client.pause()` waits for INACTIVE and `resume()` for ACTIVE through the existing lifecycle services. Acknowledging an enqueued service request is insufficient; GetState must confirm it. Step/reset reject paused sessions. Pause remains available after an uncertain failed action, without reviving that session. The application separately joins fresh state/images/progress; arrival_v1 remains unchanged.
+
+
+## IPC action and observation client
+
+`IPCClient` and `IPCClientConfig` provide transport for the independent libuipc
+backend. They do not start a world or subprocess. The caller selects scene and
+launcher YAML, owns normal bringup, and uses correlated actions and snapshots.
+See [the IPC protocol](IPC_CLIENT.md) for completion semantics and synchronized
+images. The Newton `SimulationClient` API and protocol remain unchanged.

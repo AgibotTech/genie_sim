@@ -1,0 +1,37 @@
+# Opt-in three-task evaluation: independent libuipc assembly/physics and coherent Isaac rendering.
+launcher:
+  physics:
+    engine: genie_sim_engine_libuipc
+    engines:
+      genie_sim_engine_libuipc:
+        package: genie_sim_engine_libuipc
+        executable: genie_sim_engine_libuipc_node.py
+        name: genie_sim_engine
+        assemble_style: registered_pipeline
+        assemble_pipeline:
+          name: libuipc
+          modules:
+          - genie_sim_engine_libuipc.assemble
+          robot_stage: urdf_to_usd
+        shutdown_timeout_s: 120.0
+    industrial_bridge: ''
+  renders:
+  - render_isaacsim
+genie_sim_engine:
+  ros__parameters:
+    physics_engine: libuipc
+    physics_params_file: physics_params.yaml
+    physics_engine_visualizer: none
+    physics_solver: ipc
+    realtime_factor: 1.0
+    physics_hz: 60.0
+    dds_hz: 60.0
+    render_hz: 60.0
+    render_mode: raster
+    physics_solver_substep: 1
+    physics_solver_iterations: 0
+render_isaacsim:
+  ros__parameters:
+    sync_render_on_demand: true
+    sync_observation_topic: /wuji/ipc_sync
+    sync_camera_topics: '{"head":"/genie_sim/head_camera_rgb","hand_left":"/genie_sim/hand_left_camera_rgb","hand_right":"/genie_sim/hand_right_camera_rgb"}'

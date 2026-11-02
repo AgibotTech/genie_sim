@@ -101,3 +101,19 @@ start instantly.
 
 See [AGENTS.md](AGENTS.md) for the manifest schema, plugin
 registration, `/tf_scene` protocol details, and routing rules.
+
+## Synchronized IPC capture and material receipts
+
+The Python `render_isaacsim` node also accepts immutable IPC snapshots through
+`sync_observation_topic`. It applies body/deformable world state and waits for
+one completed Replicator batch from distinct manifest cameras before returning
+JPEG observations. The default empty topic retains live TF, deformable, depth
+and CameraInfo rendering. `sync_render_on_demand` keeps idle Kit rendering off
+when physics has an independent GPU owner.
+
+An explicitly configured `generalization.material.episode_plan` applies selected
+visual bindings on the renderer's private stage and writes a readback receipt.
+A completed synchronized capture extends that receipt with snapshot identity,
+render completion metadata and image hashes. Source USD files and physics-purpose
+material bindings remain untouched. See [synchronized capture](docs/SYNC_CAPTURE.md)
+for parameters, identity rules, GPU completion and cleanup limitations.

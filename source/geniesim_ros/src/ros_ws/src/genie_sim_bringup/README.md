@@ -540,3 +540,24 @@ and assembly integration; it does not establish autonomous task completion.
 - [Build workspace](../../../../skills/build-workspace/SKILL.md)
 - [Launch scene](../../../../skills/launch-scene/SKILL.md)
 - [Wuji chef startup](../../../../skills/run-wuji-chef-newton/SKILL.md)
+
+
+## Optional native IPC scenes
+
+The added launchers are `launcher_libuipc`, `launcher_libuipc_ovrtx`,
+`launcher_libuipc_isaacsim` and `launcher_libuipc_wuji_eval`. Added Wuji scenes
+cover cloth folding, cloth hanging, drawstring bags and paper folding. They use
+external task/background assets named in their scene YAML. Existing scene
+configurations and launchers are retained.
+
+For example, after installing the native runtime and building the ROS workspace:
+
+```bash
+ros2 launch genie_sim_bringup app.launch.py \
+  scene:=scene_flat_g2_wuji_ipc_fold_cloth launcher_config:=launcher_libuipc
+```
+
+The [backend guide](../genie_sim_engine_libuipc/README.md) lists configuration
+and runtime requirements. The three-task evaluation launcher enables
+[synchronized observations](../genie_sim_client/IPC_CLIENT.md); successful
+assembly or CPU checks do not establish physical task or camera acceptance.

@@ -286,3 +286,22 @@ starting Kit at module import. SDK-dependent USD checks skip where USD is absent
 ## Frozen Newton snapshot worker
 
 `isaacsim_snapshot_render.py` and `_isaac_snapshot_scene.py` receive trusted private Pipe snapshots, apply Newton geometry/body poses and render three independent cameras without a physics world or timeline advancement. Authored robot/background references retain materials while their physics is disabled. Snapshot sequence ACKs confirm image readback only. The owner closes worker, render products, temporary textures and video resources on failure/exit. `GENIE_SIM_RENDER_BUILD_OVRTX=OFF` permits Python-worker-only builds; ON preserves existing C++ targets. See [the worker protocol](docs/snapshot_renderer.md).
+
+## Synchronized IPC snapshots and episode material plans
+
+The single Python renderer's opt-in `sync_observation_topic` selects
+`scripts/_sync_capture.py`: callbacks validate and enqueue immutable version-1
+`xyz+wxyz` world-state snapshots, then the render loop applies and captures them
+as one completed Replicator Writer batch. Live TF, free-camera and deformable
+callbacks cannot overwrite the snapshot-owned stage. An empty topic retains the
+existing live renderer and camera graph. `sync_render_on_demand=true` allows only
+capture/warmup to perform Kit work; neither sync path advances physics.
+
+`scripts/_material_generalization.py` consumes an explicit
+`generalization.material.episode_plan` through the manifest's scene config.
+It verifies the plan hash, authored visual targets and composed bindings, writes
+an initialization receipt, and rechecks bindings for each completed synchronized
+capture. Receipts associate snapshot/render identity and image hashes with the
+plan. Physics-purpose bindings and original asset files are preserved.
+See [the sync protocol](docs/SYNC_CAPTURE.md) for source/epoch/retry ownership,
+world-point application, camera selection, completion metadata and failure cleanup.

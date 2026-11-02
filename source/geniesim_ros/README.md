@@ -238,6 +238,7 @@ graph TD
   genie_sim_controllers["<b>genie_sim_controllers</b>"]
   genie_sim_engine_core["<b>genie_sim_engine_core</b>"]
   genie_sim_engine_isaacsim["<b>genie_sim_engine_isaacsim</b>"]
+  genie_sim_engine_libuipc["<b>genie_sim_engine_libuipc</b>"]
   genie_sim_engine_newton["<b>genie_sim_engine_newton</b>"]
   genie_sim_moveit["<b>genie_sim_moveit</b>"]
   genie_sim_moveit_plugins["<b>genie_sim_moveit_plugins</b>"]
@@ -264,6 +265,8 @@ graph TD
   genie_sim_engine_isaacsim ==>|exec| genie_sim_common
   genie_sim_engine_isaacsim ==>|exec| genie_sim_engine_core
   genie_sim_engine_isaacsim ==>|exec| genie_sim_engine_newton
+  genie_sim_engine_libuipc ==>|exec| genie_sim_common
+  genie_sim_engine_libuipc ==>|exec| genie_sim_engine_core
   genie_sim_engine_newton ==>|exec| genie_sim_common
   genie_sim_engine_newton ==>|exec| genie_sim_engine_core
   genie_sim_moveit ==>|exec| genie_sim_common
@@ -278,3 +281,18 @@ graph TD
 See [AGENTS.md](AGENTS.md) for the package table, build instructions, the
 wheel-packaging contract, and the dispatch rules that make the same source
 run across the supported Isaac Sim versions.
+
+
+## Optional native IPC backend
+
+The independent [libuipc backend](src/ros_ws/src/genie_sim_engine_libuipc/README.md)
+adds native IPC physics while the existing Isaac and Newton backends remain
+available. Select `launcher_libuipc`, `launcher_libuipc_ovrtx`,
+`launcher_libuipc_isaacsim` or the three-task `launcher_libuipc_wuji_eval` through
+the normal launch entry point. Its scene configuration uses the `libuipc:` block.
+
+[IPCClient](src/ros_ws/src/genie_sim_client/IPC_CLIENT.md) adds correlated action
+completion and physical-state/image observations independently of the existing
+Newton client protocol. [Synchronized capture](src/ros_ws/src/genie_sim_render/docs/SYNC_CAPTURE.md)
+is opt-in; ordinary live rendering keeps its existing behavior. Native solving
+and GPU image capture require separate acceptance in the prepared runtime.

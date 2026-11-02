@@ -1,0 +1,422 @@
+# Opt-in drawstring_bag evaluation, derived from scene_flat_g2_wuji_ipc_drawstring_bag.yaml.
+# CPU600/barrier10 couples to launcher IPC60; only the renderer freezes snapshots.
+# Robot/sysid geometry, drives and task materials retain the target canonical definition.
+# Robot initial joint/base task state follows the pinned original evaluator scene.
+# Episode owner injects a unique state_recording output directory.
+robot:
+  robot_name: G2_crsB_wuji
+  robot_prefix: genie
+  robot_source:
+    arm: crsB
+    body: g2
+    gripper: wuji
+    robot_model: genie
+    package: genie_sim_robot_model
+    pin_base_to_world: true
+    convert_joints_to_fixed:
+    - base
+    - head
+    - body
+    urdf:
+      inertia_source: sysid
+    prebaked:
+      usda: robot/G2_crsB_wuji/robot.usda
+      visual_only: true
+  init_base_pose:
+    x: 0.0
+    y: 0.0
+    z: 0.0
+    theta: 0.0
+  init_joint_pos:
+    idx01_body_joint1: -46.00278137105379
+    idx02_body_joint2: 86.21868901128627
+    idx03_body_joint3: -19.589427015522844
+    idx04_body_joint4: 0.0
+    idx05_body_joint5: 0.0
+    idx11_head_joint1: 0.0
+    idx12_head_joint2: -0.05729577951308232
+    idx13_head_joint3: 25.783100780887047
+    idx21_arm_l_joint1: -20.0
+    idx22_arm_l_joint2: -45.0
+    idx23_arm_l_joint3: 0.0
+    idx24_arm_l_joint4: -75.0
+    idx25_arm_l_joint5: 0.0
+    idx26_arm_l_joint6: -55.0
+    idx27_arm_l_joint7: 0.0
+    idx61_arm_r_joint1: 20.0
+    idx62_arm_r_joint2: -45.0
+    idx63_arm_r_joint3: 0.0
+    idx64_arm_r_joint4: -75.0
+    idx65_arm_r_joint5: 0.0
+    idx66_arm_r_joint6: -55.0
+    idx67_arm_r_joint7: 0.0
+    hand_l_thumb_joint1: 0.0
+    hand_l_thumb_joint2: 0.0
+    hand_l_thumb_joint3: 0.0
+    hand_l_thumb_joint4: 0.0
+    hand_l_index_joint1: 0.0
+    hand_l_index_joint2: 0.0
+    hand_l_index_joint3: 0.0
+    hand_l_index_joint4: 0.0
+    hand_l_middle_joint1: 0.0
+    hand_l_middle_joint2: 0.0
+    hand_l_middle_joint3: 0.0
+    hand_l_middle_joint4: 0.0
+    hand_l_ring_joint1: 0.0
+    hand_l_ring_joint2: 0.0
+    hand_l_ring_joint3: 0.0
+    hand_l_ring_joint4: 0.0
+    hand_l_pinky_joint1: 0.0
+    hand_l_pinky_joint2: 0.0
+    hand_l_pinky_joint3: 0.0
+    hand_l_pinky_joint4: 0.0
+    hand_r_thumb_joint1: 0.0
+    hand_r_thumb_joint2: 0.0
+    hand_r_thumb_joint3: 0.0
+    hand_r_thumb_joint4: 0.0
+    hand_r_index_joint1: 0.0
+    hand_r_index_joint2: 0.0
+    hand_r_index_joint3: 0.0
+    hand_r_index_joint4: 0.0
+    hand_r_middle_joint1: 0.0
+    hand_r_middle_joint2: 0.0
+    hand_r_middle_joint3: 0.0
+    hand_r_middle_joint4: 0.0
+    hand_r_ring_joint1: 0.0
+    hand_r_ring_joint2: 0.0
+    hand_r_ring_joint3: 0.0
+    hand_r_ring_joint4: 0.0
+    hand_r_pinky_joint1: 0.0
+    hand_r_pinky_joint2: 0.0
+    hand_r_pinky_joint3: 0.0
+    hand_r_pinky_joint4: 0.0
+viewer_camera:
+  pos:
+  - 2.2
+  - -2.2
+  - 1.6
+  lookat:
+  - 0.8
+  - 0.1
+  - 1.0
+cameras:
+- prim_path: head_link3/Head_Front_Camera
+  frame_id: head_link3
+  topic:
+    rgb: /genie_sim/head_camera_rgb
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 317.05
+    fy: 377.66
+    k1: 0
+    k2: 0
+    p1: 0
+    p2: 0
+    k3: 0
+  extrinsic:
+    xyz:
+    - 0.10237
+    - 0.02375
+    - 0.10256
+    wxyz:
+    - -0.59451
+    - -0.386832
+    - 0.378729
+    - 0.594544
+- prim_path: hand_l_base_link/Left_Camera
+  frame_id: hand_l_base_link
+  topic:
+    rgb: /genie_sim/hand_left_camera_rgb
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 317.05
+    fy: 377.66
+    k1: 0
+    k2: 0
+    p1: 0
+    p2: 0
+    k3: 0
+  extrinsic:
+    xyz:
+    - 0.045919
+    - 0.022
+    - -0.004108
+    wxyz:
+    - -0.076393
+    - 0.962922
+    - 0.253427
+    - -0.052161
+- prim_path: hand_r_base_link/Right_Camera
+  frame_id: hand_r_base_link
+  topic:
+    rgb: /genie_sim/hand_right_camera_rgb
+  sensor:
+    width: 640
+    height: 480
+    freq: 10.0
+    min_range: 0.01
+    max_range: 10000
+  intrinsic:
+    cx: 320.0
+    cy: 240.0
+    fx: 317.05
+    fy: 377.66
+    k1: 0
+    k2: 0
+    p1: 0
+    p2: 0
+    k3: 0
+  extrinsic:
+    xyz:
+    - 0.047337
+    - -0.021999
+    - -0.004276
+    wxyz:
+    - -0.03077
+    - 0.24764
+    - 0.960974
+    - -0.119403
+lidars: []
+scene: background/drawstring_bag/background.usda
+libuipc:
+  cpu_mujoco:
+    robot_self_collision: true
+    robot_self_collision_excludes:
+    - - arm_l_link5
+      - arm_l_link7
+    - - arm_r_link5
+      - arm_r_link7
+    - - hand_l_base_link
+      - hand_l_thumb_link2
+    - - hand_l_base_link
+      - hand_l_index_link2
+    - - hand_l_base_link
+      - hand_l_middle_link2
+    - - hand_l_base_link
+      - hand_l_ring_link2
+    - - hand_l_base_link
+      - hand_l_pinky_link2
+    - - hand_r_base_link
+      - hand_r_thumb_link2
+    - - hand_r_base_link
+      - hand_r_index_link2
+    - - hand_r_base_link
+      - hand_r_middle_link2
+    - - hand_r_base_link
+      - hand_r_ring_link2
+    - - hand_r_base_link
+      - hand_r_pinky_link2
+    execution: process
+    static_collision_margin: 0.003
+    viewer:
+      enabled: false
+      render_hz: 30
+    physics_hz: 600.0
+    timeout_s: 0.5
+    state_timeout_s: 0.5
+    iterations: 50
+    tolerance: 1.0e-08
+    friction: 0.3
+    drives:
+    - pattern: idx[26][12]_arm_[lr]_joint[12]
+      kp: 1500.0
+      kd: 50.0
+      force_limit: 108.0
+      armature: 0.05
+      damping: 1.0
+      frictionloss: 0.3
+    - pattern: idx[26][345]_arm_[lr]_joint[345]
+      kp: 800.0
+      kd: 30.0
+      force_limit: 35.0
+      armature: 0.05
+      damping: 1.0
+      frictionloss: 0.3
+    - pattern: idx[26][67]_arm_[lr]_joint[67]
+      kp: 200.0
+      kd: 10.0
+      force_limit: 18.0
+      armature: 0.02
+      damping: 1.0
+      frictionloss: 0.3
+    - pattern: hand_[lr]_(thumb|index|middle|ring|pinky)_joint[1-4]
+      kp: 0.5
+      kd: 0.05
+      force_limit: 5.0
+      armature: 0.0005
+      damping: 0.0
+      frictionloss: 0.0
+    synchronization: barrier
+    sync_substeps: 10
+    sync_timeout_s: 0.5
+    dynamic_proxies:
+    - bottle1
+    - bottle2
+  viewer:
+    initial_camera:
+      frame: head_link3
+      pos:
+      - -0.1707181743942022
+      - 0.02086748013554654
+      - 0.22671530631138112
+      lookat:
+      - 1.0126639146473406
+      - 0.0333583995481782
+      - -0.3112910210379371
+    arm_view_only: true
+    collider_only: true
+    robot_color:
+    - 1.0
+    - 1.0
+    - 1.0
+  solver:
+    prefer: ipc
+  deactivate_prims:
+  - /World/Objects/ground
+  - /World/Objects/table_collider
+  - /World/Objects/trash_can
+  - /World/Objects/drawstring_bag
+  - /World/Objects/bottle1
+  - /World/Objects/bottle2
+  - /World/robot
+  length_scale_mesh: /World/Objects/drawstring_bag/shell
+  objects:
+  - name: table
+    kind: static_mesh
+    mesh_prim_path: /World/Objects/table_collider
+  - name: trash_can
+    kind: static_mesh
+    mesh_prim_path: /World/Objects/trash_can/entity/body/body_collider_00
+    cpu_collision:
+      method: coacd
+      threshold: 0.01
+      margin: 0.01
+  - name: drawstring_bag
+    kind: cloth_mesh
+    mesh_prim_path: /World/Objects/drawstring_bag/shell
+    expected_particle_count: 1201
+    volume_density: 1237.4
+    tri_ke: 5357.142857142858
+    tri_ka: 21428.571428571435
+    edge_ke: 0.05
+  - name: cord_a
+    kind: tet_mesh
+    mesh_prim_path: /World/Objects/drawstring_bag/cord_a
+    expected_particle_count: 441
+    density: 1649.8
+    youngs_modulus: 4000000.0
+    poisson_ratio: 0.45
+    youngs_modulus_scale_power: 2
+    damping: 0.0
+    particle_radius: 0.001
+  - name: cord_b
+    kind: tet_mesh
+    mesh_prim_path: /World/Objects/drawstring_bag/cord_b
+    expected_particle_count: 441
+    density: 1649.8
+    youngs_modulus: 4000000.0
+    poisson_ratio: 0.45
+    youngs_modulus_scale_power: 2
+    damping: 0.0
+    particle_radius: 0.001
+  - name: bottle1
+    kind: rigid_mesh
+    body_prim_path: /World/Objects/bottle1
+    mesh_prim_path: /World/Objects/bottle1/collider_01
+    density: 1000.0
+  - name: bottle2
+    kind: rigid_mesh
+    body_prim_path: /World/Objects/bottle2
+    mesh_prim_path: /World/Objects/bottle2/collider
+    density: 1000.0
+  contact_d_hat: 0.0009
+  cloth_thickness: 0.0012
+  abd_kappa: 100000000.0
+  fem_mas_partition_size: 16
+  linear_system_tol_rate: 1.0e-06
+  linear_system_check_interval: 50
+  newton_semi_implicit: true
+  newton_semi_implicit_beta_tol: 0.0001
+  newton_max_iter: 5
+  kinematic_constraint_strength:
+  - 1000.0
+  - 1000.0
+  linear_system_solver: fused_pcg
+  abd_full_block_preconditioner: false
+  linear_system_graph_enable: true
+  linear_system_fused_preconditioner_enable: true
+  gripper_self_contact: false
+  robot_static_collision: false
+  collision_link_names:
+  - hand_l_base_link
+  - hand_l_thumb_link1
+  - hand_l_thumb_link2
+  - hand_l_thumb_link3
+  - hand_l_thumb_link4
+  - hand_l_thumb_pad_link
+  - hand_l_index_link1
+  - hand_l_index_link2
+  - hand_l_index_link3
+  - hand_l_index_link4
+  - hand_l_index_pad_link
+  - hand_l_middle_link1
+  - hand_l_middle_link2
+  - hand_l_middle_link3
+  - hand_l_middle_link4
+  - hand_l_middle_pad_link
+  - hand_l_ring_link1
+  - hand_l_ring_link2
+  - hand_l_ring_link3
+  - hand_l_ring_link4
+  - hand_l_ring_pad_link
+  - hand_l_pinky_link1
+  - hand_l_pinky_link2
+  - hand_l_pinky_link3
+  - hand_l_pinky_link4
+  - hand_l_pinky_pad_link
+  - hand_r_base_link
+  - hand_r_thumb_link1
+  - hand_r_thumb_link2
+  - hand_r_thumb_link3
+  - hand_r_thumb_link4
+  - hand_r_thumb_pad_link
+  - hand_r_index_link1
+  - hand_r_index_link2
+  - hand_r_index_link3
+  - hand_r_index_link4
+  - hand_r_index_pad_link
+  - hand_r_middle_link1
+  - hand_r_middle_link2
+  - hand_r_middle_link3
+  - hand_r_middle_link4
+  - hand_r_middle_pad_link
+  - hand_r_ring_link1
+  - hand_r_ring_link2
+  - hand_r_ring_link3
+  - hand_r_ring_link4
+  - hand_r_ring_pad_link
+  - hand_r_pinky_link1
+  - hand_r_pinky_link2
+  - hand_r_pinky_link3
+  - hand_r_pinky_link4
+  - hand_r_pinky_pad_link
+  action_sequence:
+    topic: /wuji/ipc_action
+  observation_snapshot:
+    topic: /wuji/ipc_sync
+  deformable_publish:
+    enabled: false

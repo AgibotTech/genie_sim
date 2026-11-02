@@ -18,6 +18,7 @@ install(
     scripts/gripper_cmds.py
     scripts/wbc_cmds.py
     scripts/wok_flip_cmds.py
+    scripts/fold_cloth_infer.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

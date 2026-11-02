@@ -87,6 +87,7 @@ def generate_launch_description():
             description=(
                 "'isaac_physx' (default), 'isaac_newton' (Isaac wrapper, "
                 "XPBD/MuJoCo), 'newton' (direct ModelBuilder, VBD cloth)."
+                " 'libuipc' selects the independent native IPC backend."
             ),
         ),
         DeclareLaunchArgument(
@@ -107,6 +108,7 @@ def generate_launch_description():
                 "``isaac_newton`` to MuJoCo-Warp specifically. For cloth "
                 "or alternative rigid solvers, use ``physics_engine:=newton`` "
                 "and configure via the scene yaml."
+                " The independent libuipc backend additionally accepts 'ipc'."
             ),
         ),
         DeclareLaunchArgument(
@@ -188,6 +190,13 @@ def generate_launch_description():
             ),
         ),
     ]
+
+    # Extend the existing declarations without replacing their original choices.
+    for argument in declared_arguments:
+        if argument.name == "physics_engine":
+            argument.choices.append("libuipc")
+        elif argument.name == "physics_solver":
+            argument.choices.append("ipc")
 
     def parse_args(context):
         # ---- pull common args from the composer context ------------------

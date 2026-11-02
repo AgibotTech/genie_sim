@@ -6,5 +6,7 @@
 
 from .client import RenderBridge, SimulationClient, StepResult, WorldSchema, WorldSnapshot
 from .config import ClientConfig
+from .ipc import IPCClient, IPCClientConfig
 
 __all__ = ["ClientConfig", "RenderBridge", "SimulationClient", "StepResult", "WorldSchema", "WorldSnapshot"]
+__all__ += ["IPCClient", "IPCClientConfig"]

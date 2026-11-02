@@ -32,3 +32,12 @@ from the repository root with the package directory on PYTHONPATH. Format Python
 with black at 120 columns. CMake registers the same tests with ament pytest.
 
 `client.pause()` and `resume()` use the existing lifecycle services and GetState confirmation. Step/reset reject paused sessions; pause remains allowed after a failed action as a safe stop without clearing failure. Image/progress freshness stays caller-owned. Dependencies include lifecycle_msgs/std_srvs; tests/test_lifecycle.py covers enqueue versus state confirmation and cleanup.
+
+
+## Independent IPC transport
+
+`ipc.py` and `_ipc_bridge.py` add `IPCClient`/`IPCClientConfig` without changing
+the existing Newton client or its arrival protocol. ROS imports remain lazy;
+the caller owns engine/render bringup and shutdown. IPC identity, action
+completion and immutable state/image packets follow [IPC_CLIENT.md](IPC_CLIENT.md).
+Keep backend SDK imports out of this package and preserve the existing tests.

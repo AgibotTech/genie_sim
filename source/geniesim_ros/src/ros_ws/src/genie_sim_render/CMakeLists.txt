@@ -126,6 +126,8 @@ install(PROGRAMS
   scripts/isaacsim_tiled_render.py
   scripts/isaacsim_fused_sim.py
   scripts/_isaac_render_common.py
+  scripts/_sync_capture.py
+  scripts/_material_generalization.py
   scripts/_instance_materials.py
   scripts/_render_randomize.py
   scripts/_fused_point_instancers.py
@@ -142,6 +144,7 @@ install(DIRECTORY docs/
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)
   ament_add_pytest_test(isaacsim_transport_tests test/test_isaacsim_transport.py)
+  ament_add_pytest_test(sync_initialization_tests test/test_sync_initialization.py)
   ament_add_pytest_test(isaac_snapshot_tests test/test_isaac_snapshot.py TIMEOUT 30)
   if(GENIE_SIM_RENDER_BUILD_OVRTX)
   find_package(ament_cmake_gtest REQUIRED)

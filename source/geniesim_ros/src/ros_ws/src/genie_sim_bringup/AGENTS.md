@@ -457,3 +457,14 @@ conversion supplies no baked camera and must synthesize this pose.
 ## Wuji evaluation pairing
 
 `scene_flat_g2_sp_chef_wuji_eval.yaml` plus `launcher_newton_wuji_eval.yaml` is the explicit locally validated procedural baseline: default inertias, pregrasp pose, 46 procedural foods, authored visual background only, no startup hand publisher. The default `scene_flat_g2_sp_chef_wuji` retains its authored physics, sysid selection and food recording. Evaluation uses `step_mode: lockstep`, one requested tick per target, frozen-state cameras, optional video, and launcher-only `wok_evaluation_json` thresholds. See the scene and launcher YAML for the evaluation configuration.
+
+
+## Optional libuipc bringup
+
+The additional `launcher_libuipc*` configurations select the independently
+registered `libuipc` assembly pipeline and `physics_engine: libuipc` /
+`physics_solver: ipc`. Existing engine/solver choices and runtime cache paths
+remain valid. Native scene settings live in the scene YAML's `libuipc:` block;
+[the backend guide](../genie_sim_engine_libuipc/AGENTS.md) owns that contract.
+`scripts/fold_cloth_infer.py` is an optional policy adapter for the new cloth
+scene. It does not alter existing Newton or Isaac task launchers.

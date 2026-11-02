@@ -20,3 +20,11 @@ Implementation: [core contracts](../src/ros_ws/src/genie_sim_engine_core/README.
 Configuration references: [physics settings](../src/ros_ws/src/genie_sim_engine_core/docs/physics_knobs.md)
 and [assembly pipeline](../src/ros_ws/src/genie_sim_engine_core/docs/pipeline.md).
 See the [contributor guide](../AGENTS.md) for workspace maintenance contracts.
+
+
+## Native IPC references
+
+- [Backend setup](../src/ros_ws/src/genie_sim_engine_libuipc/README.md) and
+  [configuration/ownership](../src/ros_ws/src/genie_sim_engine_libuipc/DESIGN.md).
+- [IPC client and action/snapshot protocol](../src/ros_ws/src/genie_sim_client/IPC_CLIENT.md).
+- [Synchronized renderer capture](../src/ros_ws/src/genie_sim_render/docs/SYNC_CAPTURE.md).

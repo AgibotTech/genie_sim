@@ -30,6 +30,8 @@ dependencies = [
     # requires 0.4; the render node handles its motion-BVH and sensor-graph APIs.
     "ovrtx>=0.4.0,<0.5.0",
     "pyglet>=2.0",
+    # Optional scene-selected CPU collider decomposition for the IPC backend.
+    "coacd>=1.0.7",
     # Pins to keep Isaac Sim's bundled extensions importable. The
     # omni.services.pip_archive ships an older typing_extensions that
     # lacks `Sentinel`, so newer pydantic_core blows up on import; pin

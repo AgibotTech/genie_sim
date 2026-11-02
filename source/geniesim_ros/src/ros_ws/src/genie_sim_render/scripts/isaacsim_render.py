@@ -111,6 +111,7 @@ from tf2_msgs.msg import TFMessage  # noqa: E402
 from _isaac_render_common import (  # noqa: E402  (sibling module)
     DeformableChannel,
     disable_physics_subtree,
+    load_scene_config,
     reference_scene_stage,
     select_physics_variant,
 )
@@ -396,6 +397,12 @@ class IsaacSimRenderNode(Node):
         # Opt-in live deformable-particle channel. Empty (the default) leaves
         # the feature off, so an ordinary scene is unaffected.
         self.declare_parameter("deformable_topic", "")
+        self.declare_parameter("sync_observation_topic", "")
+        self.declare_parameter("sync_camera_topics", "{}")
+        self.declare_parameter("sync_render_on_demand", False)
+        self._sync_topic = self.get_parameter("sync_observation_topic").value
+        self._sync_render_on_demand = self.get_parameter("sync_render_on_demand").value
+        self._sync_capture = None
 
         manifest_path = self.get_parameter("stage_manifest").get_parameter_value().string_value
         self._render_fps = float(self.get_parameter("render_fps").get_parameter_value().double_value or 30.0)
@@ -403,7 +410,10 @@ class IsaacSimRenderNode(Node):
 
         if not manifest_path:
             raise RuntimeError("Parameter 'stage_manifest' is required")
+        self._manifest_path = Path(manifest_path).resolve()
+        self._material_application = None
         self._manifest = Manifest.load(Path(manifest_path))
+        self._snapshot_robot_source_paths = dict(self._manifest.robot_body_paths)
 
         self._timing_pub = self.create_publisher(Float64MultiArray, "~/render_timing", 10)
         # Robot link poses. ``/tf_render`` below is the **v1** channel and is
@@ -448,11 +458,18 @@ class IsaacSimRenderNode(Node):
         self._init_stage()
         self._setup_cameras()
 
+        # Snapshot mode exclusively owns geometry; disable the live particle
+        # subscription before running the original channel initialization.
+        if self._sync_topic:
+            self._deformable_topic = ""
+
         # Live deformable-particle channel. Subscribed AFTER the stage is up,
         # so the latched topology can resolve its prim_paths against a real
         # stage (and a topology that arrived during load is re-requested by
         # the transient-local QoS).
         self._deformable = DeformableChannel(self, self._stage, self._deformable_topic, logger=self.get_logger())
+
+        self._setup_sync_capture()
 
         self.get_logger().info(
             f"Isaac Sim render node ready ({self._render_fps:.1f} fps, "
@@ -460,6 +477,72 @@ class IsaacSimRenderNode(Node):
         )
 
     # -- stage / cameras --------------------------------------------------
+
+    def _setup_sync_capture(self):
+        """Add snapshot capture after the original stage/channel initialization."""
+        if not self._sync_topic:
+            return
+        try:
+            from _sync_capture import SyncObservationRenderer
+
+            requested = json.loads(self.get_parameter("sync_camera_topics").value)
+            by_topic = {camera.topic: camera for camera in self._manifest.cameras}
+            if (
+                not isinstance(requested, dict)
+                or not requested
+                or any(
+                    not isinstance(name, str) or not name or topic not in by_topic for name, topic in requested.items()
+                )
+                or len(set(requested.values())) != len(requested)
+            ):
+                raise ValueError("sync_camera_topics must select distinct configured manifest cameras")
+            cameras = {
+                name: (self._camera_prim_path(by_topic[topic]), (by_topic[topic].width, by_topic[topic].height))
+                for name, topic in requested.items()
+            }
+            self._sync_capture = SyncObservationRenderer(
+                self,
+                self._sync_topic,
+                cameras,
+                self._apply_observation_snapshot,
+                completed_capture=self._record_material_capture,
+            )
+        except BaseException:
+            self.shutdown()
+            self.destroy_node()
+            raise
+
+    def _select_robot_usd(self) -> str:
+        """Keep sync rendering on a complete, explicitly named robot inventory.
+
+        A prebaked visual may use an older hand naming convention or carry
+        retired geometry. Do not guess aliases or drop missing physical bodies;
+        use the assembled robot when the visual cannot represent every body.
+        The ordinary live-render selection retains its existing behavior.
+        """
+        visual, physical = self._manifest.robot_visual_usda, self._manifest.robot_usda
+        if not self._sync_topic or not visual:
+            return visual or physical
+        from pxr import Usd
+
+        robot_root = "/" + self._manifest.robot_prefix if self._manifest.robot_prefix else "/Robot"
+        stage = Usd.Stage.CreateInMemory()
+        stage.DefinePrim(robot_root, "Xform").GetReferences().AddReference(visual)
+        missing = []
+        for body, original in self._manifest.robot_body_paths.items():
+            candidates = (stage.GetPrimAtPath(robot_root + "/" + body), stage.GetPrimAtPath(original))
+            if not any(prim and prim.IsA(UsdGeom.Xformable) and not prim.IsInstanceProxy() for prim in candidates):
+                missing.append(body)
+        if not missing:
+            return visual
+        if not physical:
+            raise ValueError("sync visual has an incomplete robot inventory and no assembled robot_usda")
+        shown = ", ".join(sorted(missing)[:8]) + (" ..." if len(missing) > 8 else "")
+        self.get_logger().warning(
+            f"Sync visual lacks {len(missing)} declared robot bodies ({shown}); "
+            f"using complete assembled robot USD: {physical}"
+        )
+        return physical
 
     def _init_stage(self) -> None:
         self.get_logger().info(f"Opening scene USD: {self._manifest.scene_usda}")
@@ -477,6 +560,9 @@ class IsaacSimRenderNode(Node):
         # URDF output, whose converter drops the authored materials and renders
         # flat white. robot_visual_usda carries the real materials.
         robot_usd_to_attach = self._manifest.robot_visual_usda or self._manifest.robot_usda
+        if self._sync_topic:
+            robot_usd_to_attach = self._select_robot_usd()
+        self._robot_usd_to_attach = robot_usd_to_attach
         if robot_usd_to_attach:
             robot_root = "/" + self._manifest.robot_prefix if self._manifest.robot_prefix else "/Robot"
             self.get_logger().info(f"Attaching robot USD: {robot_usd_to_attach} at {robot_root}")
@@ -502,7 +588,23 @@ class IsaacSimRenderNode(Node):
         if robot_root:
             disable_physics_subtree(self._stage, robot_root, tag="render_isaacsim")
 
+        if self._sync_topic:
+            # No solver owns this stage. The physical backend keeps running in
+            # its own process while this renderer waits for inference.
+            for root in self._stage.GetPseudoRoot().GetChildren():
+                disable_physics_subtree(self._stage, str(root.GetPath()), tag="sync_render")
         self._world.reset()
+        if self._sync_topic:
+            self._world.pause()
+
+        from _material_generalization import apply_material_plan, load_episode_material_config
+
+        material_cfg = load_episode_material_config(self._manifest_path, load_scene_config)
+        if material_cfg is not None:
+
+            plan, receipt = material_cfg["episode_plan"], material_cfg["receipt_path"]
+            apply_material_plan(self._stage, plan, receipt, manifest_path=self._manifest_path)
+            self._material_application = (plan, receipt)
 
         # body_paths point into robot_usda's (staged URDF) prim tree; when we
         # attached the prebaked visual instead, its layout differs, so rebase
@@ -582,7 +684,87 @@ class IsaacSimRenderNode(Node):
         # Frame-skip keeps the ROS publish rate near render_fps given Isaac's
         # default 60Hz playback. 0 means publish every tick.
         fps_skip = max(0, int(round(60.0 / max(self._render_fps, 1e-3))) - 1)
+        # Sync observations own their three Replicator products. Keep the
+        # ordinary RGB/depth/CameraInfo graph only in the live camera mode.
+        if self._sync_topic:
+            return
         _build_camera_omnigraph("/World/CameraGraph", self._manifest.cameras, cam_prims, fps_skip)
+
+    def _apply_observation_snapshot(self, snapshot):
+        """Preflight the entire frame, then apply world poses and world points.
+
+        The public xyz+wxyz poses already include the authored-root offset.
+        Deformable points remain full-precision JSON until the USD Vec3f boundary;
+        mesh IDs are identities, not array indices or task-specific ranges.
+        """
+        import numpy as np
+        from pxr import Vt
+        from _sync_capture import validate_snapshot
+
+        snapshot = validate_snapshot(snapshot)
+        poses, meshes, targets = [], [], set()
+        for source_path, values in snapshot["bodies"].items():
+            body = source_path.rsplit("/", 1)[-1]
+            mapped = self._manifest.robot_body_paths.get(body)
+            original = getattr(self, "_snapshot_robot_source_paths", {}).get(body)
+            is_robot = mapped is not None and source_path in (mapped, original)
+            path = mapped if is_robot else source_path
+            paths = [path]
+            mount = self._cam_body_to_render_path.get(body) if is_robot else None
+            if mount:
+                paths.append(mount)
+            for target in paths:
+                prim = self._get_prim(target)
+                if prim is None or not prim.IsValid() or not prim.IsA(UsdGeom.Xformable) or prim.IsInstanceProxy():
+                    raise ValueError(f"snapshot body or camera mount missing: {target}")
+                if target in targets:
+                    raise ValueError(f"duplicate snapshot body target: {target}")
+                targets.add(target)
+                poses.append((prim, Gf.Vec3d(*values[:3]), Gf.Quatd(*values[3:])))
+        for entry in snapshot["deformables"]:
+            path = entry["prim_path"]
+            prim = self._stage.GetPrimAtPath(path)
+            if not prim or not prim.IsValid() or not prim.IsA(UsdGeom.Mesh) or path in targets:
+                raise ValueError(f"snapshot deformable mesh missing or conflicts with body: {path}")
+            if prim.IsInstanceProxy():
+                raise ValueError(f"snapshot mesh is an immutable instance proxy: {path}")
+            mesh = UsdGeom.Mesh(prim)
+            old_points = mesh.GetPointsAttr().Get()
+            points = np.asarray(entry["points"], dtype=np.float64)
+            if old_points is None or len(old_points) != len(points):
+                raise ValueError(f"snapshot mesh point count differs from authored topology: {path}")
+            indices = mesh.GetFaceVertexIndicesAttr().Get()
+            if indices and (min(indices) < 0 or max(indices) >= len(points)):
+                raise ValueError(f"snapshot mesh topology indices are out of range: {path}")
+            if np.max(np.abs(points)) > np.finfo(np.float32).max:
+                raise ValueError(f"snapshot mesh points overflow USD Vec3f: {path}")
+            local = np.ascontiguousarray(points, dtype=np.float32)
+            meshes.append(
+                (
+                    mesh,
+                    Vt.Vec3fArray.FromNumpy(local),
+                    Vt.Vec3fArray([Gf.Vec3f(*map(float, local.min(axis=0))), Gf.Vec3f(*map(float, local.max(axis=0)))]),
+                )
+            )
+        # No validation below this boundary. A bad final mesh never leaves a
+        # partially reposed robot in the render stage.
+        for prim, translation, rotation in poses:
+            _apply_xform(prim, translation, rotation, reset_xform_stack=True)
+        for mesh, points, extent in meshes:
+            # The solver supplies world coordinates. Reset just this mesh's
+            # stack to identity, retaining the authored hierarchy and topology.
+            xform = UsdGeom.Xformable(mesh)
+            if list(mesh.GetPrim().GetAttribute("xformOpOrder").Get() or []) != ["!resetXformStack!"]:
+                xform.SetXformOpOrder([], resetXformStack=True)
+            mesh.GetPointsAttr().Set(points)
+            mesh.CreateExtentAttr().Set(extent)
+
+    def _record_material_capture(self, response):
+        if self._material_application is not None:
+            from _material_generalization import record_material_capture
+
+            plan, receipt = self._material_application
+            record_material_capture(self._stage, plan, receipt, response, manifest_path=self._manifest_path)
 
     # -- subscriptions ----------------------------------------------------
 
@@ -608,6 +790,8 @@ class IsaacSimRenderNode(Node):
           * pre-v2 (``use_tf_render``): every body on ``/tf_render`` with
             absolute child_frame_ids, applied directly.
         """
+        if getattr(self, "_sync_topic", ""):
+            return
         if self._stage is None:
             return
         self._apply_tf_render(msg)
@@ -616,6 +800,8 @@ class IsaacSimRenderNode(Node):
 
     def _on_tf_scene(self, msg: TFMessage) -> None:
         """The v2 scene channel carries world poses at absolute USD paths."""
+        if getattr(self, "_sync_topic", ""):
+            return
         for tf in msg.transforms:
             if not tf.child_frame_id.startswith("/"):
                 continue
@@ -669,6 +855,8 @@ class IsaacSimRenderNode(Node):
         freezing the whole robot. ``_apply_xform`` uses ``resetXformStack`` so
         the flat layout poses correctly regardless of the original nesting.
         """
+        if getattr(self, "_sync_topic", "") and self._robot_usd_to_attach != self._manifest.robot_visual_usda:
+            return
         remapped: Dict[str, str] = {}
         missing: List[str] = []
         for body, orig in self._manifest.robot_body_paths.items():
@@ -709,6 +897,8 @@ class IsaacSimRenderNode(Node):
         authored world pose is used as-is — the USD equivalent of the C++
         ``omni:resetXformStack=1``.
         """
+        if getattr(self, "_sync_topic", ""):
+            return
         if self._tf_buffer is None or not self._manifest.robot_body_paths:
             return
         root = "base_footprint"
@@ -737,6 +927,8 @@ class IsaacSimRenderNode(Node):
                     _apply_xform(render_prim, translation, rotation, reset_xform_stack=True)
 
     def _on_free_cam_pose(self, msg: PoseStamped) -> None:
+        if getattr(self, "_sync_topic", ""):
+            return
         if self._stage is None or not self._manifest.free_cam_prim_path:
             return
         p = msg.pose.position
@@ -764,7 +956,23 @@ class IsaacSimRenderNode(Node):
         period = 1.0 / max(self._render_fps, 1e-3)
         next_tick = time.monotonic()
         while simulation_app.is_running() and rclpy.ok():
+            if self._sync_capture is not None and self._sync_render_on_demand:
+                # Idle Kit updates may submit viewport/product rendering and
+                # contend with native IPC. Only an actual capture owns Kit
+                # work, including its existing GPU fences and Writer drains.
+                started = time.monotonic()
+                rclpy.spin_once(self, timeout_sec=0.01)
+                self._sync_capture.process()
+                remaining = 0.01 - (time.monotonic() - started)
+                if remaining > 0:
+                    time.sleep(remaining)
+                continue
             rclpy.spin_once(self, timeout_sec=0.0)
+            if self._sync_capture is not None:
+                self._sync_capture.process()
+                self._world.render()
+                time.sleep(0.001)
+                continue
 
             now = time.monotonic()
             if now < next_tick:
@@ -793,6 +1001,12 @@ class IsaacSimRenderNode(Node):
                 next_tick = now + period
 
     def shutdown(self) -> None:
+        capture, self._sync_capture = self._sync_capture, None
+        if capture is not None:
+            try:
+                capture.close()
+            except Exception as exc:
+                self.get_logger().warn(f"sync capture cleanup failed: {exc}")
         try:
             if self._world is not None:
                 self._world.stop()
