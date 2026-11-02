@@ -480,3 +480,26 @@ and `s2r`. Use the single-token `g2op` prefix for G2 Omnipicker task entries.
 Task renaming changes config resolution only; YAML runtime contents and the
 published G2 track entries remain unchanged. Control and validation utility
 configs retain their separate names.
+
+
+## Automatic native libuipc installation
+
+Jazzy base image builds select host GPU 0 and install its bundled SM89/SM120
+artifact during construction. `--build-arg LIBUIPC_SM=89|120` overrides detection;
+unsupported/unreadable capability fails before Docker. Humble and derived
+post-training builds retain their existing paths.
+
+`geniesim bootstrap` additionally checks/installs optional native libuipc using
+the current interpreter and the checkout's `docker/install_libuipc.py --if-needed`.
+`geniesim bootstrap --libuipc-only` skips peer probes, installs and prompts.
+Use system CPython 3.12 for native wheels, including in the 5.1 combo image.
+Required-peer source resolution, ordering and failure status remain intact.
+Native failures warn without blocking required peers or container startup, and
+completion output distinguishes that warning from full native success.
+Installer progress streams to the caller; a 300-second timeout bounds the whole
+process group, with 15 seconds for graceful shutdown before forced cleanup.
+No GPU, physics or rendering dependency is imported into the CLI.
+
+CPU coverage: `tests/test_libuipc_bootstrap.py` and the existing Docker/mirror,
+installation-health and process-boundary suites. A build-command test does not
+qualify a completed image build or a GPU solve.

@@ -47,6 +47,7 @@ def test_other_respins_do_not_inherit_the_pairing():
 
 def test_docker62_build_dispatches_requested_pair_without_bootstrap(monkeypatch, capsys):
     _indices(monkeypatch, {"6.2.0.0": {"cp312"}})
+    monkeypatch.setattr(docker, "_libuipc_build_args", lambda _: ["--build-arg", "LIBUIPC_SM=89"])
     monkeypatch.delenv("GENIESIM_ISAACSIM_TAG", raising=False)
     monkeypatch.delenv("GENIESIM_ISAACSIM_PIP_VERSION", raising=False)
     monkeypatch.setattr(docker, "_active_variant", "5.1")

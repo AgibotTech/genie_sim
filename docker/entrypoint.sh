@@ -275,6 +275,18 @@ if [ -n "${EDITABLE_ARGS}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Phase 3b — optional native libuipc through the shared bootstrap entry point
+# ---------------------------------------------------------------------------
+# Use system Python even in the combo image: both wheels require CPython 3.12.
+# The mounted CLI source also works before the remapped user's editable install
+# is visible to root. Native files belong to the shared evaluation interpreter.
+if ! GENIESIM_REPO_ROOT=/workspace \
+    PYTHONPATH="/workspace/source/geniesim_cli/src${PYTHONPATH:+:${PYTHONPATH}}" \
+    python3 -m geniesim_cli bootstrap --libuipc-only; then
+    echo -e "${YELLOW}⚠️ [entrypoint]${RST} libuipc bootstrap unavailable. Continuing container startup."
+fi
+
+# ---------------------------------------------------------------------------
 # Phase 4 — drop privileges and exec the command
 # ---------------------------------------------------------------------------
 echo -e "${GREEN}${BOLD}✅ [entrypoint]${RST} ${GREEN}GENIESIM_READY${RST}"

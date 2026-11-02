@@ -702,3 +702,39 @@ geniesim docker up --headless
 ```
 
 This skips X11, Xauthority, and `/dev/input` mounts.
+
+
+## Native libuipc runtime
+
+Jazzy base builds install the bundled architecture-specific libuipc wheel into
+system Python 3.12. The CLI selects host GPU 0 automatically:
+
+```bash
+geniesim docker build
+geniesim docker6.2 build
+# Select a deployment GPU architecture explicitly, including on a GPU-less host:
+geniesim docker build --build-arg LIBUIPC_SM=89
+geniesim docker6.2 build --build-arg LIBUIPC_SM=120
+```
+
+Only SM89 and SM120 are supported. Unsupported or unreadable GPU capability
+stops the build before Docker, with a manual override hint. Raw `docker build`
+requires `--build-arg LIBUIPC_SM=89` or `120`; the Docker build stage itself
+needs no GPU. Native linking requires the image's complete CUDA 13 provider.
+Both artifacts require Linux x86_64 CPython 3.12; bundled `omni_python` 3.11,
+the Humble base and derived post-training layers do not receive this build step.
+
+The installer verifies SHA256, preserves installed SDK dependency versions and
+restores the previous native installation if publication fails. The image
+records the selected architecture and artifact hash. Its entrypoint calls
+`python3 -m geniesim_cli bootstrap --libuipc-only` through the mounted CLI.
+Marked images verify the artifact, dependencies and native loading without pip;
+unmarked compatible environments retain installation/repair. Optional native
+failures warn and leave ordinary container startup available.
+
+`geniesim bootstrap` checks libuipc after required peers, including when healthy
+peers are left unchanged. `geniesim bootstrap --libuipc-only` runs just the native
+step without peer probes or prompts. Required peer failures still fail bootstrap.
+For platform requirements, hashes, license and provenance, see
+[the native wheel notes](../3rdparty/pyuipc-README.md). CPU tests do not establish
+an image build, GPU simulation or task success.

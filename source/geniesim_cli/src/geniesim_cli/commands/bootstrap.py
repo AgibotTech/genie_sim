@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from pathlib import Path
 
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
 from geniesim_cli.commands.status import DISTRIBUTIONS, inspect
@@ -46,6 +47,8 @@ def _build_targets() -> tuple[str, ...]:
 
 
 _TARGETS: tuple[str, ...] = _build_targets()
+_LIBUIPC_TIMEOUT = 300
+_LIBUIPC_STOP_TIMEOUT = 15
 
 _DOWNLOAD_SOURCES: dict[str, tuple[tuple[str, str], ...]] = {
     "geniesim_assets": (
@@ -135,6 +138,86 @@ def _prompt(question: str, default: bool) -> bool:
     return answer in ("y", "yes")
 
 
+def _run_libuipc(command: list[str]) -> int:
+    """Stream progress and bound the optional installer and its entire process group."""
+    import os
+    import signal
+    import subprocess
+
+    def cancelled(signum, frame):
+        raise SystemExit(128 + signum)
+
+    previous = signal.signal(signal.SIGTERM, cancelled)
+    try:
+        process = subprocess.Popen(command, start_new_session=os.name == "posix")
+        try:
+            return process.wait(timeout=_LIBUIPC_TIMEOUT)
+        except subprocess.TimeoutExpired as error:
+            raise RuntimeError(f"libuipc installation timed out after {_LIBUIPC_TIMEOUT} seconds") from error
+        finally:
+            if os.name == "posix":
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+            elif process.poll() is None:
+                process.terminate()
+            try:
+                process.wait(timeout=_LIBUIPC_STOP_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                pass
+            finally:
+                if os.name == "posix":
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                elif process.poll() is None:
+                    process.kill()
+                process.wait()
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _try_install_libuipc() -> bool:
+    """Attempt the default native runtime in this interpreter; failures are warnings."""
+    from geniesim_cli import _env
+
+    try:
+        override = _env.repo_root() or _env.repo_path()
+        roots = (
+            [Path(override).expanduser().resolve()]
+            if override
+            else [Path.cwd(), *Path.cwd().parents, *Path(__file__).resolve().parents]
+        )
+        script = next(
+            (root / "docker/install_libuipc.py" for root in roots if (root / "docker/install_libuipc.py").is_file()),
+            None,
+        )
+        if script is None:
+            raise FileNotFoundError("Cannot find docker/install_libuipc.py; set GENIESIM_REPO_ROOT to the checkout")
+        print(f"   {YELLOW}📡 Checking/installing default libuipc runtime (optional)...{RST}", flush=True)
+        code = _run_libuipc([sys.executable, str(script), "--if-needed"])
+        if code:
+            raise RuntimeError(f"native installer exited with code {code}")
+    except (OSError, RuntimeError) as error:
+        print(f"   {YELLOW}⚠️  libuipc unavailable: {error}. Continuing without it.{RST}")
+        print(f"   {DIM}Retry in the evaluation Python 3.12 environment: geniesim bootstrap --libuipc-only{RST}")
+        return False
+    print(f"   {GREEN}✅ libuipc installed and native library loaded{RST}")
+    return True
+
+
+def _report_completion(libuipc_ok: bool, *, native_only: bool = False) -> None:
+    """Distinguish optional native warnings from required-peer failures."""
+    label = "libuipc bootstrap" if native_only else "geniesim bootstrap"
+    if libuipc_ok:
+        print(f"{BOLD}{GREEN}🎉 {label} complete!{RST}")
+    else:
+        print(f"{BOLD}{YELLOW}⚠️  {label} complete; libuipc unavailable (optional).{RST}")
+    print(f"   {DIM}Verify required modules with:{RST} {CYAN}geniesim status{RST}")
+
+
 def run(args: list[str]) -> None:
     """Bootstrap / re-initialize the geniesim stack.
 
@@ -150,10 +233,21 @@ def run(args: list[str]) -> None:
     if "--help" in args or "-h" in args:
         print(f"{BOLD}Usage: geniesim bootstrap{RST}")
         print("Install or repair required peers from local source trees; optional peers are skipped.")
+        print("Optional native libuipc is checked by default; --libuipc-only skips peers and prompts.")
         return
+
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="geniesim bootstrap")
+    parser.add_argument("--libuipc-only", action="store_true", help="check/install only the optional native runtime")
+    options = parser.parse_args(args)
 
     print(f"{BOLD}{MAGENTA}🧞 geniesim bootstrap{RST} {DIM}— bootstrap the geniesim stack{RST}")
     print()
+
+    if options.libuipc_only:
+        _report_completion(_try_install_libuipc(), native_only=True)
+        return
 
     specs_by_dist = {s["dist"]: s for s in DISTRIBUTIONS}
     targets: list[tuple[str, dict]] = []
@@ -180,6 +274,7 @@ def run(args: list[str]) -> None:
             to_install = list(_TARGETS)
         else:
             print(f"   {DIM}Nothing to do.{RST}")
+            _report_completion(_try_install_libuipc())
             return
     else:
         print(f"   {YELLOW}⚠️  Stack is not fully initialized.{RST}")
@@ -258,6 +353,7 @@ def run(args: list[str]) -> None:
 
     print()
     failures: list[str] = []
+    failures.extend(unresolved)
     for dist_name, cmd in plan:
         print(f"   {YELLOW}📡 Installing {BOLD}{dist_name}{RST}{YELLOW} ...{RST}")
         result = subprocess.run(cmd)
@@ -268,6 +364,7 @@ def run(args: list[str]) -> None:
             print(f"   {GREEN}✅ {dist_name} installed{RST}")
         print()
 
+    libuipc_ok = _try_install_libuipc()
     if failures:
         print(f"{BOLD}{RED}❌ Init finished with errors: {', '.join(failures)}{RST}")
         print(
@@ -275,5 +372,4 @@ def run(args: list[str]) -> None:
         )
         sys.exit(1)
 
-    print(f"{BOLD}{GREEN}🎉 geniesim bootstrap complete!{RST}")
-    print(f"   {DIM}Verify with:{RST} {CYAN}geniesim status{RST}")
+    _report_completion(libuipc_ok)

@@ -46,6 +46,7 @@ def test_unknown_variant_has_a_helpful_error():
 @pytest.fixture
 def build_calls(monkeypatch):
     monkeypatch.setattr(docker, "_active_variant", "")
+    monkeypatch.setattr(docker, "_libuipc_build_args", lambda _: ["--build-arg", "LIBUIPC_SM=89"])
     monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
     monkeypatch.delenv("GENIESIM_ISAACSIM_TAG", raising=False)
     monkeypatch.delenv("GENIESIM_ISAACSIM_PIP_VERSION", raising=False)

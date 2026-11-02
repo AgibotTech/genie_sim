@@ -26,7 +26,7 @@ _geniesim_completions() {
 
     case "${words[1]}" in
         bootstrap)
-            COMPREPLY=($(compgen -W "--help" -- "${cur}")) ;;
+            COMPREPLY=($(compgen -W "--help --libuipc-only" -- "${cur}")) ;;
         ros)
             case "${#words[@]}" in
                 3) COMPREPLY=($(compgen -W "build doctor" -- "${cur}")) ;;
@@ -154,7 +154,7 @@ _geniesim() {
 
     case "${words[2]}" in
         bootstrap)
-            _values 'option' --help ;;
+            _values 'option' --help --libuipc-only ;;
         ros)
             if (( CURRENT == 3 )); then
                 _describe 'subcommand' ros_cmds

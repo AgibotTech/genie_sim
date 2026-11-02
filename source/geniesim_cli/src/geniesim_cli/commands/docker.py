@@ -373,6 +373,11 @@ def _print_usage() -> None:
             f"{DIM}Isaac Sim series to resolve the pins from (default: {v_series}){RST}"
         )
         print(f"  {WHITE}--no-resolve{RST}       {DIM}skip version resolution; use the Dockerfile ARG defaults{RST}")
+    if not _active_profile and _active_variant != "4.5":
+        print(
+            f"  {WHITE}--build-arg LIBUIPC_SM=89|120{RST}  "
+            f"{DIM}override host GPU 0 detection for native IPC preinstallation{RST}"
+        )
     print()
     print(f"{BOLD}Environment overrides:{RST}")
     print(f"  {WHITE}GENIESIM_IMAGE{RST}      {DIM}image tag (default: {v.image}){RST}")
@@ -433,6 +438,39 @@ def _isaacsim_build_args(spec: str | None) -> list[str]:
     # Echoed above on purpose: with a floating spec, the build log is the
     # only record of what the pins actually resolved to.
     return ["--build-arg", f"ISAACSIM_TAG={tag}", "--build-arg", f"ISAACSIM_PIP_VERSION={wheel}"]
+
+
+def _libuipc_build_args(forwarded: list[str]) -> list[str]:
+    """Select the host's GPU 0 unless Docker receives an explicit architecture."""
+    override = None
+    for index, token in enumerate(forwarded):
+        value = forwarded[index + 1] if token == "--build-arg" and index + 1 < len(forwarded) else ""
+        if token.startswith("--build-arg="):
+            value = token.split("=", 1)[1]
+        if value.split("=", 1)[0] == "LIBUIPC_SM":
+            override = value.split("=", 1)[1] if "=" in value else os.environ.get("LIBUIPC_SM", "")
+    if override is not None:
+        if override not in {"89", "120"}:
+            raise RuntimeError("LIBUIPC_SM must be 89 or 120")
+        print(f"   {DIM}libuipc:{RST}    {CYAN}sm_{override} (explicit build argument){RST}")
+        return []
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--id=0", "--query-gpu=compute_cap", "--format=csv,noheader"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise RuntimeError(
+            "Cannot detect host GPU 0; pass --build-arg LIBUIPC_SM=89 or --build-arg LIBUIPC_SM=120"
+        ) from error
+    sm = {"8.9": "89", "12.0": "120"}.get(result.stdout.strip())
+    if sm is None:
+        raise RuntimeError(f"Unsupported host GPU capability {result.stdout.strip()!r}; libuipc supports SM 89 and 120")
+    print(f"   {DIM}libuipc:{RST}    {CYAN}sm_{sm} (host GPU 0){RST}")
+    return ["--build-arg", f"LIBUIPC_SM={sm}"]
 
 
 def _do_build(extra: list[str]) -> None:
@@ -501,6 +539,12 @@ def _do_build(extra: list[str]) -> None:
     # Resolved inside the banner block: the "Isaac Sim:" line it prints
     # belongs with Repo root / Dockerfile / Tag, above the blank separator.
     resolved = _isaacsim_build_args(series if resolve_pins else None)
+    if not _active_profile and _VARIANT_PYTHON_TAG.get(_active_variant) == "cp312":
+        try:
+            resolved += _libuipc_build_args(_mirrors.as_flags(values))
+        except RuntimeError as error:
+            print(f"{RED}❌ {error}{RST}")
+            sys.exit(2)
     resolved_values, _, _ = _mirrors.merge_build_args({}, resolved)
     values = {**resolved_values, **values}
     build_args = _mirrors.as_flags(values)

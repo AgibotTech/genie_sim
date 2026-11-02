@@ -365,3 +365,30 @@ runtime. Do not drop the SDK guard or silently override the project metadata.
 Post-training profiles also require their server scripts and ROS packages in
 the mounted checkout. CLI dispatch and Docker process tests do not establish
 that those consumers are available or that simulator acceptance has passed.
+
+
+## Native libuipc image contract
+
+`install_libuipc.py` owns wheel integrity, SDK-preserving dependency constraints,
+staged publication/rollback and image verification. The native wheel bytes and
+license remain in `3rdparty/`; see [the artifact notes](../3rdparty/pyuipc-README.md).
+
+The CLI detects host GPU 0 for Jazzy base builds and forwards `LIBUIPC_SM=89|120`.
+Explicit Docker build arguments take precedence, including bare arguments using
+the host environment. Invalid overrides and unsupported/unreadable capability
+fail before Docker. Raw builds must pass the architecture explicitly. Humble
+and derived post-training profiles keep their existing build paths. Both base
+contexts already include `docker/**` and `3rdparty/**`.
+
+Only system CPython 3.12 is supported. Build stages need no GPU but require the
+complete CUDA 13 provider for native linking. The common entrypoint invokes
+system Python's `bootstrap --libuipc-only`, using the mounted CLI source. Marked
+images verify without pip; unmarked environments may install/repair. Failures
+warn and leave existing container startup available. Bootstrap bounds installer
+execution and cleans up the process group on timeout or interruption.
+
+Preserve existing runtime constraints, Newton guards, mirrors, ROS SDK cache
+handling, post-training profiles, tests and documentation. CPU checks use
+`python3 -m pytest -q docker/tests source/geniesim_cli/tests` and
+`bash -n docker/entrypoint.sh`; these do not establish an image build,
+native load or GPU execution.

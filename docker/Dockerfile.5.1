@@ -5,7 +5,7 @@
 #   geniesim docker5.1 build --china
 #
 # Or manually:
-#   docker build -f docker/Dockerfile.5.1 -t registry.agibot.com/genie-sim/geniesim3:latest .
+#   docker build -f docker/Dockerfile.5.1 --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim3:latest .
 #
 # Base: NVIDIA Isaac Sim 5.1.0 image (Ubuntu 24.04). Isaac Sim 5.1 is
 # pre-installed at /isaac-sim with its own bundled Python accessible
@@ -206,6 +206,13 @@ RUN omni_python -m pip install --force-reinstall --no-cache-dir "numpy==1.26.4" 
 
 COPY ./3rdparty/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl /tmp/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl
 RUN omni_python -m pip install /tmp/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl
+
+# Preinstall the host-selected native artifact and dependencies without a build GPU.
+ARG LIBUIPC_SM
+COPY docker/install_libuipc.py /opt/geniesim/docker/
+COPY 3rdparty/pyuipc-sm89.whl 3rdparty/pyuipc-sm120.whl 3rdparty/pyuipc-LICENSE 3rdparty/pyuipc-README.md /opt/geniesim/3rdparty/
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python3 /opt/geniesim/docker/install_libuipc.py --build-sm "${LIBUIPC_SM}"
 
 COPY docker/entrypoint.sh /usr/local/bin/geniesim-entrypoint
 RUN chmod +x /usr/local/bin/geniesim-entrypoint

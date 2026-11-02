@@ -48,6 +48,9 @@ def cli(tmp_path):
         "elif args[0] == 'build': sys.exit(int(os.environ.get('FAKE_BUILD_CODE', '0')))\n"
     )
     docker.chmod(0o755)
+    gpu = tmp_path / "nvidia-smi"
+    gpu.write_text("#!/bin/sh\nprintf '8.9\\n'\n")
+    gpu.chmod(0o755)
     env = {k: v for k, v in os.environ.items() if not k.startswith(("GENIESIM_", "RLINF_", "TELEOP_"))}
     env.update(
         PATH=f"{tmp_path}:{env['PATH']}",

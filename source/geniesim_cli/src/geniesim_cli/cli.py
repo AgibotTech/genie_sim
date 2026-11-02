@@ -216,6 +216,7 @@ def _print_usage() -> None:
     print(f"  {CYAN}docker4.5{RST} <build|up|down|into|logs>  🐳 Isaac Sim 4.5 variant (geniesim2 E.O.L.)")
     print(f"  {CYAN}post-train{RST} <server|teleop> [...]         🧪 Manage post-training simulation services{RST}")
     print(f"  {CYAN}bootstrap{RST}           🪄 Bootstrap / re-initialize the geniesim stack")
+    print(f"  {CYAN}bootstrap --libuipc-only{RST}  🪄 Check / install only the optional native IPC runtime")
     print(f"  {CYAN}tool{RST} <deps-dag|ros-dag|docs> [--fix]   🛠️  Contributor repo-maintenance utilities")
     print(
         f"  {CYAN}dataset convert{RST} <FROM-to-TO> [...]    🗂️  Dataset format conversion {DIM}(agibot-to-lerobot){RST}"

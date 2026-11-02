@@ -5,13 +5,13 @@
 #   geniesim docker6.2 build --china      # select the China mirror preset
 #
 # Or manually:
-#   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
+#   docker build -f docker/Dockerfile --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
 #   docker build -f docker/Dockerfile \
 #       --build-arg ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia \
 #       --build-arg ISAACSIM_TAG=6.2.0.1 \
 #       --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu \
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-#       -t registry.agibot.com/genie-sim/geniesim4:latest .
+#       --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
 #
 # Base: NVIDIA's published Isaac Sim 6.X image (Ubuntu 24.04).
 # The image already ships Isaac Sim under /isaac-sim with
@@ -208,6 +208,13 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 # ------------------------------------------------------------
 COPY docker/check_newton_pins.py /tmp/check_newton_pins.py
 RUN python3 /tmp/check_newton_pins.py && rm -f /tmp/check_newton_pins.py
+
+# Preinstall the host-selected native artifact and dependencies without a build GPU.
+ARG LIBUIPC_SM
+COPY docker/install_libuipc.py /opt/geniesim/docker/
+COPY 3rdparty/pyuipc-sm89.whl 3rdparty/pyuipc-sm120.whl 3rdparty/pyuipc-LICENSE 3rdparty/pyuipc-README.md /opt/geniesim/3rdparty/
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python3 /opt/geniesim/docker/install_libuipc.py --build-sm "${LIBUIPC_SM}"
 
 # Place the entrypoint at a stable absolute path so the image is
 # self-sufficient (no requirement to bind-mount the repo just to find
