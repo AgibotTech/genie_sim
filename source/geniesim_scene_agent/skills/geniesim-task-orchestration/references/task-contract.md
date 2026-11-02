@@ -160,32 +160,6 @@ Both text variables may be English for English-only tasks. Keep
 action without an arm prefix, which is usually added by the runtime. Keep
 the instruction truthful about object selection and the full task sequence.
 
-## Bundled template geometry contract
-
-The container-placement template is an executable pattern for an explicitly
-measured task contract, not a universal interior detector. It uses exactly one
-`target_object` and one `target_container` keyword match by default; override
-`target_role`/`receiver_role` in `scene_info.task_contract` for other roles.
-
-Its required `task_contract` fields are `object_bounds_local` and
-`receiver_interior_bounds_local`: each is `[min_xyz,max_xyz]`, measured in the
-same local reference frames returned by the runtime pose queries. Include
-actual instance scale when measuring. This box-interior recipe only applies
-when that box describes a usable interior region; use task-specific geometry
-for other shapes. Optional fields are `containment_clearance_m` (nonnegative,
-default 0), `settle_seconds` (default 0.5), and `specific_grasp_required` (default
-false). With a custom grasp, supply `custom_grasp.poses` `(N,4,4)`,
-`.widths_m` `(N,)`, and `.frame` (default relative). These are template fields,
-not built-in RobotAPI metadata requirements. Generate/recompute world grasps
-at runtime when initial-state variability changes their contact frame.
-
-The template refuses an unspecified task-specific grasp or missing grasp
-annotation, so the author must implement geometry inference or supply verified
-custom candidates. Its final checker transforms all measured object-box
-corners into the current receiver frame and checks interior bounds after
-release/reset/settling. Adapt it for support, articulation, contact, or other
-task completion instead of reusing a container check indiscriminately.
-
 ## Local execution
 
 For the default user demonstration, apply

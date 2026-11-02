@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
     options, extra = parser.parse_known_args(argv)
     image = (
         options.image
-        or f"registry.agibot.com/genie-sim/geniesim4-scene-agent:{'vl' if options.target == 'vl' else 'latest'}"
+        or f"registry.agibot.com/genie-sim/geniesim3-scene-agent:{'vl' if options.target == 'vl' else 'latest'}"
     )
     if options.china:
         extra = ["--china", *extra]

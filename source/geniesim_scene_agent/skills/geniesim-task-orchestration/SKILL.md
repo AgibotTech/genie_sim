@@ -7,7 +7,7 @@ description: Author or adapt GenieSim automatic collection tasks in data_gen.py 
 
 Create task code that works across the intended scene variants. Use the
 installed collection runtime for robot execution; the authoring references,
-inspection tool, templates, and reference tasks are bundled in this repository.
+inspection tool, and reference tasks are bundled in this repository.
 Asset data stays in the configured external assets root. No other source
 checkout, prompt service, or example MCP server is required.
 
@@ -37,8 +37,9 @@ checkout, prompt service, or example MCP server is required.
 - [Task-driven self-improvement](references/task-self-improvement.md): use user
   acceptance to close a task, summarize lessons, update skills and retain the
   accepted implementation as a searchable example.
-- [Motion patterns](references/motion-patterns.md): adapt task actions alongside
-  explicit scene selectors, a grasp decision, and a final physical checker.
+- [Task examples](../../examples/README.md): select existing implementations with
+  [find-example](../find-example/SKILL.md), then adapt their scene selectors,
+  grasp decisions, and physical checkers to the task.
 
 ## Design before coding
 

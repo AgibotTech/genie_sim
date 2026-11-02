@@ -18,8 +18,8 @@ or running this image does not pull or install the collection image.
 
 ## Build
 
-The default image name is `registry.agibot.com/genie-sim/geniesim4-scene-agent:latest`,
-and the container name is `geniesim4-scene-agent`. The optional VL build uses
+The default image name is `registry.agibot.com/genie-sim/geniesim3-scene-agent:latest`,
+and the container name is `geniesim3-scene-agent`. The optional VL build uses
 the same image repository with the `vl` tag.
 
 Run from this module's root (the directory containing `pyproject.toml`):
@@ -75,7 +75,7 @@ For a direct BuildKit build, supply the shared helper as an additional context:
 ```bash
 docker build -f docker/Dockerfile.5.1 \
   --build-context geniesim_mirrors=../../docker \
-  -t registry.agibot.com/genie-sim/geniesim4-scene-agent:latest .
+  -t registry.agibot.com/genie-sim/geniesim3-scene-agent:latest .
 ```
 
 When exporting only this module, provide the shared `docker/` resources through
@@ -114,13 +114,13 @@ or use Docker-managed volumes as below. The asset mount should be read-only:
 
 ```bash
 export GENIESIM_ASSETS=/path/to/assets
-docker run --name geniesim4-scene-agent --rm -it --gpus all --init \
+docker run --name geniesim3-scene-agent --rm -it --gpus all --init \
   -e ACCEPT_EULA=Y \
   --mount "type=bind,source=$GENIESIM_ASSETS,target=/assets,readonly" \
   --mount type=volume,source=scene-agent-output,target=/workspace/output \
   --mount type=volume,source=scene-agent-cache,target=/workspace/cache \
   --mount type=volume,source=scene-agent-home,target=/tmp/scene-agent-home \
-  registry.agibot.com/genie-sim/geniesim4-scene-agent:latest
+  registry.agibot.com/genie-sim/geniesim3-scene-agent:latest
 ```
 
 No ports or network services are started. A shell is the default command.

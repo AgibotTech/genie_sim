@@ -5,7 +5,7 @@
 # Build from the module root, including after moving it into a monorepo.
 # docker build -f docker/Dockerfile.5.1 \
 #   --build-context geniesim_mirrors=../../docker \
-#   -t registry.agibot.com/genie-sim/geniesim4-scene-agent:latest .
+#   -t registry.agibot.com/genie-sim/geniesim3-scene-agent:latest .
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
 ARG ISAACSIM_IMAGE=${ISAACSIM_REGISTRY}/isaac-sim:5.1.0
 FROM ${ISAACSIM_IMAGE} AS mirrors

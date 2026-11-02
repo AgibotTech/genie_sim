@@ -45,8 +45,8 @@ For bundled references, the monorepo task root is
 IDs. Newly generated scenes use numeric IDs.
 
 The default image is
-`registry.agibot.com/genie-sim/geniesim4-data-collection:latest`, and the
-default container name is `geniesim4-data-collection`.
+`registry.agibot.com/genie-sim/geniesim3-data-collection:latest`, and the
+default container name is `geniesim3-data-collection`.
 `DATA_COLLECTION_IMAGE` or `--image` selects another compatible runtime.
 Use `geniesim data-collection build` if the runtime must be built locally.
 The host locator install does not install simulation dependencies.

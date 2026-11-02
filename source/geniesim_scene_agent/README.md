@@ -225,8 +225,10 @@ python3 -m scene_agent_scene build --mode dsl \
   --isaac-python "$ISAACSIM_PYTHON"
 python3 -m scene_agent_scene validate .cache/scenes/example_scene/0 --require-renders
 python3 -m scene_agent_scene supports .cache/scenes/example_scene/0/scene.usda \
-  --prim /World/Objects/shelf_000 --markers .cache/shelf_markers.usda
+  --markers .cache/support_markers.usda
 ```
+
+Omitting `--prim` inspects support surfaces under the scene's default root prim.
 
 The tool writes `scene.usda`, `scene_info.json`, `generation.json`, `validation.json`, and three views under `renders/` for each numeric instance. [DSL authoring](skills/geniesim-scene-generation/references/dsl.md) and [commands and recipe hooks](skills/geniesim-scene-generation/references/commands.md) document scene code, joint patches, and approved generalization specs.
 

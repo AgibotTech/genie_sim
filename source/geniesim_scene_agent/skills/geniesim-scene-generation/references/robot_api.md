@@ -38,9 +38,10 @@ scales, hollow interiors, shelves, and precise contacts.
 
 ## Task authoring and grasps
 
-Use [task orchestration](../../geniesim-task-orchestration/SKILL.md) and its
-[task template](../../geniesim-task-orchestration/assets/data_gen_template.py).
-Read the template's measured-geometry contract before adapting it. Use
+Use [task orchestration](../../geniesim-task-orchestration/SKILL.md) and select
+existing [task examples](../../../examples/README.md) with
+[find-example](../../find-example/SKILL.md). Review the selected code and scene
+metadata before adapting their object selectors, motion, and physical checkers. Use
 compatible existing grasp annotations when there is no special requirement;
 filter or derive custom contact poses for required directions/positions or
 missing annotations. The [grasp guide](../../geniesim-task-orchestration/references/grasp-selection.md)
