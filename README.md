@@ -1,7 +1,4 @@
-<h2 align="center">🚀 Genie Sim · Next Major Update</h2>
-<p align="center"><strong>COMING NOVEMBER 2, 2026</strong></p>
-
-![image.png](./docs/image.png)
+![Genie Sim](./docs/banner.webp)
 
 <div align="center">
   <div align="center">
@@ -27,6 +24,12 @@
 </div>
 
 # 1. 🌍 Genie Sim
+
+**3.5.0 focuses on Genie Sim Benchmark**, using the `geniesim3:latest` combo
+image with bundled Isaac Sim **5.1** and system-Python Isaac Sim **6.2**.
+`geniesim docker` selects this combo. The dedicated Isaac Sim 6.2 image,
+`geniesim4:latest` via `geniesim docker6.2`, belongs to the separate **4.0**
+line. See [release lines and runtime selection](docker/README.md#release-lines).
 
 **Genie Sim is the simulation platform from AgiBot.** It provides developers with a complete toolchain for *environment reconstruction*, *scene generalization*, *data collection*, and *automated evaluation*. Its core module, **Genie Sim Benchmark** is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
 
@@ -64,7 +67,7 @@ flowchart LR
 ```bash
 # === on the host ===
 pip install -e source/geniesim_cli/      # standalone CLI wheel
-geniesim docker build                    # build the Isaac Sim 5.1 + Jazzy image
+geniesim docker build                    # build the Isaac Sim 5.1 + 6.2 combo + Jazzy image
 geniesim docker up                       # boot the container; the entrypoint
                                          # editable-installs every tier-1 from
                                          # the bind-mounted workspace
@@ -300,31 +303,45 @@ flowchart LR
   v30["<b>v3.0 · Jan 2026</b><br/>Isaac Sim 5.1<br/>Genie G2 · 3DGS"]
   v31["<b>v3.1 · Apr 2026</b><br/>Genie Sim World<br/>RLinf"]
   v32["<b>v3.2 · Jun 2026</b><br/>🧞 CLI · 🤖 SKILLs<br/>⚡ RT Engine"]
-  next["<b>Next</b><br/>Isaac Sim 6.0<br/>More Newton solvers<br/>Benchmark refactor"]
-  v2 --> v30 --> v31 --> v32 --> next
+  v35["<b>v3.5.0 · Nov 2, 2026</b><br/>Benchmark-focused release<br/>Isaac Sim 5.1 + 6.2 combo"]
+  next["<b>v4.0 line</b><br/>Dedicated Isaac Sim 6.2<br/>RT Engine qualification"]
+  v2 --> v30 --> v31 --> v32 --> v35 --> next
 
   classDef done fill:#d1f0d8,stroke:#1f6f3d,color:#0b3b1f
   classDef current fill:#cfe2ff,stroke:#084298,color:#084298,stroke-width:2px
   classDef future fill:#fff3cd,stroke:#856404,color:#5c4400
-  class v2,v30,v31 done
-  class v32 current
+  class v2,v30,v31,v32 done
+  class v35 current
   class next future
 ```
 
 ## 🎯 Next
 
 - [ ] Upload all assets and dataset on Huggingface
-- [ ] More benchmark task suites — deformable / soft-material manipulation, whole-body control (WBC), vision-language-navigation (VLN), and more
+- [ ] Extend deformable benchmark qualification and vision-language-navigation (VLN) task coverage
 - [ ] Support more tasks and larger models for RLinf
 - [ ] More Newton solvers — broaden the rigid + deformable solver in the Newton-standalone
-- [ ] Refactor `geniesim_benchmark` into a benchmark **layer on top of `geniesim_ros`** (collapses the two parallel stacks — see [`.agent/geniesim_benchmark.md`](.agent/geniesim_benchmark.md))
+- [ ] Continue moving benchmark execution onto the RT Engine client interfaces — see [`.agent/geniesim_benchmark.md`](.agent/geniesim_benchmark.md)
 - [ ] Data recorder improvements (today: `ros2 bag` via the [`record-episode`](source/geniesim_ros/skills/record-episode/SKILL.md) SKILL)
 - [ ] Wire `geniesim_world` outputs into the RT Engine (load `.ply` / `.gsp` Gaussians from a `scene_*.yaml`)
-- [ ] Isaac Sim 6.0
+- [ ] Expand Isaac Sim 6.2 backend and scene qualification
 
 ## 📜 Release log
 
-<details open><summary><b>[6/25/2026] v3.2.0 — Genie Sim RT Engine + Agentic CLI/SKILLs</b></summary>
+<details open><summary><b>[11/2/2026] v3.5.0 — Benchmark release with the Isaac Sim 5.1 + 6.2 combo</b></summary>
+
+- 🧪 **Extended benchmark suites** — fine manipulation, dexterous manipulation, whole-body coordination, and cross-embodiment tasks, plus 25 unscored open-world sandbox scenarios.
+- ⚙️ **Task-selected runtimes** — direct Isaac evaluation, managed Newton wok evaluation, and native MuJoCo Rubik execution with separate observation rendering.
+- 🐳 **Benchmark combo runtime** — `geniesim3:latest` retains bundled Isaac Sim 5.1 and the system-Python Isaac Sim 6.2 co-install. Each benchmark entry selects its runtime. The dedicated `geniesim4:latest` image remains on the separate 4.0 line.
+- 🌙 **Genie Sim Dream** — G1/G2 world-model inference, policy integration, visual evaluation, and a browser UI in dedicated environments.
+- 📥 **Collection and post-training workflows** — independent Isaac Sim 5.1/cuRobo v2 collection and replay, scene-agent authoring workflows, and RLinf server/client integration.
+- 🔖 **Checkout package version** — all eight first-class Genie Sim distributions and owned ROS package metadata in this release checkout share `VERSION=3.5.0`. This package version does not relabel the dedicated 4.0 image line. Dependencies, recording formats, and independently maintained modules keep their own versions.
+
+See the [module index](source/README.md) and [benchmark task suites](docs/benchmark-task-suites.md) for workflow details.
+
+</details>
+
+<details><summary><b>[6/25/2026] v3.2.0 — Genie Sim RT Engine + Agentic CLI/SKILLs</b></summary>
 
 - 🏆 **RoboColiseum** — opened [RoboColiseum](https://robocoliseum.ai/): submit a policy and get it scored on the official leaderboard. Added a new `spatial` board (alongside `instruction` / `robust` / `manip`), and the `robust` board now aggregates and scores tasks per perturbation type (instruction, robot pose, background, image quality, camera position). The full pipeline — download datasets, fetch baseline weights, run an example leaderboard service, submit & track — ships as agent-friendly one-click SKILLs under [`source/geniesim_benchmark/skills/robocoliseum/`](source/geniesim_benchmark/skills/robocoliseum/).
 - 🧞 **`geniesim` CLI** — one command for docker, ROS 2 builds, `bootstrap`, `status`, `doctor`, `deploy`; bash/zsh completion; standalone PEP 517 / PEP 621 wheel.
