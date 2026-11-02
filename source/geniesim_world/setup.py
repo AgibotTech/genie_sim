@@ -30,7 +30,7 @@ def _path_dep(dist_name: str, folder: str) -> str:
 
 setup(
     name="geniesim_world",
-    version="0.1.0",
+    version=(_ROOT / "VERSION").read_text(encoding="utf-8").strip(),
     description="Add-on for Apple ml-sharp: depth-guided predictor + panorama pipeline CLI (no vendored sharp).",
     long_description=(_ROOT / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",

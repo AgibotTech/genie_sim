@@ -159,6 +159,14 @@ resolver and Docker build dispatch with
 See [runtime selection](../../docker/README.md) and the
 platform roadmap for qualification work.
 
+Release versions follow the repository root `VERSION` through local package
+symlinks for all eight first-class distributions. `geniesim version --bump`,
+`--sync`, and `--check` manage these links and owned ROS manifests, including
+the client and native IPC engine. Keep the registry and package-coverage tests
+current when adding a first-class distribution or ROS package. Independent
+modules, service packages, dependency pins, recording schemas, and prebuilt
+teleop message libraries are excluded.
+
 ## 4. Architectural rules (do not violate)
 
 `Variant`, `VARIANTS`, `get_variant` and `variant_env` in

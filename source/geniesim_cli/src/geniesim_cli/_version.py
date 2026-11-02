@@ -4,16 +4,14 @@
 
 """Single source of truth for the GenieSim version.
 
-The repo-root ``VERSION`` file is the authoritative source. Every
-distribution's ``pyproject.toml`` reads it via
-``[tool.setuptools.dynamic] version = {file = "../../VERSION"}``, and
-ROS ``package.xml`` files are kept in sync by the
-``geniesim version bump`` subcommand (also exposed as a pre-commit
-``--check`` hook). At runtime, this module re-exports the same string
-so importers can do ``from geniesim_cli import __version__``.
+The repo-root ``VERSION`` file is the authoritative source for all eight
+first-class distributions. Each build reads its local VERSION symlink.
+``geniesim version --bump`` / ``--sync`` keep the links and owned ROS manifests
+in sync; ``--check`` validates release metadata. Runtime imports use the source
+release in a checkout and installed distribution metadata in a wheel.
 
-To bump: ``geniesim version bump <NEW_VERSION>`` (or edit ``VERSION``
-and run ``geniesim version sync``). Never edit a sibling
+To bump: ``geniesim version --bump <NEW_VERSION>`` (or edit ``VERSION``
+and run ``geniesim version --sync``). Never edit a sibling
 ``pyproject.toml`` or a ``package.xml`` ``<version>`` by hand.
 """
 
@@ -24,16 +22,18 @@ from pathlib import Path
 
 
 def _read_repo_version() -> str | None:
-    """Walk up from this file looking for a sibling-of-source ``VERSION``.
+    """Read root VERSION only when this module is in its source checkout.
 
-    The repo layout is ``<repo>/source/geniesim_cli/src/geniesim_cli/_version.py``,
-    so ``parents[4]`` is the repo root in a source checkout. Editable
-    installs hit this branch; wheel installs fall through to the package
-    metadata fallback below (the wheel-build step embeds the version via
-    ``[tool.setuptools.dynamic]`` so ``importlib.metadata`` knows it).
+    Wheel installs use distribution metadata even if the surrounding SDK or
+    another ancestor directory has an unrelated VERSION file.
     """
     here = Path(__file__).resolve()
-    for ancestor in (here.parents[4] if len(here.parents) > 4 else here.parent, *here.parents):
+    for ancestor in here.parents:
+        package = ancestor / "source" / here.parent.name
+        # Installed SDKs may have their own VERSION. Only the canonical
+        # source layout identifies this repository's release file.
+        if here != package / "src" / here.parent.name / "_version.py" or not (package / "pyproject.toml").is_file():
+            continue
         candidate = ancestor / "VERSION"
         if candidate.is_file():
             text = candidate.read_text().strip()

@@ -64,6 +64,31 @@ See [`AGENTS.md` § 0 — Fresh-machine setup](AGENTS.md) for the install-order 
 
 ---
 
+## Release version
+
+The eight first-class `geniesim` / `geniesim_*` distributions share the root
+[`VERSION`](../../VERSION), currently **3.5.0**. Each package's local `VERSION`
+is a symlink to that file. Separate runtime environments do not change the
+release version. Independent modules, service packages, data formats, and
+third-party dependencies keep their own versions.
+
+The 3.5.0 benchmark release uses the `geniesim3:latest` Isaac Sim 5.1 + 6.2
+combo. The dedicated `geniesim4:latest` / `docker6.2` variant remains the
+separate 4.0 line; see [Docker release lines](../../docker/README.md#release-lines).
+
+From a source checkout:
+
+```bash
+geniesim version --check            # check package links and owned ROS manifests
+geniesim version --bump 3.5.0       # set the release and synchronize metadata
+geniesim version --sync             # synchronize after editing root VERSION
+```
+
+`geniesim version` reports installed distribution metadata. Rebuild wheels or
+refresh editable installations after a release bump to update installed metadata.
+
+---
+
 ## 🏗️ Architecture (in one line)
 
 `cli.py` dispatches public commands: every subcommand lives in

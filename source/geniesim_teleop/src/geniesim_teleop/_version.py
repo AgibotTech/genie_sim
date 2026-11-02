@@ -12,7 +12,12 @@ from pathlib import Path
 
 def _read_repo_version() -> str | None:
     here = Path(__file__).resolve()
-    for ancestor in (here.parents[4] if len(here.parents) > 4 else here.parent, *here.parents):
+    for ancestor in here.parents:
+        package = ancestor / "source" / here.parent.name
+        # Installed SDKs may have their own VERSION. Only the canonical
+        # source layout identifies this repository's release file.
+        if here != package / "src" / here.parent.name / "_version.py" or not (package / "pyproject.toml").is_file():
+            continue
         candidate = ancestor / "VERSION"
         if candidate.is_file():
             text = candidate.read_text().strip()

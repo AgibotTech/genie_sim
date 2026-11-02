@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geniesim_dream"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Session-based Cosmos FD rollouts, policy and visual evaluation adapters"
 requires-python = ">=3.10"
 dependencies = [
@@ -21,6 +21,9 @@ recorded = ["safetensors>=0.4,<1"]
 
 [project.scripts]
 geniesim-dream = "geniesim_dream.cli:main"
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

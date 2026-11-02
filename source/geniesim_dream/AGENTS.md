@@ -1,5 +1,8 @@
 # geniesim_dream — Agent Development Guide
 
+Release version: the local `VERSION` links to the repository root `VERSION`
+(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+
 > Maintenance contract: update this guide and the README when service
 > boundaries, public commands or action contracts change. Update the relevant
 > files in `assets/manifests/` when model assets or third-party pins change.

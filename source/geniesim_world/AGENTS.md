@@ -1,5 +1,9 @@
 # geniesim_world — Agent Development Guide 🌍
 
+Release version: the local `VERSION` links to the repository root `VERSION`
+(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+`MANIFEST.in` includes `VERSION` in source archives so they can be rebuilt.
+
 Multimodal spatial world model: turns a single equirectangular panorama
 into a photorealistic, explorable 3D world (Gaussian splat / depth / cube
 geometry) via the **PanoRecon** pipeline (SHARP + DA360 fusion). Owns the

@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 
+from . import __version__
 from .config import DreamConfig
 from .contracts import (
     EvaluationRequest,
@@ -28,7 +29,7 @@ def create_app(config: DreamConfig, platform: DreamPlatform | None = None) -> Fa
         finally:
             app.state.platform.close()
 
-    app = FastAPI(title="Genie Sim Dream", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Genie Sim Dream", version=__version__, lifespan=lifespan)
 
     @app.middleware("http")
     async def protect(request: Request, call_next):
@@ -39,9 +40,7 @@ def create_app(config: DreamConfig, platform: DreamPlatform | None = None) -> Fa
                 return JSONResponse({"error": "Unauthorized"}, status_code=401)
         if request.method in {"POST", "PUT", "PATCH"}:
             content_length = request.headers.get("content-length")
-            if content_length and (
-                not content_length.isdigit() or int(content_length) > config.max_request_bytes
-            ):
+            if content_length and (not content_length.isdigit() or int(content_length) > config.max_request_bytes):
                 return JSONResponse({"error": "Request too large"}, status_code=413)
             body = bytearray()
             async for block in request.stream():

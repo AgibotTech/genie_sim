@@ -4,8 +4,9 @@
 
 """Lightweight package identity and bundled resource discovery."""
 
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+
+from ._version import _resolve_version
 
 
 def resource_root() -> Path:
@@ -16,9 +17,6 @@ def resource_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-try:
-    __version__ = version("geniesim_scene_agent")
-except PackageNotFoundError:
-    __version__ = (resource_root() / "VERSION").read_text(encoding="utf-8").strip()
+__version__ = _resolve_version("geniesim_scene_agent")
 
 __all__ = ["__version__", "resource_root"]

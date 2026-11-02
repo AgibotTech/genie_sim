@@ -1,5 +1,8 @@
 # geniesim_scene_agent — GenieSim scene agent tools
 
+Release version: the local `VERSION` links to the repository root `VERSION`
+(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+
 Python tools and English agent skills for GenieSim asset search, scene generation, task example retrieval, and automatic collection task orchestration.
 
 ## Repository layout

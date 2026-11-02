@@ -4,20 +4,18 @@
 
 """Resolve the package version from the repo-root ``VERSION`` file.
 
-The repo-root ``VERSION`` file is the single source of truth across the
-whole GenieSim stack — every distribution's ``pyproject.toml`` points
-at it via ``[tool.setuptools.dynamic] version`` and every package
-re-exports it via this helper. Edits go through
-``geniesim version bump <NEW>`` (or hand-edit ``VERSION`` then
-``geniesim version sync``); never hardcode a literal here.
+The repo-root ``VERSION`` is the source of truth for all eight first-class
+Genie Sim distributions. Each build reads a local VERSION symlink, and every
+package re-exports that release value via a self-contained resolver. Edits go through
+``geniesim version --bump <NEW>`` (or hand-edit ``VERSION`` then
+``geniesim version --sync``); never hardcode a literal here.
 
 Resolution order:
 
-1. Walk up the filesystem from this file looking for a ``VERSION``
-   alongside ``source/`` — hits in editable installs / source checkouts.
+1. Recognize the canonical source checkout layout and read its root VERSION.
 2. Fall back to ``importlib.metadata.version`` of the installed
    distribution — hits in wheel installs where ``source/`` isn't
-   present but ``[tool.setuptools.dynamic]`` baked the version in.
+   present and build metadata records the release version.
 3. Return ``"0.0.0+unknown"`` as a last resort.
 """
 
@@ -29,7 +27,12 @@ from pathlib import Path
 
 def _read_repo_version() -> str | None:
     here = Path(__file__).resolve()
-    for ancestor in (here.parents[4] if len(here.parents) > 4 else here.parent, *here.parents):
+    for ancestor in here.parents:
+        package = ancestor / "source" / here.parent.name
+        # Installed SDKs may have their own VERSION. Only the canonical
+        # source layout identifies this repository's release file.
+        if here != package / "src" / here.parent.name / "_version.py" or not (package / "pyproject.toml").is_file():
+            continue
         candidate = ancestor / "VERSION"
         if candidate.is_file():
             text = candidate.read_text().strip()

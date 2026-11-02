@@ -12,6 +12,15 @@ injected by the CLI (`docker.py` → `start.sh` → `entrypoint.sh`).
 | `Dockerfile.5.1` | **5.1 + 6.2** (combo; tag `5.1.0`, wheel `6.2.0.0`) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.2 pip-installed) | geniesim3 | ✅ default |
 | `Dockerfile.4.5` | 4.5 (tag + wheel `4.5.0`) | 22.04 Jammy | Humble | system `python3` 3.10 (pip-installed isaacsim) | geniesim2 | ⚠️ E.O.L. |
 
+## Release-line ownership
+
+Genie Sim **3.5.0** is the benchmark-focused release using `geniesim3:latest`,
+the Isaac Sim 5.1 + 6.2 combo in `Dockerfile.5.1`. The dedicated 6.2 recipe,
+`Dockerfile`, remains the separate **4.0** line under `geniesim4:latest`.
+A 3.5 package-version bump must not relabel the dedicated recipe or change its
+SDK pins, image family, dispatch, or qualification status. The shared entrypoint
+reads the mounted checkout; the 4.0 line uses its matching source checkout.
+
 ## Image naming — one tag per family, no minor versions
 
 **Canonical form: `registry.agibot.com/genie-sim/geniesim<N>:latest`**, where

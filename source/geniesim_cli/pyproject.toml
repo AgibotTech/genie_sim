@@ -46,7 +46,7 @@ geniesim = "geniesim_cli.cli:main"
 Homepage = "https://github.com/AgibotTech/genie_sim"
 
 # Single source of truth: the repo-root ``VERSION`` file. Every sibling
-# distribution reads the same path; ``geniesim version bump`` rewrites it
+# distribution reads the same path; ``geniesim version --bump`` rewrites it
 # (along with every ROS ``package.xml``).
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
@@ -58,4 +58,4 @@ where = ["src"]
 "" = "src"
 
 [tool.setuptools.package-data]
-geniesim_cli = ["RELEASE_VERSION", "_umbrella.toml"]
+geniesim_cli = ["_umbrella.toml"]

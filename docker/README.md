@@ -30,6 +30,23 @@ geniesim docker down
 
 `geniesim docker` is an alias for `geniesim docker5.1`, the current default variant.
 
+## Release lines
+
+| Genie Sim release line | Primary workflow | Image family | Isaac Sim runtimes | Command |
+|---|---|---|---|---|
+| **3.5.0** | `geniesim_benchmark` | `geniesim3:latest` | Bundled **5.1** + system-Python **6.2** combo | `geniesim docker` / `geniesim docker5.1` |
+| **4.0** | Dedicated Isaac Sim 6.2 / RT Engine line | `geniesim4:latest` | Dedicated **6.2** | `geniesim docker6.2` |
+
+The 3.5.0 benchmark release uses the combo image. Its system-Python 6.2
+co-install supports task-selected runtimes within that combo. The dedicated
+6.2 image retains the separate 4.0 release line, recipe, pins and acceptance
+scope.
+
+The entrypoint installs packages from the mounted checkout. Their SDK version
+comes from that checkout's root `VERSION`; use the matching 4.0 checkout for
+the dedicated 4.0 line. Image-family names and Isaac SDK versions keep their
+existing contracts when a checkout's package version changes.
+
 ## Image variants
 
 | Command | Dockerfile | Image | Container | Isaac Sim | OS | ROS 2 | Python strategy | Status |

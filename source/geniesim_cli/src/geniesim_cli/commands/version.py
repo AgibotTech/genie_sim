@@ -4,19 +4,18 @@
 
 """``geniesim version`` — show versions; ``--bump`` / ``--check`` to manage them.
 
-The repo-root ``VERSION`` file is the single source of truth. Every
-sibling distribution's ``pyproject.toml`` reads it via
-``[tool.setuptools.dynamic] version = {file = "../../VERSION"}``. ROS
+The repo-root ``VERSION`` file is the single source of truth. Each first-class
+distribution has a local ``VERSION`` symlink used by its build metadata. ROS
 ``package.xml`` files are kept in sync by this command's ``--bump`` /
 ``--sync`` flow, since colcon / ament read ``<version>`` directly from
 the file (no dynamic mechanism on that side).
 
 Usage:
 
-  geniesim version             # show installed dist versions (legacy)
-  geniesim version --bump X.Y  # write VERSION + sync every package.xml
-  geniesim version --sync      # re-sync package.xml from VERSION (no bump)
-  geniesim version --check     # exit 1 if any package.xml is out of sync
+  geniesim version               # show installed distribution versions
+  geniesim version --bump X.Y.Z  # write VERSION + sync release metadata
+  geniesim version --sync        # sync package links and ROS versions
+  geniesim version --check       # exit 1 on release-version drift
 """
 
 from __future__ import annotations
@@ -28,25 +27,27 @@ from pathlib import Path
 
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
 
-_DISTRIBUTIONS: tuple[str, ...] = (
+_FIRST_CLASS_PACKAGES: tuple[str, ...] = (
     "geniesim_cli",
     "geniesim",
     "geniesim_benchmark",
     "geniesim_ros",
     "geniesim_teleop",
-    "geniesim_assets",
+    "geniesim_scene_agent",
+    "geniesim_dream",
+    "geniesim_world",
 )
+_DISTRIBUTIONS = (*_FIRST_CLASS_PACKAGES, "geniesim_assets")
 
 # package.xml files that should track the unified VERSION. Paths are
-# repo-relative; evaluated lazily so a missing path is silently skipped
-# (e.g. external/* trees that aren't checked out).
+# repo-relative; independent modules and third-party packages are excluded.
 _ROS_PACKAGE_XMLS: tuple[str, ...] = (
-    "source/rlinf_geniesim/ros_interfaces/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/package.xml",
-    "source/geniesim_ros/src/ros_ws/src/genie_sim_engine/package.xml",
+    "source/geniesim_ros/src/ros_ws/src/genie_sim_client/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_common/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_engine_core/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_engine_isaacsim/package.xml",
+    "source/geniesim_ros/src/ros_ws/src/genie_sim_engine_libuipc/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_engine_newton/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_moveit/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_moveit_plugins/package.xml",
@@ -56,8 +57,6 @@ _ROS_PACKAGE_XMLS: tuple[str, ...] = (
     "source/geniesim_ros/src/ros_ws/src/genie_sim_ros_control/genie_sim_control/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_ros_control/genie_sim_controllers/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_rviz_plugins/package.xml",
-    "source/geniesim_teleop/src/geniesim_teleop/app/share/geniesim_msg/package.xml",
-    "source/geniesim_teleop/src/geniesim_teleop/app/share/ros_plugin_msgs/package.xml",
 )
 
 # Permissive PEP 440 / ROS-style version literal. Allows e.g.
@@ -159,14 +158,31 @@ def _rewrite_package_xml(path: Path, new: str) -> None:
         path.write_text(new_text)
 
 
+def _scan_package_versions(repo: Path, expected: str) -> list[tuple[Path, str]]:
+    """Check release links only for first-class packages present in a checkout."""
+    out_of_sync = []
+    for name in _FIRST_CLASS_PACKAGES:
+        package = repo / "source" / name
+        if not (package / "pyproject.toml").is_file():
+            continue
+        path = package / "VERSION"
+        current = path.read_text().strip() if path.is_file() else "(missing)"
+        if not path.is_symlink() or path.resolve() != (repo / "VERSION").resolve():
+            out_of_sync.append((path, f"{current}; not linked to root VERSION"))
+        elif current != expected:
+            out_of_sync.append((path, current))
+    return out_of_sync
+
+
 def _do_sync(repo: Path, expected: str, *, dry_run: bool) -> int:
-    """Bring every package.xml in line with ``expected``.
+    """Link first-class package versions and synchronize owned ROS manifests.
 
     Returns the number of files changed. ``dry_run=True`` only reports.
     """
     _, out_of_sync = _scan_package_xmls(repo, expected)
+    out_of_sync = _scan_package_versions(repo, expected) + out_of_sync
     if not out_of_sync:
-        print(f"{GREEN}✅ All package.xml files already at {expected}.{RST}")
+        print(f"{GREEN}✅ Release versions already in sync at {expected}.{RST}")
         return 0
 
     label = "would update" if dry_run else "updated"
@@ -174,18 +190,23 @@ def _do_sync(repo: Path, expected: str, *, dry_run: bool) -> int:
         rel = path.relative_to(repo)
         print(f"   {CYAN}{rel}{RST}  {DIM}{current}{RST} → {GREEN}{expected}{RST}")
         if not dry_run:
-            _rewrite_package_xml(path, expected)
-    print(f"{GREEN}✅ {label} {len(out_of_sync)} package.xml file(s).{RST}")
+            if path.name == "VERSION":
+                path.unlink(missing_ok=True)
+                path.symlink_to(os.path.relpath(repo / "VERSION", path.parent))
+            else:
+                _rewrite_package_xml(path, expected)
+    print(f"{GREEN}✅ {label} {len(out_of_sync)} release metadata file(s).{RST}")
     return len(out_of_sync)
 
 
 def _do_check(repo: Path, expected: str) -> None:
     """Pre-commit-friendly check: exit 1 if any drift exists."""
     _, out_of_sync = _scan_package_xmls(repo, expected)
+    out_of_sync = _scan_package_versions(repo, expected) + out_of_sync
     if not out_of_sync:
         print(f"{GREEN}✅ Versions in sync at {expected}.{RST}")
         sys.exit(0)
-    print(f"{RED}❌ Out-of-sync package.xml files (expected {expected}):{RST}")
+    print(f"{RED}❌ Out-of-sync release metadata (expected {expected}):{RST}")
     for path, current in out_of_sync:
         rel = path.relative_to(repo)
         print(f"   {CYAN}{rel}{RST}  {RED}{current}{RST}")
@@ -199,13 +220,14 @@ def _do_bump(repo: Path, new: str) -> None:
         sys.exit(1)
     current = _read_version(repo)
     if new == current:
-        print(f"{YELLOW}⚠️  VERSION already at {current}; nothing to do.{RST}")
+        print(f"{DIM}VERSION already at {current}; checking release metadata.{RST}")
+        _do_sync(repo, new, dry_run=False)
         return
     print(f"{BOLD}{MAGENTA}🔖 geniesim version --bump{RST}")
     print(f"   {DIM}VERSION:{RST} {DIM}{current}{RST} → {GREEN}{new}{RST}")
     _write_version(repo, new)
     _do_sync(repo, new, dry_run=False)
-    print(f"   {DIM}sibling pyproject.toml files read VERSION via " f"setuptools-dynamic; nothing to edit there.{RST}")
+    print(f"   {DIM}First-class package builds read their VERSION link; dependency versions are unchanged.{RST}")
 
 
 def _print_usage() -> None:
@@ -215,11 +237,11 @@ def _print_usage() -> None:
     print()
     print(f"{BOLD}Modes:{RST}")
     print(f"  {DIM}(no flags){RST}              📋 Show installed dist versions")
-    print(f"  {CYAN}--bump VERSION{RST}         🔖 Write {WHITE}VERSION{RST} and sync every {WHITE}package.xml{RST}")
-    print(f"  {CYAN}--sync{RST}                 🔁 Re-sync package.xml files from {WHITE}VERSION{RST} (no bump)")
     print(
-        f"  {CYAN}--check{RST}                ✅ Exit 1 if any package.xml drifts from {WHITE}VERSION{RST} (CI/pre-commit)"
+        f"  {CYAN}--bump VERSION{RST}         🔖 Write {WHITE}VERSION{RST} and sync package links and owned ROS versions"
     )
+    print(f"  {CYAN}--sync{RST}                 🔁 Sync package links and owned ROS versions (no bump)")
+    print(f"  {CYAN}--check{RST}                ✅ Exit 1 if release metadata drifts from {WHITE}VERSION{RST}")
 
 
 def run(args: list[str]) -> None:
