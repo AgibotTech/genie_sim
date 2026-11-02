@@ -44,10 +44,10 @@ Replay can **modify the input**: it rewrites scene asset references, smooths def
 
 ## 2. Quick start
 
-Default preset: three environments, one round, RGB video, with lighting/background/material fuzzing enabled and eight built-in HDR background candidates (their assets must exist under `SIM_ASSETS`).
+Default preset: three environments, one round, RGB video, with lighting/background/material fuzzing enabled and a single `shucaichang` HDR sphere background candidate in `fuzzing_config.backgrounds`. The static `replay_config.backgrounds` list remains empty.
 
-Each HDR candidate uses `background/sphere_hdr_backgrounds/sphere_hdr_<name>/background.usda`.
-Keep the referenced textures under `background/common/HDR/` in the same asset bundle.
+The candidate USD is `background/sphere_hdr_backgrounds/sphere_hdr_shucaichang/background.usda`.
+Keep its referenced texture, `background/common/HDR/shucaichang.hdr`, in the same asset bundle under `SIM_ASSETS`.
 
 ```bash
 /isaac-sim/python.sh -m replay \
@@ -223,7 +223,7 @@ Both background lists use entries such as:
 
 ```json
 {
-  "usd": "background/room/room_1/background.usda",
+  "usd": "background/sphere_hdr_backgrounds/sphere_hdr_shucaichang/background.usda",
   "position": [0, 0, 0],
   "rotation": [1, 0, 0, 0]
 }

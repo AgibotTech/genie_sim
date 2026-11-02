@@ -22,8 +22,8 @@ semantics unchanged; do not apply task-specific control patches globally.
 - Isaac Sim 5.1 and Python 3.11.
 - cuRobo v2, pinned to `3fd54dc782a82e5500a771cfd47856ea499d5fef`.
 - Assets are acquired separately; use `GENIESIM_ASSETS_PATH`/`SIM_ASSETS`, installed-package lookup, or nearby relative directories.
-- Default application image: `registry.agibot.com/genie-sim/geniesim4-data-collection:latest`; override with `DATA_COLLECTION_IMAGE`.
-- Default container name: `geniesim4-data-collection`; override through the launch arguments.
+- Default application image: `registry.agibot.com/genie-sim/geniesim3-data-collection:latest`; override with `DATA_COLLECTION_IMAGE`.
+- Default container name: `geniesim3-data-collection`; override through the launch arguments.
 - Supported robot families: G1, G2 (including CRS and 90D), ARX, and Aloha.
 - Recording conversion uses repository URDFs for forward kinematics.
 - cuRobo configuration lives only under `config/curobo/v2`; the Dockerfile
@@ -64,6 +64,9 @@ JSON jobs use `run --task-json PATH`. `llm list/show` inspects the external libr
 and `replay <TASK_OR_EPISODE>` renders a saved recording. LLM tasks and replay
 inputs use isolated working copies. Runtime installation remains in `data-collection build`.
 Data collection is a host CLI verb and must not trigger automatic tier-1 bootstrap.
+`geniesim data-collection config` reports saved settings and the effective task
+root. To inspect the effective asset root, run `python scripts/resolve_assets.py`
+from this module; `config` does not resolve or validate that path.
 
 The `geniesim data-collection` CLI discovers tasks, builds the image, and launches
 collection using the same independent `scripts/resolve_assets.py` locator as
@@ -101,9 +104,16 @@ when the original must be preserved.
 `--task` takes a job JSON with `mode=llm`, `task_name`, `scene_dir`, and `run_times`,
 not the robot metadata in a library's `task_info.json`.
 
-LLM server startup reads the selected scene's `task_info.json`, falling back to
-task metadata, for backend, physics frequency, deformable support, and planner
-batch size. `scripts/llm_task_policy.py` rejects multi-run deformable collection
+The default `geniesim data-collection run <TASK>` and `llm run <TASK>` entrypoints
+read the selected scene's `task_info.json`, falling back to task metadata, for
+backend, physics frequency, deformable support, and planner batch size. Their
+clients use the same scene-first metadata selection. LLM wrappers launched
+through `--task-json` instead use GPU physics, 60 Hz stepping, deformable support
+disabled, and a cuRobo batch size of 10; these server settings are not read from
+metadata, and the client reads only task-level `task_info.json`. Use the default
+LLM entrypoints for metadata-driven server settings or scene-specific metadata.
+
+`scripts/llm_task_policy.py` rejects multi-run deformable collection
 in host and container entrypoints. Tasks with USD-attached behavior scripts
 also require a single run; this asset condition is documented rather than
 automatically inspected by the lightweight host CLI.

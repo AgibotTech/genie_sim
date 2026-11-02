@@ -40,8 +40,4 @@ echo "alias omni_python='${ISAACSIM_HOME}/python.sh'" >>~/.bashrc
 echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
 echo "alias source_ros_py311='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
 
-sudo cp -r ${SIM_ASSETS}/robot/curobo_robot/assets/robot $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content/assets/
-
-# Allow the container user to copy robot resources into cuRobo assets at runtime.
-sudo chown -R 1234:1234 $ISAACSIM_HOME/kit/python/lib/python3.11/site-packages/curobo/content 2>/dev/null || true
 exec "$@"

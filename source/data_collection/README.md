@@ -69,9 +69,9 @@ geniesim data-collection build
 ```
 
 The default image is
-`registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
+`registry.agibot.com/genie-sim/geniesim3-data-collection:latest`.
 Use `DATA_COLLECTION_IMAGE` or the CLI's `--image TAG` option to select another
-image. The default container name is `geniesim4-data-collection`.
+image. The default container name is `geniesim3-data-collection`.
 
 Build using shared mirror presets or custom download sources:
 
@@ -212,12 +212,12 @@ For direct Docker use, mount an **episode working copy** and an output directory
 writable by UID 1234:
 
 ```bash
-docker run --rm --name geniesim4-data-collection --gpus all \
+docker run --rm --name geniesim3-data-collection --gpus all \
   -e ACCEPT_EULA=Y -e SIM_ASSETS=/sim_assets \
   -v /path/to/assets:/sim_assets:ro \
   -v /path/to/episode-copy:/input:rw \
   -v /path/to/replay-output:/output:rw \
-  registry.agibot.com/genie-sim/geniesim4-data-collection:latest \
+  registry.agibot.com/genie-sim/geniesim3-data-collection:latest \
   /isaac-sim/python.sh -m replay --input_dir /input --recording_root /output
 ```
 
@@ -240,13 +240,22 @@ configuration; the direct `python -m replay` entry uses that JSON configuration.
 Explicit environment roots take precedence over saved settings in
 `~/.config/geniesim/data-collection.json`. Without configured roots, discovery
 checks installed packages, sibling scene-agent examples, and nearby resource
-layouts. `geniesim data-collection config` shows effective paths.
+layouts. `geniesim data-collection config` shows saved settings and the effective
+task-library path; it does not resolve or validate the effective asset root.
+To inspect the effective asset root from the monorepo root, run:
+
+```bash
+python source/data_collection/scripts/resolve_assets.py
+```
 
 ### LLM task server settings
 
-The selected scene's `task_info.json` is used when present; otherwise collection
-uses the task-level file. A scene-specific file must contain the required task
-and robot metadata as well as any server settings.
+These settings apply to `geniesim data-collection run <TASK>` and
+`geniesim data-collection llm run <TASK>`. These entrypoints use the selected
+scene's `task_info.json` when present, otherwise the task-level file.
+A scene-specific file must contain the required task and robot metadata as
+well as any server settings. The [LLM JSON wrapper](#llm-jobs-through-the-json-launcher)
+uses a different startup path with the limitations described below.
 
 | Task metadata field | Server argument | Default |
 | --- | --- | --- |
@@ -297,6 +306,13 @@ It still executes the existing LLM task's `data_gen.py`; the wrapper is a job
 selector, not a declarative JSON task template. Use a working task-library copy
 because this launcher mounts it read/write at `/llm_tasks`.
 
+This launcher starts the server with GPU physics, 60 Hz stepping, deformable
+support disabled, and a cuRobo batch size of 10. It does not apply the server
+settings from task or scene metadata, and its client reads only the task-level
+`task_info.json`. Use `geniesim data-collection run <TASK>` or `llm run <TASK>`
+for tasks that need metadata-driven server settings or scene-specific metadata,
+including deformable tasks such as `fold_double_layer_t_shirt_g2`.
+
 ### Build options
 
 An equivalent direct build from the module directory is:
@@ -305,7 +321,7 @@ An equivalent direct build from the module directory is:
 cd source/data_collection
 docker build -f docker/Dockerfile \
   --build-context geniesim_mirrors=../../docker \
-  -t registry.agibot.com/genie-sim/geniesim4-data-collection:latest .
+  -t registry.agibot.com/genie-sim/geniesim3-data-collection:latest .
 ```
 
 The named context supplies the shared mirror helper. Keep that directory with
