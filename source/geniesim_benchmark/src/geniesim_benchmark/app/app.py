@@ -289,6 +289,13 @@ def main():
             shutdown_errors.append("task worker did not exit before shutdown deadline")
             exit_code = 1
         try:
+            from geniesim_benchmark.scene_lifecycle import retire_asset_scripts
+
+            retire_asset_scripts(omni.usd.get_context().get_stage(), "/")
+        except Exception as error:
+            shutdown_errors.append(f"asset callback cleanup failed: {error}")
+            exit_code = 1
+        try:
             ui_builder.my_world.stop()
         except Exception as error:
             world_stop_status = f"failed: {type(error).__name__}: {error}"

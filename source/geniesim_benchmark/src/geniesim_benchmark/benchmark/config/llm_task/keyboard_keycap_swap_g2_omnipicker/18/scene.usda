@@ -561,6 +561,7 @@ def Xform "World"
 import math
 
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdPhysics
+from geniesim_assets.behavior_lifecycle import SceneOwner
 
 
 def configure_detachable_key(stage, keyboard_path, target_path):
@@ -586,9 +587,16 @@ class SimulationResetState:
         self.generation = 0
         self._timeline_subscription = None
         self._was_stopped = True
-        self.capture_initial()
+        self._scene_owner = SceneOwner(stage.GetPrimAtPath(root_path), self._retire)
+        try:
+            self.capture_initial()
+        except BaseException:
+            self.close()
+            raise
 
     def capture_initial(self):
+        if not self._scene_owner.current:
+            return
         self._initial_attributes = []
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(self.root_path)):
             self._capture_prim(prim)
@@ -615,6 +623,8 @@ class SimulationResetState:
                 self._initial_attributes.append((str(prim.GetPath()), attr.GetName(), attr.GetTypeName(), value))
 
     def restore(self):
+        if not self._scene_owner.current:
+            return
         self.generation += 1
         for path, name, kind, value in self._initial_attributes:
             prim = self.stage.GetPrimAtPath(path)
@@ -631,6 +641,8 @@ class SimulationResetState:
         self._was_stopped = timeline.is_stopped()
 
         def on_event(event):
+            if not self._scene_owner.current:
+                return
             if event.type == int(omni.timeline.TimelineEventType.STOP):
                 self.restore()
                 self._was_stopped = True
@@ -643,7 +655,12 @@ class SimulationResetState:
         return self
 
     def close(self):
+        self._scene_owner.close()
+
+    def _retire(self):
         self.generation += 1
+        self.pending = False
+        self.pending_attachment = None
         self._timeline_subscription = None
 
 
@@ -651,36 +668,44 @@ class KeycapAutoDetach(SimulationResetState):
     \"\"\"Release the original cap; keep an aligned installed replacement connected.\"\"\"
 
     def __init__(self, stage, key_path, joint_path=None):
-        self.joint_path = joint_path or f\"{key_path}/KeyTravel\"
-        super().__init__(stage, key_path)
-        root = stage.GetPrimAtPath(key_path)
-        self.joint = UsdPhysics.PrismaticJoint(stage.GetPrimAtPath(self.joint_path))
-        if not root.IsValid() or not self.joint.GetPrim().IsValid():
-            raise ValueError(f\"Mechanical key or KeyTravel joint missing at {key_path}\")
-        self.base = stage.GetPrimAtPath(self.joint.GetBody0Rel().GetTargets()[0])
-        self.cap = stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
-        lower = float(self.joint.GetLowerLimitAttr().Get())
-        upper = float(self.joint.GetUpperLimitAttr().Get())
-        fraction = float(root.GetAttribute(\"userProperties:releaseFraction\").Get())
-        if not lower < upper or not 0 < fraction <= 1:
-            raise ValueError(\"Invalid travel limits or release fraction\")
-        self.threshold = lower + fraction * (upper - lower)
-        self.upper = upper
-        self.rest = float(UsdPhysics.DriveAPI(self.joint.GetPrim(), \"linear\").GetTargetPositionAttr().Get())
-        self.xy_tolerance = float(root.GetAttribute(\"userProperties:attachXYTolerance\").Get())
-        self.z_tolerance = float(root.GetAttribute(\"userProperties:attachZTolerance\").Get())
-        self.angle_tolerance = float(root.GetAttribute(\"userProperties:attachAngleDegrees\").Get())
-        self.confirm_frames = int(root.GetAttribute(\"userProperties:attachConfirmFrames\").Get())
-        self.compatibility = root.GetAttribute(\"userProperties:keycapCompatibility\").Get()
-        self.detached = not bool(self.joint.GetJointEnabledAttr().Get())
-        self.previous_travel = self.travel()
-        self.pending = False
-        self.pending_attachment = None
-        self._blocked_caps = set()
-        self._candidate_path = None
-        self._candidate_frames = 0
+        try:
+            self.joint_path = joint_path or f\"{key_path}/KeyTravel\"
+            super().__init__(stage, key_path)
+            root = stage.GetPrimAtPath(key_path)
+            self.joint = UsdPhysics.PrismaticJoint(stage.GetPrimAtPath(self.joint_path))
+            if not root.IsValid() or not self.joint.GetPrim().IsValid():
+                raise ValueError(f\"Mechanical key or KeyTravel joint missing at {key_path}\")
+            self.base = stage.GetPrimAtPath(self.joint.GetBody0Rel().GetTargets()[0])
+            self.cap = stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
+            lower = float(self.joint.GetLowerLimitAttr().Get())
+            upper = float(self.joint.GetUpperLimitAttr().Get())
+            fraction = float(root.GetAttribute(\"userProperties:releaseFraction\").Get())
+            if not lower < upper or not 0 < fraction <= 1:
+                raise ValueError(\"Invalid travel limits or release fraction\")
+            self.threshold = lower + fraction * (upper - lower)
+            self.upper = upper
+            self.rest = float(UsdPhysics.DriveAPI(self.joint.GetPrim(), \"linear\").GetTargetPositionAttr().Get())
+            self.xy_tolerance = float(root.GetAttribute(\"userProperties:attachXYTolerance\").Get())
+            self.z_tolerance = float(root.GetAttribute(\"userProperties:attachZTolerance\").Get())
+            self.angle_tolerance = float(root.GetAttribute(\"userProperties:attachAngleDegrees\").Get())
+            self.confirm_frames = int(root.GetAttribute(\"userProperties:attachConfirmFrames\").Get())
+            self.compatibility = root.GetAttribute(\"userProperties:keycapCompatibility\").Get()
+            self.detached = not bool(self.joint.GetJointEnabledAttr().Get())
+            self.previous_travel = self.travel()
+            self.pending = False
+            self.pending_attachment = None
+            self._blocked_caps = set()
+            self._candidate_path = None
+            self._candidate_frames = 0
+        except BaseException:
+            owner = getattr(self, \"_scene_owner\", None)
+            if owner is not None:
+                owner.close()
+            raise
 
     def capture_initial(self):
+        if not self._scene_owner.current:
+            return
         super().capture_initial()
         # Replacement caps are siblings in user scenes. Preserve their initial
         # poses as well as the original joint binding for Stop after a swap.
@@ -697,6 +722,8 @@ class KeycapAutoDetach(SimulationResetState):
         self._initial_joint_targets = joint.GetBody1Rel().GetTargets()
 
     def restore(self):
+        if not self._mechanism_current():
+            return
         self.joint.GetBody1Rel().SetTargets(self._initial_joint_targets)
         self.cap = self.stage.GetPrimAtPath(self._initial_joint_targets[0])
         for path in self._installed_caps:
@@ -706,7 +733,15 @@ class KeycapAutoDetach(SimulationResetState):
                     prim.CreateAttribute(name, kind).Set(value)
         super().restore()
 
+    def _mechanism_current(self):
+        return (self._scene_owner.current
+                and bool(self.joint.GetPrim()) and self.joint.GetPrim().IsValid()
+                and bool(self.base) and self.base.IsValid()
+                and bool(self.cap) and self.cap.IsValid())
+
     def travel(self):
+        if not self._mechanism_current():
+            return 0.0
         cache = UsdGeom.XformCache()
         base_matrix = cache.GetLocalToWorldTransform(self.base)
         cap_matrix = cache.GetLocalToWorldTransform(self.cap)
@@ -716,6 +751,8 @@ class KeycapAutoDetach(SimulationResetState):
         return Gf.Dot(anchor1 - anchor0, axis)
 
     def update(self, defer=False):
+        if not self._mechanism_current():
+            return False
         if self.pending:
             return False
         if self.detached:
@@ -735,6 +772,8 @@ class KeycapAutoDetach(SimulationResetState):
         return True
 
     def release_allowed(self):
+        if not self._mechanism_current():
+            return False
         # The removable original cap and a successfully installed replacement
         # have different task contracts. Keep the replacement's travel spring,
         # but never release its binding through the original cap's threshold.
@@ -804,6 +843,8 @@ class KeycapAutoDetach(SimulationResetState):
 
     def commit_pending(self, generation=None):
         \"\"\"Apply release or installation outside the PhysX step; recheck installation.\"\"\"
+        if not self._mechanism_current():
+            return False
         if generation is not None and (generation != self.generation or not self.pending):
             return False
         if self.pending_attachment is None:
@@ -831,6 +872,8 @@ class KeycapAutoDetach(SimulationResetState):
 
     def commit_release(self, generation=None):
         \"\"\"Call from a safe app update, never inside the physics step.\"\"\"
+        if not self._mechanism_current():
+            return False
         if generation is not None and (generation != self.generation or not self.pending):
             return False
         if not self.joint.GetPrim().IsValid():
@@ -847,6 +890,8 @@ class KeycapAutoDetach(SimulationResetState):
         return True
 
     def _after_restore(self):
+        if not self._mechanism_current():
+            return
         self.cap = self.stage.GetPrimAtPath(self.joint.GetBody1Rel().GetTargets()[0])
         self.detached = not bool(self.joint.GetJointEnabledAttr().Get())
         self.pending = False
@@ -874,7 +919,7 @@ def compute(db):
         joint_path = cap.GetRelationship(\"userProperties:keyTravelJoint\").GetTargets()[0]
         state.controller = KeycapAutoDetach(stage, str(key_path), joint_path=str(joint_path)).attach_timeline()
     controller = state.controller
-    if omni.timeline.get_timeline_interface().is_playing() and controller.update(defer=True):
+    if controller._scene_owner.current and omni.timeline.get_timeline_interface().is_playing() and controller.update(defer=True):
         generation = controller.generation
         async def release_next_update():
             await omni.kit.app.get_app().next_update_async()
@@ -886,6 +931,7 @@ def cleanup(db):
     controller = getattr(db.per_instance_state, \"controller\", None)
     if controller is not None:
         controller.close()
+        del db.per_instance_state.controller
 """
                             custom token inputs:scriptPath
                             custom bool inputs:usePath = 0

@@ -36,6 +36,7 @@ from isaacsim.core.utils.xforms import get_world_pose
 from geniesim_benchmark.camera_calibration import capture_calibrations
 from geniesim_benchmark.plugins.logger import Logger
 from geniesim_benchmark.app.render_scheduler import RenderCallTimeout, RenderLoopScheduler
+from geniesim_benchmark.scene_lifecycle import retire_asset_scripts
 
 logger = Logger()  # Create singleton instance
 from geniesim_benchmark.app.utils import RobotCfg
@@ -885,6 +886,7 @@ class APICore:
         self.run_on_render_loop(self._clear_vectorized_stage)
 
     def _clear_vectorized_stage(self):
+        retire_asset_scripts(self._stage, "/World/envs")
         self._clear_wheel_parking()
         # Detach shared-cam annotators and drop /World/shared_cameras + /World/envs.
         if hasattr(self, "_shared_cam_rgb_ann"):
@@ -2085,6 +2087,7 @@ class APICore:
         workspace_replaced = False
         if sub_usd_path != "":
             if ws_prim.IsValid():
+                retire_asset_scripts(self._stage, "/Workspace")
                 delete_prim(ws_prim.GetPath())
                 workspace_replaced = True
                 logger.info(f"Deleted old Workspace prim")
@@ -2289,6 +2292,12 @@ class APICore:
             self._initialize_all_scene_articulations()
             return
 
+        # A full scene switch must retire background/robot callbacks before
+        # the new Workspace exists: their STOP callbacks may refer to it.
+        old_robot_path = getattr(getattr(self, "robot_cfg", None), "robot_prim_path", None)
+        for old_path in dict.fromkeys(("/World", old_robot_path)):
+            if old_path and self._stage.GetPrimAtPath(old_path).IsValid():
+                retire_asset_scripts(self._stage, old_path)
         self._reload_scenes(sub_usd_path)
         self._set_robot_cfg(RobotCfg(str(system_utils.app_root_path()) + "/robot_cfg/" + robot_cfg))
         robot_usd_path = str(system_utils.assets_path()) + "/" + self.robot_cfg.robot_usd
@@ -2296,8 +2305,9 @@ class APICore:
         # appends a reference rather than replacing, so delete any previously loaded
         # copies first — otherwise the stage stacks references on every scene change
         # (e.g. a re-rolled list-valued scene_usd) and leaks RAM/VRAM until the run hangs.
-        for stale_path in ("/World", self.robot_cfg.robot_prim_path):
-            if self._stage.GetPrimAtPath(stale_path).IsValid():
+        for stale_path in dict.fromkeys(("/World", old_robot_path, self.robot_cfg.robot_prim_path)):
+            if stale_path and self._stage.GetPrimAtPath(stale_path).IsValid():
+                retire_asset_scripts(self._stage, stale_path)
                 delete_prim(stale_path)
         add_reference_to_stage(robot_usd_path, self.robot_cfg.robot_prim_path)
         self._apply_gripper_drive_max_force()
