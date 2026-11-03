@@ -31,7 +31,7 @@ inputs:
     required: false
     default: "30"
 outputs:
-  - desc: "LeRobot v2.1 dataset at output_dir (data/chunk-NNN/episode_*.parquet, videos/chunk-NNN/<key>/episode_*.mp4, meta/info.json + tasks.jsonl + episodes.jsonl + episodes_stats.jsonl)"
+  - desc: "LeRobot v2.1 dataset at output_dir (data/chunk-NNN/episode_*.parquet, videos/chunk-NNN/observation.images.<key>/episode_*.mp4, meta/info.json + tasks.jsonl + episodes.jsonl + episodes_stats.jsonl)"
 ---
 
 ## When to Use
@@ -136,7 +136,7 @@ the error to stderr with exit code `1`.
 ```bash
 ls -R lerobot_out/
 # → data/chunk-000/episode_000000.parquet, ...
-# → videos/chunk-000/{top_head,hand_left,hand_right,top_head_depth,...}/episode_*.mp4
+# → videos/chunk-000/{observation.images.top_head,observation.images.hand_left,observation.images.hand_right,top_head_depth,...}/episode_*.mp4
 # → meta/{info.json,tasks.jsonl,episodes.jsonl,episodes_stats.jsonl}
 
 python3 -c "
