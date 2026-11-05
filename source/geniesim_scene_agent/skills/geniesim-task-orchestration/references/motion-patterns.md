@@ -60,7 +60,7 @@ alignment, insertion, release, and withdrawal phases appropriate to geometry.
 Candidate perturbations must remain within aperture tolerance. Validate actual
 depth and connection state; bounding-box overlap can pass a bad insertion.
 
-References: [insertion tasks](../../find-example/references/insertion.md).
+References: [gear and bearing assembly](../../../examples/tasks/assemble_gear_or_bearing_g2/data_gen.py).
 
 ## Held containers
 

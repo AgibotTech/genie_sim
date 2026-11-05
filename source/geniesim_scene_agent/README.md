@@ -202,11 +202,11 @@ python3 -m scene_agent_scene.similar "fruit on each shelf level" \
   --task-root examples/tasks --limit 5
 ```
 
-The bundled [task examples](examples/README.md) contain 110 orchestration examples and 1,116 scenes: 109 tasks have 10 scene instances each, and the writing task has 26 scene-defined A-Z variants. Use `--task-root examples/tasks` or set `GENIESIM_SCENE_LIBRARY="$PWD/examples/tasks"` to search this library. Assets stay external; run `examples/bind_assets.py` before opening the USD files.
+The bundled [task examples](examples/README.md) contain 101 orchestration examples and 1,026 scenes: 100 tasks have 10 scene instances each, and the writing task has 26 scene-defined A-Z variants. Use `--task-root examples/tasks` or set `GENIESIM_SCENE_LIBRARY="$PWD/examples/tasks"` to search this library. Assets stay external; run `examples/bind_assets.py` before opening the USD files.
 
 Before authoring `data_gen.py`, use [find-example](skills/find-example/SKILL.md).
 Its [Markdown task tables](skills/find-example/references/index.md) cover all
-110 tasks in 12 families, with descriptions, scene/action tags, actual API
+101 tasks in 11 families, with descriptions, scene/action tags, actual API
 calls, configuration classes, and scene keywords. Search them from Python:
 
 ```bash
