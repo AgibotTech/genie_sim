@@ -1,6 +1,6 @@
 # Task orchestration lessons and runtime pitfalls
 
-These lessons come from source traversal of all 110 bundled `data_gen.py` files
+These lessons come from source traversal of all 101 bundled `data_gen.py` files
 and inspection of RobotAPI, action stages, trajectory resolution, robot dispatch,
 planner goal composition, and server state/collision commands. They describe
 code behavior and reusable decisions, not a newly measured success rate.
@@ -152,25 +152,12 @@ iteration budget ends. More commanded depth can merely slide the part in the
 fingers or push the receiver. Derive tolerances from aperture clearance and
 physical solver accuracy rather than convenient large center-distance values.
 
-[Straw insertion](../../../examples/tasks/insert_straw_into_milk_tea_cup_g2/data_gen.py)
-measures engagement/slip and separates axial from lateral correction.
-[Pen-cap assembly](../../../examples/tasks/put_cap_on_pen_g2/data_gen.py) checks
-relative cap-to-pen stability during a sufficiently large transport probe;
-without movement, apparent following is not proven.
-[Ethernet insertion](../../../examples/tasks/plug_ethernet_cable_into_network_device_g2_crsb_90d/data_gen.py)
-checks anchor errors and drift in two measurement windows.
-
 Some assembly scenes use bundled attractor/connection scripts. Read the selected
 USD's script bindings and parameters: capture radius, anchor offsets and
 orientation gates must agree with the task checker. A final small tip distance
 alone does not prove a lasting connection. Check after releasing the manipulating
 hand and an appropriate movement/settle interval. Simulation attachment changes
 physics; do not infer a friction-only insertion from an attractor-assisted task.
-
-For a coin slot, verify passage into the real cavity. The
-[coin task](../../../examples/tasks/insert_coin_into_money_box_g2/data_gen.py)
-rejects a coin resting on a domed lid; “below world-AABB top” would incorrectly
-accept that failure. Its cavity-plane threshold is specific to that asset.
 
 ## Dual-arm coordination and ownership
 
@@ -297,7 +284,7 @@ Use zero-argument `extra_checkers` or an explicit final live-state check.
 | Cloth example computes `final_ok` then returns True regardless | In adapted tasks, make the final fold checker gate success and verify after releasing pins. It also disables physical gripper colliders without restoring them. |
 | Writing returns motion/reset result without a glyph checker | Add ink/contact/glyph validation where writing success is required. |
 | Several examples use XY-only containment, fixed coordinates or asset part names | Re-derive geometry/frames and add height/interior/support/stability checks. |
-| 35 examples call planner exclusion; none directly call the matching restore wrapper | Treat exclusions as task-local state and review cleanup. This source observation alone does not describe runner-wide reset behavior. |
+| 26 examples call planner exclusion; none directly call the matching restore wrapper | Treat exclusions as task-local state and review cleanup. This source observation alone does not describe runner-wide reset behavior. |
 
 Use [task validation](../../geniesim-task-validation/SKILL.md) for actual fixed-scene
 physical execution and variation coverage. Static source review cannot establish

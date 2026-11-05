@@ -1,6 +1,6 @@
 # Task reference tables
 
-The tables cover **110 current tasks**.
+The tables cover **101 current tasks**.
 
 Read the relevant task family first, then compare several examples.
 
@@ -14,8 +14,7 @@ Read the relevant task family first, then compare several examples.
 | Drawers and shelves | 6 | [drawers-and-shelves](drawers-and-shelves.md) |
 | Bimanual tasks and held containers | 5 | [bimanual-and-held-containers](bimanual-and-held-containers.md) |
 | Storage and sorting | 9 | [storage-and-sorting](storage-and-sorting.md) |
-| Articulations and pressing | 13 | [articulations](articulations.md) |
-| Insertion and fine assembly | 5 | [insertion](insertion.md) |
+| Articulations and pressing | 9 | [articulations](articulations.md) |
 | Everyday manipulation | 9 | [everyday-manipulation](everyday-manipulation.md) |
 | Deformable objects and contact trajectories | 2 | [deformable-and-contact](deformable-and-contact.md) |
 
