@@ -88,6 +88,10 @@ The 3.5.0 benchmark release uses the `geniesim3:latest` Isaac Sim 5.1 + 6.2
 combo. The dedicated `geniesim4:latest` / `docker6.2` variant remains the
 separate 4.0 line; see [Docker release lines](../../docker/README.md#release-lines).
 
+To skip building the default combo image, pull and retag the prebuilt Docker Hub
+image using [issue #201](https://github.com/AgibotTech/genie_sim/issues/201).
+See the [copyable pull commands](../../docker/README.md#use-the-prebuilt-combo-image).
+
 From a source checkout:
 
 ```bash

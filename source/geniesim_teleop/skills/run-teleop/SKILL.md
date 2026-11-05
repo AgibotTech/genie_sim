@@ -32,6 +32,10 @@ The 5.1 image is built from `docker/Dockerfile.5.1`; its default container is
 `geniesim3`. The repository and required scene assets must be available inside
 that container, normally with the checkout mounted at `/workspace`.
 
+To skip `geniesim docker5.1 build`, pull and retag the prebuilt `geniesim3`
+Docker Hub image following [issue #201](https://github.com/AgibotTech/genie_sim/issues/201),
+then continue with `geniesim docker5.1 up` below.
+
 ```bash
 # Host: build when preparing or updating the local image.
 geniesim docker5.1 build

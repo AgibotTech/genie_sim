@@ -61,6 +61,9 @@ Do **not** use for:
    [quick start and smoke guide](../../benchmark_test_docs.md#ai-smoke-testing) for build,
    source-path checks, backend-specific commands and result locations.
    Do not forward Isaac preview flags to every `dexmanip` entry.
+   To skip building the default `geniesim3` combo image, follow the Docker Hub
+   pull and retag instructions in [issue #201](https://github.com/AgibotTech/genie_sim/issues/201),
+   then run `geniesim docker up` and `geniesim docker into` on the host.
 3. **Working directory**: anywhere under the repo root works — the CLI
    walks up to find `scripts/` and uses `find_spec` to locate the
    benchmark package.

@@ -30,6 +30,22 @@ geniesim docker down
 
 `geniesim docker` is an alias for `geniesim docker5.1`, the current default variant.
 
+### Use the prebuilt combo image
+
+To skip the default combo image build, use the Docker Hub image published in
+[issue #201](https://github.com/AgibotTech/genie_sim/issues/201). Pull it and tag
+it with the default image name expected by the CLI:
+
+```bash
+docker pull yonhdee/geniesim3:latest
+docker tag yonhdee/geniesim3:latest registry.agibot.com/genie-sim/geniesim3:latest
+geniesim docker up
+geniesim docker into
+```
+
+This image is for `geniesim docker` / `docker5.1`, the 5.1 + 6.2 combo.
+The dedicated `docker6.2` image and derived profiles use their own build recipes.
+
 ## Release lines
 
 | Genie Sim release line | Primary workflow | Image family | Isaac Sim runtimes | Command |

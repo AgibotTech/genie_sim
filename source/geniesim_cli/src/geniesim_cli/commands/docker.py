@@ -342,6 +342,15 @@ def _container_state() -> str | None:
     return result.stdout.strip() or None
 
 
+def _print_prebuilt_image_notice() -> None:
+    """Show the published combo-image alternative for the default image."""
+    if _active_profile or _active_variant != "5.1" or _image() != get_variant("5.1").image:
+        return
+    print(f"  {CYAN}💡 Skip the geniesim3 build: pull and retag the prebuilt Docker Hub image.{RST}")
+    print(f"  {DIM}Instructions:{RST} {CYAN}https://github.com/AgibotTech/genie_sim/issues/201{RST}")
+    print()
+
+
 def _print_usage() -> None:
     label = _cmd_label()
     v = _selected_variant()
@@ -349,6 +358,7 @@ def _print_usage() -> None:
     print()
     print(f"{BOLD}Usage:{RST} geniesim {label} {CYAN}<subcommand>{RST} [args...]")
     print()
+    _print_prebuilt_image_notice()
     print(f"{BOLD}Subcommands:{RST}")
     dockerfile = f"{v.dir}/{v.dockerfile}" if _active_profile else "docker/Dockerfile"
     print(f"  {CYAN}build{RST} [--mirrors NAME | --china] [docker-build args...]  🔨 Build {BOLD}{dockerfile}{RST}")
@@ -526,6 +536,7 @@ def _do_build(extra: list[str]) -> None:
         sys.exit(2)
 
     print(f"{BOLD}{MAGENTA}🔨 geniesim {_cmd_label()} build{RST}")
+    _print_prebuilt_image_notice()
     print(f"   {DIM}Repo root:{RST}  {CYAN}{repo_root}{RST}")
     print(f"   {DIM}Dockerfile:{RST} {CYAN}{dockerfile}{RST}")
     print(f"   {DIM}Tag:{RST}        {CYAN}{image}{RST}")
