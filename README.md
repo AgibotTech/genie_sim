@@ -2,18 +2,21 @@
 
 <div align="center">
   <div align="center">
-    <a href="https://agibot-world.cn/videos/genieSim/modules/full-3840w.8e60f5e9da0bd3f3.mp4" target="_blank">
+    <a href="https://agibot-world.com/videos/genieSim/modules/full-en-3840w.667868830394362f.mp4" target="_blank">
       <img src="./docs/video_preview.jpg" alt="Play Genie Sim video" />
     </a>
   </div>
   <a href="https://arxiv.org/abs/2601.02078" style="text-decoration:none;">
     <img src="https://img.shields.io/badge/arXiv-2601.02078-red.svg?logo=arxiv&logoColor=white" alt="arXiv Paper: 2601.02078">
   </a>
+  <a href="https://agibot-world.com/genie-sim/">
+    <img src="https://img.shields.io/badge/Webpage-GenieSim-green?" alt="Webpage">
+  </a>
+  <a href="https://agibot-world.com/genie-sim-report/">
+    <img src="https://img.shields.io/badge/TechReport-GenieSim-blue?" alt="TechReport">
+  </a>
   <a href="https://github.com/AgibotTech/genie_sim">
     <img src="https://img.shields.io/badge/GitHub-grey?logo=GitHub" alt="GitHub">
-  </a>
-  <a href="http://agibot-world.com/genie-sim">
-    <img src="https://img.shields.io/badge/Webpage-GenieSim-green?" alt="Webpage">
   </a>
   <a href="https://huggingface.co/datasets/agibot-world/GenieSimAssets">
     <img src="https://img.shields.io/badge/HuggingFace-yellow?logo=HuggingFace" alt="HuggingFace">
