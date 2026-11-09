@@ -918,7 +918,7 @@ class RosExtrater:
                     )
                 def safe_min(topics):
                     if len(topics) == 0:
-                        return np.Infinity
+                        return np.inf
                     return min(
                         [
                             max(topics[topic].keys(), key=lambda x: x)

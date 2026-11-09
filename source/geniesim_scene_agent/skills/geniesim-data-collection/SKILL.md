@@ -20,7 +20,7 @@ bulk dataset is requested. Bulk collection is a separate scope decision.
 ## Prepare the runtime and task
 
 Run the `geniesim data-collection` CLI on the host. It locates the collection
-module and uses its configured image, which supplies Isaac Sim 5.1, cuRobo,
+module and uses its configured image, which supplies Isaac Sim 6.2, cuRobo,
 RobotAPI, gRPC, ROS recording, and conversion dependencies. The scene-agent
 image supplies authoring and rendered scene previews; task execution uses the
 collection runtime. Reuse an available compatible image/environment.

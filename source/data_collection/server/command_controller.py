@@ -21,6 +21,7 @@ from isaacsim.core.prims import SingleArticulation as Articulation
 from isaacsim.core.prims import SingleGeometryPrim as GeometryPrim
 from isaacsim.core.prims import SingleRigidPrim as RigidPrim
 from isaacsim.core.prims import SingleXFormPrim as XFormPrim
+from isaacsim.core.simulation_manager import SimulationManager
 from isaacsim.core.utils.prims import get_prim_at_path, get_prim_object_type, delete_prim, create_prim
 from isaacsim.core.utils.stage import add_reference_to_stage, update_stage, print_stage_prim_paths
 try:
@@ -29,13 +30,13 @@ except ImportError:
     # Isaac Sim 4.5+ removed this helper; use None if the code does not require it.
     def remove_deleted_references(*args, **kwargs):  # type: ignore
         pass
-from isaacsim.sensors.camera import Camera
 
 from omni.kit.viewport.utility import get_active_viewport_and_window
 from omni.kit.viewport.utility.camera_state import ViewportCameraState
 from omni.physx.scripts import utils
 from pxr import Gf, PhysxSchema, Sdf, Usd, UsdGeom, UsdPhysics, UsdShade, UsdLux
 
+from common.deformable_compat import unique_views_by_identity
 from common.base_utils.logger import logger
 from common.base_utils.transform_utils import mat2quat_wxyz, quat2mat_wxyz
 from common.data_filter.runtime_checker import CheckerStatus, create_checker
@@ -47,6 +48,9 @@ from server.motion_generator.trajectory_timing import (
 )
 from server.command_enum import Command, command_value_to_string
 from server.generated_geometry_state import GeneratedGeometryRuntime
+from server.json_scene_setup import (
+    normalize_single_body_root, validate_no_joint_references, validate_scene_objects,
+)
 from server.controllers.parallel_gripper import ParallelGripper
 from server.utils import Light
 from server.robot import RobotCfg
@@ -215,6 +219,8 @@ class CommandController:
         self.usd_objects = {}
         self.articulat_objects = {}
         self.rigid_bodies = {}
+        # Only this explicit JSON episode-setup operation owns these USD roots.
+        self._json_scene_owned_paths = set()
         self.enable_physics = enable_physics
         self.enable_curobo = enable_curobo
         self.trajectory_list = None
@@ -363,9 +369,7 @@ class CommandController:
             logger.warning(f"[cloth_record] save {abs_path} failed: {exc}")
 
     def _snapshot_cloth_states(self, time_stamp: float) -> List[Dict[str, Any]]:
-        """Synchronously copy GPU points to CPU, then enqueue asynchronous disk writes.
-        Return name/prim_path/file/node-count entries for the intermediate cloth index;
-        file paths are relative to path_to_save. Return [] without views."""
+        """Snapshot each physical view once, recording the simulation mesh path."""
         if not self.path_to_save:
             return []
         cloth_views = getattr(self.ui_builder, "cloth_views", None) or {}
@@ -379,58 +383,20 @@ class CommandController:
         self._cloth_record_counter += 1
         frame_idx = self._cloth_record_counter
         entries: List[Dict[str, Any]] = []
-        try:
-            from pxr import UsdGeom  # noqa: PLC0415
-            _stage = omni.usd.get_context().get_stage()
-        except Exception:
-            _stage = None
-        for prim_path, view in cloth_views.items():
+        for alias_path, view in unique_views_by_identity(cloth_views):
+            # Record simulation mesh nodes so replay writes back to the mesh,
+            # while the tensor view itself remains bound to the body root.
+            prim_path = getattr(view, "_fem_simulation_path", alias_path)
             try:
-                # Legacy SoftBodyView get_nodal_positions returns concatenated
-                # collision and render vertices. The first N belong to collision geometry;
-                # the remaining M are skinned render vertices updated by PhysX.
-                # Replay writes the render segment to mesh.points, matching asset topology
-                # and the authored point count.
-                # Surface views have only the triangular surface mesh.
-                # get_simulation_nodal_positions returns surface/render points
-                # without collision tetrahedra, so no split is required.
-                pos_t = None
-                api_used = None
-                if hasattr(view, "get_nodal_positions"):
-                    pos_t = view.get_nodal_positions()
-                    api_used = "get_nodal_positions"
-                elif hasattr(view, "get_simulation_nodal_positions"):
-                    pos_t = view.get_simulation_nodal_positions()
-                    api_used = "get_simulation_nodal_positions"
-                else:
-                    raise AttributeError(
-                        f"view {type(view).__name__} has no known nodal positions API"
-                    )
+                pos_t = view.get_simulation_nodal_positions()
                 pos_np = pos_t[0].detach().cpu().numpy().astype(np.float32)  # (N, 3) world coords
-
-                # Split concatenated soft-body points only when collisionRestPoints plus
-                # asset point counts match the complete returned array length.
-                if _stage is not None and api_used == "get_nodal_positions":
-                    _prim = _stage.GetPrimAtPath(prim_path)
-                    if _prim and _prim.IsValid():
-                        col_rest_attr = _prim.GetAttribute("physxDeformable:collisionRestPoints")
-                        pts_attr = _prim.GetAttribute("points")
-                        if (col_rest_attr and col_rest_attr.IsValid()
-                                and pts_attr and pts_attr.IsValid()):
-                            col_rest = col_rest_attr.Get()
-                            render_pts = pts_attr.Get()
-                            if col_rest is not None and render_pts is not None:
-                                n_col = len(col_rest)
-                                n_render = len(render_pts)
-                                if pos_np.shape[0] == n_col + n_render:
-                                    pos_np = pos_np[n_col:n_col + n_render]
             except Exception as exc:
                 logger.warning(f"[cloth_record] read nodal {prim_path} failed: {exc}")
                 continue
-            name = self._cloth_recording_name(prim_path)
+            name = self._cloth_record_name_map.get(prim_path) or self._cloth_recording_name(alias_path)
             rel_path = f"deformable/{name}/{frame_idx:06d}.npz"
             abs_path = os.path.join(self.path_to_save, rel_path)
-            # GPU-to-CPU synchronization is done; run disk I/O in the thread pool.
+            # GPU synchronization is complete; disk I/O runs in the thread pool.
             self._cloth_record_executor.submit(
                 self._save_cloth_npz, abs_path, pos_np, prim_path, time_stamp,
             )
@@ -993,13 +959,13 @@ class CommandController:
                 vcmd = (tgt - cur) / dt * g["gain"]
                 vmax = g["vmax"]
                 vcmd = torch.clamp(vcmd, min=-vmax, max=vmax)
-                per_cloth_writes.setdefault(g["cloth_prim"], (view, [])
-                                            )[1].append((g["node_idx"], vcmd))
+                per_cloth_writes.setdefault(id(view), (g["cloth_prim"], view, [])
+                                            )[2].append((g["node_idx"], vcmd))
             except Exception as exc:
                 logger.warning(f"[pin] Failed to apply group {group_id}: {exc}")
                 continue
 
-        for cloth_prim, (view, group_writes) in per_cloth_writes.items():
+        for cloth_prim, view, group_writes in per_cloth_writes.values():
             try:
                 vel = view.get_simulation_nodal_velocities().clone()  # (1, N, 3) cuda
                 for node_idx, vcmd in group_writes:
@@ -1972,10 +1938,20 @@ class CommandController:
                             topic_name = "/" + camera.split("/")[-1] + "_rgb"
                             compressed_name = topic_name + "_compressed"
                             ros_cmd_distro = os.getenv("ROS_CMD_DISTRO", "humble")
+                            legacy_transport_cli = ros_cmd_distro == "humble"
                             extra_args = (
-                                ["--remap", "_out_transport:=compressed"]
-                                if ros_cmd_distro != "humble"
+                                ["--param", "in_transport:=raw", "--param", "out_transport:=compressed"]
+                                if not legacy_transport_cli
                                 else []
+                            )
+                            # Jazzy selects transports by parameter and publishes
+                            # the compressed subtopic; remapping /out alone does
+                            # not remap /out/compressed.
+                            output_topic = "/out" if legacy_transport_cli else "/out/compressed"
+                            republish_command = (
+                                'exec ros2 run image_transport republish raw compressed "$@"\n'
+                                if legacy_transport_cli
+                                else 'exec ros2 run image_transport republish "$@"\n'
                             )
                             # Fixed script + argv: topic_name / compressed_name
                             # ride in as data via "$@", so a crafted camera prim
@@ -1985,7 +1961,7 @@ class CommandController:
                                 "unset LD_LIBRARY_PATH\n"
                                 'source /opt/ros/"$1"/setup.bash\n'
                                 "shift\n"
-                                'exec ros2 run image_transport republish raw compressed "$@"\n'
+                                + republish_command
                             )
                             run_argv = [
                                 "/bin/bash",
@@ -1993,12 +1969,12 @@ class CommandController:
                                 run_script,
                                 "bash",
                                 ros_cmd_distro,
-                                *extra_args,
                                 "--ros-args",
+                                *extra_args,
                                 "--remap",
                                 f"/in:={topic_name}",
                                 "--remap",
-                                f"/out:={compressed_name}",
+                                f"{output_topic}:={compressed_name}",
                             ]
                             logger.info("republish argv: %s", run_argv)
                             subpro = subprocess.Popen(
@@ -2451,10 +2427,158 @@ class CommandController:
         else:
             self.data_to_send = None
 
+    def handle_reset_scene_objects(self):
+        """Prepare one JSON episode's topology before rebuilding GPU physics."""
+        world = self.ui_builder.my_world
+        started = False
+        try:
+            stage = omni.usd.get_context().get_stage()
+            if stage is None:
+                raise ValueError("Scene stage is not available")
+            owned = set(self._json_scene_owned_paths)
+            uses_gpu_physics = sim_backend.physics_device_str().startswith("cuda")
+            objects = validate_scene_objects(
+                self.data["command_config"].get("objects"), self.sim_assets_root,
+                owned_paths=owned,
+                # CPU episodes retain legacy AddObject ownership across resets.
+                existing_path=(lambda path: stage.GetPrimAtPath(path).IsValid())
+                if uses_gpu_physics else None,
+            )
+            if self.llm_gen_mode or getattr(self.ui_builder, "enable_deformable", False):
+                raise ValueError("ResetSceneObjects supports ordinary nondeformable JSON episodes only")
+            if (self.process or self.ros_publishers_temporary or self._cloth_record_executor is not None
+                    or self._active_pin_groups or self._active_rigid_pin_groups):
+                raise ValueError("ResetSceneObjects requires recording and pin controls to be stopped")
+            if not uses_gpu_physics or not (objects or owned):
+                self.data_to_send = {"success": True, "prepared": False}
+                return
+            self._validate_json_scene_assets(objects)
+            robot = self.ui_builder.articulation
+            robot_view = robot._articulation_view
+            # Effort limits set by _init_robot_cfg live only in PhysX. Clone
+            # before stop invalidates the handles; retain the current gains too.
+            robot_kps, robot_kds = robot_view.get_gains(clone=True)
+            robot_efforts = robot_view.get_max_efforts(clone=True)
+            started = True
+            world.stop()
+            self._clear_json_scene_objects(owned, stage)
+            self._json_scene_owned_paths = set()
+            for obj in objects:
+                # Retain ownership even if an authoring call fails halfway through.
+                self._json_scene_owned_paths.add(obj["prim_path"])
+                self._add_usd_object(**obj, author_only=True)
+            world.reset()
+            self._bind_json_scene_objects(self._json_scene_owned_paths)
+            robot._articulation_view.set_gains(kps=robot_kps, kds=robot_kds)
+            robot._articulation_view.set_max_efforts(values=robot_efforts)
+            self.gripper_L = self.gripper_R = None
+            self._init_grippers()
+            visual_roots = {obj["prim_path"] for obj in objects
+                            if not obj.get("add_rigid_body", True)}
+            seen = set()
+            for planner in self.ui_builder.curoboMotion.values():
+                if planner is not None and id(planner) not in seen:
+                    seen.add(id(planner))
+                    planner.refresh_obstacle_cache()
+                    if visual_roots:
+                        visual_paths = [path for path in planner.get_cached_obstacles_info()
+                                        if any(path == root or path.startswith(root + "/")
+                                               for root in visual_roots)]
+                        planner.remove_objects_from_world(visual_paths)
+                        # Cache-only objects may be outside the current model;
+                        # removal skips them, but a later pose update can add them.
+                        for path in visual_paths:
+                            planner.cached_obstacle_info.pop(path, None)
+            world.pause()
+            self.data_to_send = {"success": True, "prepared": True,
+                                 "object_paths": sorted(self._json_scene_owned_paths)}
+        except Exception as exc:
+            if started:
+                world.pause()
+            logger.error("ResetSceneObjects failed: %s", exc)
+            self.data_to_send = {"success": False, "error": str(exc)}
+
+    def _validate_json_scene_assets(self, objects):
+        # Reject unsupported schemas before stopping or changing the live scene.
+        for obj in objects:
+            asset = Usd.Stage.Open(obj["usd_path"])
+            if asset is None:
+                raise ValueError(f"Cannot open object USD: {obj['usd_path']}")
+            for prim in asset.Traverse():
+                if any("Deformable" in schema for schema in prim.GetAppliedSchemas()):
+                    raise ValueError("ResetSceneObjects does not support deformable assets")
+            if obj.get("add_rigid_body", True) and not any(
+                    prim.HasAPI(UsdPhysics.ArticulationRootAPI) for prim in asset.Traverse()):
+                root = asset.GetDefaultPrim()
+                if not root:
+                    raise ValueError(f"Object USD has no default prim: {obj['usd_path']}")
+                if normalize_single_body_root(asset, str(root.GetPath()), author=False):
+                    # Asset preflight cannot see joints in the current scene.
+                    # Reject those before stop/removal, then recheck on authoring.
+                    live_stage = omni.usd.get_context().get_stage()
+                    validate_no_joint_references(live_stage, obj["prim_path"])
+
+    def _clear_json_scene_objects(self, owned, stage):
+        # All cached tensor handles become stale at the ensuing World reset.
+        self._rotate_rigid_view_caches()
+        self._rigid_view_graveyard.append(
+            list(self.rigid_bodies.values()) + list(self.articulat_objects.values())
+        )
+        for mapping in (self.usd_objects, self.rigid_bodies,
+                        self.articulat_objects, self.object_asset_dict):
+            for path in list(mapping):
+                if any(path == root or path.startswith(root + "/") for root in owned):
+                    mapping.pop(path)
+        # This operation never registers its runtime wrappers in World.scene;
+        # the robot's existing registered wrapper is initialized by World.reset.
+        for path in sorted(owned, reverse=True):
+            if stage.GetPrimAtPath(path).IsValid():
+                delete_prim(path)
+
+    def _bind_json_scene_objects(self, new_paths):
+        """Rebind old physical paths and new JSON roots after native warmup."""
+        stage = omni.usd.get_context().get_stage()
+        rigid_paths = set(self.rigid_bodies)
+        articulation_paths = set(self.articulat_objects)
+        for path in new_paths:
+            prim = stage.GetPrimAtPath(path)
+            if not prim.IsValid():
+                raise ValueError(f"Prepared object is missing: {path}")
+            self.usd_objects[path] = XFormPrim(prim_path=path, reset_xform_properties=False)
+            if get_prim_object_type(path) == "articulation":
+                articulation_paths.add(path)
+            for child in Usd.PrimRange(prim):
+                if child.HasAPI(UsdPhysics.RigidBodyAPI):
+                    rigid_paths.add(str(child.GetPath()))
+        for path in articulation_paths:
+            if stage.GetPrimAtPath(path).IsValid():
+                wrapper = Articulation(prim_path=path)
+                wrapper.initialize()
+                self.articulat_objects[path] = wrapper
+        for path in rigid_paths:
+            prim = stage.GetPrimAtPath(path)
+            if prim.IsValid() and prim.HasAPI(UsdPhysics.RigidBodyAPI):
+                wrapper = RigidPrim(prim_path=path, reset_xform_properties=False)
+                wrapper.initialize()
+                view = wrapper._rigid_prim_view
+                if not view.is_physics_handle_valid():
+                    raise RuntimeError(f"Invalid prepared rigid-body handle: {path}")
+                positions, orientations = view.get_world_poses(usd=False)
+                values = [value.detach().cpu().numpy() if hasattr(value, "detach") else np.asarray(value)
+                          for value in (positions, orientations)]
+                if (not all(np.isfinite(value).all() for value in values)
+                        or np.any(np.linalg.norm(values[1], axis=-1) < 0.5)):
+                    raise RuntimeError(f"Invalid prepared rigid-body pose: {path}")
+                self.rigid_bodies[path] = wrapper
+        # Keep robot identity: World.reset reinitializes its registered object.
+        self.ui_builder.articulation.initialize()
+
     def handle_command_any(self):
         """Handle Command 99: CommandAny"""
         command_config = self.data["command_config"]
-        if command_config["command"] == "GetRevoluteJointTrajectory":
+        if command_config["command"] == "ResetSceneObjects":
+            return self.handle_reset_scene_objects()
+        elif command_config["command"] == "GetRevoluteJointTrajectory":
             self.Command = Command.GET_REVOLUTE_JOINT_TRAJECTORY
             return self.on_get_revolute_joint_trajectory()
         elif command_config["command"] == "ControlGripper":
@@ -2865,37 +2989,28 @@ class CommandController:
         }
 
     def handle_fem_pin_release(self):
-        """Release the selected FEM pin group or all groups and zero node velocities.
-        Return success and released group IDs."""
+        """Release selected FEM groups and zero their nodes once per physical view."""
         cfg = self.data["command_config"]
         group_id = cfg.get("group_id", "all")
-        if not self._active_pin_groups:
-            self.data_to_send = {"success": True, "released": []}
-            return
-
-        targets = (list(self._active_pin_groups.keys()) if group_id == "all"
-                   else [group_id] if group_id in self._active_pin_groups
-                   else [])
-        try:
-            import torch  # noqa: PLC0415
-        except Exception:
-            torch = None
-
+        targets = (list(self._active_pin_groups) if group_id == "all"
+                   else [group_id] if group_id in self._active_pin_groups else [])
+        per_view_nodes = {}
         for gid in targets:
-            g = self._active_pin_groups[gid]
-            view = self.ui_builder.cloth_views.get(g["cloth_prim"]) if hasattr(
-                self.ui_builder, "cloth_views"
-            ) else None
-            if view is not None and torch is not None:
-                try:
-                    vel = view.get_simulation_nodal_velocities().clone()
-                    vel[0, g["node_idx"]] = 0.0
-                    view.set_simulation_nodal_velocities(vel, view._fem_body_idx_cache)
-                except Exception as exc:
-                    logger.warning(f"[FEMPinRelease] Failed to zero group {gid} velocities: {exc}")
+            group = self._active_pin_groups[gid]
+            view = self.ui_builder.cloth_views.get(group["cloth_prim"])
+            if view is not None:
+                per_view_nodes.setdefault(id(view), (view, []))[1].append(group["node_idx"])
+        for view, node_groups in per_view_nodes.values():
+            try:
+                velocities = view.get_simulation_nodal_velocities().clone()
+                for node_indices in node_groups:
+                    velocities[0, node_indices] = 0.0
+                view.set_simulation_nodal_velocities(velocities, view._fem_body_idx_cache)
+            except Exception as exc:
+                logger.warning(f"[FEMPinRelease] deformable velocity reset failed: {exc}")
+        for gid in targets:
             del self._active_pin_groups[gid]
             logger.info(f"[FEMPinRelease] group={gid} released")
-
         self.data_to_send = {"success": True, "released": targets}
 
     def handle_rigid_pin_attach(self):
@@ -3979,15 +4094,37 @@ class CommandController:
         dynamic_friction=0.5,
         model_type="convexDecomposition",
         add_rigid_body=True,
+        author_only=False,
     ):
         usd_path = os.path.join(self.sim_assets_root, usd_path)
-        self.object_asset_dict[prim_path] = usd_path
         already_in_stage = False
         stage = omni.usd.get_context().get_stage()
         if stage:
             prim = stage.GetPrimAtPath(prim_path)
             if prim.IsValid():
                 already_in_stage = True
+        if (not author_only and not already_in_stage and self.enable_physics
+                and sim_backend.physics_device_str().startswith("cuda")
+                and (not self.ui_builder.my_world.is_stopped()
+                     or SimulationManager.get_physics_sim_view() is not None)):
+            has_dynamic_physics = add_rigid_body
+            if not has_dynamic_physics:
+                asset = Usd.Stage.Open(usd_path)
+                if asset is None:
+                    raise ValueError(f"Cannot open object USD: {usd_path}")
+                for prim in asset.Traverse():
+                    schemas = list(prim.GetAppliedSchemas())
+                    authored_schemas = prim.GetMetadata("apiSchemas")
+                    if authored_schemas:
+                        schemas.extend(authored_schemas.GetAppliedItems())
+                    if (prim.HasAPI(UsdPhysics.RigidBodyAPI)
+                            or prim.HasAPI(UsdPhysics.ArticulationRootAPI)
+                            or any("Deformable" in schema for schema in schemas)):
+                        has_dynamic_physics = True
+                        break
+            if has_dynamic_physics:
+                raise ValueError("GPU AddObject requires episode scene setup before physics starts")
+        self.object_asset_dict[prim_path] = usd_path
         if not already_in_stage:
             add_reference_to_stage(usd_path=usd_path, prim_path=prim_path)
             usd_object = XFormPrim(
@@ -4010,15 +4147,17 @@ class CommandController:
             with object_rep:
                 rep.modify.semantics([("class", label_name)])
             if type == "articulation":
-                self.ui_builder.my_world.play()
+                if not author_only:
+                    self.ui_builder.my_world.play()
                 for path in items:
                     if not self.enable_physics:
                         collisionAPI = UsdPhysics.CollisionAPI.Get(stage, path)
                         if collisionAPI:
                             collisionAPI.GetCollisionEnabledAttr().Set(False)
-                articulation = Articulation(prim_path)
-                articulation.initialize()
-                self.articulat_objects[prim_path] = articulation
+                if not author_only:
+                    articulation = Articulation(prim_path)
+                    articulation.initialize()
+                    self.articulat_objects[prim_path] = articulation
                 self.usd_objects[prim_path] = usd_object
             else:
                 self.usd_objects[prim_path] = usd_object
@@ -4074,15 +4213,18 @@ class CommandController:
 
                 if self.enable_physics and add_rigid_body and not _has_deformable:
                     prim = stage.GetPrimAtPath(prim_path)
+                    if author_only:
+                        normalize_single_body_root(stage, prim_path)
                     utils.setRigidBody(prim, model_type, False)
                     logger.info(f" add rigid body to  {prim_path}")
-                    rigid_prim = RigidPrim(prim_path=prim_path, mass=object_mass)
-                    # rigid_prim.set_mass(10) // deprecated
-                    # Get Physics API
-                    physics_api = UsdPhysics.MassAPI.Apply(rigid_prim.prim)
-                    physics_api.CreateMassAttr().Set(object_mass)
-                    self.rigid_bodies[prim_path] = rigid_prim
-                    rigid_prim.initialize()
+                    if author_only:
+                        UsdPhysics.MassAPI.Apply(prim).CreateMassAttr().Set(object_mass)
+                    else:
+                        rigid_prim = RigidPrim(prim_path=prim_path, mass=object_mass)
+                        physics_api = UsdPhysics.MassAPI.Apply(rigid_prim.prim)
+                        physics_api.CreateMassAttr().Set(object_mass)
+                        self.rigid_bodies[prim_path] = rigid_prim
+                        rigid_prim.initialize()
                 elif self.enable_physics and add_rigid_body and _has_deformable:
                     logger.warning(
                         f"add_object: skip RigidBodyAPI wrap for {prim_path} —"
@@ -4091,6 +4233,8 @@ class CommandController:
                     )
                     # Set center of gravity offset (unit: meters)
                     # physics_api.CreateCenterOfMassAttr().Set(Gf.Vec3f(object_com[0], object_com[1],object_com[2]))
+            if author_only:
+                return
             for curobo_motion in self.ui_builder.curoboMotion.values():
                 if curobo_motion:
                     # Deformable vertices change without updating the static cuRobo cache;

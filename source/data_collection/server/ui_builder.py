@@ -23,12 +23,11 @@ from isaacsim.core.utils.prims import (
 from isaacsim.core.utils.types import ArticulationAction
 
 # Perception sensors
-from isaacsim.sensors.camera import Camera
-from isaacsim.sensors.physics import _sensor
 
 # ros2bridge
-from pxr import Usd
+from pxr import Usd, UsdUtils
 
+from common.deformable_compat import create_deformable_body_view, select_deformable_bodies
 from common.base_utils.logger import logger
 from common.base_utils.transform_utils import mat2quat_wxyz, make_pose, quat2mat_wxyz
 from curobo.types import Pose as CuroboPose
@@ -49,16 +48,14 @@ class UIBuilder:
         # Initialized after my_world.reset() triggers FEM cooking.
         self.fem_sim_view = None
         self.cloth_views: Dict[str, Any] = {}
-        self._cs = _sensor.acquire_contact_sensor_interface()
-        self._is = _sensor.acquire_imu_sensor_interface()
         self.frames = []
         self.wrapped_ui_elements = []
         self.collision_paths = []
         self._Joint_Info_Sliders = []
         self._Sensor_parent = None
         self._Camera_parent = None
-        self.camera: Camera = None
-        self.depth_camera: Camera = None
+        self.camera: Any = None
+        self.depth_camera: Any = None
         self.articulation = None
         self.articulation_rmpflow = None
         self.right_articulation_rmpflow = None
@@ -87,167 +84,71 @@ class UIBuilder:
         self.dual_reached = {}     # {arm_key: bool}
 
     def init_cloth_views(self) -> Dict[str, Any]:
-        """Scan the stage and lazily create surface or volume deformable views.
-        Skip prims with existing views. FEM cooking starts asynchronously after reset;
-        commands such as FEMPinAttach and GetClothNodalPositions invoke this after
-        physics has stepped. Return a snapshot mapping prim paths to body views."""
+        """Create one Isaac 6 tensor view per deformable body hierarchy.
+
+        View factories bind the body root. Both the root and simulation-prim
+        paths are registered as aliases. A zero-count view or unreadable nodal
+        tensor means cooking is incomplete and is retried on the next call.
+        """
         if not self.enable_deformable:
             return self.cloth_views
-        # Skip existing prims; recreating fem_sim_view would invalidate earlier views.
-        # Create the simulation view only once.
+        stage = omni.usd.get_context().get_stage()
+        if stage is None:
+            return self.cloth_views
         if self.fem_sim_view is None:
             try:
                 from omni.physics.tensors import create_simulation_view  # noqa: PLC0415
-                self.fem_sim_view = create_simulation_view("torch")
+                stage_id = UsdUtils.StageCache.Get().GetId(stage).ToLongInt()
+                self.fem_sim_view = create_simulation_view("torch", stage_id=stage_id)
                 self.fem_sim_view.set_subspace_roots("/")
             except Exception as exc:
                 logger.warning(f"[cloth] create_simulation_view('torch') failed: {exc}")
                 self.fem_sim_view = None
                 return self.cloth_views
-
-        try:
-            from pxr import PhysxSchema  # noqa: PLC0415
-        except Exception:
-            PhysxSchema = None
-
-        stage = omni.usd.get_context().get_stage()
-        if stage is None:
-            return self.cloth_views
-        # Diagnostic: count deformable schema names across traversed prims.
-        _diag_seen = []
-        # Also inspect the default cloth_fold body prim schemas.
-        _diag_body = stage.GetPrimAtPath("/World/Objects/cloth_scene_root/Objects/Aligned/body")
-        if _diag_body and _diag_body.IsValid():
-            try:
-                logger.info(
-                    f"[cloth diag] /World/Objects/cloth_scene_root/Objects/Aligned/body schemas="
-                    f"{list(_diag_body.GetAppliedSchemas())}, type={_diag_body.GetTypeName()}"
-                )
-            except Exception as exc:
-                logger.warning(f"[cloth diag] read body schemas failed: {exc}")
-        else:
-            logger.warning(
-                f"[cloth diag] /World/Objects/cloth_scene_root/Objects/Aligned/body is missing or invalid; "
-                f"prim={_diag_body}"
-            )
+        records = []
         for prim in stage.Traverse():
-            prim_path = str(prim.GetPath())
-            if prim_path in self.cloth_views:
-                continue
-            # Detect surface and volume deformable schemas.
-            # Surface (PhysxSurfaceDeformableBodyAPI): cloth or thin shells use
-            #   `create_surface_deformable_body_view`
-            # Volume (PhysxDeformableBodyAPI): 3D bodies use
-            #   `create_deformable_body_view`
-            # Both expose simulation nodal positions through fem_sim_view.
-            # Read vertices each frame for recording and replay.
-            deformable_kind = None  # "surface" | "volume" | None
             try:
-                if PhysxSchema is not None and prim.HasAPI(
-                    PhysxSchema.PhysxSurfaceDeformableBodyAPI
-                ):
-                    deformable_kind = "surface"
-            except Exception:
-                pass
-            if deformable_kind is None:
-                # Fallback: inspect the applied schema names.
-                try:
-                    schemas = prim.GetAppliedSchemas()
-                    if any("SurfaceDeformableBody" in s for s in schemas):
-                        deformable_kind = "surface"
-                    elif any(
-                        s.endswith("PhysxDeformableBodyAPI")
-                        or s.endswith("OmniPhysicsDeformableBodyAPI")
-                        for s in schemas
-                    ):
-                        deformable_kind = "volume"
-                    if any("Deformable" in s for s in schemas):
-                        _diag_seen.append((prim_path, list(schemas)))
-                except Exception:
-                    pass
-            # Fallback: inspect physxDeformable attributes when API declarations are absent.
-            # Scene over specifications can author attributes without restating the API.
-            if deformable_kind is None:
-                try:
-                    for attr in prim.GetAuthoredAttributes():
-                        name = attr.GetName()
-                        if name.startswith("physxDeformable:simulationPoints"):
-                            # With simulation points, distinguish surface from volume using the
-                            # collisionPoints (surface) vs collision indices/tets (volume)
-                            has_col_pts = prim.HasAttribute(
-                                "physxDeformable:collisionPoints"
-                            )
-                            deformable_kind = "surface" if has_col_pts else "volume"
-                            _diag_seen.append(
-                                (prim_path, f"[inferred by attrs -> {deformable_kind}]")
-                            )
-                            break
-                except Exception:
-                    pass
-            if deformable_kind is None:
+                records.append((str(prim.GetPath()), tuple(prim.GetAppliedSchemas())))
+            except Exception as exc:
+                logger.warning(f"[cloth] read applied schemas failed for {prim.GetPath()}: {exc}")
+        specs = select_deformable_bodies(records)
+        for spec in specs:
+            root_path, simulation_path, kind = spec
+            if root_path in self.cloth_views:
                 continue
             try:
-                if deformable_kind == "surface":
-                    view = self.fem_sim_view.create_surface_deformable_body_view(prim_path)
-                else:
-                    # For volume bodies, prefer create_volume_deformable_body_view.
-                    # If it is empty, try the legacy soft-body API for PhysxDeformableBodyAPI
-                    # assets simulated through the older PhysX path.
-                    view = None
-                    try:
-                        view = self.fem_sim_view.create_volume_deformable_body_view(prim_path)
-                    except Exception as exc:
-                        logger.warning(
-                            f"[cloth] create_volume_deformable_body_view({prim_path}) failed: {exc}"
-                        )
-                    if view is None or getattr(view, "count", 0) == 0:
-                        try:
-                            view = self.fem_sim_view.create_soft_body_view(prim_path)
-                            if view is not None and view.count > 0:
-                                logger.info(
-                                    f"[cloth] volume->soft_body fallback succeeded prim={prim_path}"
-                                )
-                        except Exception as exc2:
-                            logger.warning(
-                                f"[cloth] create_soft_body_view({prim_path}) also failed: {exc2}"
-                            )
-                if view is None or view.count == 0:
+                view = create_deformable_body_view(self.fem_sim_view, spec)
+                if view is None or int(getattr(view, "count", 0)) == 0:
                     logger.warning(
-                        f"[cloth] create_{deformable_kind}_deformable_body_view({prim_path}) "
-                        f"returned empty; FEM cooking may be incomplete or the schema may be incorrect."
+                        f"[cloth] {kind} view root={root_path} count=0; "
+                        "deformable cook may still be incomplete"
                     )
                     continue
-                self.cloth_views[prim_path] = view
-                # Surface views expose max_simulation_nodes_per_body; older soft-body views
-                # expose max_sim_vertices_per_body. Log whichever property is available.
-                n_nodes = (
-                    getattr(view, "max_simulation_nodes_per_body", None)
-                    or getattr(view, "max_sim_vertices_per_body", None)
-                    or getattr(view, "max_vertices_per_body", None)
-                    or 0
-                )
-                # Cache the (1,) int32 CUDA body index for setting nodal velocities.
-                # Avoid allocating each physics step; a single-body view normally has count == 1.
-                try:
-                    import torch  # noqa: PLC0415
-                    view._fem_body_idx_cache = torch.arange(
-                        view.count, dtype=torch.int32, device="cuda:0"
+                positions = view.get_simulation_nodal_positions()
+                if positions is None or positions.shape[0] == 0 or positions.shape[1] == 0:
+                    logger.warning(
+                        f"[cloth] {kind} view root={root_path} has no cooked simulation nodes"
                     )
-                except Exception:
-                    view._fem_body_idx_cache = None
+                    continue
+                import torch  # noqa: PLC0415
+                view._fem_body_idx_cache = torch.arange(
+                    int(view.count), dtype=torch.int32, device=positions.device
+                )
+                view._fem_simulation_path = simulation_path
+                self.cloth_views[root_path] = view
+                self.cloth_views[simulation_path] = view
                 logger.info(
-                    f"[cloth] {deformable_kind} deformable view ready prim={prim_path} "
-                    f"count={view.count} nodes/body={n_nodes}"
+                    f"[cloth] {kind} deformable view ready root={root_path} "
+                    f"simulation={simulation_path} count={view.count} "
+                    f"nodes/body={positions.shape[1]}"
                 )
             except Exception as exc:
                 logger.warning(
-                    f"[cloth] create_{deformable_kind}_deformable_body_view({prim_path}) failed: {exc}"
+                    f"[cloth] create {kind} view root={root_path} failed: {exc}"
                 )
-        # Diagnostic: report skipped prims with Deformable schemas.
         if not self.cloth_views:
             logger.warning(
-                f"[cloth] init_cloth_views found no surface deformable mesh. "
-                f"Prims with 'Deformable' in their schema names: {_diag_seen}"
+                f"[cloth] no cooked Isaac 6 deformable body view found; specs={specs}"
             )
         return self.cloth_views
 
@@ -375,9 +276,10 @@ class UIBuilder:
             if self._currentCamera in self.cameras:
                 resolution = self.cameras[self._currentCamera]
             _Camera = render.make_camera(prim_path=self._currentCamera, resolution=resolution)
-            _Camera.initialize()
-            self.camera_list.append(_Camera)
-            self.camera_prim_list.append(self._currentCamera)
+            # This path returns metadata and empty image fields. Initializing
+            # a 6.2 CameraSensor creates a distinct render product per call;
+            # repeated resets would retain those unused GPU resources. Read
+            # authoring properties only; ROS image publishers own their sensors.
             focal_length = _Camera.get_focal_length()
             horizontal_aperture = _Camera.get_horizontal_aperture()
             vertical_aperture = _Camera.get_vertical_aperture()

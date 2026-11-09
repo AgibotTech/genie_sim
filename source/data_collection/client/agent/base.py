@@ -21,7 +21,7 @@ class BaseAgent(object):
     def reset(self):
         self.robot.reset()
 
-    def add_object(self, object_info: dict):
+    def _object_parameters(self, object_info: dict):
         name = object_info["object_id"]
         usd_path = os.path.join(object_info["data_info_dir"], "Aligned.usd")
         position = np.array(object_info["position"])
@@ -53,7 +53,7 @@ class BaseAgent(object):
         add_rigid_body = object_info.get("add_rigid_body", True)
         object_info.get("pose_part", "")
         prim_path = object_info.get("prim_path", "/World/Objects/%s" % name)
-        self.robot.client.add_object(
+        return dict(
             usd_path=usd_path,
             prim_path=prim_path,
             label_name=name,
@@ -71,6 +71,38 @@ class BaseAgent(object):
             model_type=model_type,
             add_rigid_body=add_rigid_body,
         )
+
+    def add_object(self, object_info: dict):
+        self.robot.client.add_object(**self._object_parameters(object_info))
+
+    def prepare_scene_objects(self, objects):
+        """Author JSON episode objects before GPU physics starts for the episode."""
+        prepared = []
+        for info in objects:
+            if "fix_pose" in info["object_id"] or info.get("in_scene", False):
+                continue
+            # JSON generate_layout has always selected the general material.
+            params = self._object_parameters(dict(info, material="general"))
+            prepared.append({
+                "usd_path": params["usd_path"],
+                "prim_path": params["prim_path"],
+                "label_name": params["label_name"],
+                "position": params["target_position"].tolist(),
+                "rotation": params["target_quaternion"].tolist(),
+                "scale": params["target_scale"].tolist(),
+                "object_color": params["color"],
+                "object_material": params["material"],
+                "object_mass": params["mass"],
+                "static_friction": params["static_friction"],
+                "dynamic_friction": params["dynamic_friction"],
+                "model_type": params["model_type"],
+                "add_rigid_body": params["add_rigid_body"],
+            })
+        result = self.robot.client.command_any({
+            "command": "ResetSceneObjects", "objects": prepared,
+        })
+        if not isinstance(result, dict) or result.get("success") is not True:
+            raise RuntimeError(f"Episode scene setup failed: {result!r}")
 
     def generate_layout(self, task_file, init=True):
         with open(task_file, "r") as f:

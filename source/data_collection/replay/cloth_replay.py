@@ -11,6 +11,9 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+from common.deformable_compat import (
+    COLLISION_SCHEMA_NAMES, DEFORMABLE_SCHEMA_NAMES, paths_in_deformable_subtrees,
+)
 from common.base_utils.logger import logger
 
 
@@ -176,63 +179,65 @@ class ClothReplayer:
         return local_h[:, :3].astype(np.float32)
 
     def _strip_deformable_schema_once(self, stage, mesh_prim_path: str):
-        """Remove deformable and collision schemas once per mesh.
-
-        Some Isaac Sim versions do not expose Python classes for these API
-        schemas, so remove them by applied schema name. Replay does not run
-        cloth physics, and leaving the schemas can trigger repeated cooks.
-        """
+        """Strip the entry's entire deformable subtree, never adjacent rigid bodies."""
         if not hasattr(self, "_schema_stripped"):
             self._schema_stripped = set()
         if mesh_prim_path in self._schema_stripped:
             return
         self._schema_stripped.add(mesh_prim_path)
         try:
-            prim = stage.GetPrimAtPath(mesh_prim_path)
-            if not prim or not prim.IsValid():
-                return
-            applied = list(prim.GetAppliedSchemas())
+            records = [
+                (str(prim.GetPath()), tuple(prim.GetAppliedSchemas()))
+                for prim in stage.Traverse()
+            ]
+            cleanup_paths = paths_in_deformable_subtrees(
+                records, entry_paths=[mesh_prim_path]
+            )
             removed = []
-            for name in (
-                "OmniPhysicsDeformableBodyAPI",
-                "OmniPhysicsSurfaceDeformableSimAPI",
-                "PhysxSurfaceDeformableBodyAPI",
-                "PhysxDeformableBodyAPI",
-                "PhysxDeformableSurfaceAPI",
-                "PhysxAutoAttachmentAPI",
-                # Collision APIs would still make PhysX cook the cloth body.
-                "PhysicsCollisionAPI",
-                "PhysxCollisionAPI",
-            ):
-                if name in applied:
-                    try:
-                        prim.RemoveAppliedSchema(name)
-                        removed.append(name)
-                    except Exception as exc:
-                        logger.warning(f"[cloth_replay] remove {name} on {mesh_prim_path} failed: {exc}")
+            for path in sorted(cleanup_paths):
+                prim = stage.GetPrimAtPath(path)
+                applied = list(prim.GetAppliedSchemas())
+                for name in DEFORMABLE_SCHEMA_NAMES + COLLISION_SCHEMA_NAMES:
+                    if name in applied:
+                        try:
+                            prim.RemoveAppliedSchema(name)
+                            removed.append((path, name))
+                        except Exception as exc:
+                            logger.warning(
+                                f"[cloth_replay] remove {name} on {path} failed: {exc}"
+                            )
             if removed:
-                logger.info(f"[cloth_replay] removed {removed} from {mesh_prim_path}")
+                logger.info(
+                    f"[cloth_replay] removed {len(removed)} schemas from "
+                    f"deformable subtree for {mesh_prim_path}"
+                )
         except Exception as exc:
             logger.warning(f"[cloth_replay] strip schema failed for {mesh_prim_path}: {exc}")
 
     def _set_mesh_points(self, stage, mesh_prim_path: str, points: np.ndarray):
+        try:
+            from pxr import UsdGeom  # noqa: PLC0415
+        except Exception:
+            return
         mesh = self._mesh_cache.get(mesh_prim_path)
         if mesh is None:
-            try:
-                from pxr import UsdGeom  # noqa: PLC0415
-            except Exception:
-                return
             prim = stage.GetPrimAtPath(mesh_prim_path)
             if not prim or not prim.IsValid():
                 logger.warning(f"[cloth_replay] mesh prim missing: {mesh_prim_path}")
                 self._mesh_cache[mesh_prim_path] = False    # negative cache
                 return
-            mesh = UsdGeom.Mesh(prim)
+            mesh = UsdGeom.Mesh(prim) if prim.IsA(UsdGeom.Mesh) else UsdGeom.PointBased(prim)
+            if not mesh:
+                logger.warning(f"[cloth_replay] prim has no points: {mesh_prim_path}")
+                self._mesh_cache[mesh_prim_path] = False
+                return
             self._mesh_cache[mesh_prim_path] = mesh
         elif mesh is False:
             return
         try:
-            if self._subdivision_levels:
+            # TetMesh simulation nodes keep their tetrahedral and surface connectivity.
+            # Triangle-only cloth refinement applies only to USD Mesh geometry.
+            if self._subdivision_levels and isinstance(mesh, UsdGeom.Mesh):
                 from replay.cloth_subdivision import SubdividedUsdMesh
                 refined = self._subdivided_meshes.get(mesh_prim_path)
                 if refined is None:

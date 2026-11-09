@@ -5,11 +5,11 @@
 import omni
 import omni.graph.core as og
 import omni.replicator.core as rep
-from isaacsim.sensors.camera import Camera
+from sim_backend.render import LidarProtocol
 
 
-def publish_lidar_pointcloud(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+def publish_lidar_pointcloud(camera: LidarProtocol, freq: int, topic=""):
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path + "_pointcloud" if topic == "" else topic
     queue_size = 10
@@ -28,10 +28,11 @@ def publish_lidar_pointcloud(camera: Camera, freq: int, topic=""):
         "PostProcessDispatchIsaacSimulationGate", render_product
     )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
+    return writer
 
 
-def publish_lidar_scan(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+def publish_lidar_scan(camera: LidarProtocol, freq: int, topic=""):
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path + "_scan" if topic == "" else topic
     queue_size = 10
@@ -50,3 +51,4 @@ def publish_lidar_scan(camera: Camera, freq: int, topic=""):
         "PostProcessDispatchIsaacSimulationGate", render_product
     )
     og.Controller.attribute(gate_path + ".inputs:step").set(step_size)
+    return writer

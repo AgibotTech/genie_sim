@@ -42,6 +42,10 @@ simulation_app._carb_settings.set("/omni/replicator/asyncRendering", False)
 simulation_app._carb_settings.set("/app/asyncRendering", False)
 simulation_app._carb_settings.set("/rtx/raytracing/fractionalCutoutOpacity", True)
 
+from common.base_utils.asset_package import register_asset_package
+
+register_asset_package()
+
 from replay.data_copy import copy_original_to_recording
 from replay.fuzzer import Fuzzer
 from replay.replayer import Replayer

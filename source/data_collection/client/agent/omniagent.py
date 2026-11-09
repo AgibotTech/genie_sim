@@ -388,6 +388,8 @@ class DataCollectionAgent(BaseAgent):
         origin_task_info,
     ):
         logger.info(f"Start Task{task_file}")
+        with open(task_file, "r") as source:
+            self.prepare_scene_objects(json.load(source)["objects"])
         self.reset()
         self.attached_obj_id = None
 

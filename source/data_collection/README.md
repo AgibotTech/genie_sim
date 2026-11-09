@@ -1,7 +1,7 @@
 # Data Collection
 
 Collect robot task episodes and replay recorded trajectories with the module's
-Docker image, based on Isaac Sim 5.1 and cuRobo v2. Robot and object assets are
+Docker image, based on Isaac Sim 6.2 and cuRobo v2. Robot and object assets are
 provided separately. Supported robot families include G1, G2, ARX, and Aloha.
 
 There are two task workflows:
@@ -34,8 +34,9 @@ the declarative JSON task format.
 - The main repository's `geniesim` host CLI for the commands below; see the
   [CLI guide](../geniesim_cli/README.md). It manages Docker and locates resources.
 
-The image supplies Isaac Sim, Python 3.11, cuRobo, ROS recording tools, and replay
-dependencies. The default build targets GPU architecture `8.9`; adjust
+The image inherits Isaac Sim 6.2, system tools and ROS 2 Jazzy from the main
+GenieSim image, then adds collection/replay dependencies and cuRobo. The
+default build targets GPU architecture `8.9`; adjust
 `TORCH_CUDA_ARCH_LIST` for another GPU and check compatibility with the pinned
 cuRobo revision.
 
@@ -51,6 +52,10 @@ export GENIESIM_ASSETS_PATH=/path/to/assets
 geniesim data-collection config
 ```
 
+The asset root must include its `__init__.py` and attached Python scripts and
+helpers. Collection and replay expose this mounted tree as `geniesim_assets`
+for scripts that import asset-owned behavior helpers.
+
 The task library defaults to the sibling
 `source/geniesim_scene_agent/examples/tasks/`. To use another library:
 
@@ -64,14 +69,33 @@ with `scene.usda` and `scene_info.json`. See the
 
 ### Build the image
 
+Build or obtain the main repository's Isaac Sim 6.2 image first; see the
+[main image recipe](../../docker/Dockerfile). The default parent is
+`registry.agibot.com/genie-sim/geniesim4:latest`.
+
 ```bash
 geniesim data-collection build
 ```
 
+To use a specific main-image tag or digest:
+
+```bash
+# Set this to your existing Isaac Sim 6.2 main-image reference:
+geniesim data-collection build --build-arg GENIESIM_BASE_IMAGE="$GENIESIM_BASE_IMAGE"
+```
+
+The incremental build reuses the parent's ROS installation and repositories;
+it requests only missing recording tools instead of reinstalling ROS.
+Isaac Sim rendering and collection retain the
+bundled SDK interpreter and numerical dependencies.
+Mirror presets below apply to the incremental installs. Select the parent
+registry through `GENIESIM_BASE_IMAGE`, or use the main image's own mirror
+options when building that parent.
+
 The default image is
-`registry.agibot.com/genie-sim/geniesim3-data-collection:latest`.
+`registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
 Use `DATA_COLLECTION_IMAGE` or the CLI's `--image TAG` option to select another
-image. The default container name is `geniesim3-data-collection`.
+image. The default container name is `geniesim4-data-collection`.
 
 Build using shared mirror presets or custom download sources:
 
@@ -157,6 +181,10 @@ The guide documents task fields, robot and scene settings, action stages,
 and complete examples. JSON tasks use the configured template rather than
 an LLM task's `data_gen.py`.
 
+On GPU, JSON collection prepares each episode's objects during scene reset,
+before recording starts. Creating new rigid bodies while GPU physics is already
+running is unsupported; include those objects in the episode setup instead.
+
 The JSON and interactive launchers mount the task library read/write at
 `/llm_tasks` because they update scene USD references. Use a working copy when
 those source files must be preserved.
@@ -212,12 +240,12 @@ For direct Docker use, mount an **episode working copy** and an output directory
 writable by UID 1234:
 
 ```bash
-docker run --rm --name geniesim3-data-collection --gpus all \
+docker run --rm --name geniesim4-data-collection --gpus all \
   -e ACCEPT_EULA=Y -e SIM_ASSETS=/sim_assets \
   -v /path/to/assets:/sim_assets:ro \
   -v /path/to/episode-copy:/input:rw \
   -v /path/to/replay-output:/output:rw \
-  registry.agibot.com/genie-sim/geniesim3-data-collection:latest \
+  registry.agibot.com/genie-sim/geniesim4-data-collection:latest \
   /isaac-sim/python.sh -m replay --input_dir /input --recording_root /output
 ```
 
@@ -321,7 +349,7 @@ An equivalent direct build from the module directory is:
 cd source/data_collection
 docker build -f docker/Dockerfile \
   --build-context geniesim_mirrors=../../docker \
-  -t registry.agibot.com/genie-sim/geniesim3-data-collection:latest .
+  -t registry.agibot.com/genie-sim/geniesim4-data-collection:latest .
 ```
 
 The named context supplies the shared mirror helper. Keep that directory with
@@ -334,17 +362,18 @@ Keep external asset/task libraries outside the module's build context.
 
 | Build argument | Default | Purpose |
 | --- | --- | --- |
-| `ISAAC_SIM_BASE_IMAGE` | `nvcr.io/nvidia/isaac-sim:5.1.0` | Compatible parent image. |
-| `ISAACSIM_REGISTRY` | `nvcr.io/nvidia` | Parent registry; explicit base-image override takes precedence. |
+| `GENIESIM_BASE_IMAGE` | `registry.agibot.com/genie-sim/geniesim4:latest` | Main GenieSim image with Isaac Sim 6.2 and ROS Jazzy; accepts a tag or digest. |
 | `APT_MIRROR`, `PIP_INDEX_URL` | Inherit parent | Persistent APT/pip download sources. |
 | `TORCH_CUDA_ARCH_LIST` | `8.9` | GPU architecture for extension builds. |
 | `CUROBO_REPO` | `https://github.com/NVlabs/curobo.git` | cuRobo source repository. |
 | `CUROBO_COMMIT` | `3fd54dc782a82e5500a771cfd47856ea499d5fef` | Pinned cuRobo v2 revision. |
 | `GIT_COMMIT_SHA`, `GIT_COMMIT_DATE`, `GIT_BRANCH` | `unknown` | Optional source metadata stored in the image. |
 
-The image installs ROS 2 Jazzy recording tools and the CUDA 12.8 compiler.
-Isaac Sim uses Python 3.11 and its bundled ROS bridge; system ROS uses Python
-3.12 for recording subprocesses. The launcher separates their environments.
+The child preserves the parent's bundled SDK Torch, NumPy, Warp, and CUDA
+library versions. cuRobo uses NVRTC from that SDK without installing a second
+CUDA compiler stack. Both Isaac Sim and system ROS 2 Jazzy use Python 3.12,
+but recording subprocesses still use a separate system ROS environment.
+The launcher keeps the SDK bridge and system ROS libraries separate.
 The build copies and validates seven cuRobo v2 planner configurations and their
 URDFs. Recording conversion uses the repository URDFs for forward kinematics.
 

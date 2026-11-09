@@ -1,6 +1,7 @@
-# Isaac Sim 5.1 container
+# Isaac Sim 6.2 container
 
-This image starts from NVIDIA's official `nvcr.io/nvidia/isaac-sim:5.1.0`.
+This image starts from NVIDIA's official `nvcr.io/nvidia/isaac-sim:6.2.0.1`,
+the same base release configured by the repository's root Dockerfile.
 It includes this module's Python tools, skills, API references, and example
 library. External assets, model weights, generated data, and local caches
 are not copied into the image.
@@ -46,8 +47,10 @@ scene-agent image if it is absent. Build arguments:
 
 | Argument | Default | Purpose |
 | --- | --- | --- |
-| `ISAACSIM_IMAGE` | `nvcr.io/nvidia/isaac-sim:5.1.0` | Official base image or an exact mirror of it |
+| `ISAACSIM_IMAGE` | `nvcr.io/nvidia/isaac-sim:6.2.0.1` | Official base image or an exact mirror of it |
 | `ISAACSIM_REGISTRY` | `nvcr.io/nvidia` | Registry prefix; an explicit `ISAACSIM_IMAGE` takes precedence |
+| `ISAACSIM_TAG` | `6.2.0.1` | Official base release; an explicit `ISAACSIM_IMAGE` takes precedence |
+| `SCENE_AGENT_VERSION` | checkout `VERSION` through the build script | Materialize the release version inside the module-only context |
 | `APT_MIRROR` | inherit parent | Ubuntu mirror URL, or `upstream` |
 | `PIP_INDEX_URL` | inherit parent | Persistent primary pip index; official base defaults to upstream |
 
@@ -73,14 +76,18 @@ the image and do not replace packages already present in its parent.
 For a direct BuildKit build, supply the shared helper as an additional context:
 
 ```bash
-docker build -f docker/Dockerfile.5.1 \
+docker build -f docker/Dockerfile.6.2 \
   --build-context geniesim_mirrors=../../docker \
+  --build-arg SCENE_AGENT_VERSION="$(cat VERSION)" \
   -t registry.agibot.com/genie-sim/geniesim3-scene-agent:latest .
 ```
 
 When exporting only this module, provide the shared `docker/` resources through
 that named context. Raw Docker accepts URL build arguments, not preset flags.
 The main build context stays this module; external assets and models stay mounted.
+The build script passes the checkout's resolved `VERSION`, because its monorepo
+symlink points outside this context. Direct builds must pass the value as above,
+or export the module with a regular, nonempty `VERSION` file.
 
 The image does not contain an LLM agent application. Run an agent that reads
 the bundled skills and invokes these Python tools, or invoke the tools
@@ -90,7 +97,7 @@ directly. Model weights and embedding databases remain optional runtime data.
 
 - `python` and the `scene-assets`/`scene-scenes` commands use
   `/opt/scene-agent-venv`, an isolated environment created with the base
-  image's Python. It contains NumPy, Pillow, and standalone USD bindings.
+  image's Python 3.12. It contains NumPy, Pillow, and standalone USD bindings.
 - `ISAACSIM_PYTHON=/isaac-sim/python.sh` selects the original Isaac Sim
   interpreter for the render subprocess. Its USD plugins load during
   `SimulationApp` startup. The image does not install standalone `usd-core`
@@ -100,12 +107,20 @@ directly. Model weights and embedding databases remain optional runtime data.
   directly relevant versions. Remaining transitive dependencies are not
   fully locked.
 
+The authoring constraints retain NumPy 1.26.4, USD 25.11 and the existing
+optional VL stack; migration does not require upgrading those dependencies.
+The renderer imports NumPy, Pillow and USD after `SimulationApp` initializes
+the SDK's extension paths. Batch previews recreate cameras, annotators and
+render products for each scene and release capture resources before replacing
+the scene reference. Isaac Sim 6.2 starts with
+`--/rtx/hydra/supportMultiTickRate=false` for explicit Replicator captures
+after scene replacement; older configured SDKs keep their launch settings.
+
 ## Run
 
 For rendering, the host needs a compatible NVIDIA GPU/driver and NVIDIA
 Container Toolkit. NVIDIA's container supports standalone Python rendering
 in headless mode; a desktop display is not required.
-See [NVIDIA's 5.1 container guide](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/installation/install_container.html).
 Pass `ACCEPT_EULA=Y` when accepting the Isaac Sim license for a render run.
 
 The default container user is the official image's `isaac-sim` user

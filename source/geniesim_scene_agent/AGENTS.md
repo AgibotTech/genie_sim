@@ -24,7 +24,7 @@ Isaac Sim rendering and robot task execution use their configured runtimes.
 | `scene_agent_scene/` | Scene builder, DSL, validation, support surfaces, example search |
 | `skills/` | English workflows and complete API references |
 | `examples/` | Task library, binding helper, and validator |
-| `docker/` | Official Isaac Sim 5.1 image and isolated authoring Python |
+| `docker/` | Official Isaac Sim 6.2 image and isolated authoring Python |
 
 ## 3. CLI and installation
 
@@ -58,6 +58,9 @@ Read [installation and usage](README.md) and [container commands](docker/README.
 
 Build images from the checkout with `python3 docker/build_image.py`, adding
 `--target vl`, `--china`/`--mirrors NAME`, or explicit URL build arguments as needed.
+`docker/Dockerfile.6.2` uses the same official Isaac Sim `6.2.0.1` base release
+as the root Dockerfile. It keeps scene authoring and optional VL dependencies
+in their own Python 3.12 venv; they do not replace the bundled SDK stack.
 The build-only script reuses sibling CLI sources and the shared mirror presets;
 it does not add a runtime dependency on that CLI. BuildKit keeps the module as
 the main context and adds `geniesim_mirrors` for the shared helper. Empty APT/pip

@@ -10,7 +10,7 @@ The open-source replay provides RGB/depth observations and robot/object/cloth re
 
 Use the collection Docker image built with the
 [Docker installation instructions](../README.md#docker-installation).
-It includes Isaac Sim 5.1, Python 3.11, FFmpeg, and the replay dependencies.
+It includes Isaac Sim 6.2, Python 3.12, FFmpeg, and the replay dependencies.
 
 For the host workflow, use `geniesim data-collection replay`; see
 [Replay recordings](../README.md#replay-recordings). The rest of this guide

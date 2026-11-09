@@ -1,10 +1,10 @@
 # Python dependencies for replay and its built-in data conversion.
-# Preserve version constraints already declared by this repository.
-# Reuse existing Isaac Sim 5.1 and FFmpeg installations.
+# Docker preserves the actual bundled SDK versions with generated constraints.
+# Reuse existing Isaac Sim 6.2 and FFmpeg installations.
 # Install them separately only when missing; see README.md.
 
 # Shared transforms, array processing and deformable smoothing.
-numpy==1.26.4
+numpy
 numba
 scipy
 
@@ -18,7 +18,7 @@ colorama
 psutil
 
 # RGB/depth image I/O. Isaac Sim supplies the GUI when requested.
-opencv-python-headless
+# OpenCV is supplied by the Isaac Sim runtime.
 
 # Camera noise kernels; version declared in docker/Dockerfile.
-warp-lang==1.10.1
+warp-lang

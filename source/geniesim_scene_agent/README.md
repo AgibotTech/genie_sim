@@ -47,7 +47,7 @@ library and creates the local link they require.
 
 ### Monorepo quick start
 
-Use an active Python 3.11 tools environment and run from the GenieSim
+Use an active Python 3.10–3.12 tools environment and run from the GenieSim
 monorepo root. **Scene generation is the default standalone installation:**
 
 ```bash
@@ -92,7 +92,9 @@ The direct scene-agent installation above is sufficient for scene authoring.
 Pip installs Python dependencies and resources only; it does not run Docker,
 pull/build an image, start a container, or download embedding model weights.
 `geniesim deploy geniesim_scene_agent` builds a wheel only. Build or obtain the
-scene-agent image separately when choosing container-based rendering.
+scene-agent image separately when choosing container-based rendering. Its
+independent runtime and optional `vl` targets use the official Isaac Sim
+`6.2.0.1` base with a separate Python 3.12 authoring environment.
 
 From the module root, `python3 docker/build_image.py` builds that independent
 image. Add `--china`/`--mirrors NAME` for shared repository presets, or pass your
@@ -152,6 +154,12 @@ python -m pip install -e '.[scene]'
 The `usd` extra provides the same USD dependency. If the chosen environment already supplies compatible `pxr` modules, the base install can reuse them.
 
 Rendering runs in a separate, configured Isaac Sim environment. Set `ISAACSIM_PYTHON` to that environment's Python executable or `python.sh`; the tools environment and rendering environment may be separate. The renderer uses Isaac Sim's bundled Replicator extensions and needs NumPy and Pillow in that environment. Isaac Sim and GPU drivers are not installed by this package.
+
+The batch renderer recreates its cameras and capture products for each scene
+and releases them after every capture. On Isaac Sim 6.2 it sets the SDK's
+legacy renderer tick option before starting `SimulationApp`, so explicit
+Replicator captures continue after the scene reference changes. Preview
+updates do not step robot physics.
 
 **Optional GPU retrieval:** install the VL extra only if you want Qwen3-VL video embeddings:
 

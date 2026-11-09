@@ -273,6 +273,7 @@ class ObjectService(sim_object_service_pb2_grpc.SimObjectService):
         self.server_function = server_function
 
     def add_object(self, req, rsp):
+        context = rsp
         rsp = sim_object_service_pb2.AddObjectRsp()
         usd_path = req.usd_path
         prim_path = req.prim_path
@@ -300,7 +301,7 @@ class ObjectService(sim_object_service_pb2_grpc.SimObjectService):
         dynamic_friction = req.dynamic_friction
         add_rigid_body = req.add_rigid_body
         model_type = req.model_type
-        self.server_function.blocking_start_server(
+        result = self.server_function.blocking_start_server(
             data={
                 "usd_object_path": usd_path,
                 "usd_object_prim_path": prim_path,
@@ -318,6 +319,8 @@ class ObjectService(sim_object_service_pb2_grpc.SimObjectService):
             },
             Command=Command.ADD_OBJECT,
         )
+        if isinstance(result, str) and result.startswith("ERROR:"):
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, result[6:].strip())
         rsp.label_name = label_name
         return rsp
 

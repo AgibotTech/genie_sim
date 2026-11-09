@@ -6,13 +6,18 @@ import math
 
 import omni.graph.core as og
 from isaacsim.core.nodes.scripts.utils import set_target_prims
-from omni.isaac.sensor import IMUSensor
+from isaacsim.sensors.experimental.physics import IMUSensor
 
 
 def publish_imu(imu: IMUSensor, approx_freq, topic):
-    prim_path = imu.prim_path
+    paths = imu.authoring_object.paths
+    if not paths:
+        raise ValueError("IMUSensor authoring object has no prim paths")
+    prim_path = str(paths[0])
     ros_publish_imu_graph_path = "/World/ImuActionGraph"
-    step = math.floor(6.0 / approx_freq)
+    if approx_freq <= 0:
+        raise ValueError("IMU publish frequency must be positive")
+    step = max(1, math.floor(60.0 / approx_freq))
     og.Controller.edit(
         {
             "graph_path": ros_publish_imu_graph_path,
@@ -23,7 +28,7 @@ def publish_imu(imu: IMUSensor, approx_freq, topic):
             og.Controller.Keys.CREATE_NODES: [
                 ("OnPlaybackTick", "omni.graph.action.OnPlaybackTick"),
                 ("IsaacSimulationGate", "isaacsim.core.nodes.IsaacSimulationGate"),
-                ("IsaacReadIMUNode", "omni.isaac.sensor.IsaacReadIMU"),
+                ("IsaacReadIMUNode", "isaacsim.sensors.physics.IsaacReadIMU"),
                 ("RosPublishImu", "isaacsim.ros2.bridge.ROS2PublishImu"),
                 ("RosContext", "isaacsim.ros2.bridge.ROS2Context"),
             ],

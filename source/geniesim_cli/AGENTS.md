@@ -417,10 +417,13 @@ tier-1 bootstrap, as it orchestrates its own image on the host. Do not add its
 Isaac Sim, cuRobo, or ROS dependencies to the lightweight CLI.
 
 
-`geniesim data-collection build` builds the complete image using
-`source/data_collection/docker/Dockerfile`, starting from official Isaac Sim 5.1.
+`geniesim data-collection build` builds the collection image using
+`source/data_collection/docker/Dockerfile`, incrementally extending the main
+GenieSim image with Isaac Sim 6.2 and system ROS 2 Jazzy.
 It accepts `--image=TAG`, `--dry-run`, `--mirrors NAME` (or `--china`), and Docker build arguments, including
-`--build-arg ISAAC_SIM_BASE_IMAGE=IMAGE`. `DATA_COLLECTION_IMAGE` selects the
+`--build-arg GENIESIM_BASE_IMAGE=IMAGE`. The default parent is
+`registry.agibot.com/genie-sim/geniesim4:latest`; select a compatible parent tag
+or digest for reproducible builds. `DATA_COLLECTION_IMAGE` selects the
 application image; the default is
 `registry.agibot.com/genie-sim/geniesim4-data-collection:latest`.
 Default container name is `geniesim4-data-collection`; `--container-name`
