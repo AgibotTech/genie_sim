@@ -132,13 +132,15 @@ RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | 
 # wheel owns only its adapter/metadata; SDK files stay in /isaac-sim.
 # ISAACSIM_PIP_VERSION retains the CLI's release-pair compatibility contract.
 # ------------------------------------------------------------
+ENV PIP_NO_COMPILE=1
 COPY docker/bundled_isaacsim.py /opt/geniesim/docker/bundled_isaacsim.py
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 -m pip install --upgrade --ignore-installed pip && \
     python3 /opt/geniesim/docker/bundled_isaacsim.py \
         --version "${ISAACSIM_PIP_VERSION}" --output /tmp/isaac-adapter && \
     python3 -m pip install --no-deps /tmp/isaac-adapter/*.whl && \
-    rm -rf /tmp/isaac-adapter
+    rm -rf /tmp/isaac-adapter && \
+    python3 /opt/geniesim/docker/bundled_isaacsim.py --clean-bytecode /usr/local/lib/python3.12/dist-packages
 
 # Pre-accept EULA for Isaac Sim 6.X (OMNI_KIT_ACCEPT_EULA path)
 RUN touch /isaac-sim/kit/EULA_ACCEPTED && chmod o+w /isaac-sim/kit
@@ -171,15 +173,19 @@ COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
 COPY source/geniesim_teleop/pyproject.toml /tmp/source/geniesim_teleop/pyproject.toml
 ARG WUJI_SDK_VERSION=2026.8.17
 COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
+COPY docker/libuipc-cuda13.txt /opt/geniesim/docker/libuipc-cuda13.txt
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python3 /opt/geniesim/docker/bundled_isaacsim.py --torch-providers --output /tmp/torch-providers && \
     python3 /opt/geniesim/docker/collect_runtime_constraints.py \
         --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
     python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
     python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
+        /tmp/torch-providers/*.whl -r /opt/geniesim/docker/libuipc-cuda13.txt \
         "wuji-sdk==${WUJI_SDK_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}" \
         -c /opt/geniesim/docker/isaac-constraints.txt && \
-    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt
+    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt /tmp/torch-providers && \
+    python3 /opt/geniesim/docker/bundled_isaacsim.py --clean-bytecode /usr/local/lib/python3.12/dist-packages
 
 # ------------------------------------------------------------
 # R14 guard: verify Newton's optional sim requirements after the constrained
@@ -211,7 +217,11 @@ RUN apt-get update && \
     rosdep install --from-paths /tmp/geniesim_ros_src --ignore-src -y --rosdistro jazzy && \
     rm -rf /tmp/geniesim_ros_src /var/lib/apt/lists/*
 
-RUN python3 -m pip check
+# OVRTX registers this search path at renderer startup. The installed parent
+# is root-owned, so create the directory before dropping to the remapped UID.
+RUN mkdir -p /usr/local/lib/python3.12/dist-packages/ovrtx/bin/mdl/omniverse_exts && \
+    python3 -m pip check && \
+    python3 /opt/geniesim/docker/bundled_isaacsim.py --clean-bytecode /usr/local/lib/python3.12/dist-packages
 
 WORKDIR /workspace
 

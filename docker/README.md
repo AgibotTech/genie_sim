@@ -341,15 +341,22 @@ Kit paths. It keeps `/usr/bin/python3` as `sys.executable`, so subprocesses and
 ROS Jazzy retain the system Python ABI. No manual `python.sh` wrapper is needed.
 
 The adapter's `Requires-Dist` is generated from bundled NumPy, core, compute,
-Newton, converter and Torch metadata. These external dependencies remain
-installed for standalone workflows. It does not flatten unrelated extension
+Newton, converter and Torch metadata. Torch, TorchVision and TorchAudio reuse
+their existing SDK payload in standalone system Python as well as in Kit.
+Local metadata-only wheels retain their exact bundled versions and upstream
+dependencies; uninstalling those wheels does not remove SDK files. The finder
+routes those imports without starting Kit, and the SDK CUDA archive supplies
+their CUDA 12 libraries and Python bindings. Triton remains installed for
+`torch.compile`. The CUDA 13 components in [libuipc-cuda13.txt](libuipc-cuda13.txt)
+remain independently installed for the bundled native libuipc wheels.
+Other external dependencies remain installed for standalone workflows.
+The adapter does not flatten unrelated extension
 archives with conflicting versions into the system environment. SDK/colcon
 constraints, dependency repair and the Newton guard remain active. The engine
 resolves `apps` and converter paths from the adapter's SDK manifest.
 
-Live testing on RTX 5090 / driver 580.105.08 removed the 18 GB pip SDK directory
-and all original `isaacsim*.dist-info` from a disposable container before
-installing the adapter. System `python3` passed the following checks:
+The rebuilt image passed the following system-`python3` checks on RTX 5090 /
+driver 580.105.08 through the normal entrypoint as UID 1000:
 
 | Check | Observed result |
 |---|---|
@@ -358,22 +365,39 @@ installing the adapter. System `python3` passed the following checks:
 | Assembly | Fresh two-link URDF converted through the production AS3 pipeline; revolute joint validated |
 | Sysid regression suite | 24 passed with native SDK schemas, PhysX gain readback and Newton CPU models |
 | CUDA with Kit active | Bundled Torch 2.11.0+cu128 executed a tensor reduction on `cuda:0` |
+| Standalone Torch | SDK Torch/TorchVision/TorchAudio; GPU matmul, autograd, cuDNN and Triton passed without Kit |
+| CUDA Python | Bundled bindings imported and queried the CUDA 12 runtime |
+| Newton GPU | 240 MuJoCo-Warp steps; sphere settled on the ground at z=0.09963 m with bundled Torch loaded |
+| Native libuipc | Cloth, rigid and mixed cases; 30 steps per case plus reset/readback passed with bundled Torch loaded |
+| Open3D | CUDA tensor addition passed, matching the baseline image |
 | ROS | `rclpy` from `/opt/ros/jazzy`, same process as Kit |
 | PhysX | 240 steps; falling 0.5 m cube settled at z=0.24999994 m |
 | RGB-D | 64×48 RGBA; spatial RGB variation 15.81; centre depth 2.5 m |
 | External ROS peer | Received pose and 12,288-byte image; simulator received acknowledgement |
+| OVRTX RGB-D | 64×48 RGBA; spatial RGB variation 16.09; centre depth 2.75 m |
 
 The explicit GPU probe is [isaac62_bundled_smoke.py](tests/isaac62_bundled_smoke.py).
 It checks SDK version/layout discovery, conversion, launch compatibility and an
-external system-ROS peer without Isaac paths. It saves JSON, logs and RGB/depth
+external system-ROS peer without Kit startup. It saves JSON, logs and RGB/depth
 arrays and is not collected by CPU pytest. In the rebuilt container, run:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-ROS_DOMAIN_ID=211 timeout -k 5s 300s python3 \
+timeout -k 5s 240s python3 /workspace/docker/tests/isaac62_bundled_smoke.py \
+  --standalone --output-dir /tmp/bundled-torch-check
+ROS_DOMAIN_ID=211 timeout -k 5s 480s python3 \
   /workspace/docker/tests/isaac62_bundled_smoke.py \
   --output-dir /tmp/bundled-sdk-check
 ```
+
+The standalone check exercises GPU matrix multiplication, autograd, cuDNN and
+Triton compilation, validates TorchVision/TorchAudio imports and libuipc's six
+CUDA 13 links, and confirms Kit is not loaded. The 6.2 recipe also disables pip
+bytecode compilation and removes `.pyc` files with matching Python source in
+the installation layer. Sourceless bytecode and bundled SDK files are kept.
+OVRTX's `bin/mdl/omniverse_exts` search directory is prepared at build time so
+the remapped user can initialize materials without writing to its root-owned
+installed parent. Its packaged shader caches and rendering plugins are kept.
 
 First startup may spend several minutes building shader caches; the probe's
 image polling budget starts after the first render. This fixture
@@ -382,13 +406,19 @@ post-training images. Image size must be measured after a fresh recipe build;
 deleting SDK files in a container does not shrink its parent image layers.
 
 The 2026-11-10 fresh build
-`sha256:a72664981fe7799f86526e70ad8dfe5bb487c6c43f7c05f845e4f03c52caac1c`
+`sha256:eb7a5121e0a73fe2644147c4cb132c6fda643df7ac1c599add9ed657e6805958`
 passed the probe from cold shader caches through the normal entrypoint as UID
-1000. First capture initialized shaders for about three minutes. Its image size
-is **36.00 GB**, compared with **53.03 GB** for the measured pip-SDK image:
-**17.03 GB (32.1%) smaller**. The build's SDK guards, native artifact check and
-`pip check` passed. System-Python CPU tests reported 46 passed / 3 native-PhysX
-skips outside Kit; the separate Kit sysid run reported 24 passed.
+1000. Concurrent cold Kit and OVRTX runs initialized shaders for about four
+minutes. Its uncompressed image size is **32.77 GB**, compared with **36.00 GB**
+before Torch reuse and bytecode cleanup: **3.23 GB (9.0%) smaller**. The Python
+dependency layer decreased from **10.5 GB to 7.31 GB**. System NVIDIA package
+files decreased from **2.84 GB to 1.11 GB**, retaining libuipc's required CUDA 13
+runtime. No second Torch payload is installed in the system package directory.
+The build's SDK guards, native artifact check and `pip check` passed.
+System-Python CPU tests reported **47 passed / 3 native-PhysX skips** outside
+Kit; the separate Kit sysid run reported **24 passed**. Docker 5.1's recipe and
+dependency flow are unchanged. These results qualify the listed fixtures,
+not the full G2 scene matrix or downstream images.
 
 #### System-Python runtime
 
@@ -564,7 +594,7 @@ geniesim docker into
 python3 -m pip install -e source/my_package --break-system-packages
 ```
 
-For the default 5.1 image, install packages into `omni_python` too if they need to be imported by Isaac Sim 5.1 code:
+For the 5.1 combo image, install packages into `omni_python` too if they need to be imported by Isaac Sim 5.1 code:
 
 ```bash
 omni_python -m pip install -e source/my_package
@@ -752,7 +782,7 @@ GENIESIM_IMAGE=my-registry/geniesim-custom:dev geniesim docker up
 
 | File | Purpose |
 |---|---|
-| `Dockerfile.5.1` | Default image: Isaac Sim 5.1 bundled runtime plus Isaac Sim 6.X in system Python |
+| `Dockerfile.5.1` | Explicit combo: Isaac Sim 5.1 bundled runtime plus Isaac Sim 6.X in system Python |
 | `Dockerfile.4.5` | ⚠️ E.O.L. compatibility image for Isaac Sim 4.5 + ROS 2 Humble |
 | `Dockerfile` | Isaac Sim 6.X (series `6.X`) + ROS 2 Jazzy image for GenieSim 4.0 |
 | `start.sh` | Shared container launch script used by the CLI |

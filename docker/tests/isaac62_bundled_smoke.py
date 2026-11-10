@@ -117,6 +117,73 @@ def peer_environment(root: Path) -> dict[str, str]:
     return env
 
 
+def standalone(output: Path) -> int:
+    """Qualify SDK Torch outside Kit, including CUDA, Triton and coexistence."""
+    import ctypes
+    import torch
+    import torch.nn.functional as functional
+    import torchvision
+    import torchaudio
+    import rclpy
+    import warp as wp
+    import newton
+    import uipc
+    from cuda.bindings import runtime as cudart
+
+    root = Path("/isaac-sim")
+    site = Path(sysconfig.get_path("purelib"))
+    assert Path(sys.executable).samefile("/usr/bin/python3")
+    assert "carb" not in sys.modules and "isaacsim" not in sys.modules
+    for module in (torch, torchvision, torchaudio):
+        assert Path(module.__file__).is_relative_to(root), module.__file__
+        assert not (site / module.__name__).exists(), f"Duplicate system payload: {module.__name__}"
+        provider = metadata.distribution(module.__name__)
+        assert provider.read_text("geniesim-bundled.json"), provider
+        assert all(
+            not Path(provider.locate_file(path)).resolve().is_relative_to(root) for path in provider.files
+        ), "Provider owns SDK payload"
+    assert torch.version.cuda == "12.8", torch.__version__
+    runtime_status, runtime_version = cudart.cudaRuntimeGetVersion()
+    assert int(runtime_status) == 0 and 12000 <= runtime_version < 13000, (runtime_status, runtime_version)
+    x = torch.randn(128, 128, device="cuda", requires_grad=True)
+    matrix = x @ x.T
+    matrix.sum().backward()
+    assert bool(torch.isfinite(x.grad).all())
+    conv = functional.conv2d(torch.ones(1, 1, 16, 16, device="cuda"), torch.ones(1, 1, 3, 3, device="cuda"))
+    assert bool(torch.allclose(conv, torch.full_like(conv, 9)))
+    compiled = torch.compile(lambda value: value.sin() + value.square(), fullgraph=True)
+    assert bool(torch.allclose(compiled(x), x.sin() + x.square(), atol=1e-5))
+    torch.cuda.synchronize()
+    wp.init()
+    assert wp.get_device("cuda:0").is_cuda
+    native = Path(uipc.__file__).parent / "_native"
+    ctypes.CDLL(str(native / "libuipc_backend_cuda.so"))
+    links = {path.name: str(path.resolve()) for path in native.glob("*.so*") if path.is_symlink()}
+    assert len(links) == 6 and all("/nvidia/cu13/lib/" in path for path in links.values()), links
+    assert Path(rclpy.__file__).is_relative_to("/opt/ros/jazzy")
+    result = {
+        "pass": True,
+        "python": sys.executable,
+        "torch": torch.__version__,
+        "torch_path": torch.__file__,
+        "torchvision": torchvision.__file__,
+        "torchaudio": torchaudio.__file__,
+        "cuda": torch.version.cuda,
+        "cuda_python_runtime": runtime_version,
+        "device": torch.cuda.get_device_name(0),
+        "matmul_autograd_cudnn_triton": "passed",
+        "warp": wp.__version__,
+        "newton": newton.__version__,
+        "rclpy": rclpy.__file__,
+        "libuipc_cuda13": links,
+        "kit_loaded": "carb" in sys.modules,
+    }
+    assert not result["kit_loaded"]
+    (output / "standalone.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("BUNDLED_TORCH_STANDALONE_PASS", json.dumps(result), flush=True)
+    return 0
+
+
 def smoke(output: Path) -> int:
     """Check PhysX, spatially varying RGB, metric depth, and external ROS delivery."""
     root = Path(os.environ.get("ISAAC_PATH", "/isaac-sim")).resolve()
@@ -134,6 +201,10 @@ def smoke(output: Path) -> int:
         versions.setdefault(name, set()).add(dist.version)
     duplicates = {name: sorted(values) for name, values in versions.items() if len(values) > 1}
     assert not duplicates, f"Conflicting system pip metadata: {duplicates}"
+    import torch as standalone_torch
+
+    assert Path(standalone_torch.__file__).is_relative_to(root), standalone_torch.__file__
+    assert "carb" not in sys.modules, "Torch import unexpectedly activated Kit"
 
     engine_sources()
     from genie_sim_engine_isaacsim.kit.launch_config import prepare_launch_config
@@ -172,6 +243,7 @@ def smoke(output: Path) -> int:
         from std_msgs.msg import String
 
         assert Path(carb.__file__).is_relative_to(root), carb.__file__
+        assert torch is standalone_torch, "Kit replaced the standalone Torch provider"
         assert Path(UsdGeom.__file__).is_relative_to(root), UsdGeom.__file__
         assert Path(rclpy.__file__).is_relative_to("/opt/ros/jazzy"), rclpy.__file__
         cuda_sum = torch.tensor([1.0, 2.0, 3.0], device="cuda:0").sum().item()
@@ -314,6 +386,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--ros-peer", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--assemble-child", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--standalone", action="store_true", help="Check bundled Torch/CUDA without Kit")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if not args.ros_peer:
@@ -323,6 +396,8 @@ def main() -> int:
         return ros_peer(args.output_dir)
     if args.assemble_child:
         return assemble(args.output_dir)
+    if args.standalone:
+        return standalone(args.output_dir)
     with (args.output_dir / "assembly.log").open("w") as log:
         subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--assemble-child", "--output-dir", str(args.output_dir)],
