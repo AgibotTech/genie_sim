@@ -1,15 +1,27 @@
 # Main IPC native runtime
 
-The two supplied PDF-optimized native artifacts are stored with short names.
+**Default: install the prebuilt wheel directly** through `geniesim bootstrap`
+or a Jazzy Docker build. Building libuipc is optional. For the official source
+commit, the two ordered patches and build/package commands, see
+[the source build guide](libuipc/README.md).
+
+The two supplied PDF-optimized native artifacts now live in the asset repository
+under `wheels/libuipc/` with short names.
+The code repository retains their license and provenance, plus the pinned
+`docker/libuipc-artifacts.json`; it no longer contains the wheel bytes.
 The current builds remove build-host paths; the short filenames preserve the
-supplied wheel bytes, package versions and Apache license metadata.
+wheel bytes, package versions and embedded component license materials.
 
-| Repository file | GPU compute capability | CUDA runtime | Package version |
+| Asset release file | GPU compute capability | CUDA runtime | Package version |
 | --- | --- | --- | --- |
-| `pyuipc-sm89.whl` | 8.9 / SM 89 | CUDA 13.0 | `0.9.0+pdfopt.ef5bfa2.sm89.cu130.licensefix1.pathfix1` |
-| `pyuipc-sm120.whl` | 12.0 / SM 120 | CUDA 13.0 | `0.9.0+pdfopt.ef5bfa2.sm120.cu130.licensefix1.pathfix1` |
+| `pyuipc-sm89.whl` | 8.9 / SM 89 | CUDA 12.8 | `0.9.0+pdfopt.ef5bfa2.sm89.cu128.licensefix2.pathfix1` |
+| `pyuipc-sm120.whl` | 12.0 / SM 120 | CUDA 12.8 | `0.9.0+pdfopt.ef5bfa2.sm120.cu128.licensefix2.pathfix1` |
 
-Install from the repository root:
+Install from the code repository root. Before remote publication, set
+`GENIESIM_ASSETS_SRC` to the asset checkout containing `wheels/libuipc/`.
+The installer verifies and caches local bytes, or downloads the matching
+HF/ModelScope publication. See
+[asset-backed installation](../docker/README.md#asset-backed-native-libuipc-installation).
 
 ```bash
 geniesim bootstrap
@@ -27,17 +39,15 @@ When apt and pip expose multiple versions, only the version selected by the
 current interpreter is constrained. A non-root user can reuse a healthy
 root-installed artifact without needing write access to its installation lock.
 
-The 5.1 combo Dockerfile preinstalls the native wheel and its Python dependencies
-with `install_libuipc.py --build-sm <SM>`. The dedicated 6.2 image prepares only
-Python dependencies with `--dependencies-only`; it uses the bundled CUDA 12
-stack and does not install CUDA 13. These native wheels cannot load there.
-Both Jazzy CLI build commands detect host GPU 0 and pass `LIBUIPC_SM` to Docker;
-the 6.2 recipe retains the argument for CLI compatibility without installing a
-native artifact.
+Both Jazzy Dockerfiles preinstall the selected CUDA 12.8 wheel and its Python
+dependencies with `install_libuipc.py --build-sm <SM>`. The default
+`geniesim docker build` and `geniesim docker6.2 build` select dedicated 6.2;
+`geniesim docker5.1 build` selects the combo image. Both paths detect host GPU 0
+and pass `LIBUIPC_SM` to Docker.
 For a build host without a supported GPU, select the deployment architecture:
 
 ```bash
-geniesim docker5.1 build --build-arg LIBUIPC_SM=89
+geniesim docker6.2 build --build-arg LIBUIPC_SM=89
 # For SM120 deployment: --build-arg LIBUIPC_SM=120
 ```
 
@@ -60,8 +70,9 @@ native wheels. One Python environment holds one selected architecture's build.
 
 Both artifacts contain `pyuipc.cpython-312-x86_64-linux-gnu.so` and require
 Linux x86_64 CPython 3.12, a compatible NVIDIA driver and a matching GPU.
-A complete CUDA 13 runtime must already be available. Both artifacts use the
-system SDK's CUDA 13 libraries, including in the combo image with Isaac Sim 5.1.
+A complete CUDA 12.8 runtime must already be available. The dedicated Isaac
+Sim 6.2 image provides it through the bundled SDK. The installer also supports
+a complete matching system-Python or system-toolkit provider.
 The installer links a complete provider into `uipc/_native`, where the backend's
 `$ORIGIN` RUNPATH finds it; no manual `LD_LIBRARY_PATH` is needed. These links
 are registered in RECORD, leaving native library bytes and SDK packages intact.
@@ -74,62 +85,43 @@ publication or native validation restores the old installation. If rollback
 itself fails, the installer reports and retains its recovery directory.
 The installer also accepts a working system dynamic loader configuration;
 it does not download CUDA runtime libraries.
-Both backends link `libcudart.so.13`, `libcublas.so.13`,
-`libcusolver.so.12` and `libcusparse.so.12`; a CUDA 12 runtime alone cannot
-load it. Successful installation does not prove a native GPU step.
+Both backends link `libcudart.so.12`, `libcublas.so.12`,
+`libcusolver.so.11` and `libcusparse.so.12`. Successful installation does not prove a native GPU step.
 
 SHA256 (`pyuipc-sm89.whl`):
 
 ```
-ff838f588f84c695a7fd41dd8769d8068f42d02987896e89882494e4a17e7c6d
+13d0c5b79352b54ae9d06a8e074564fb9860b74d13072928a4f9592606721323
 ```
 
 SHA256 (`pyuipc-sm120.whl`):
 
 ```
-3a7d0ea16b2221797d78b14de964042222569cd29f77e64e5d83654ff0e467f3
+c332124443290731dbe7ad31436e40ca8027424758aa9be98be735dbce22133f
 ```
 
-Both supplied replacement wheels carry the binary tag
-`cp312-cp312-linux_x86_64`. Use only Linux x86_64 CPython 3.12; do not install
-them into `omni_python` 3.11 or the Humble image's Python 3.10. Both manifests
-record CUDA 13.0.2 builds targeting their respective GPU architectures.
-The supplied build checks cover package integrity, decompressed GPU code,
-build-host path removal, isolated installation and native loading for both
-architectures. The SM89 build also passed a 10-frame native GPU simulation on
-an RTX 4090 with driver 580.178.04 and PTX JIT disabled. SM120 native execution
-remains unverified on matching hardware.
+Both wheels carry the binary tag `cp312-cp312-linux_x86_64`. Use only Linux
+x86_64 CPython 3.12; do not install them into `omni_python` 3.11 or the Humble
+image's Python 3.10. Their manifests record CUDA Toolkit 12.8 and nvcc 12.8.61,
+with separate SM89 and SM120 targets. A compatible host NVIDIA driver and
+`--gpus all` are needed to execute the solver. An installation or dynamic-load
+check does not establish native GPU simulation or matching-hardware acceptance.
 
-On 2026-10-27 the previous SM89 CUDA 13 `licensefix1` artifact passed cloth,
-rigid and mixed GPU smoke cases on an RTX 4090 D with driver 580.159.03, for both a fresh container and
-an upgrade from the CUDA 12 artifact. Each case advanced 30 steps and verified
-finite state, gravity motion and `recover(0)`. These checks do not establish
-policy task success, camera rendering or 60 Hz performance.
-A rebuilt dependency layer also passed fresh startup, the same GPU cases and
-restart reuse with Docker `--network none`, while pip indexes remained enabled.
-Those historical checks do not qualify the current `pathfix1` artifacts.
+Each wheel includes `uipc/_native/build_manifest.json` with source, toolchain
+and per-library hashes. The official base is
+`292c98c3fec2dfbe9ae2c2407572f2f446a4a738` from
+https://github.com/spiriMirror/libuipc. The patched source and recipe identity
+is `f2cc69eeaa87e8a0919857298b06967050dd7fb8`; this local commit identity does
+not imply that it is published in the upstream repository. The build recipe
+recorded in the manifest is `tools/wheel_cuda128/package_wheel.py`.
 
-Both artifacts require CUDA 13. The shared
-evaluation environment must provide its matching CUDA runtime, cuBLAS,
-cuSPARSE, cuSOLVER and nvJitLink libraries. The binary requires at least
-GLIBC 2.35 and GLIBCXX 3.4.30 for SM89; Ubuntu 24.04 in the Jazzy image satisfies
-these requirements. A host NVIDIA driver and `--gpus all` are still needed
-to execute the solver. The installation check validates native loading after selecting a wheel from
-the runtime GPU; it is not a substitute for a GPU step.
-
-Both path-cleaned CUDA 13 replacements were supplied on 2026-10-30. Both contain an Apache
-license classifier and `*.dist-info/licenses/LICENSE` matching the repository's
-[preserved LICENSE](pyuipc-LICENSE). The previous GPLv3 classifier is absent.
-The exact supplied bytes are identified by the SHA256 values above.
-
-Each wheel includes `uipc/_native/build_manifest.json`, recording source commit
-`ef5bfa21f343fdc0858c3040a6202634e466d747` from
-https://github.com/kanghui0204/libuipc and per-library hashes. Both manifests
-also record a CUDA 13 source override. These are supplied build records, not a
-reproduction of the source build in this repository. Diagnostics use relative
-or generic paths instead of build-host paths. The generic `/usr/src/libuipc`
-root used for workspace path calculations does not need to exist at runtime.
-The Python dependencies are unchanged. Upstream is https://github.com/spiriMirror/libuipc.
+The retained [upstream libuipc license](pyuipc-LICENSE) is unchanged and covers
+the original upstream Apache-2.0 terms. It does not describe every component
+inside the supplied wheels.
+The archives retain `NOTICE`, original upstream license texts, third-party
+notices and covered source under `*.dist-info/licenses/`. Preserve those
+materials when using or redistributing the artifacts. Package classifiers
+alone do not describe all component licenses.
 
 The Main-owned solver extension is separately derived from Apache-2.0 Newton code; see its
 [solver provenance](../source/geniesim_ros/src/ros_ws/src/genie_sim_engine_libuipc/genie_sim_engine_libuipc/solver/PROVENANCE.md).

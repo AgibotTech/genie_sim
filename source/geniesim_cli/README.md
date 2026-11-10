@@ -175,24 +175,36 @@ scripts. Missing consumers are reported by the command. Help and Docker dispatch
 remain available without importing those runtimes.
 
 
-## Automatic native libuipc installation
+## Asset-backed native libuipc installation
 
-Jazzy base image builds select host GPU 0 and install its bundled SM89/SM120
-artifact during construction. `--build-arg LIBUIPC_SM=89|120` overrides detection;
-unsupported/unreadable capability fails before Docker. Humble and derived
-post-training builds retain their existing paths.
+The default is a direct prebuilt-wheel installation. Optional source builds use
+the official pinned commit and ordered patches in
+[the source build guide](../../3rdparty/libuipc/README.md).
 
-`geniesim bootstrap` additionally checks/installs optional native libuipc using
-the current interpreter and the checkout's `docker/install_libuipc.py --if-needed`.
-`geniesim bootstrap --libuipc-only` skips peer probes, installs and prompts.
-Use system CPython 3.12 for native wheels, including in the 5.1 combo image.
-Required-peer source resolution, ordering and failure status remain intact.
-Native failures warn without blocking required peers or container startup, and
-completion output distinguishes that warning from full native success.
-Installer progress streams to the caller; a 300-second timeout bounds the whole
-process group, with 15 seconds for graceful shutdown before forced cleanup.
-No GPU, physics or rendering dependency is imported into the CLI.
+`geniesim bootstrap` checks the optional native runtime using the current
+interpreter and `docker/install_libuipc.py --if-needed`. `--libuipc-only` skips
+peer probes and prompts. Required peers and optional failure behavior are unchanged;
+bootstrap still bounds the installer process group to 300 seconds.
 
-CPU coverage: `tests/test_libuipc_bootstrap.py` and the existing Docker/mirror,
-installation-health and process-boundary suites. A build-command test does not
-qualify a completed image build or a GPU solve.
+Wheels now live under the asset repository's `wheels/libuipc/`, with pinned
+sizes/hashes and hosting-source identities in `docker/libuipc-artifacts.json`.
+The standalone installer checks a durable verified cache, then local
+`GENIESIM_ASSETS_SRC`, then the selected HF/ModelScope publication. It resolves the provider metadata to a real commit before transfer and uses that
+commit throughout retries. ModelScope failures automatically switch to HuggingFace,
+resolving HF’s own commit; a revision override applies only to the primary host.
+Explicit HuggingFace selection does not retry ModelScope. Release bytes remain pinned by size and SHA256;
+publication requires no code edits. An explicit commit override remains optional.
+Only Linux x86_64 system CPython 3.12, SM89/SM120 and CUDA 12.8 are supported.
+
+Jazzy base Docker builds select GPU 0 or explicit `LIBUIPC_SM`. The CLI forwards
+the local `wheels/` directory as named context `libuipc_assets`, and forwards
+`GENIESIM_LIBUIPC_SOURCE`/`GENIESIM_LIBUIPC_REVISION` as build arguments; explicit
+arguments/contexts win. Images retain `GENIESIM_LIBUIPC_CACHE` for offline startup
+checks. Humble and derived profiles retain their existing paths.
+
+Usage, publication and cache contracts are documented in
+[asset-backed installation](../../docker/README.md#asset-backed-native-libuipc-installation).
+CPU tests live in `docker/tests/test_libuipc_download.py`,
+`docker/tests/test_install_libuipc.py` and `tests/test_libuipc_bootstrap.py`.
+Real archive QA additionally uses a hydrated `GENIESIM_ASSETS_SRC`; CPU tests do
+not establish an image build, native load or GPU solve.

@@ -5,13 +5,13 @@
 #   geniesim docker6.2 build --china      # select the China mirror preset
 #
 # Or manually:
-#   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
+#   docker build -f docker/Dockerfile --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
 #   docker build -f docker/Dockerfile \
 #       --build-arg ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia \
 #       --build-arg ISAACSIM_TAG=6.2.0.1 \
 #       --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu \
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-#       -t registry.agibot.com/genie-sim/geniesim4:latest .
+#       --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
 #
 # Base: NVIDIA's published Isaac Sim 6.X image (Ubuntu 24.04).
 # The image already ships Isaac Sim under /isaac-sim with
@@ -36,6 +36,9 @@ ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
 # pins from SDK metadata. A different major requires its own variant. Newton's
 # MuJoCo requirements are guarded by docker/check_newton_pins.py.
 ARG ISAACSIM_TAG=6.2.0.1
+
+FROM scratch AS libuipc_assets
+COPY docker/libuipc-artifacts.json /libuipc-artifacts.json
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 
@@ -195,14 +198,20 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 COPY docker/check_newton_pins.py /tmp/check_newton_pins.py
 RUN python3 /tmp/check_newton_pins.py && rm -f /tmp/check_newton_pins.py
 
-# Prepare IPC's Python dependencies only. The supplied native wheels require
-# CUDA 13 and are incompatible with this CUDA 12 image. Keep LIBUIPC_SM as the
-# CLI's architecture-selection input, without installing an incompatible wheel.
+# Preinstall the selected CUDA 12.8 native artifact without a build GPU.
+# The bundled SDK supplies its complete matching CUDA runtime provider.
 ARG LIBUIPC_SM
-COPY docker/install_libuipc.py /opt/geniesim/docker/
-COPY 3rdparty/pyuipc-sm89.whl 3rdparty/pyuipc-sm120.whl 3rdparty/pyuipc-LICENSE 3rdparty/pyuipc-README.md /opt/geniesim/3rdparty/
+COPY docker/install_libuipc.py docker/libuipc-artifacts.json /opt/geniesim/docker/
+COPY 3rdparty/pyuipc-LICENSE 3rdparty/pyuipc-README.md /opt/geniesim/3rdparty/
+ARG LIBUIPC_SOURCE=modelscope
+ARG LIBUIPC_REVISION
+ENV GENIESIM_LIBUIPC_CACHE=/opt/geniesim/3rdparty
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python3 /opt/geniesim/docker/install_libuipc.py --dependencies-only
+    --mount=from=libuipc_assets,target=/libuipc-assets/wheels,ro \
+    GENIESIM_ASSETS_SRC=/libuipc-assets \
+    GENIESIM_LIBUIPC_SOURCE="${LIBUIPC_SOURCE}" \
+    GENIESIM_LIBUIPC_REVISION="${LIBUIPC_REVISION}" \
+    python3 /opt/geniesim/docker/install_libuipc.py --build-sm "${LIBUIPC_SM}"
 
 # Place the entrypoint at a stable absolute path so the image is
 # self-sufficient (no requirement to bind-mount the repo just to find

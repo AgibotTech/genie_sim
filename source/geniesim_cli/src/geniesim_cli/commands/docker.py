@@ -530,6 +530,11 @@ def _do_build(extra: list[str]) -> None:
         supported = _mirrors.declared_args(dockerfile)
         settings = _mirrors.load_preset(repo_root / "docker/mirrors.toml", preset) if preset else {}
         defaults = {name: value for name, value in settings.items() if name in supported}
+        if not _active_profile and _VARIANT_PYTHON_TAG.get(_active_variant) == "cp312":
+            for name in ("LIBUIPC_SOURCE", "LIBUIPC_REVISION"):
+                value = os.environ.get("GENIESIM_" + name)
+                if value and name in supported:
+                    defaults[name] = value
         values, forwarded, explicit = _mirrors.merge_build_args(defaults, forwarded)
     except (OSError, ValueError) as exc:
         print(f"{RED}❌ {exc}{RST}")
@@ -553,6 +558,15 @@ def _do_build(extra: list[str]) -> None:
     if not _active_profile and _VARIANT_PYTHON_TAG.get(_active_variant) == "cp312":
         try:
             resolved += _libuipc_build_args(_mirrors.as_flags(values))
+            source = os.environ.get(_env.GENIESIM_ASSETS_SRC.name)
+            has_context = any(
+                token.startswith("libuipc_assets=") or token.startswith("--build-context=libuipc_assets=")
+                for token in forwarded
+            )
+            if source and not has_context:
+                wheels = Path(source).expanduser().resolve() / "wheels"
+                if wheels.is_dir():
+                    forwarded += ["--build-context", f"libuipc_assets={wheels}"]
         except RuntimeError as error:
             print(f"{RED}❌ {error}{RST}")
             sys.exit(2)

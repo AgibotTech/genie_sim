@@ -221,3 +221,39 @@ def test_installer_restores_sigterm_handler():
     handler = signal.getsignal(signal.SIGTERM)
     assert bootstrap._run_libuipc([sys.executable, "-c", "pass"]) == 0
     assert signal.getsignal(signal.SIGTERM) == handler
+
+
+def test_base_build_uses_local_wheel_context_and_download_overrides(monkeypatch, tmp_path):
+    monkeypatch.setattr(docker, "_active_variant", "")
+    monkeypatch.setattr(docker, "_active_profile", "")
+    monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
+    monkeypatch.setattr(docker, "_isaacsim_build_args", lambda _: [])
+    wheels = tmp_path / "assets" / "wheels"
+    wheels.mkdir(parents=True)
+    monkeypatch.setenv("GENIESIM_ASSETS_SRC", str(wheels.parent))
+    monkeypatch.setenv("GENIESIM_LIBUIPC_SOURCE", "huggingface")
+    monkeypatch.setenv("GENIESIM_LIBUIPC_REVISION", "a" * 40)
+    calls = []
+    monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(returncode=0))
+    docker._do_build(["--no-resolve", "--build-arg", "LIBUIPC_SM=89", "--build-arg", "LIBUIPC_SOURCE=modelscope"])
+    command = calls[-1]
+    assert f"libuipc_assets={wheels}" in command
+    assert "LIBUIPC_SOURCE=modelscope" in command
+    assert "LIBUIPC_SOURCE=huggingface" not in command
+    assert "LIBUIPC_REVISION=" + "a" * 40 in command
+
+
+def test_explicit_native_asset_context_takes_precedence(monkeypatch, tmp_path):
+    monkeypatch.setattr(docker, "_active_variant", "")
+    monkeypatch.setattr(docker, "_active_profile", "")
+    monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
+    monkeypatch.setattr(docker, "_isaacsim_build_args", lambda _: [])
+    (tmp_path / "wheels").mkdir()
+    monkeypatch.setenv("GENIESIM_ASSETS_SRC", str(tmp_path))
+    calls = []
+    monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(returncode=0))
+    docker._do_build(
+        ["--no-resolve", "--build-arg", "LIBUIPC_SM=89", "--build-context", "libuipc_assets=/explicit/wheels"]
+    )
+    assert calls[-1].count("--build-context") == 1
+    assert "libuipc_assets=/explicit/wheels" in calls[-1]

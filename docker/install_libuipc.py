@@ -1,7 +1,7 @@
 # Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # License: Mozilla Public License Version 2.0
 
-"""Install the bundled native libuipc wheel for SM 89 or 120, without Newton."""
+"""Fetch and install a pinned native libuipc wheel for SM 89 or 120, without Newton."""
 
 from __future__ import annotations
 
@@ -18,16 +18,20 @@ import subprocess
 import sys
 import sysconfig
 import tempfile
+import time
 from email.parser import Parser
 from contextlib import contextmanager
 from importlib import metadata as packages
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from http.client import HTTPException
+from urllib.error import HTTPError
+from urllib.parse import quote, urlencode, urlsplit
+from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
-WHEELS = {
-    89: ("pyuipc-sm89.whl", "ff838f588f84c695a7fd41dd8769d8068f42d02987896e89882494e4a17e7c6d"),
-    120: ("pyuipc-sm120.whl", "3a7d0ea16b2221797d78b14de964042222569cd29f77e64e5d83654ff0e467f3"),
-}
+ARTIFACTS = json.loads(Path(__file__).with_name("libuipc-artifacts.json").read_text())
+WHEELS = {int(sm): (row["filename"], row["sha256"]) for sm, row in ARTIFACTS["artifacts"].items()}
+DOWNLOAD_TIMEOUT = 240
 
 
 def validate_platform() -> None:
@@ -38,7 +42,7 @@ def validate_platform() -> None:
         or platform.python_implementation() != "CPython"
         or sys.version_info[:2] != (3, 12)
     ):
-        raise RuntimeError("The bundled libuipc wheels require Linux x86_64 CPython 3.12")
+        raise RuntimeError("The libuipc wheels require Linux x86_64 CPython 3.12")
 
 
 def detect_sm(gpu: int) -> int:
@@ -58,18 +62,254 @@ def detect_sm(gpu: int) -> int:
 
 
 def select_wheel(sm: int) -> Path:
-    """Reject unsupported GPUs and changed or missing artifacts before pip runs."""
+    """Acquire only the selected architecture, publishing verified bytes to a durable cache."""
     if sm not in WHEELS:
         raise RuntimeError(f"Unsupported GPU sm_{sm}; only sm_89 and sm_120 are supported")
     name, expected = WHEELS[sm]
-    wheel = Path(__file__).resolve().parents[1] / "3rdparty" / name
+    row = ARTIFACTS["artifacts"][str(sm)]
+    path = PurePosixPath(row["path"])
+    if (
+        ARTIFACTS.get("schema_version") != 1
+        or path.is_absolute()
+        or ".." in path.parts
+        or "\\" in row["path"]
+        or str(path) != row["path"]
+        or path.name != name
+        or not re.fullmatch(r"[a-f0-9]{64}", expected)
+        or type(row["size"]) is not int
+        or row["size"] < 0
+    ):
+        raise RuntimeError("Invalid libuipc artifact manifest")
+    cache = (
+        Path(
+            os.environ.get("GENIESIM_LIBUIPC_CACHE")
+            or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "geniesim" / "libuipc"
+        )
+        .expanduser()
+        .absolute()
+    )
+    directory = cache / expected
+    if any(p.is_symlink() for p in (directory, *directory.parents)):
+        raise RuntimeError("Symlink in libuipc cache path")
+    wheel = directory / name
+    if wheel.is_symlink():
+        raise RuntimeError("Symlink at libuipc wheel cache")
+    if _valid_artifact(wheel, row["size"], expected):
+        return wheel
+    directory.mkdir(parents=True, exist_ok=True)
+    with _download_lock(directory):
+        if wheel.is_symlink():
+            raise RuntimeError("Symlink at libuipc wheel cache")
+        if _valid_artifact(wheel, row["size"], expected):
+            return wheel
+        partial = wheel.with_name(wheel.name + ".part")
+        if partial.is_symlink():
+            raise RuntimeError("Symlink at libuipc partial download")
+        local_root = os.environ.get("GENIESIM_ASSETS_SRC")
+        if local_root:
+            local = Path(local_root).expanduser() / path
+            if local.exists():
+                if not _valid_artifact(local, row["size"], expected):
+                    raise RuntimeError(f"Asset wheel size or SHA256 mismatch: {local}")
+                shutil.copyfile(local, partial)
+                if not _valid_artifact(partial, row["size"], expected):
+                    partial.unlink(missing_ok=True)
+                    raise RuntimeError(f"Asset wheel size or SHA256 mismatch: {local}")
+                partial.replace(wheel)
+                print(f"[libuipc] Cached verified asset wheel: {local}", flush=True)
+                return wheel
+        _fetch_wheel(row, partial, expected)
+        partial.replace(wheel)
+        return wheel
+
+
+class DownloadDeadlineExceeded(RuntimeError):
+    """Stop a stalled provider without suppressing fallback to another host."""
+
+
+def _fetch_wheel(row: dict, partial: Path, expected: str) -> None:
+    """Try ModelScope, then the independent HF revision, with one bounded total budget."""
+    primary = os.environ.get("GENIESIM_LIBUIPC_SOURCE") or ARTIFACTS["default_source"]
+    providers = [primary]
+    if primary == "modelscope" and "huggingface" in ARTIFACTS["sources"]:
+        providers.append("huggingface")
+    started = time.monotonic()
+    deadline = started + DOWNLOAD_TIMEOUT
+    errors = []
+    for position, provider in enumerate(providers):
+        source_deadline = started + DOWNLOAD_TIMEOUT / 2 if position == 0 and len(providers) > 1 else deadline
+        url = None
+        failure = None
+        for attempt in range(3):
+            try:
+                with _download_deadline(source_deadline):
+                    if url is None:
+                        url = _artifact_url(row, source_name=provider)
+                        print(f"[libuipc] Downloading {row['filename']} ({row['size'] / 1024**2:.1f} MiB)", flush=True)
+                    _transfer_artifact(url, partial, row["size"], expected, deadline=source_deadline)
+                return
+            except (OSError, ValueError, HTTPException, DownloadDeadlineExceeded) as error:
+                failure = str(error)
+                if isinstance(error, HTTPError) and error.code == 404:
+                    failure = "wheel is not published at this source revision"
+                    break
+                if time.monotonic() >= source_deadline:
+                    failure = "download deadline exceeded"
+                    break
+                if attempt < 2:
+                    time.sleep(min(attempt + 1, max(0, source_deadline - time.monotonic())))
+        errors.append(f"{provider}: {failure}")
+        if position + 1 < len(providers):
+            print(f"[libuipc] ModelScope unavailable ({failure}); switching to HuggingFace", flush=True)
+    raise RuntimeError(f"Download failed for {row['filename']}: " + "; ".join(errors) + "; rerun to resume")
+
+
+@contextmanager
+def _download_deadline(deadline: float):
+    """Bound connection, redirects, headers and body in this main-thread POSIX installer."""
+
+    def expired(signum, frame):
+        raise DownloadDeadlineExceeded("Download deadline exceeded; rerun to resume")
+
+    started = time.monotonic()
+    remaining = deadline - started
+    if remaining <= 0:
+        raise DownloadDeadlineExceeded("Download deadline exceeded; rerun to resume")
+    previous = signal.signal(signal.SIGALRM, expired)
+    timer = signal.setitimer(signal.ITIMER_REAL, remaining)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+        if timer[0] > 0:
+            signal.setitimer(signal.ITIMER_REAL, max(0.000001, timer[0] - (time.monotonic() - started)), timer[1])
+
+
+def _valid_artifact(path: Path, size: int, expected: str) -> bool:
+    """Compare both size and SHA256 without trusting a cache entry's filename."""
+    if not path.is_file() or path.stat().st_size != size:
+        return False
     digest = hashlib.sha256()
-    with wheel.open("rb") as stream:
+    with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
-    if digest.hexdigest() != expected:
-        raise RuntimeError(f"SHA256 mismatch for {wheel}")
-    return wheel
+    return digest.hexdigest() == expected
+
+
+@contextmanager
+def _download_lock(directory: Path):
+    """Serialize writers to one artifact while allowing different architectures in parallel."""
+    import fcntl
+
+    path = directory / ".download.lock"
+    if path.is_symlink():
+        raise RuntimeError("Symlink at libuipc download lock")
+    with path.open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise RuntimeError("Another libuipc download is using this cache; retry later") from error
+        yield
+
+
+def _artifact_url(row: dict, *, source_name: str | None = None) -> str:
+    """Resolve a real hosting commit, then fetch only the fixed size/hash artifact."""
+    primary = os.environ.get("GENIESIM_LIBUIPC_SOURCE") or ARTIFACTS["default_source"]
+    name = source_name or primary
+    if name not in {"modelscope", "huggingface"} or name not in ARTIFACTS["sources"]:
+        raise RuntimeError(f"Unknown libuipc source: {name}")
+    source = ARTIFACTS["sources"][name]
+    endpoint = source["endpoint"].rstrip("/")
+    parsed = urlsplit(endpoint)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError("Invalid libuipc source endpoint")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", source["dataset"]):
+        raise RuntimeError("Invalid libuipc dataset identity")
+    override = os.environ.get("GENIESIM_LIBUIPC_REVISION") if name == primary else None
+    if override and not re.fullmatch(r"[a-f0-9]{40}", override):
+        raise RuntimeError("GENIESIM_LIBUIPC_REVISION must be a pinned 40-character commit")
+    revision = override or source.get("revision")
+    if not revision:
+        if name == "modelscope":
+            query = urlencode({"Ref": source.get("ref", "master"), "PageNumber": 1, "PageSize": 1})
+            metadata_url = f"{endpoint}/api/v1/datasets/{source['dataset']}/commits?{query}"
+        else:
+            metadata_url = f"{endpoint}/api/datasets/{source['dataset']}"
+        with urlopen(metadata_url, timeout=30) as response:
+            metadata = json.loads(response.read(8 * 1024 * 1024 + 1))
+        if not isinstance(metadata, dict):
+            raise ValueError("Invalid libuipc source metadata")
+        if name == "modelscope":
+            data = metadata.get("Data")
+            commits = data.get("Commit") if isinstance(data, dict) else None
+            if (
+                metadata.get("Code") != 200
+                or not isinstance(commits, list)
+                or not commits
+                or not isinstance(commits[0], dict)
+            ):
+                raise ValueError("Invalid ModelScope commit metadata")
+            revision = commits[0].get("Id")
+        else:
+            revision = metadata.get("sha")
+    if not isinstance(revision, str) or not re.fullmatch(r"[a-f0-9]{40}", revision):
+        raise ValueError("libuipc source must resolve to a pinned 40-character commit")
+    print(f"[libuipc] Source: {name}; revision: {revision}", flush=True)
+    if name == "modelscope":
+        query = urlencode({"Source": "SDK", "Revision": revision, "FilePath": row["path"], "View": False})
+        return f"{endpoint}/api/v1/datasets/{source['dataset']}/repo?{query}"
+    path = "/".join(quote(segment, safe="") for segment in row["path"].split("/"))
+    return f"{endpoint}/datasets/{source['dataset']}/resolve/{revision}/{path}"
+
+
+def _transfer_artifact(url: str, partial: Path, size: int, expected: str, *, deadline: float) -> None:
+    """Resume a compatible HTTP range, verify the complete file, and reject bad bytes."""
+    offset = partial.stat().st_size if partial.exists() else 0
+    if offset >= size and partial.exists():
+        if _valid_artifact(partial, size, expected):
+            return
+        partial.unlink()
+        offset = 0
+    request = Request(url, headers={"Range": f"bytes={offset}-"} if offset else {})
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise TimeoutError("Download deadline exceeded")
+    with urlopen(request, timeout=min(90, remaining)) as response:
+        if offset and response.status == 206:
+            if not re.fullmatch(rf"bytes {offset}-\d+/{size}", response.headers.get("Content-Range", "")):
+                raise ValueError("Incompatible Content-Range")
+        elif response.status == 200:
+            offset = 0
+        else:
+            raise ValueError(f"Unexpected HTTP status: {response.status}")
+        with partial.open("ab" if offset else "wb") as output:
+            received = offset
+            while True:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Download deadline exceeded")
+                block = response.read1(1024 * 1024)
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Download deadline exceeded")
+                if not block:
+                    break
+                received += len(block)
+                if received > size:
+                    partial.unlink(missing_ok=True)
+                    raise ValueError("Remote wheel exceeds recorded size")
+                output.write(block)
+    if partial.stat().st_size < size:
+        raise ValueError("Incomplete wheel; preserving partial bytes for resume")
+    if not _valid_artifact(partial, size, expected):
+        partial.unlink(missing_ok=True)
+        raise ValueError("Wheel size or SHA256 mismatch")
 
 
 def _installation_site() -> tuple[Path, Path | None]:
@@ -298,6 +538,8 @@ def _cuda_runtime_roots(major: int) -> list[Path]:
     """Keep each CUDA provider together: cuSPARSE has the same SONAME in 12/13."""
     return [
         Path(f"/opt/geniesim/cuda{major}/nvidia"),
+        Path("/isaac-sim/exts/isaacsim.pip.nv/pip_prebundle/nvidia"),
+        Path("/isaac-sim/extsDeprecated/omni.isaac.ml_archive/pip_prebundle/nvidia"),
         Path("/isaac-sim/exts/omni.isaac.ml_archive/pip_prebundle/nvidia"),
         *[Path(path) / "nvidia" / f"cu{major}" for path in sys.path if path],
         *[Path(path) / "nvidia" for path in sys.path if path],
@@ -308,7 +550,7 @@ def _cuda_runtime_roots(major: int) -> list[Path]:
 
 def _link_cuda_runtime(payload: Path, wheel: Path) -> None:
     """Use the backend's $ORIGIN RUNPATH without changing the shared SDK loader."""
-    major, solver = {"pyuipc-sm89.whl": (13, 12), "pyuipc-sm120.whl": (13, 12)}[wheel.name]
+    major, solver = {"pyuipc-sm89.whl": (12, 11), "pyuipc-sm120.whl": (12, 11)}[wheel.name]
     components = {
         f"libcudart.so.{major}": "cuda_runtime",
         f"libcublas.so.{major}": "cublas",
@@ -434,17 +676,30 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--build-sm", type=int, choices=sorted(WHEELS), help="preinstall an image for this SM without a GPU"
     )
+    parser.add_argument(
+        "--download-sm",
+        type=int,
+        choices=sorted(WHEELS),
+        help="cache and verify this SM's wheel without GPU or runtime ABI checks",
+    )
     args = parser.parse_args(argv)
     if args.dependencies_only and (args.dry_run or args.no_deps or args.if_needed):
         parser.error("--dependencies-only cannot be combined with --dry-run, --no-deps or --if-needed")
     if args.build_sm is not None and (args.dependencies_only or args.dry_run or args.no_deps or args.if_needed):
         parser.error("--build-sm cannot be combined with other installation modes")
+    if args.download_sm is not None and (
+        args.build_sm is not None or args.dependencies_only or args.dry_run or args.no_deps or args.if_needed
+    ):
+        parser.error("--download-sm cannot be combined with other installation modes")
 
     def cancelled(signum, frame):
         raise InterruptedError("libuipc installation cancelled; rolling back native files")
 
     previous = signal.signal(signal.SIGTERM, cancelled)
     try:
+        if args.download_sm is not None:
+            print(f"[libuipc] Verified wheel: {select_wheel(args.download_sm)}", flush=True)
+            return
         validate_platform()
         if args.dependencies_only:
             install_python_dependencies()

@@ -240,10 +240,40 @@ GENIESIM_CACHE_ROOT = _register(
 GENIESIM_ASSETS_SRC = _register(
     EnvVar(
         name="GENIESIM_ASSETS_SRC",
-        description="Host asset package used by the post-training Docker profiles.",
+        description="Host asset package for container mounts and local libuipc wheel acquisition.",
         default="(auto-detect editable installation)",
         category="docker",
-        consumers=("geniesim_cli/commands/docker.py", "docker/start.sh"),
+        consumers=("geniesim_cli/commands/docker.py", "docker/start.sh", "docker/install_libuipc.py"),
+    )
+)
+
+GENIESIM_LIBUIPC_CACHE = _register(
+    EnvVar(
+        name="GENIESIM_LIBUIPC_CACHE",
+        description="Persistent verified libuipc wheel cache; images retain it for offline startup.",
+        default="XDG_CACHE_HOME/geniesim/libuipc or ~/.cache/geniesim/libuipc",
+        category="docker",
+        consumers=("docker/install_libuipc.py",),
+    )
+)
+
+GENIESIM_LIBUIPC_SOURCE = _register(
+    EnvVar(
+        name="GENIESIM_LIBUIPC_SOURCE",
+        description="libuipc wheel host: modelscope or huggingface; local assets and cache take precedence.",
+        default="modelscope",
+        category="docker",
+        consumers=("docker/install_libuipc.py", "geniesim_cli/commands/docker.py"),
+    )
+)
+
+GENIESIM_LIBUIPC_REVISION = _register(
+    EnvVar(
+        name="GENIESIM_LIBUIPC_REVISION",
+        description="Pinned publication commit for the selected libuipc hosting source.",
+        default="resolve hosting metadata to an immutable commit",
+        category="docker",
+        consumers=("docker/install_libuipc.py", "geniesim_cli/commands/docker.py"),
     )
 )
 

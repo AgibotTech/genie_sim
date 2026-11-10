@@ -13,6 +13,7 @@ helpers, then checks a local physics/render scene and independent ROS peer.
 """
 
 import argparse
+import ctypes
 import faulthandler
 from importlib import metadata, util
 import json
@@ -158,7 +159,12 @@ def standalone(output: Path) -> int:
     installed = {dist.metadata["Name"].lower().replace("_", "-") for dist in metadata.distributions()}
     assert not retired & installed, f"CUDA 13 packages remain: {retired & installed}"
     assert not (site / "nvidia/cu13").exists(), "CUDA 13 runtime directory remains"
-    assert util.find_spec("uipc") is None, "Incompatible native IPC payload is installed"
+    import uipc
+
+    native_version = metadata.version("pyuipc")
+    assert ".cu128." in native_version, native_version
+    native = Path(uipc.__file__).parent / "_native"
+    ctypes.CDLL(str(native / "libuipc_backend_cuda.so"))
     assert Path(rclpy.__file__).is_relative_to("/opt/ros/jazzy")
     result = {
         "pass": True,
@@ -175,7 +181,8 @@ def standalone(output: Path) -> int:
         "newton": newton.__version__,
         "rclpy": rclpy.__file__,
         "cuda13_packages": sorted(retired & installed),
-        "native_ipc": "unavailable: supplied wheels require CUDA 13",
+        "native_ipc": "CUDA 12.8 backend load passed",
+        "native_ipc_version": native_version,
         "kit_loaded": "carb" in sys.modules,
     }
     assert not result["kit_loaded"]

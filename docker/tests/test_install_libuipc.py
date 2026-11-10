@@ -7,6 +7,7 @@
 from contextlib import nullcontext
 from email.parser import Parser
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -22,8 +23,28 @@ installer = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(installer)
 
 
+@pytest.fixture
+def fixture_wheels(monkeypatch, tmp_path):
+    """Use tiny archive fixtures for install control flow; real bytes are release QA."""
+    records = {}
+    for sm, original in installer.ARTIFACTS["artifacts"].items():
+        row = {**original}
+        wheel = tmp_path / row["path"]
+        wheel.parent.mkdir(parents=True, exist_ok=True)
+        with ZipFile(wheel, "w") as archive:
+            archive.writestr("pyuipc-0.9.0.dist-info/METADATA", "Name: pyuipc\nVersion: " + row["version"] + "\n")
+        row.update(size=wheel.stat().st_size, sha256=hashlib.sha256(wheel.read_bytes()).hexdigest())
+        records[sm] = row
+    monkeypatch.setattr(installer, "ARTIFACTS", {**installer.ARTIFACTS, "artifacts": records})
+    monkeypatch.setattr(installer, "WHEELS", {int(sm): (row["filename"], row["sha256"]) for sm, row in records.items()})
+    monkeypatch.setenv("GENIESIM_ASSETS_SRC", str(tmp_path))
+    monkeypatch.setenv("GENIESIM_LIBUIPC_CACHE", str(tmp_path / "cache"))
+
+
 @pytest.mark.parametrize("sm", [89, 120])
-def test_bundled_artifact_hash_license_and_native_abi(sm):
+def test_asset_artifact_hash_license_and_native_abi(sm):
+    if not os.environ.get("GENIESIM_ASSETS_SRC"):
+        pytest.skip("Set GENIESIM_ASSETS_SRC for real artifact release QA")
     wheel = installer.select_wheel(sm)
     with ZipFile(wheel) as archive:
         names = archive.namelist()
@@ -31,12 +52,15 @@ def test_bundled_artifact_hash_license_and_native_abi(sm):
         metadata = Parser().parsestr(archive.read(metadata_path).decode())
         wheel_metadata = Parser().parsestr(archive.read(metadata_path.replace("METADATA", "WHEEL")).decode())
         license_path = next(name for name in names if name.endswith(".dist-info/licenses/LICENSE"))
-        assert archive.read(license_path) == (ROOT / "3rdparty/pyuipc-LICENSE").read_bytes()
-        assert all("GPL" not in value for value in metadata.get_all("Classifier", []))
-        assert any("Apache" in value for value in metadata.get_all("Classifier", []))
+        license_root = str(Path(license_path).parent)
+        upstream_license = f"{license_root}/LICENSES/upstream-libuipc-Apache-2.0.txt"
+        assert archive.read(upstream_license) == (ROOT / "3rdparty/pyuipc-LICENSE").read_bytes()
+        assert f"{license_root}/NOTICE" in names
+        for license_name in ("upstream-libuipc-Apache-2.0.txt", "upstream-python-GPL-3.0.txt", "MPL-2.0.txt"):
+            assert f"{license_root}/LICENSES/{license_name}" in names
         assert wheel_metadata["Tag"] == "cp312-cp312-linux_x86_64"
         assert any(name.endswith("pyuipc.cpython-312-x86_64-linux-gnu.so") for name in names)
-        assert f".sm{sm}.cu130." in metadata["Version"]
+        assert f".sm{sm}.cu128." in metadata["Version"]
         assert all("newton" not in requirement.lower() for requirement in metadata.get_all("Requires-Dist", []))
 
 
@@ -46,7 +70,7 @@ def test_unsupported_sm_rejected_before_reading_artifact(monkeypatch):
         installer.select_wheel(90)
 
 
-def test_changed_artifact_rejected(monkeypatch):
+def test_changed_artifact_rejected(monkeypatch, fixture_wheels):
     monkeypatch.setitem(installer.WHEELS, 89, ("pyuipc-sm89.whl", "0" * 64))
     with pytest.raises(RuntimeError, match="SHA256 mismatch"):
         installer.select_wheel(89)
@@ -73,7 +97,7 @@ def test_ambiguous_gpu_query_rejected(monkeypatch, output):
         installer.detect_sm(0)
 
 
-def test_dry_run_does_not_install_or_load_native(monkeypatch):
+def test_dry_run_does_not_install_or_load_native(monkeypatch, fixture_wheels):
     monkeypatch.setattr(installer, "validate_platform", lambda: None)
     monkeypatch.setattr(installer, "detect_sm", lambda gpu: 89)
     monkeypatch.setattr(installer, "install", lambda *args, **kwargs: pytest.fail("installation attempted"))
@@ -91,7 +115,7 @@ def test_invalid_modes_rejected_before_platform_or_gpu(monkeypatch, arguments):
     assert error.value.code == 2
 
 
-def test_image_build_records_artifact_without_gpu_query(monkeypatch, tmp_path):
+def test_image_build_records_artifact_without_gpu_query(monkeypatch, tmp_path, fixture_wheels):
     wheel = installer.select_wheel(120)
     calls = []
     monkeypatch.setattr(installer, "_installation_lock", nullcontext)
@@ -119,7 +143,7 @@ def test_mismatched_image_fails_without_replacing_package(monkeypatch, tmp_path)
         installer.verify_image(89, Path("unused.whl"))
 
 
-def test_verified_image_returns_before_installation(monkeypatch):
+def test_verified_image_returns_before_installation(monkeypatch, fixture_wheels):
     wheel = installer.select_wheel(89)
     monkeypatch.setattr(installer, "validate_platform", lambda: None)
     monkeypatch.setattr(installer, "detect_sm", lambda gpu: 89)
@@ -128,40 +152,32 @@ def test_verified_image_returns_before_installation(monkeypatch):
     installer.main(["--if-needed"])
 
 
-@pytest.mark.parametrize("recipe", ["Dockerfile.5.1"])
+@pytest.mark.parametrize("recipe", ["Dockerfile", "Dockerfile.5.1"])
 @pytest.mark.parametrize("sm", ["", "89", "120"])
 def test_native_build_requires_and_forwards_selected_architecture(tmp_path, recipe, sm):
     text = (ROOT / "docker" / recipe).read_text()
     block = text.split("ARG LIBUIPC_SM", 1)[1].split("\n\n", 1)[0]
     command = block.split("RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked", 1)[1]
+    command = command.replace("--mount=from=libuipc_assets,target=/libuipc-assets/wheels,ro", "")
     log = tmp_path / "calls"
     python = tmp_path / "python3"
     python.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CALLS"\n[ -n "$3" ] || exit 2\n')
     python.chmod(0o755)
     result = subprocess.run(
         ["/bin/sh", "-eu", "-c", command],
-        env={**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin", "CALLS": str(log), "LIBUIPC_SM": sm},
+        env={
+            **os.environ,
+            "PATH": f"{tmp_path}:/usr/bin:/bin",
+            "CALLS": str(log),
+            "LIBUIPC_SM": sm,
+            "LIBUIPC_SOURCE": "modelscope",
+            "LIBUIPC_REVISION": "",
+        },
         capture_output=True,
         text=True,
     )
     assert log.read_text().splitlines() == ["/opt/geniesim/docker/install_libuipc.py", "--build-sm", sm]
     assert result.returncode == (0 if sm else 2)
-
-
-def test_cuda12_recipe_prepares_only_ipc_python_dependencies(tmp_path):
-    text = (ROOT / "docker/Dockerfile").read_text()
-    block = text.split("ARG LIBUIPC_SM", 1)[1].split("\n\n", 1)[0]
-    command = block.split("RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked", 1)[1]
-    log = tmp_path / "calls"
-    python = tmp_path / "python3"
-    python.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CALLS"\n')
-    python.chmod(0o755)
-    subprocess.run(
-        ["/bin/sh", "-eu", "-c", command],
-        env={**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin", "CALLS": str(log)},
-        check=True,
-    )
-    assert log.read_text().splitlines() == ["/opt/geniesim/docker/install_libuipc.py", "--dependencies-only"]
 
 
 @pytest.mark.parametrize("code", [0, 1])
@@ -196,3 +212,48 @@ def test_entrypoint_uses_system_bootstrap_and_keeps_startup_available(tmp_path, 
     root, path = Path(str(log) + ".env").read_text().splitlines()
     assert root == "/workspace" and path.split(":")[0] == "/workspace/source/geniesim_cli/src"
     assert ("bootstrap unavailable" in result.stdout) == bool(code)
+
+
+@pytest.mark.parametrize("sm", [89, 120])
+def test_cuda128_artifact_uses_complete_cuda12_provider(monkeypatch, tmp_path, sm):
+    providers = [tmp_path / "cuda13", tmp_path / "cuda12"]
+    cuda12 = {
+        "libcudart.so.12": "cuda_runtime",
+        "libcublas.so.12": "cublas",
+        "libcublasLt.so.12": "cublas",
+        "libcusparse.so.12": "cusparse",
+        "libcusolver.so.11": "cusolver",
+        "libnvJitLink.so.12": "nvjitlink",
+    }
+    cuda13 = {
+        "libcudart.so.13": "cuda_runtime",
+        "libcublas.so.13": "cublas",
+        "libcublasLt.so.13": "cublas",
+        "libcusparse.so.12": "cusparse",
+        "libcusolver.so.12": "cusolver",
+        "libnvJitLink.so.13": "nvjitlink",
+    }
+    for root, components in zip(providers, [cuda13, cuda12]):
+        for name, component in components.items():
+            library = root / component / "lib" / name
+            library.parent.mkdir(parents=True, exist_ok=True)
+            library.write_bytes(b"runtime")
+    requested = []
+
+    def roots(major):
+        requested.append(major)
+        return providers
+
+    monkeypatch.setattr(installer, "_cuda_runtime_roots", roots)
+    monkeypatch.setattr(installer, "check_native", lambda *args: pytest.fail("provider not selected"))
+    payload = tmp_path / "payload"
+    native = payload / "uipc/_native"
+    native.mkdir(parents=True)
+    info = payload / "pyuipc-test.dist-info"
+    info.mkdir()
+    (info / "RECORD").write_text("")
+    installer._link_cuda_runtime(payload, Path(f"pyuipc-sm{sm}.whl"))
+    assert requested == [12]
+    assert {path.name for path in native.iterdir()} == set(cuda12)
+    for name, component in cuda12.items():
+        assert (native / name).resolve() == providers[1] / component / "lib" / name

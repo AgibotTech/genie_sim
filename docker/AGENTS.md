@@ -153,9 +153,8 @@ RECORDs own local metadata and generated console scripts, never SDK payload or
 SDK metadata. Keep Triton
 installed for `torch.compile`. Do not download another Torch/CUDA 12 stack.
 The dedicated 6.2 image installs no CUDA 13 runtime packages. Its IPC step
-prepares Python dependencies only: the supplied native wheels require CUDA 13
-and are incompatible with this image. Keep this limitation explicit; do not
-restore CUDA 13 to make optional IPC loading pass.
+fetches the pinned CUDA 12.8 native wheel and links the matching bundled SDK
+provider. Preserve this shared CUDA 12.8 stack when installing optional IPC.
 The shared entrypoint repairs only the selected bundled Kit's runtime
 `config`, `data`, `logs` and named cache directories for the remapped UID.
 Pip-layout Kit paths do not enter the bundled-directory repair branch.
@@ -421,30 +420,39 @@ that those consumers are available or that simulator acceptance has passed.
 
 ## Native libuipc image contract
 
-`install_libuipc.py` owns wheel integrity, SDK-preserving dependency constraints,
-staged publication/rollback and image verification. The native wheel bytes and
-license remain in `3rdparty/`; see [the artifact notes](../3rdparty/pyuipc-README.md).
+Default installation uses the prebuilt wheel. Optional source build inputs and
+commands live in [the source build guide](../3rdparty/libuipc/README.md), with
+the two source patches stored under `3rdparty/libuipc/patches/`.
 
-The CLI detects host GPU 0 for Jazzy base builds and forwards `LIBUIPC_SM=89|120`.
-Explicit Docker build arguments take precedence, including bare arguments using
-the host environment. Invalid overrides and unsupported/unreadable capability
-fail before Docker. The 5.1 raw build must pass the architecture explicitly. Humble
-and derived post-training profiles keep their existing build paths. Both base
-contexts already include `docker/**` and `3rdparty/**`.
+`install_libuipc.py` owns artifact acquisition, wheel integrity, SDK-preserving
+dependency constraints, staged publication/rollback and image verification.
+`libuipc-artifacts.json` is the code-side source of wheel paths, sizes, hashes
+and ModelScope/HF hosting identities. The asset repository owns the unchanged
+wheel bytes under `wheels/libuipc/`; `3rdparty/` retains license and provenance.
+Resolve each provider metadata response to a real commit before transfer; reuse
+that commit across retries. Version/path/size/SHA256 pins define the release, so
+publication requires no code edits. Never substitute old scene revisions or skip
+byte verification. ModelScope failures automatically retry HuggingFace with its own
+resolved commit. The optional revision override must be a 40-character commit and
+applies only to the primary source. Explicit HF selection never retries MS. The
+240-second total budget reserves its second half for HF fallback.
 
-Only system CPython 3.12 is supported. The 5.1 build stage needs no GPU but
-requires the complete CUDA 13 provider for native linking. The dedicated 6.2
-image retains the architecture argument for CLI compatibility, prepares only
-IPC Python dependencies and has no native IPC installation or image marker.
-Its raw build does not need an architecture argument. The common entrypoint invokes
-system Python's `bootstrap --libuipc-only`, using the mounted CLI source. Marked
-images verify without pip; unmarked environments may install/repair. Failures
-warn and leave existing container startup available; this is expected for the
-CUDA 13-only IPC artifacts in the CUDA 12 dedicated image. Bootstrap bounds installer
-execution and cleans up the process group on timeout or interruption.
+The CLI detects GPU 0 for Jazzy base builds or accepts `LIBUIPC_SM=89|120`.
+Local `GENIESIM_ASSETS_SRC/wheels` is an optional named BuildKit context
+`libuipc_assets`. Without local bytes, the installer downloads the selected
+pinned publication. Explicit contexts/build arguments take precedence over
+environment defaults. Humble and derived profiles keep their existing paths.
 
-Preserve existing runtime constraints, Newton guards, mirrors, ROS SDK cache
-handling, post-training profiles, tests and documentation. CPU checks use
-`python3 -m pytest -q docker/tests source/geniesim_cli/tests` and
-`bash -n docker/entrypoint.sh`; these do not establish an image build,
-native load or GPU execution.
+Only system CPython 3.12 / Linux x86_64 is supported. Builds need no GPU but
+require a complete CUDA 12.8 provider, including the bundled Isaac 6.2 SDK provider. Keep the selected verified wheel in the
+image-owned `GENIESIM_LIBUIPC_CACHE`: startup uses the mounted CLI and installer,
+which still open the original archive for version/dependency verification.
+Cache hits must work read-only and without network. Marked images verify without
+pip; unmarked environments may install/repair. Optional native failures preserve
+container startup; failed native preparation fails image construction.
+
+See [usage and publication](README.md#asset-backed-native-libuipc-installation).
+CPU checks: `python3 -m pytest -q docker/tests source/geniesim_cli/tests` and
+`bash -n docker/entrypoint.sh`. Real archive QA additionally sets
+`GENIESIM_ASSETS_SRC` to the hydrated asset checkout. These checks do not
+establish a complete image build or GPU solve.
