@@ -102,8 +102,8 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     if ! grep -q "export RMW_IMPLEMENTATION=" ~/.bashrc 2>/dev/null; then
         echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >>~/.bashrc
     fi
-    if ! grep -q "LD_LIBRARY_PATH.*isaacsim.ros2.bridge" ~/.bashrc 2>/dev/null; then
-        echo "export LD_LIBRARY_PATH=\"\${LD_LIBRARY_PATH:+\$LD_LIBRARY_PATH:}${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib\"" >>~/.bashrc
+    if ! grep -q "LD_LIBRARY_PATH.*isaacsim.ros2.core" ~/.bashrc 2>/dev/null; then
+        echo "export LD_LIBRARY_PATH=\"\${LD_LIBRARY_PATH:+\$LD_LIBRARY_PATH:}${ISAACSIM_HOME}/exts/isaacsim.ros2.core/${ROS_DISTRO}/lib\"" >>~/.bashrc
     fi
     if ! grep -q "export ROS_CMD_DISTRO=" ~/.bashrc 2>/dev/null; then
         echo "export ROS_CMD_DISTRO=jazzy" >>~/.bashrc
@@ -117,8 +117,8 @@ if [ -f "$ENTRY_POINT_SCRIPT" ]; then
     if ! grep -q "alias isaacsim=" ~/.bashrc 2>/dev/null; then
         echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
     fi
-    if ! grep -q "alias source_ros_py311=" ~/.bashrc 2>/dev/null; then
-        echo "alias source_ros_py311='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
+    if ! grep -q "alias source_ros_py312=" ~/.bashrc 2>/dev/null; then
+        echo "alias source_ros_py312='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
     fi
 
     echo "✓ entry_point.sh setup completed"
@@ -145,7 +145,7 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export ROS_CMD_DISTRO=jazzy
 
 # Set up LD_LIBRARY_PATH
-ROS_BRIDGE_LIB="${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib"
+ROS_BRIDGE_LIB="${ISAACSIM_HOME}/exts/isaacsim.ros2.core/${ROS_DISTRO}/lib"
 if [ -z "$LD_LIBRARY_PATH" ]; then
     export LD_LIBRARY_PATH="${ROS_BRIDGE_LIB}"
 else

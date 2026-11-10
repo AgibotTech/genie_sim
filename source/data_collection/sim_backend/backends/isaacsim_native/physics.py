@@ -177,63 +177,31 @@ def set_joint_velocities(art, velocities, joint_indices: Any = None) -> None:
 
 
 def apply_action(art, action) -> None:
-    """Apply dense or sparse-with-None articulation actions.
-    CPU uses one SingleArticulation call with backend-compatible inputs.
-    GPU normalizes sparse fields to dense values and explicit indices, then sends
-    positions/efforts through the controller and velocities through the view.
-    The velocity view path avoids the controller's numpy operation on CUDA tensors."""
-    from isaacsim.core.utils.types import (  # noqa: PLC0415
-        ArticulationAction,
-        ArticulationActions,
-    )
+    """Apply an action through the public articulation API.
+
+    Isaac Sim 6 converts the controller's numpy checks safely. GPU inputs still
+    require dense sparse fields, int64 indices and float32 value buffers.
+    """
+    from isaacsim.core.utils.types import ArticulationAction  # noqa: PLC0415
 
     if _bk.tensors_as() != "torch":
-        # CPU: apply all fields in one call after converting input types.
-        converted = ArticulationAction(
+        art.apply_action(ArticulationAction(
             joint_positions=_bk.pipeline_aware_input(action.joint_positions),
             joint_velocities=_bk.pipeline_aware_input(action.joint_velocities),
             joint_efforts=_bk.pipeline_aware_input(action.joint_efforts),
             joint_indices=_bk.pipeline_aware_input(action.joint_indices),
-        )
-        art.apply_action(converted)
+        ))
         return
-
-    # Torch: normalize sparse fields and dtypes, then split controller/view calls.
-    pos = action.joint_positions
-    vel = action.joint_velocities
-    eff = action.joint_efforts
-    idx = action.joint_indices
-
-    pos, vel, eff, idx = _normalize_sparse_action(pos, vel, eff, idx)
-
-    pos_p = _coerce_float(_bk.pipeline_aware_input(pos))
-    vel_p = _coerce_float(_bk.pipeline_aware_input(vel))
-    eff_p = _coerce_float(_bk.pipeline_aware_input(eff))
-    idx_p = _coerce_index(_bk.pipeline_aware_input(idx))
-
-    # Position and effort use the controller, which converts its numpy checks safely.
-    if pos_p is not None or eff_p is not None:
-        art.apply_action(
-            ArticulationAction(
-                joint_positions=pos_p,
-                joint_velocities=None,  # Send velocities directly to the view to avoid CUDA numpy checks.
-                joint_efforts=eff_p,
-                joint_indices=idx_p,
-            )
-        )
-
-    # The velocity controller path calls np.isnan on CUDA tensors.
-    # Bypass it with a dense view action shaped (1, K).
-    if vel_p is not None:
-        vel_b = _add_batch(vel_p)
-        art._articulation_view.apply_action(
-            ArticulationActions(
-                joint_positions=None,
-                joint_velocities=vel_b,
-                joint_efforts=None,
-                joint_indices=idx_p,
-            )
-        )
+    pos, vel, eff, idx = _normalize_sparse_action(
+        action.joint_positions, action.joint_velocities,
+        action.joint_efforts, action.joint_indices,
+    )
+    art.apply_action(ArticulationAction(
+        joint_positions=_coerce_float(_bk.pipeline_aware_input(pos)),
+        joint_velocities=_coerce_float(_bk.pipeline_aware_input(vel)),
+        joint_efforts=_coerce_float(_bk.pipeline_aware_input(eff)),
+        joint_indices=_coerce_index(_bk.pipeline_aware_input(idx)),
+    ))
 
 
 # ---------------------------------------------------------------------------
@@ -327,26 +295,6 @@ def _is_sparse_with_none(field) -> bool:
     return isinstance(field, (list, tuple)) and any(v is None for v in field)
 
 
-def _add_batch(x):
-    """Expand a 1D (K,) array/tensor to (1, K) for view actions; pass None through."""
-    if x is None:
-        return None
-    try:
-        import torch  # noqa: PLC0415
-
-        if isinstance(x, torch.Tensor):
-            if x.dim() == 1:
-                return x.unsqueeze(0)
-            return x
-    except ImportError:
-        pass
-    if isinstance(x, np.ndarray):
-        if x.ndim == 1:
-            return np.expand_dims(x, axis=0)
-        return x
-    return x
-
-
 def _normalize_sparse_action(pos, vel, eff, idx):
     """Convert sparse-with-None action fields to dense values and explicit indices.
     When indices are omitted, all sparse fields must share their non-None slots.
@@ -372,7 +320,7 @@ def _normalize_sparse_action(pos, vel, eff, idx):
     new_pos = [pos[i] for i in derived_idx] if "pos" in sparse_fields else pos
     new_vel = [vel[i] for i in derived_idx] if "vel" in sparse_fields else vel
     new_eff = [eff[i] for i in derived_idx] if "eff" in sparse_fields else eff
-    return new_pos, new_vel, new_eff, derived_idx
+    return new_pos, new_vel, new_eff, np.asarray(derived_idx, dtype=np.int64)
 
 
 def _coerce_float(x):

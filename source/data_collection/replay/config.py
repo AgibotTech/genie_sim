@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from common.base_utils.logger import logger
+from sim_backend.runtime import prepare_launch_config
 
 
 def build_simulation_app_config(headless: bool, extra_args: list[str]) -> dict:
@@ -15,7 +16,7 @@ def build_simulation_app_config(headless: bool, extra_args: list[str]) -> dict:
     }
     if headless:
         config["disable_viewport_updates"] = True
-    return config
+    return prepare_launch_config(config)
 
 
 @dataclass

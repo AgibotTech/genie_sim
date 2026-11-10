@@ -1,8 +1,7 @@
 # Public collection/replay dependencies; build context is this module directory.
 # Pass --build-context geniesim_mirrors=../../docker, or use the host CLI.
-ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
-ARG ISAAC_SIM_BASE_IMAGE=${ISAACSIM_REGISTRY}/isaac-sim:5.1.0
-FROM ${ISAAC_SIM_BASE_IMAGE} AS mirrors
+ARG GENIESIM_BASE_IMAGE=registry.agibot.com/genie-sim/geniesim4:latest
+FROM ${GENIESIM_BASE_IMAGE} AS mirrors
 USER root
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG APT_MIRROR
@@ -12,75 +11,117 @@ COPY --from=geniesim_mirrors configure_mirrors.py /usr/local/bin/geniesim-config
 RUN chmod +x /usr/local/bin/geniesim-configure-mirrors \
     && /isaac-sim/python.sh /usr/local/bin/geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"
 
-FROM mirrors AS runtime
+FROM mirrors AS dependencies
 ARG TORCH_CUDA_ARCH_LIST=8.9
 ENV ACCEPT_EULA=Y OMNI_KIT_ACCEPT_EULA=Y DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 LC_ALL=C.UTF-8 PIP_NO_CACHE_DIR=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        acl ca-certificates cmake curl ffmpeg git gnupg libeigen3-dev \
-        libgl1 libglib2.0-0 ninja-build build-essential sudo \
-        python3 python3-pip python3-venv \
+# The main image owns Isaac Sim, system build tools and ROS Jazzy. Fail on
+# an incompatible parent rather than silently rebuilding a different stack.
+RUN test -x /isaac-sim/python.sh \
+    && grep -q '^6\.2\.' /isaac-sim/VERSION \
+    && test -f /opt/ros/jazzy/setup.bash \
+    && test "$(dpkg-query -W -f='${db:Status-Status}' ros-jazzy-ros-base)" = installed
+
+# Only request missing collection tools; leave already-installed packages
+# out of the explicit apt install list.
+RUN missing=() \
+    && for package in ninja-build ros-jazzy-rosbag2 ros-jazzy-rmw-cyclonedds-cpp \
+        ros-jazzy-image-transport ros-jazzy-image-transport-plugins; do \
+        if ! dpkg-query -W -f='${db:Status-Status}\n' "$package" 2>/dev/null | grep -qx installed; then \
+            missing+=("$package"); \
+        fi; \
+    done \
+    && if ((${#missing[@]})); then \
+        apt-get update && apt-get install -y --no-install-recommends "${missing[@]}"; \
+    fi \
     && rm -rf /var/lib/apt/lists/*
 
-# System ROS uses Python 3.12. Recording subprocesses clear the Isaac
-# environment before sourcing this setup; never source it into Isaac Python.
-RUN curl -fsSL --retry 3 -o /tmp/ros2-apt-source.deb \
-        https://github.com/ros-infrastructure/ros-apt-source/releases/download/1.1.0/ros2-apt-source_1.1.0.noble_all.deb \
-    && dpkg -i /tmp/ros2-apt-source.deb \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        ros-jazzy-ros-base ros-jazzy-rosbag2 ros-jazzy-rmw-cyclonedds-cpp \
-        ros-jazzy-image-transport ros-jazzy-image-transport-plugins \
-    && rm -rf /var/lib/apt/lists/* /tmp/ros2-apt-source.deb
+# Recording subprocesses clear the Isaac environment before sourcing the
+# inherited system ROS setup; never source it into Isaac Python.
 
-# Compiler/headers for cuRobo/Warp. Keep the bundled Torch and Isaac Sim.
-RUN curl -fsSL --retry 3 -o /tmp/cuda-keyring.deb \
-        https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
-    && dpkg -i /tmp/cuda-keyring.deb \
-    && apt-get update && apt-get install -y --no-install-recommends \
-        cuda-nvcc-12-8 cuda-cudart-dev-12-8 cuda-nvrtc-dev-12-8 cuda-cccl-12-8 \
-    && rm -rf /var/lib/apt/lists/* /tmp/cuda-keyring.deb
-
-ENV CUDA_HOME=/usr/local/cuda-12.8 \
-    PATH=/usr/local/cuda-12.8/bin:${PATH} \
-    TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
+# cuRobo's NVRTC backend uses the CUDA libraries bundled with this SDK.
+# Do not install a second compiler/runtime stack or replace the bundled Torch.
+ENV TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     ROS_DISTRO=jazzy ROS_CMD_DISTRO=jazzy ROS_VERSION=2 ROS_PYTHON_VERSION=3 \
     ROS_LOCALHOST_ONLY=1 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
-    ISAACSIM_HOME=/isaac-sim SIM_REPO_ROOT=/workspace \
-    PYTHONPATH=/isaac-sim/exts/isaacsim.ros2.bridge/jazzy/rclpy \
-    LD_LIBRARY_PATH=/isaac-sim/exts/isaacsim.ros2.bridge/jazzy/lib:/usr/local/cuda-12.8/lib64
+    ISAACSIM_HOME=/isaac-sim SIM_REPO_ROOT=/workspace
+
+COPY docker/prepare_bundled_sdk.py /opt/prepare_bundled_sdk.py
+RUN /isaac-sim/python.sh /opt/prepare_bundled_sdk.py --constraints /opt/isaac-sdk/constraints.txt
+ENV LD_LIBRARY_PATH=/opt/isaac-sdk/usd/bin:/isaac-sim/exts/isaacsim.ros2.core/jazzy/lib:/opt/ros/jazzy/lib:/opt/isaac-sdk/nvidia/nvidia/cuda_runtime/lib:/opt/isaac-sdk/nvidia/nvidia/cuda_nvrtc/lib
 
 COPY requirements.txt /tmp/requirements.collection.txt
 COPY replay/requirements.txt /tmp/requirements.replay.txt
-# Preserve the SDK's declared setuptools-scm, USD, and lxml compatibility ranges.
-RUN printf '%s\n' 'setuptools-scm>=8.0.0,<9.0.0' 'usd-core>=25.2.post1,<26.0' \
-        'lxml>=4.9.2,<5.0.0' > /tmp/constraints.sdk.txt
-RUN /isaac-sim/python.sh -m pip install --upgrade pip \
-    && /isaac-sim/python.sh -m pip install \
+RUN /isaac-sim/python.sh -m pip install \
+        -c /opt/isaac-sdk/constraints.txt \
         -r /tmp/requirements.collection.txt -r /tmp/requirements.replay.txt \
-        -c /tmp/constraints.sdk.txt setuptools wheel "setuptools-scm>=8,<9" \
-        "docstring-parser==0.16" "cv-bridge==1.13.0.post0" "cuda-core[cu12]>=0.7"
+        "cv-bridge==1.13.0.post0" "cuda-core[cu12]>=0.7"
+
+# This pinned pure-Python bridge predates NumPy 2. Keep its ROS wire format,
+# replacing only removed ndarray methods; exercise the actual SDK messages.
+RUN /isaac-sim/python.sh - <<'PYTHON'
+from pathlib import Path
+import cv_bridge
+import numpy as np
+
+path = Path(cv_bridge.__file__).with_name("core.py")
+source = path.read_text()
+assert source.count(".tostring()") == 2, "Unexpected pinned cv_bridge source"
+assert source.count("im.byteswap().newbyteorder()") == 1
+source = source.replace(".tostring()", ".tobytes()")
+source = source.replace("im.byteswap().newbyteorder()", "im.byteswap().view(im.dtype.newbyteorder())")
+path.write_text(source)
+PYTHON
+RUN /isaac-sim/python.sh - <<'PYTHON'
+import numpy as np
+from cv_bridge import CvBridge
+
+bridge = CvBridge()
+for encoding, image in (
+    ("rgb8", np.arange(36, dtype=np.uint8).reshape(3, 4, 3)),
+    ("32FC1", np.arange(12, dtype=np.float32).reshape(3, 4)),
+    ("32FC1", np.arange(12, dtype=">f4").reshape(3, 4)),
+):
+    message = bridge.cv2_to_imgmsg(image, encoding=encoding)
+    restored = bridge.imgmsg_to_cv2(message, desired_encoding=encoding)
+    np.testing.assert_array_equal(restored, image)
+    assert message.step == image.shape[1] * image.dtype.itemsize * (3 if encoding == "rgb8" else 1)
+print("cv_bridge RGB/depth and endian roundtrips passed")
+PYTHON
 
 ARG CUROBO_REPO=https://github.com/NVlabs/curobo.git
 ARG CUROBO_COMMIT=3fd54dc782a82e5500a771cfd47856ea499d5fef
 RUN git init /opt/curobo_src \
     && git -C /opt/curobo_src remote add origin "${CUROBO_REPO}" \
-    && git -C /opt/curobo_src fetch --depth 1 origin "${CUROBO_COMMIT}" \
+    && git -C /opt/curobo_src sparse-checkout init --cone \
+    && git -C /opt/curobo_src sparse-checkout set curobo \
+    && git -C /opt/curobo_src fetch --filter=blob:none --depth 1 origin "${CUROBO_COMMIT}" \
     && git -C /opt/curobo_src checkout --detach FETCH_HEAD \
     && test "$(git -C /opt/curobo_src rev-parse HEAD)" = "${CUROBO_COMMIT}"
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_NVIDIA_CUROBO=0.8.1
-# The pinned revision declares cu12 extras, not an isaacsim extra.
-# Reapply repository constraints to preserve NumPy and Warp versions.
+# Non-isolated builds need their build backend before preparing metadata.
+# PyJWT satisfies the SDK's MSAL requirement without importing its unrelated
+# service archive, whose optional AWS packages use a separate dependency set.
+RUN /isaac-sim/python.sh -m pip install -c /opt/isaac-sdk/constraints.txt \
+        "setuptools-scm>=6.2" "PyJWT[crypto]==2.13.0"
+# Match the bundled Torch cu128 build and retain the SDK dependency versions.
+# The default cuRobo backend uses NVRTC; CUROBO_USE_PYBIND remains disabled.
 RUN /isaac-sim/python.sh -m pip install --no-build-isolation \
-        -c /tmp/requirements.collection.txt -c /tmp/requirements.replay.txt \
-        -c /tmp/constraints.sdk.txt "/opt/curobo_src[cu12]" \
+        -c /opt/isaac-sdk/constraints.txt "/opt/curobo_src[cu12-torch]" \
     && rm -rf /opt/curobo_src/.git /opt/curobo_src/docs \
         /opt/curobo_src/benchmark /opt/curobo_src/examples /opt/curobo_src/tests
 
-# Restore the packaging target referenced by bundled Torch vendor symlinks.
-RUN /isaac-sim/python.sh -m pip install --no-deps --upgrade \
-        --target /isaac-sim/exts/omni.isaac.core_archive/pip_prebundle \
-        packaging
+# A successful import does not establish NVRTC kernel compilation readiness.
+RUN /isaac-sim/python.sh - <<'PYTHON'
+from pathlib import Path
+from cuda import pathfinder
+
+for library, filename in (("cudart", "cuda_runtime.h"), ("nvrtc", "nvrtc.h")):
+    include = pathfinder.find_nvidia_header_directory(library)
+    assert include and (Path(include) / filename).is_file(), f"Missing {library} header provider"
+print("SDK CUDA runtime and NVRTC headers are discoverable")
+PYTHON
 
 # Official UID 1234 is also used by the repository's host launch scripts.
 RUN test "$(id -u isaac-sim)" = 1234 \
@@ -94,50 +135,42 @@ RUN test "$(id -u isaac-sim)" = 1234 \
     && printf '#!/bin/bash\nexec /isaac-sim/python.sh "$@"\n' > /usr/local/bin/omni_python \
     && chmod +x /usr/local/bin/omni_python
 
-# Install missing dependencies declared by the bundled Torch and MSAL packages.
-RUN /isaac-sim/python.sh -m pip install "triton==3.3.0" "PyJWT[crypto]>=1,<3"
-
-# Missing application dependencies and ROS tooling must fail the image build.
+# Application imports and system ROS tooling must both work at build time.
+RUN /isaac-sim/python.sh -m pip install -c /opt/isaac-sdk/constraints.txt "coverage==7.6.1"
 RUN /isaac-sim/python.sh -c \
-    'import torch, numpy, scipy, cv2, h5py, grpc, pinocchio, ruckig, warp, curobo, cv_bridge, rclpy; from sensor_msgs.msg import Image; from tf2_msgs.msg import TFMessage; assert numpy.__version__ == "1.26.4"; assert torch.__version__.startswith("2.7.")' \
+    'import sys, torch, numpy, scipy, cv2, h5py, grpc, pinocchio, ruckig, warp, curobo, cv_bridge, rclpy, numba; from importlib.metadata import version; from pxr import Usd; from sensor_msgs.msg import Image; from tf2_msgs.msg import TFMessage; assert sys.version_info[:2] == (3, 12); assert torch.version.cuda == "12.8"; assert version("nvidia-curobo") == curobo.__version__ == "0.8.1"; print("Runtime:", numpy.__version__, torch.__version__, warp.__version__, Usd.GetVersion())' \
+    && /isaac-sim/python.sh -m pip check \
     && env -u PYTHONPATH -u LD_LIBRARY_PATH bash -c \
         'source /opt/ros/jazzy/setup.bash && ros2 bag record --help >/dev/null && ros2 pkg executables image_transport | grep -q republish'
 
-
-# Install repository-derived URDFs into the cuRobo asset directory.
-# v2 urdf_path is relative to the cuRobo asset root, e.g. robot/G2/model.urdf.
-# cuRobo resolves it under its installed content/assets directory.
-# Copy each required URDF there so YAML loading can find it.
-#
-# Load v2 YAML from the repository config/curobo/v2 directory.
-# The workspace copy contains YAML; no cuRobo-directory YAML copy is required.
-# Configurations with load_meshes=false do not load URDF mesh references.
-# Their URDF files alone suffice for this asset-loading path.
-ENV CUROBO_ASSETS_ROBOT_DIR=/isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/assets/robot
-COPY config/robot_cfg/G2/G2_crs_90D.urdf ${CUROBO_ASSETS_ROBOT_DIR}/G2/G2_crs_90D.urdf
-COPY config/robot_cfg/G2/G2_crsB_90D_from_usd.urdf ${CUROBO_ASSETS_ROBOT_DIR}/G2/G2_crsB_90D_from_usd.urdf
-COPY config/robot_cfg/G2/G2_crsB_omnipicker_from_usd.urdf ${CUROBO_ASSETS_ROBOT_DIR}/G2/G2_crsB_omnipicker_from_usd.urdf
-COPY config/robot_cfg/G2/G2_omnipicker_from_usd.urdf ${CUROBO_ASSETS_ROBOT_DIR}/G2/G2_omnipicker_from_usd.urdf
-COPY config/robot_cfg/Aloha/Aloha.urdf ${CUROBO_ASSETS_ROBOT_DIR}/aloha/robot.urdf
-COPY config/robot_cfg/ARX/ARX.urdf ${CUROBO_ASSETS_ROBOT_DIR}/arx/robot.urdf
-COPY config/robot_cfg/G1/G1_omnipicker.urdf ${CUROBO_ASSETS_ROBOT_DIR}/G1/G1_omnipicker.urdf
-
-# Include the v2 planner configuration explicitly in every image build.
-COPY --chown=1234:1234 config/curobo/v2 /workspace/config/curobo/v2
-
-# Copy application code after dependencies to preserve the build cache.
+FROM dependencies AS runtime
 WORKDIR /workspace
 COPY --chown=1234:1234 . /workspace
 
-# Fail the build if a planner configuration or its URDF is missing.
+# Resolve the installed planner asset root instead of hardcoding Python's ABI.
 RUN /isaac-sim/python.sh - <<'PYTHON'
 from pathlib import Path
+import shutil
 import yaml
+from curobo.content import get_assets_path
 
-root = Path("/workspace/config/curobo/v2/configs/robot")
-configs = sorted(root.glob("*.yml"))
+assets = Path(get_assets_path())
+source = Path("/workspace/config/robot_cfg")
+urdfs = {
+    "G2/G2_crs_90D.urdf": "G2/G2_crs_90D.urdf",
+    "G2/G2_crsB_90D_from_usd.urdf": "G2/G2_crsB_90D_from_usd.urdf",
+    "G2/G2_crsB_omnipicker_from_usd.urdf": "G2/G2_crsB_omnipicker_from_usd.urdf",
+    "G2/G2_omnipicker_from_usd.urdf": "G2/G2_omnipicker_from_usd.urdf",
+    "aloha/robot.urdf": "Aloha/Aloha.urdf",
+    "arx/robot.urdf": "ARX/ARX.urdf",
+    "G1/G1_omnipicker.urdf": "G1/G1_omnipicker.urdf",
+}
+for destination, relative_source in urdfs.items():
+    target = assets / "robot" / destination
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source / relative_source, target)
+configs = sorted(Path("/workspace/config/curobo/v2/configs/robot").glob("*.yml"))
 assert configs, "No cuRobo v2 configuration was copied"
-assets = Path("/isaac-sim/kit/python/lib/python3.11/site-packages/curobo/content/assets")
 for config in configs:
     data = yaml.safe_load(config.read_text())
     urdf = assets / data["kinematics"]["urdf_path"]

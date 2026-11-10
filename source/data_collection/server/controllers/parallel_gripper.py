@@ -73,7 +73,7 @@ class ParallelGripper(Gripper):
         self.gripper_type = gripper_type
         self.gripper_max_force = gripper_max_force
         self.robot_name = robot_name
-        self.pre_drive_finger_position = np.Infinity
+        self.pre_drive_finger_position = np.inf
         self.n = 0
         return
 
@@ -313,7 +313,7 @@ class ParallelGripper(Gripper):
             self.is_reached = False
             current_joint_positions = self._get_joint_positions_func()
             current_drive_finger_position = current_joint_positions[self._joint_dof_indicies[0]]
-            target_force = self.gripper_max_force + 2 * np.abs(current_drive_finger_position)
+            target_force = float(self.gripper_max_force + 2 * np.abs(current_drive_finger_position))
             if prim:
                 drive.GetStiffnessAttr().Set(0)
                 drive.GetMaxForceAttr().Set(target_force)
@@ -325,11 +325,11 @@ class ParallelGripper(Gripper):
         else:
             raise Exception("action {} is not defined for ParallelGripper".format(action))
 
-        self.pre_drive_finger_position = np.Infinity
+        self.pre_drive_finger_position = np.inf
         self.n = 0
 
         # async def check_gripper_state():
-        #     pre_drive_finger_position = np.Infinity
+        #     pre_drive_finger_position = np.inf
         #     n = 0
         #     while True:
         #         n += 1

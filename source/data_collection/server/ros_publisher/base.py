@@ -130,13 +130,22 @@ def _ros_node_classes():
     return JointStatePubRosNode, TFPubRosNode
 
 from sim_backend import physics, render
-from isaacsim.core.prims import SingleArticulation as Articulation
 
 class USDBase:
     def __init__(self):
-        pass
+        self._ensure_sensor_handle_storage()
+
+    def _ensure_sensor_handle_storage(self):
+        # Experimental runtimes own render products and remove them on destruction.
+        if not hasattr(self, "_sensor_handles"):
+            self._sensor_handles = []
+        if not hasattr(self, "_ros_nodes"):
+            self._ros_nodes = []
+        if not hasattr(self, "_graph_handles"):
+            self._graph_handles = []
 
     def _init_sensor(self, ros_domain_id):
+        self._ensure_sensor_handle_storage()
         self.ros_domain_id = (int)(ros_domain_id)
         logger.info(f"ROS domain ID: {self.ros_domain_id}")
 
@@ -157,6 +166,8 @@ class USDBase:
         from .lidar import publish_lidar_pointcloud, publish_lidar_scan
 
         lidar = render.make_lidar(prim_path=param["path"])
+        self._ensure_sensor_handle_storage()
+        self._sensor_handles.append(lidar)
         lidar.initialize()
         approx_freq = param["frequency"]
         for publish in param["publish"]:
@@ -168,9 +179,9 @@ class USDBase:
                 publish = split[0]
                 topic = split[1]
             if publish == "pointcloud":
-                publish_lidar_pointcloud(lidar, approx_freq, topic)
+                self._ros_nodes.append(publish_lidar_pointcloud(lidar, approx_freq, topic))
             elif publish == "scan":
-                publish_lidar_scan(lidar, approx_freq, topic)
+                self._ros_nodes.append(publish_lidar_scan(lidar, approx_freq, topic))
 
     def _init_camera(self, param):
         from .camera import (
@@ -190,6 +201,8 @@ class USDBase:
             frequency=param["frequency"],
             resolution=(param["resolution"]["width"], param["resolution"]["height"]),
         )
+        self._ensure_sensor_handle_storage()
+        self._sensor_handles.append(camera)
         camera.initialize()
 
         step_size = param["frequency"]
@@ -232,12 +245,16 @@ class USDBase:
                 publish_semantic_segment(camera, step_size, topic)
 
         # Note: camera.initialize() already called above, no need to call again
+        self._graph_handles.extend(handle for handle in camera_graph if handle is not None)
+        self._ros_nodes.extend(handle for handle in ros_nodes if handle is not None)
         return camera_graph, ros_nodes
 
     def _init_imu(self, param):
         from .imu import publish_imu
 
         imu = render.make_imu(prim_path=param["path"])
+        self._ensure_sensor_handle_storage()
+        self._sensor_handles.append(imu)
         # imu.initialize()
         approx_freq = param["frequency"]
         for publish in param["publish"]:

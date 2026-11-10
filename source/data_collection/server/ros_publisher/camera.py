@@ -8,7 +8,7 @@ import omni.graph.core as og
 import omni.replicator.core as rep
 import omni.syntheticdata
 import omni.syntheticdata._syntheticdata as sd
-from isaacsim.sensors.camera import Camera
+from sim_backend.render import CameraProtocol as Camera
 
 from common.base_utils.logger import logger
 from common.base_utils.ros_nodes.sim_ros_node import DepthImagePubRosNode, ImagePubRosNode
@@ -17,7 +17,7 @@ from server.ros_publisher.camera_noiser import apply_noise_to_image, get_random_
 
 
 def publish_boundingbox2d_loose(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path + "_bbox2_loose" if topic == "" else topic
     queue_size = 10
@@ -40,7 +40,7 @@ def publish_boundingbox2d_loose(camera: Camera, freq: int, topic=""):
 
 
 def publish_semantic_segment(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = freq - 1
     topic_name = camera.prim_path + "_semantic" if topic == "" else topic
     node_namespace = camera.prim_path
@@ -77,7 +77,7 @@ def publish_semantic_segment(camera: Camera, freq: int, topic=""):
 
 
 def publish_boundingbox2d_tight(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path + "_bbox2_tight" if topic == "" else topic
     queue_size = 10
@@ -100,7 +100,7 @@ def publish_boundingbox2d_tight(camera: Camera, freq: int, topic=""):
 
 
 def publish_boundingbox3d(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path + "_bbox3" if topic == "" else topic
     queue_size = 10
@@ -123,10 +123,9 @@ def publish_boundingbox3d(camera: Camera, freq: int, topic=""):
 
 
 def publish_rgb(camera: Camera, step_size: int, topic=""):
-    resolution = camera.get_resolution()
-    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    rp = camera.get_render_product_path()
     annotator = render.get_annotator("rgb")
-    annotator.attach(rp)
+    annotator.attach([rp])
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_rgb" if topic == "" else topic
     frame_id = camera.prim_path.split("/")[-1]
 
@@ -143,10 +142,9 @@ def publish_rgb(camera: Camera, step_size: int, topic=""):
 
 
 def publish_noised_rgb(camera: Camera, step_size: int, topic="", **kwargs):
-    resolution = camera.get_resolution()
-    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    rp = camera.get_render_product_path()
     annotator = render.get_annotator("rgb")
-    annotator.attach(rp)
+    annotator.attach([rp])
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_rgb" if topic == "" else topic
     frame_id = camera.prim_path.split("/")[-1]
     seed = np.random.randint(0, 99999)
@@ -180,7 +178,7 @@ def publish_camera_info(camera: Camera, freq: int, topic=""):
         read_camera_info,
     )
 
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path.split("/")[-1] + "_camera_info" if topic == "" else topic
     queue_size = 30
@@ -210,7 +208,7 @@ def publish_camera_info(camera: Camera, freq: int, topic=""):
 
 
 def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
-    render_product = camera._render_product_path
+    render_product = camera.get_render_product_path()
     step_size = int(60 / freq)
     topic_name = camera.prim_path if topic == "" else topic
     queue_size = 10
@@ -237,10 +235,9 @@ def publish_pointcloud_from_depth(camera: Camera, freq: int, topic=""):
 
 
 def publish_depth(camera: Camera, step_size: int, topic=""):
-    resolution = camera.get_resolution()
-    rp = render.create_render_product(camera.prim_path, (resolution[0], resolution[1]))
+    rp = camera.get_render_product_path()
     annotator = render.get_annotator("distance_to_image_plane")
-    annotator.attach(rp)
+    annotator.attach([rp])
     topic_name = "/" + camera.prim_path.split("/")[-1] + "_depth" if topic == "" else topic
     frame_id = camera.prim_path.split("/")[-1]
 

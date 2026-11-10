@@ -85,9 +85,8 @@ parser.add_argument(
     default=False,
     help="Enable FEM surface deformable (cloth / soft body) support. When enabled: "
          "(1) force backend=gpu (FEM tensor views require CUDA); "
-         "(2) set carb /persistent/physics/enableDeformableBeta=True before creating World; "
-         "(3) enable GPU dynamics, broadphase=GPU and GpuMaxDeformableSurfaceContacts=4M after creating World; "
-         "(4) scan the scene and create SurfaceDeformableBodyView after reset. "
+         "(2) enable GPU dynamics, broadphase=GPU and GpuMaxDeformableSurfaceContacts=4M after creating World; "
+         "(3) scan the scene and create SurfaceDeformableBodyView after reset. "
          "Rigid-body tasks are unaffected; prims without deformable schemas are skipped.",
 )
 
@@ -167,15 +166,13 @@ simulation_app = sim_backend.init_app(
     async_rendering=False,           # Keep async rendering disabled for synchronized capture.
     extra_args=extra_args,
     hide_ui=args.headless and args.livestream == 0,
-    # Enable deformable beta before creating World via the extra carb settings
-    # passed to init_app, after its fixed settings.
-    rtx_settings=(
-        {"/persistent/physics/enableDeformableBeta": True}
-        if args.enable_deformable else None
-    ),
 )
 # SimulationApp is now running and Isaac Sim imports are available.
 # cuRobo kernels were registered before startup; subsequent imports reuse them.
+from common.base_utils.asset_package import register_asset_package
+
+register_asset_package()
+
 from isaacsim.core.api import World
 import omni
 

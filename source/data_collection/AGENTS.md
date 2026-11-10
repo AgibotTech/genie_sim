@@ -2,7 +2,7 @@
 
 ## Scope
 
-This module owns independent Isaac Sim 5.1 data collection and replay.
+This module owns independent Isaac Sim 6.2 data collection and replay.
 Its environment and images are configured separately from the umbrella peers.
 
 Read [README.md](README.md), [TASK_CONFIG_GUIDE.md](TASK_CONFIG_GUIDE.md),
@@ -17,14 +17,17 @@ semantics unchanged; do not apply task-specific control patches globally.
 
 ## Runtime
 
-- Isaac Sim 5.1 and Python 3.11.
+- Isaac Sim 6.2 and Python 3.12.
 - cuRobo v2, pinned to `3fd54dc782a82e5500a771cfd47856ea499d5fef`.
 - Assets are acquired separately; use `GENIESIM_ASSETS_PATH`/`SIM_ASSETS`, installed-package lookup, or nearby relative directories.
-- Direct scripts default to image `registry.agibot.com/genie-sim/geniesim3-data-collection:latest` and container `geniesim3-data-collection`.
-- The host CLI defaults to image `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and container `geniesim4-data-collection`.
+- Direct scripts and the host CLI default to image `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and container `geniesim4-data-collection`.
 - Use `DATA_COLLECTION_IMAGE` and the owning launch arguments to select matching image/container names. These defaults are independent of the base image release line.
 - Supported robot families: G1, G2 (including CRS and 90D), ARX, and Aloha.
 - Recording conversion uses repository URDFs for forward kinematics.
+- Native rendering adapts `RtxCamera`/`CameraSensor` to the existing camera
+  protocol. ROS RGB and depth share a render product; keep sensor runtimes alive.
+- Deformable tensor views bind to body roots and use simulation meshes for
+  recordings. Replay strips deformable collision schemas only in owning subtrees.
 - cuRobo configuration lives only under `config/curobo/v2`; the Dockerfile
   copies it explicitly and checks every referenced planner URDF.
 - Keep `config/robot_cfg`: it supplies runtime robot definitions and recording metadata.
@@ -72,9 +75,21 @@ collection using the same independent `scripts/resolve_assets.py` locator as
 both host scripts. It accepts the main repository asset setting, legacy
 settings, installed asset packages, and nearby relative asset directories.
 Resolved assets are bind-mounted and `SIM_ASSETS` is set inside the container.
-The single `docker/Dockerfile` builds from the official Isaac Sim 5.1
-container and installs the ROS CLI, CUDA compiler, collection/replay dependencies,
-robot URDFs, and application code. Do not restore cuRobo 0.7.6 or internal image defaults.
+Collection and replay register that mounted package as `geniesim_assets` before
+loading scenes, so attached scripts can import asset-owned helpers such as
+`behavior_lifecycle` without installing another copy of the assets.
+The single `docker/Dockerfile` incrementally extends the main GenieSim image,
+defaulting to `registry.agibot.com/genie-sim/geniesim4:latest`. Use the build
+argument `GENIESIM_BASE_IMAGE` for an existing compatible main-image tag or
+digest. The parent must already contain Isaac Sim 6.2 and system ROS Jazzy;
+the build checks these contracts before installing dependencies. Reuse its
+ROS repositories and installed packages, adding only missing recording
+tools, collection/replay dependencies, robot URDFs and application code.
+Do not reinstall ROS or another Isaac Sim wheel in this child image.
+Keep bundled Torch, NumPy, and CUDA library versions under
+the SDK constraints; cuRobo uses the SDK NVRTC backend without a second compiler
+stack. Resolve planner assets through `curobo.content.get_assets_path()` rather
+than a Python-version-specific site-packages path. Do not restore cuRobo 0.7.6 or internal image defaults.
 
 `geniesim data-collection build --china` / `--mirrors NAME` select the checkout's
 `docker/mirrors.toml`; explicit URL build arguments override presets. Without a
@@ -116,3 +131,16 @@ LLM entrypoints for metadata-driven server settings or scene-specific metadata.
 in host and container entrypoints. Tasks with USD-attached behavior scripts
 also require a single run; this asset condition is documented rather than
 automatically inspected by the lightweight host CLI.
+
+JSON episodes prepare their generated objects through `CommandAny`
+`ResetSceneObjects` before the original robot reset and layout steps. The CUDA
+server authors USD while stopped, rebuilds physics, rebinds object views and
+restores robot control gains/effort limits, then pauses before acknowledging.
+The command rejects active recording, pins and deformables. CPU setup keeps
+the original AddObject flow. Existing protobuf fields and task JSON formats
+are unchanged; live GPU AddObject rejects new rigid bodies before loading USD.
+For ordinary JSON objects, setup promotes a sole identity child rigid body to
+the requested object root before physics initialization, preserving colliders
+and the configured root mass. It validates this without editing asset files;
+multiple bodies, joints, special body properties or nonidentity child frames
+are rejected rather than flattened. Existing root bodies remain unchanged.

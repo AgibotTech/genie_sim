@@ -15,6 +15,7 @@ import time
 
 import numpy as np
 
+
 # Add the project root to the import path for package execution.
 _replay_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(_replay_dir)
@@ -47,6 +48,10 @@ def _set_articulation_joint_state(articulation, joint_positions: np.ndarray) -> 
     articulation.set_joint_velocities(np.zeros_like(joint_positions))
     articulation._articulation_view.set_joint_position_targets(joint_positions)
 
+
+from common.deformable_compat import (
+    COLLISION_SCHEMA_NAMES, DEFORMABLE_SCHEMA_NAMES, paths_in_deformable_subtrees,
+)
 
 from client import robot
 from common.base_utils.logger import logger
@@ -799,11 +804,7 @@ class KinematicReplay:
         logger.info(f"[ground_plane] added {plane_path} (axis=Z, PhysicsCollisionAPI)")
 
     def _strip_deformable_schemas_global(self, root_path: str) -> int:
-        """Remove deformable schemas below root_path to avoid physics cooking.
-
-        Remove schemas by name because some Isaac Sim versions do not expose
-        corresponding Python classes in PhysxSchema.
-        """
+        """Remove deformable APIs and their subtree collision APIs before replay."""
         try:
             import omni  # noqa: PLC0415
             from pxr import Usd  # noqa: PLC0415
@@ -816,40 +817,27 @@ class KinematicReplay:
         root = stage.GetPrimAtPath(root_path)
         if not root or not root.IsValid():
             return 0
-        # Cover both OmniPhysics and PhysxSchema deformable APIs.
-        candidate_names = [
-            "OmniPhysicsDeformableBodyAPI",
-            "OmniPhysicsSurfaceDeformableSimAPI",
-            "OmniPhysicsSurfaceDeformableMaterialAPI",
-            "OmniPhysicsDeformableMaterialAPI",
-            "PhysxSurfaceDeformableBodyAPI",
-            "PhysxDeformableBodyAPI",
-            "PhysxDeformableSurfaceAPI",
-            "PhysxAutoAttachmentAPI",
+        prims = list(Usd.PrimRange(root))
+        records = [
+            (str(prim.GetPath()), tuple(prim.GetAppliedSchemas())) for prim in prims
         ]
-        # Remove cloth collision APIs as well to prevent repeated cooking.
-        collision_names = [
-            "PhysicsCollisionAPI",
-            "PhysxCollisionAPI",
-        ]
+        deformable_paths = paths_in_deformable_subtrees(records)
         n_removed = 0
-        for prim in Usd.PrimRange(root):
+        for prim in prims:
             applied = list(prim.GetAppliedSchemas())
             if not applied:
                 continue
-            has_deformable = any(
-                ("Deformable" in n) or ("deformable" in n) for n in applied
-            )
-            for name in candidate_names:
+            for name in DEFORMABLE_SCHEMA_NAMES:
                 if name in applied:
                     try:
                         prim.RemoveAppliedSchema(name)
                         n_removed += 1
                     except Exception as exc:
                         logger.warning(f"[cloth_replay] remove {name} on {prim.GetPath()} failed: {exc}")
-            # Preserve collision APIs on ordinary rigid prims.
-            if has_deformable:
-                for name in collision_names:
+            # Collision may live on a simulation/collision child. Scope by the
+            # owning body root subtree rather than the schema-bearing prim only.
+            if str(prim.GetPath()) in deformable_paths:
+                for name in COLLISION_SCHEMA_NAMES:
                     if name in applied:
                         try:
                             prim.RemoveAppliedSchema(name)

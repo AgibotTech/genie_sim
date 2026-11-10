@@ -10,8 +10,8 @@ HEADLESS=false
 RECORD=true
 TASK="tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json"
 STANDALONE=false  # false = print to terminal, true = only save to file
-CONTAINER_NAME="geniesim3-data-collection"
-DATA_COLLECTION_IMAGE="${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim3-data-collection:latest}"
+CONTAINER_NAME="geniesim4-data-collection"
+DATA_COLLECTION_IMAGE="${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim4-data-collection:latest}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-record             Disable recording (default: record enabled)"
             echo "  --task TASK_PATH        Task template path (default: tasks/geniesim_2025/sort_fruit/g2/sort_the_fruit_into_the_box_apple_g2.json)"
             echo "  --standalone             Run in standalone mode (only save logs, no terminal output) (default: false, prints to terminal)"
-            echo "  --container-name NAME   Container name (default: geniesim3-data-collection)"
+            echo "  --container-name NAME   Container name (default: geniesim4-data-collection)"
             echo "  --help, -h              Show this help message"
             echo ""
             echo "Examples:"

@@ -2,10 +2,10 @@
 
 # Usage: ./scripts/start_gui.sh [exec|start|restart|run] [container_name]
 # Default action: run
-# Default container name: geniesim3-data-collection
+# Default container name: geniesim4-data-collection
 
 ACTION=${1:-run}
-CONTAINER_NAME=${2:-geniesim3-data-collection}
+CONTAINER_NAME=${2:-geniesim4-data-collection}
 
 # current folder as WORD_DIR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -92,7 +92,7 @@ if [ "$ACTION" == "run" ]; then
         -v "$SIM_ASSETS:/geniesim/main/source/geniesim/assets:rw" \
         -v $CURRENT_DIR:/geniesim/main/data_collection:rw \
         -w /geniesim/main/data_collection \
-        "${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim3-data-collection:latest}" \
+        "${DATA_COLLECTION_IMAGE:-registry.agibot.com/genie-sim/geniesim4-data-collection:latest}" \
         bash
 fi
 
@@ -105,7 +105,7 @@ echo "    exec    - Enter container (docker exec -it container_name /bin/bash)"
 echo "    start   - Start container (docker start container_name)"
 echo "    restart - Restart container (docker restart container_name)"
 echo "    run     - Create and run new container (default action)"
-echo "  Container name: Default is 'geniesim3-data-collection'"
+echo "  Container name: Default is 'geniesim4-data-collection'"
 echo ""
 echo "Examples:"
 echo "  ./scripts/start_gui.sh run my_container"

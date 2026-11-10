@@ -3,11 +3,13 @@
 # License: Mozilla Public License Version 2.0
 
 # Build from the module root, including after moving it into a monorepo.
-# docker build -f docker/Dockerfile.5.1 \
+# docker build -f docker/Dockerfile.6.2 \
 #   --build-context geniesim_mirrors=../../docker \
+#   --build-arg SCENE_AGENT_VERSION="$(cat VERSION)" \
 #   -t registry.agibot.com/genie-sim/geniesim3-scene-agent:latest .
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
-ARG ISAACSIM_IMAGE=${ISAACSIM_REGISTRY}/isaac-sim:5.1.0
+ARG ISAACSIM_TAG=6.2.0.1
+ARG ISAACSIM_IMAGE=${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
 FROM ${ISAACSIM_IMAGE} AS mirrors
 
 USER root
@@ -38,7 +40,12 @@ ENV PATH=/opt/scene-agent-venv/bin:${PATH} \
 
 WORKDIR /opt/scene-agent
 COPY --chown=isaac-sim:isaac-sim . /opt/scene-agent/
-RUN python -m pip install --no-cache-dir \
+ARG SCENE_AGENT_VERSION
+RUN if [ -n "${SCENE_AGENT_VERSION}" ]; then \
+        rm -f VERSION && printf '%s\n' "${SCENE_AGENT_VERSION}" > VERSION; \
+    fi && \
+    test -s VERSION && \
+    python -m pip install --no-cache-dir \
         -c docker/constraints.txt -e '.[scene]' && \
     python -c 'from pxr import Usd, UsdGeom, UsdPhysics; from scene_agent_scene import SceneBuilder' && \
     chmod +x docker/entrypoint.sh && \

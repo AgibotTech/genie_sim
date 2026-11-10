@@ -6,7 +6,38 @@ from typing import Dict
 
 import numpy as np
 import omni
-from omni.isaac.core.utils.render_product import get_camera_prim_path, get_resolution
+
+
+def _get_render_product_camera_and_resolution(render_product_path: str, stage=None):
+    """Read a RenderProduct prim's camera target and ``(width, height)``."""
+    if stage is None:
+        stage = omni.usd.get_context().get_stage()
+    if stage is None:
+        raise RuntimeError("USD stage is unavailable")
+
+    render_product = stage.GetPrimAtPath(render_product_path)
+    if not render_product or not render_product.IsValid():
+        raise RuntimeError(f"render product prim is invalid or not found: {render_product_path}")
+
+    resolution = render_product.GetAttribute("resolution").Get()
+    try:
+        resolution_values = tuple(resolution)
+    except TypeError:
+        resolution_values = ()
+    if len(resolution_values) != 2:
+        raise RuntimeError(f"render product has no valid resolution: {render_product_path}")
+    try:
+        width, height = (int(resolution_values[0]), int(resolution_values[1]))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"render product resolution is not numeric: {render_product_path}") from exc
+    if width <= 0 or height <= 0:
+        raise ValueError(f"render product resolution must be positive: {render_product_path}")
+
+    camera_targets = render_product.GetRelationship("camera").GetTargets()
+    if not camera_targets:
+        raise RuntimeError(f"render product has no camera relationship target: {render_product_path}")
+
+    return str(camera_targets[0]), width, height
 
 
 def read_camera_info(render_product_path: str) -> Dict:
@@ -14,12 +45,11 @@ def read_camera_info(render_product_path: str) -> Dict:
     camera_info = {}
 
     # Retrieve and store resolution
-    width, height = get_resolution(render_product_path=render_product_path)
+    camera_path, width, height = _get_render_product_camera_and_resolution(render_product_path)
     camera_info["width"] = width
     camera_info["height"] = height
 
     # Retrieve and store camera prim object
-    camera_path = get_camera_prim_path(render_product_path=render_product_path)
     camera = omni.usd.get_context().get_stage().GetPrimAtPath(camera_path)
     camera_info["prim"] = camera
 

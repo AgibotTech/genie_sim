@@ -137,7 +137,8 @@ selects a preset; explicit Docker build arguments override it. Without a preset,
 settings inherit the parent image. Use `--dry-run` to inspect the build command.
 
 The installer registers `source/data_collection` as an editable locator. Its
-Isaac Sim 5.1/cuRobo v2/ROS runtime is supplied by its independent Docker image.
+Isaac Sim 6.2/cuRobo v2/ROS 2 Jazzy runtime is supplied by its independent Docker image,
+which incrementally extends the main GenieSim image.
 These host commands work without automatically bootstrapping the other peers.
 Install persists resolved task and asset roots in
 `~/.config/geniesim/data-collection.json`; `--task-root PATH` and

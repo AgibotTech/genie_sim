@@ -50,7 +50,7 @@ def test_collection_china_and_explicit_urls(collection_calls):
     assert result.value.code == 0
     command, kwargs = collection_calls[0]
     arguments = build_arguments(command)
-    assert "ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia" in arguments
+    assert not any(value.startswith("ISAACSIM_REGISTRY=") for value in arguments)
     assert arguments.count("PIP_INDEX_URL=https://pypi.nvidia.com") == 1
     assert arguments.count("APT_MIRROR=http://archive.ubuntu.com/ubuntu") == 1
     assert "--china" not in command
@@ -63,8 +63,8 @@ def test_collection_china_and_explicit_urls(collection_calls):
 
 def test_collection_inherits_custom_parent_without_preset(collection_calls):
     with pytest.raises(SystemExit):
-        data_collection._do_build(["--build-arg", "ISAAC_SIM_BASE_IMAGE=parent:local"])
-    assert build_arguments(collection_calls[0][0]) == ["ISAAC_SIM_BASE_IMAGE=parent:local"]
+        data_collection._do_build(["--build-arg", "GENIESIM_BASE_IMAGE=parent:local"])
+    assert build_arguments(collection_calls[0][0]) == ["GENIESIM_BASE_IMAGE=parent:local"]
 
 
 @pytest.mark.parametrize("options", [["--china", "--mirrors=upstream"], ["--mirrors"], ["--mirrors=missing"]])
@@ -132,7 +132,7 @@ def test_scene_dry_run_is_available_without_installing_cli(tmp_path):
     assert "--target runtime" in result.stdout
 
 
-@pytest.mark.parametrize("recipe", [COLLECTION / "docker/Dockerfile", SCENE / "docker/Dockerfile.5.1"])
+@pytest.mark.parametrize("recipe", [COLLECTION / "docker/Dockerfile", SCENE / "docker/Dockerfile.6.2"])
 def test_module_recipes_persist_mirrors_before_dependencies(recipe):
     text = recipe.read_text()
     assert "ARG APT_MIRROR\n" in text
@@ -140,6 +140,6 @@ def test_module_recipes_persist_mirrors_before_dependencies(recipe):
     assert "PIP_CONFIG_FILE=/etc/pip.conf" in text
     assert "COPY --from=geniesim_mirrors" in text
     assert 'geniesim-configure-mirrors --apt "${APT_MIRROR}" --pip "${PIP_INDEX_URL}"' in text
-    first_install = "RUN apt-get" if recipe.parent.parent == COLLECTION else "RUN /isaac-sim/python.sh -m venv"
+    first_install = "RUN missing=()" if recipe.parent.parent == COLLECTION else "RUN /isaac-sim/python.sh -m venv"
     assert text.index("geniesim-configure-mirrors --apt") < text.index(first_install)
     assert '--index-url "${PIP_INDEX_URL}"' not in text

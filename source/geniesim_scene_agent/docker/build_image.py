@@ -46,7 +46,9 @@ def main(argv: list[str] | None = None) -> int:
         extra = ["--mirrors", options.mirrors, *extra]
     try:
         command, preset = _module_image.prepare_command(
-            MODULE_ROOT, "docker/Dockerfile.5.1", image, ["--target", options.target, *extra]
+            MODULE_ROOT, "docker/Dockerfile.6.2", image,
+            ["--build-arg", f"SCENE_AGENT_VERSION={(MODULE_ROOT / 'VERSION').read_text().strip()}",
+             "--target", options.target, *extra],
         )
     except (OSError, ValueError) as exc:
         print(f"{RED}❌ {exc}{RST}", file=sys.stderr)

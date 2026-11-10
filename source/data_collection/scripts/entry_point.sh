@@ -32,12 +32,12 @@ echo "export ROS_VERSION=2" >>~/.bashrc
 echo "export ROS_PYTHON_VERSION=3" >>~/.bashrc
 echo "export ROS_LOCALHOST_ONLY=1" >>~/.bashrc
 echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >>~/.bashrc
-echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ISAACSIM_HOME}/exts/isaacsim.ros2.bridge/${ROS_DISTRO}/lib" >>~/.bashrc
+echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ISAACSIM_HOME}/exts/isaacsim.ros2.core/${ROS_DISTRO}/lib" >>~/.bashrc
 echo "export ROS_CMD_DISTRO=jazzy" >>~/.bashrc
 echo "source ${ISAACSIM_HOME}/setup_ros_env.sh" >>~/.bashrc
 
 echo "alias omni_python='${ISAACSIM_HOME}/python.sh'" >>~/.bashrc
 echo "alias isaacsim='${ISAACSIM_HOME}/runapp.sh'" >>~/.bashrc
-echo "alias source_ros_py311='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
+echo "alias source_ros_py312='unset LD_LIBRARY_PATH && source /opt/ros/jazzy/setup.bash'" >>~/.bashrc
 
 exec "$@"

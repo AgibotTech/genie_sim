@@ -74,7 +74,7 @@ def init_app(
     if extra_args is not None:
         app_kwargs["extra_args"] = list(extra_args)
 
-    _app = SimulationApp(app_kwargs)
+    _app = SimulationApp(prepare_launch_config(app_kwargs))
 
     # 3. Apply fixed carb settings followed by optional caller overrides.
     _apply_carb_settings(_app, async_rendering=async_rendering, rtx_settings=rtx_settings)
@@ -91,6 +91,39 @@ def init_app(
         _apply_torch_backend_compat_patches()
 
     return _app
+
+
+def prepare_launch_config(config: dict) -> dict:
+    """Keep explicit Replicator captures working with Isaac Sim 6.2.
+
+    The 6.2 multi-tick renderer stalls after stage replacement and fails to
+    advance to Replicator's scheduled frame. The same scene with legacy tick
+    scheduling returns RGB and metre-valued depth, including mixed-height tiled
+    captures. Set this before Kit starts so its initial viewport uses the same
+    scheduling contract as later render products. Legacy 5.1/4.5 stays unchanged.
+    This is an SDK compatibility requirement, not a physics or pacing knob.
+    """
+    from importlib import metadata
+    import os
+    from pathlib import Path
+    import sys
+
+    result = dict(config)
+    try:
+        root = os.environ.get("ISAAC_PATH")
+        if root and Path(sys.executable).resolve().is_relative_to(Path(root).resolve() / "kit/python"):
+            # Bundled Python has no wheel metadata and may inherit another SDK's paths.
+            installed_version = (Path(root) / "VERSION").read_text().strip()
+        else:
+            installed_version = metadata.version("isaacsim")
+        version = tuple(int(part) for part in installed_version.split(".")[:2])
+    except (metadata.PackageNotFoundError, OSError, ValueError):
+        return result
+    if version == (6, 2):
+        args = list(result.get("extra_args", []))
+        args.append("--/rtx/hydra/supportMultiTickRate=false")
+        result["extra_args"] = args
+    return result
 
 
 def _apply_torch_backend_compat_patches() -> None:
@@ -126,7 +159,7 @@ def _apply_torch_backend_compat_patches() -> None:
 
     _orig_gjp = ArticulationSubset.get_joint_positions
     _orig_gjv = ArticulationSubset.get_joint_velocities
-    _orig_glp = SinglePrimWrapper.get_local_pose
+    _orig_glp = SinglePrimWrapper.get_local_pose if SinglePrimWrapper is not None else None
 
     def _patched_get_joint_positions(self):
         return _to_numpy(_orig_gjp(self))
