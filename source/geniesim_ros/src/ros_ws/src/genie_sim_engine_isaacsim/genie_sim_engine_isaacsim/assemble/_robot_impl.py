@@ -1593,10 +1593,10 @@ def _convert_urdf_to_usd_as3(
     import shutil
     import tempfile
 
-    pip_prebundle = (
-        "/usr/local/lib/python3.12/dist-packages/isaacsim/exts/" "isaacsim.asset.importer.urdf/pip_prebundle"
-    )
-    if pip_prebundle not in sys.path:
+    from genie_sim_engine_isaacsim.kit.bootstrap import resolve_isaac_paths
+
+    pip_prebundle = resolve_isaac_paths()["urdf_prebundle"]["path"]
+    if pip_prebundle and pip_prebundle not in sys.path:
         sys.path.append(pip_prebundle)
 
     urdf_usd_converter = importlib.import_module("urdf_usd_converter")

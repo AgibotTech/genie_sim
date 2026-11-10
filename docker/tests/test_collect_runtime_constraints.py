@@ -34,7 +34,9 @@ def collector(monkeypatch):
         if name not in packages:
             raise metadata.PackageNotFoundError(name)
         version, requirements = packages[name]
-        return SimpleNamespace(metadata={"Name": name}, version=version, requires=requirements)
+        return SimpleNamespace(
+            metadata={"Name": name}, version=version, requires=requirements, read_text=lambda name: None
+        )
 
     monkeypatch.setattr(module.metadata, "distribution", distribution)
     monkeypatch.setattr(module.metadata, "distributions", lambda: [distribution(n) for n in packages])
@@ -97,3 +99,28 @@ def test_direct_urls_cannot_silently_escape_constraints(collector):
     packages["isaacsim-core"] = ("6.2.0.0", ["numpy @ file:///tmp/numpy.whl"])
     with pytest.raises(RuntimeError, match="direct URL requirement"):
         module.collect_constraints()
+
+
+def test_bundled_metadata_supplies_extras_before_system_dependencies_are_installed(collector, monkeypatch):
+    module, packages = collector
+    original = module.metadata.distribution
+    bundled_newton = original("newton")
+    packages["isaacsim"] = ("6.2.0.0", ["newton[sim]==1.6.1"])
+    del packages["isaacsim-core"]
+    del packages["newton"]
+
+    def distribution(name):
+        result = original(name)
+        if name == "isaacsim":
+            result.read_text = lambda name: '{"dependency_paths": ["/sdk/newton"]}'
+        return result
+
+    monkeypatch.setattr(module.metadata, "distribution", distribution)
+    monkeypatch.setattr(
+        module.metadata,
+        "distributions",
+        lambda **kwargs: [bundled_newton] if kwargs.get("path") else [distribution(n) for n in packages],
+    )
+    constraints = module.collect_constraints()
+    assert "mujoco~=3.12.0" in constraints
+    assert "newton==1.6.1" in module.repair_requirements(constraints)

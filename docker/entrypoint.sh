@@ -76,10 +76,15 @@ if [ "$(id -u)" = "0" ] && { [ "${HOST_UID}" != "1234" ] || [ "${HOST_GID}" != "
     chown "${HOST_UID}:${HOST_GID}" /home/isaac-sim
     chown -R "${HOST_UID}:${HOST_GID}" /home/isaac-sim 2>/dev/null || true
 
-    # For variants that pip-install isaacsim into system python, the kit dir
-    # needs to be writable by the remapped user (EULA acceptance file lives there).
+    # The selected Kit needs writable EULA/runtime paths for the remapped user.
     if [ -n "${GENIESIM_CHOWN_KIT_PATH}" ]; then
         chown "${HOST_UID}:${HOST_GID}" "${GENIESIM_CHOWN_KIT_PATH}" 2>/dev/null || true
+        if [ -f "${GENIESIM_CHOWN_KIT_PATH%/kit}/python_packages/isaacsim/__init__.py" ]; then
+            for directory in config data logs; do
+                mkdir -p "${GENIESIM_CHOWN_KIT_PATH}/${directory}"
+                chown -R "${HOST_UID}:${HOST_GID}" "${GENIESIM_CHOWN_KIT_PATH}/${directory}"
+            done
+        fi
     fi
     # Recursively chown the named volume cache dirs so the remapped user can write shaders.
     if [ -n "${GENIESIM_ISAACSIM_KIT_CACHE_PATH}" ] && [ -d "${GENIESIM_ISAACSIM_KIT_CACHE_PATH}" ]; then

@@ -19,6 +19,11 @@ Use only launcher/scene YAML configuration routes described in
   their launch config; this is an API compatibility requirement, not YAML tuning.
   Identify bundled Python by its executable under `ISAAC_PATH/kit/python` and
   read that SDK's `VERSION`; system Python uses installed wheel metadata.
+  The dedicated docker6.2 image registers its bundled SDK through a small
+  system-Python adapter distribution, so version metadata remains available
+  without a second SDK payload. `kit/bootstrap.py` reads its
+  `geniesim-bundled.json` manifest for apps/converter paths; the AS3 converter
+  uses that same resolver. Pip-only and combo runtimes retain their resolution.
 
 - `assemble/physics_variant.py`: select the known AS3 `physx` or legacy `PhysX`
   variant and check movable joints against URDF inventory. Prefer `physx` when

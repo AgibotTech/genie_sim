@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from importlib import metadata
+import json
 from pathlib import Path
 
 from packaging.requirements import Requirement
@@ -23,6 +24,12 @@ def collect_constraints():
     }
     if "isaacsim" not in sdk_names:
         raise RuntimeError("Isaac Sim must be installed before collecting runtime constraints")
+    bundled = metadata.distribution("isaacsim").read_text("geniesim-bundled.json")
+    bundled_distributions = {}
+    if bundled:
+        for path in json.loads(bundled)["dependency_paths"]:
+            for dist in metadata.distributions(path=[path]):
+                bundled_distributions.setdefault(canonicalize_name(dist.metadata["Name"]), dist)
     metadata.distribution("colcon-core")
     selected = {name: set() for name in sdk_names | {"colcon-core"}}
     selected["isaacsim"] = {"all", "extscache"}
@@ -30,7 +37,12 @@ def collect_constraints():
     constraints = set()
     while pending:
         name = pending.pop()
-        dist = metadata.distribution(name)
+        try:
+            dist = metadata.distribution(name)
+        except metadata.PackageNotFoundError:
+            if name not in bundled_distributions:
+                raise
+            dist = bundled_distributions[name]
         for raw in dist.requires or []:
             requirement = Requirement(raw)
             if requirement.marker and not any(

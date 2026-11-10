@@ -69,7 +69,7 @@ existing contracts when a checkout's package version changes.
 |---|---|---|---|---|---|---|---|---|
 | `geniesim docker` / `geniesim docker5.1` | `Dockerfile.5.1` | `registry.agibot.com/genie-sim/geniesim3:latest` | `geniesim3` | 5.1 + 6.2 (wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | `omni_python` for Isaac Sim 5.1, system `python3.12` for Isaac Sim 6.2 + ROS | Default dispatch; recorded system 6.2 checks pass; bundled 5.1 unqualified |
 | `geniesim docker4.5` | `Dockerfile.4.5` | `registry.agibot.com/genie-sim/geniesim2:latest` | `geniesim2` | 4.5 | Ubuntu 22.04 | Humble | system `python3.10` | ⚠️ E.O.L. |
-| `geniesim docker6.2` | `Dockerfile` | `registry.agibot.com/genie-sim/geniesim4:latest` | `geniesim4` | 6.X (exact base `6.2.0.1`, wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | system `python3.12` | Dedicated system runtime; see image-specific acceptance |
+| `geniesim docker6.2` | `Dockerfile` | `registry.agibot.com/genie-sim/geniesim4:latest` | `geniesim4` | Bundled 6.2 (exact base `6.2.0.1`) | Ubuntu 24.04 | Jazzy | system `python3.12`, bundled SDK adapter | Dedicated system runtime; see image-specific acceptance |
 
 The minor version is intentionally not encoded in the main image family name. For example, `geniesim3:latest` tracks the current 5.1-based image line.
 
@@ -78,11 +78,11 @@ acceptance. The combo keeps bundled Isaac 5.1 and system-Python Isaac 6.2.
 
 ### Isaac Sim 6.X — the GenieSim 4.0 target
 
-The dedicated variant selects base `6.2.0.1` and wheel `6.2.0.0`. Runtime qualification is recorded per image and backend in [runtime acceptance](../source/geniesim_ros/docs/ISAACSIM_ACCEPTANCE.md); a built image alone does not establish scene coverage.
+The dedicated variant selects base `6.2.0.1` and registers its bundled SDK with system Python. The compatibility version `6.2.0.0` identifies the adapter; no SDK wheel payload is downloaded. Runtime qualification is recorded per image and backend in [runtime acceptance](../source/geniesim_ros/docs/ISAACSIM_ACCEPTANCE.md); a built image alone does not establish scene coverage.
 
 Every variant pins its Isaac Sim version in two places that must agree:
 
-| Dockerfile | series spec | `ISAACSIM_TAG` (NGC base image) | `ISAACSIM_PIP_VERSION` (PyPI wheel) |
+| Dockerfile | series spec | `ISAACSIM_TAG` (NGC base image) | `ISAACSIM_PIP_VERSION` (wheel / adapter compatibility version) |
 |---|---|---|---|
 | `Dockerfile` | `6.2.0.1` | `6.2.0.1` | `6.2.0.0` |
 | `Dockerfile.5.1` | *(none)* | `5.1.0` | `6.2.0.0` *(the 6.X co-install)* |
@@ -321,13 +321,73 @@ The Dockerfile includes two compatibility fixes before adding the ROS repository
 The 6.X image is shaped like a system-Python-only image:
 
 ```text
-python3 -> system Python 3.12, ROS 2 Jazzy, pip-installed Isaac Sim 6.X
+python3 -> system Python 3.12, ROS 2 Jazzy, existing /isaac-sim SDK
 ```
 
-Base image `isaac-sim:6.2.0.1`, wheel `isaacsim[all,extscache]==6.2.0.0`,
-resolved from the exact `6.2.0.1` spec. Build and runtime acceptance require a compatible checkout and the selected physics/render environment.
+Base image `isaac-sim:6.2.0.1` supplies the only Isaac SDK. A small local
+`isaacsim` adapter wheel registers version `6.2.0.0`, the SDK root and its full
+build version. It contains no SDK payload. Existing `python3` imports and ROS
+launch commands use the bundled SDK through the system interpreter.
 
 `geniesim docker` selects `docker5.1`. Use `docker6.2` explicitly for the dedicated system runtime.
+
+#### Bundled SDK adapter and acceptance
+
+[bundled_isaacsim.py](bundled_isaacsim.py) builds the local adapter. A lazy
+import finder prepares NVIDIA's generated Python/native paths when `isaacsim`
+is requested; ordinary Python, ROS and standalone Newton imports do not activate
+Kit paths. It keeps `/usr/bin/python3` as `sys.executable`, so subprocesses and
+ROS Jazzy retain the system Python ABI. No manual `python.sh` wrapper is needed.
+
+The adapter's `Requires-Dist` is generated from bundled NumPy, core, compute,
+Newton, converter and Torch metadata. These external dependencies remain
+installed for standalone workflows. It does not flatten unrelated extension
+archives with conflicting versions into the system environment. SDK/colcon
+constraints, dependency repair and the Newton guard remain active. The engine
+resolves `apps` and converter paths from the adapter's SDK manifest.
+
+Live testing on RTX 5090 / driver 580.105.08 removed the 18 GB pip SDK directory
+and all original `isaacsim*.dist-info` from a disposable container before
+installing the adapter. System `python3` passed the following checks:
+
+| Check | Observed result |
+|---|---|
+| Interpreter | `/usr/bin/python3`, Python 3.12.3 |
+| Isaac, Carb and USD | Loaded from `/isaac-sim`; only adapter metadata in system Python |
+| Assembly | Fresh two-link URDF converted through the production AS3 pipeline; revolute joint validated |
+| Sysid regression suite | 24 passed with native SDK schemas, PhysX gain readback and Newton CPU models |
+| CUDA with Kit active | Bundled Torch 2.11.0+cu128 executed a tensor reduction on `cuda:0` |
+| ROS | `rclpy` from `/opt/ros/jazzy`, same process as Kit |
+| PhysX | 240 steps; falling 0.5 m cube settled at z=0.24999994 m |
+| RGB-D | 64×48 RGBA; spatial RGB variation 15.81; centre depth 2.5 m |
+| External ROS peer | Received pose and 12,288-byte image; simulator received acknowledgement |
+
+The explicit GPU probe is [isaac62_bundled_smoke.py](tests/isaac62_bundled_smoke.py).
+It checks SDK version/layout discovery, conversion, launch compatibility and an
+external system-ROS peer without Isaac paths. It saves JSON, logs and RGB/depth
+arrays and is not collected by CPU pytest. In the rebuilt container, run:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ROS_DOMAIN_ID=211 timeout -k 5s 300s python3 \
+  /workspace/docker/tests/isaac62_bundled_smoke.py \
+  --output-dir /tmp/bundled-sdk-check
+```
+
+First startup may spend several minutes building shader caches; the probe's
+image polling budget starts after the first render. This fixture
+does not qualify full G2 scenes, the compiled ROS bridge or downstream
+post-training images. Image size must be measured after a fresh recipe build;
+deleting SDK files in a container does not shrink its parent image layers.
+
+The 2026-11-10 fresh build
+`sha256:a72664981fe7799f86526e70ad8dfe5bb487c6c43f7c05f845e4f03c52caac1c`
+passed the probe from cold shader caches through the normal entrypoint as UID
+1000. First capture initialized shaders for about three minutes. Its image size
+is **36.00 GB**, compared with **53.03 GB** for the measured pip-SDK image:
+**17.03 GB (32.1%) smaller**. The build's SDK guards, native artifact check and
+`pip check` passed. System-Python CPU tests reported 46 passed / 3 native-PhysX
+skips outside Kit; the separate Kit sysid run reported 24 passed.
 
 #### System-Python runtime
 
@@ -403,9 +463,14 @@ GenieSim requirements resolve under the combined SDK constraints.
 For Isaac 6.2, this preserves NumPy 2.3.1, absl-py 2.4.0, etils 1.13.0,
 fsspec 2026.2.0 and glfw 2.10.0, while setuptools follows colcon's `<80,>=30.3.0`
 range. The versions are read from metadata, not duplicated in a hand-maintained
-lock file. The installer retains compatible installed packages, and the Isaac
+lock file. The constraints preserve the SDK version requirements, and the Isaac
 profile's final `pip check` fails the build if declared dependencies disagree.
 Newton's optional sim requirements are also checked by `check_newton_pins.py`.
+
+In a fresh dedicated 6.2 image, SDK and GenieSim dependencies are populated in
+one `--ignore-installed` solve under the combined constraints because
+Ubuntu's apt Python packages lack pip uninstall records. The combo recipe keeps
+its existing SDK wheel install followed by normal constrained replacement.
 
 The generated constraints remain at `/opt/geniesim/docker/isaac-constraints.txt`.
 Apply them explicitly when installing additional packages into system Python.
@@ -559,7 +624,7 @@ neither:
 | Env var | Purpose |
 |---|---|
 | `GENIESIM_ISAACSIM_TAG` | NGC base image tag to build against |
-| `GENIESIM_ISAACSIM_PIP_VERSION` | PyPI wheel version to install |
+| `GENIESIM_ISAACSIM_PIP_VERSION` | Wheel version for pip variants; bundled SDK adapter compatibility version for docker6.2 |
 
 Base Dockerfiles support these build arguments. Derived profiles accept
 `APT_MIRROR` and `PIP_INDEX_URL` without defaults and inherit their parent:
@@ -568,10 +633,10 @@ Base Dockerfiles support these build arguments. Derived profiles accept
 |---|---|---|
 | `ISAACSIM_REGISTRY` | `nvcr.io/nvidia` | Registry/path prefix for the NVIDIA Isaac Sim base image |
 | `ISAACSIM_TAG` | variant-specific | Isaac Sim **base image** tag (`6.2.0.1` / `5.1.0` / `4.5.0`). Passed explicitly by `geniesim docker6.2 build` from the resolved series spec; the `ARG` default is the offline fallback |
-| `ISAACSIM_PIP_VERSION` | variant-specific | Isaac Sim **PyPI wheel** version (`6.2.0.0` / `4.5.0`) — must name the same release as `ISAACSIM_TAG`; resolved alongside it |
+| `ISAACSIM_PIP_VERSION` | variant-specific | Isaac Sim wheel / adapter compatibility version (`6.2.0.0` / `4.5.0`) — must name the same release as `ISAACSIM_TAG`; resolved alongside it |
 | `APT_MIRROR` | `upstream` | Official Ubuntu archive/security sources, or a mirror URL; empty inherits |
 | `PIP_INDEX_URL` | `https://pypi.org/simple` | Image-wide primary pip index; empty inherits |
-| `ISAACSIM_PYPI_INDEX` | `https://pypi.nvidia.com` | NVIDIA pip index for Isaac Sim wheels |
+| `ISAACSIM_PYPI_INDEX` | `https://pypi.nvidia.com` | NVIDIA pip index for SDK dependencies and, in pip variants, Isaac Sim wheels |
 
 Base builds default to `upstream`. The `china` preset selects DaoCloud for the
 NVIDIA base image and TUNA for Ubuntu and ordinary Python packages. Add custom
@@ -624,7 +689,7 @@ The CLI injects variant-specific environment variables into `start.sh` and the c
 | `ROS_DISTRO` | ROS distribution to source, usually `jazzy` or `humble` |
 | `GENIESIM_PY_CMD` | default variant interpreter, usually `python3` or `omni_python` |
 | `GENIESIM_BREAK_SYSTEM_PKGS` | whether entrypoint pip calls should use `--break-system-packages` |
-| `GENIESIM_CHOWN_KIT_PATH` | pip-installed Isaac Sim `kit` path that must be writable after UID remap |
+| `GENIESIM_CHOWN_KIT_PATH` | Selected SDK's `kit` path that must be writable after UID remap |
 | `GENIESIM_EXTRA_CACHE_DIRS` | extra cache subdirectories to create under `cache/main` |
 | `GENIESIM_ISAACSIM_KIT_CACHE_PATH` | in-package Isaac Sim kit cache path mounted as a named volume |
 | `GENIESIM_OVRTX_CACHE_PATH` | in-package ovrtx cache path mounted as a named volume |
@@ -693,6 +758,7 @@ GENIESIM_IMAGE=my-registry/geniesim-custom:dev geniesim docker up
 | `entrypoint.sh` | Shared runtime setup, UID remap, environment setup, editable install |
 | `into.sh` | Helper for entering an existing container |
 | `collect_deps.py` | Extracts tier-1 third-party Python dependencies from `pyproject.toml` files |
+| `bundled_isaacsim.py` | Registers the existing 6.2 SDK for system Python without copying its payload |
 | `check_newton_pins.py` | Build-time guard: fails the build if the installed MuJoCo does not satisfy Isaac's Newton |
 | `AGENTS.md` | Maintainer-facing notes for agents and contributors |
 

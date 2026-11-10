@@ -99,7 +99,9 @@ formatting noise and no unrelated reflow.
 
 Isaac release declarations live in the repository's
 [Docker runtime guide](../../docker/README.md). The dedicated 6.2 image uses base
-`ISAACSIM_TAG=6.2.0.1` and wheel `ISAACSIM_PIP_VERSION=6.2.0.0`.
+`ISAACSIM_TAG=6.2.0.1`; its system-Python adapter registers the existing bundled
+SDK with compatibility version `ISAACSIM_PIP_VERSION=6.2.0.0`. The 5.1 combo
+continues installing the NVIDIA 6.2 wheel in system Python.
 Newton is installed by the SDK; the ROS package declares MuJoCo's coupled
 requirement `mujoco~=3.12.0` from Newton 1.6.1's metadata.
 CoACD (`coacd>=1.0.7`) is a default ROS distribution dependency, so ordinary

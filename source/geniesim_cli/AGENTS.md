@@ -197,6 +197,11 @@ Profile-specific argument checks, readiness waiting, and path normalization
 must not change the behavior of `docker` without `--profile` or the existing
 Isaac Sim variant commands.
 
+The dedicated `docker6.2` variant uses the bundled SDK through a lightweight
+system-Python adapter. Its Kit/EULA and named shader-cache paths are
+`/isaac-sim/kit` and `/isaac-sim/kit/cache`. The 5.1 combo retains its separate
+system pip SDK and cache paths. Keep these variant environments distinct.
+
 Docker build mirrors come from `docker/mirrors.toml`. Base builds select
 `upstream` by default; derived profiles inherit their parent unless a preset is
 explicitly selected. `--china` aliases `--mirrors china`; `--mirrors upstream`

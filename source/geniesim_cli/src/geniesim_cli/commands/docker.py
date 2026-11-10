@@ -119,9 +119,9 @@ VARIANTS: Mapping[str, Variant] = MappingProxyType(
                     "ROS_DISTRO": "jazzy",
                     "GENIESIM_PY_CMD": "python3",
                     "GENIESIM_BREAK_SYSTEM_PKGS": "1",
-                    "GENIESIM_CHOWN_KIT_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit",
+                    "GENIESIM_CHOWN_KIT_PATH": "/isaac-sim/kit",
                     "GENIESIM_EXTRA_CACHE_DIRS": "kit pip numba",
-                    "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache",
+                    "GENIESIM_ISAACSIM_KIT_CACHE_PATH": "/isaac-sim/kit/cache",
                     "GENIESIM_OVRTX_CACHE_PATH": "/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache",
                 }
             ),

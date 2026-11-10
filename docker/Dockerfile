@@ -20,31 +20,21 @@
 #
 # This image installs:
 #   * ROS 2 Jazzy desktop on top of Ubuntu 24.04 (Noble) — apt-managed.
-#   * Isaac Sim 6.X PyPI bundle into the system Python 3.12 (NOT a venv,
-#     per project policy: jazzy's rclpy lives in system python3.12, and
-#     mujoco_ros_node.py uses sys.executable, so both must coexist in the
-#     same interpreter).
+#   * A lightweight system-Python adapter to the existing /isaac-sim SDK.
+#     python3 remains Ubuntu's Python 3.12 and uses Jazzy's rclpy. No second
+#     Isaac SDK payload is installed.
 #
 # Host-user remap (1234 vs $(id -u)) is handled at *runtime* by
 # entrypoint.sh — see the comments there. Build-time UID stays at 1234.
 
 ARG ISAACSIM_REGISTRY=nvcr.io/nvidia
-# Isaac Sim 6.2 is the Genie Sim 4.0 target. Keep the requested base
-# respin paired with the published wheel; a future major needs its own variant.
-#
-# Three strings, one release — they MUST be bumped together:
+# Isaac Sim 6.2 is the Genie Sim 4.0 target. Keep these contracts aligned:
 #   ISAACSIM_TAG         6.2.0.1   NGC base image respin
-#   ISAACSIM_PIP_VERSION 6.2.0.0   PyPI wheel version (4 components)
+#   ISAACSIM_PIP_VERSION 6.2.0.0   adapter compatibility version
 #   mujoco~=3.12.0                 source/geniesim_ros/pyproject.toml
-# Leaving the wheel unpinned silently tracks whatever pypi.nvidia.com
-# serves, which is how this image used to end up with wheels and base
-# image naming different releases. Pin both or they disagree.
-#
-# The third string is outside this directory and is the one most easily
-# forgotten. Isaac owns the Newton that consumes MuJoCo (6.2 ships Newton
-# 1.6.1 with MuJoCo 3.12.0), and the dep layer below installs our pin
-# under Isaac/colcon constraints, with a Newton metadata guard so a stale
-# pin fails the build. See docker/check_newton_pins.py.
+# The adapter checks the bundled VERSION/ABI and derives external dependency
+# pins from SDK metadata. A different major requires its own variant. Newton's
+# MuJoCo requirements are guarded by docker/check_newton_pins.py.
 ARG ISAACSIM_TAG=6.2.0.1
 
 FROM ${ISAACSIM_REGISTRY}/isaac-sim:${ISAACSIM_TAG}
@@ -138,30 +128,22 @@ RUN add-apt-repository universe -y && \
 RUN rosdep init && rosdep update --rosdistro jazzy --include-eol-distros 2>&1 | grep -v "as root is not recommended"
 
 # ------------------------------------------------------------
-# Isaac Sim 6.X — install into system python3.12.
-#
-# Ubuntu 24.04 enforces PEP 668 ("externally-managed environment");
-# PIP_BREAK_SYSTEM_PACKAGES=1 (set above) lifts that for the whole
-# image. PIP_INDEX_URL (build-arg) optionally redirects the primary
-# index to a mainland mirror; the NVIDIA index is always supplied as
-# --extra-index-url because the isaacsim wheels live only there.
+# Register the bundled SDK for ordinary system python3 imports. The local
+# wheel owns only its adapter/metadata; SDK files stay in /isaac-sim.
+# ISAACSIM_PIP_VERSION retains the CLI's release-pair compatibility contract.
 # ------------------------------------------------------------
+COPY docker/bundled_isaacsim.py /opt/geniesim/docker/bundled_isaacsim.py
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 -m pip install --upgrade --ignore-installed pip && \
-    python3 -m pip install --upgrade --ignore-installed \
-        "isaacsim[all,extscache]==${ISAACSIM_PIP_VERSION}" \
-        --extra-index-url "${ISAACSIM_PYPI_INDEX}"
+    python3 /opt/geniesim/docker/bundled_isaacsim.py \
+        --version "${ISAACSIM_PIP_VERSION}" --output /tmp/isaac-adapter && \
+    python3 -m pip install --no-deps /tmp/isaac-adapter/*.whl && \
+    rm -rf /tmp/isaac-adapter
 
 # Pre-accept EULA for Isaac Sim 6.X (OMNI_KIT_ACCEPT_EULA path)
-RUN mkdir -p /usr/local/lib/python3.12/dist-packages/isaacsim/kit && \
-    touch /usr/local/lib/python3.12/dist-packages/isaacsim/kit/EULA_ACCEPTED && \
-    chmod o+w /usr/local/lib/python3.12/dist-packages/isaacsim/kit
+RUN touch /isaac-sim/kit/EULA_ACCEPTED && chmod o+w /isaac-sim/kit
 
-# # isaacsim 6.x's pip prebundle has an old typing_extensions without Sentinel.
-# RUN curl -sSL "https://raw.githubusercontent.com/python/typing_extensions/main/src/typing_extensions.py" \
-#     -o /usr/local/lib/python3.12/dist-packages/isaacsim/extscache/omni.services.pip_archive-0.18.6+109.0.4.lx64.cp312/pip_prebundle/typing_extensions.py
-
-    # ------------------------------------------------------------
+# ------------------------------------------------------------
 # Sudoers + workspace mountpoint
 #
 # The base image ships the "isaac-sim" user at uid:gid 1234:1234 and
@@ -193,16 +175,15 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 /opt/geniesim/docker/collect_runtime_constraints.py \
         --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
     python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
-    python3 -m pip install --ignore-installed --no-deps blinker \
-        -c /opt/geniesim/docker/isaac-constraints.txt && \
-    python3 -m pip install -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
+    python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
         "wuji-sdk==${WUJI_SDK_VERSION}" \
+        --extra-index-url "${ISAACSIM_PYPI_INDEX}" \
         -c /opt/geniesim/docker/isaac-constraints.txt && \
     rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt
 
 # ------------------------------------------------------------
 # R14 guard: verify Newton's optional sim requirements after the constrained
-# dependency install. Isaac Sim 6.X puts Newton's metadata in site-packages;
+# dependency install. The adapter installs Newton's metadata in site-packages;
 # this fails on mismatch and no-ops where Newton is not pip-visible.
 # See docker/check_newton_pins.py.
 # ------------------------------------------------------------

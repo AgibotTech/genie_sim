@@ -139,7 +139,7 @@ def test_profiles_share_uid_mounts_and_seeded_shader_caches(cli, profile, name):
     assert "--entrypoint" not in command
     assert not any("/usr/local/bin/geniesim-profile-entrypoint" in arg for arg in command)
     assert (
-        f"source={name}-isaacsim-kit-cache,target=/usr/local/lib/python3.12/dist-packages/isaacsim/kit/cache" in command
+        f"source={name}-isaacsim-kit-cache,target=/isaac-sim/kit/cache" in command
     )
     assert f"source={name}-ovrtx-cache,target=/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache" in command
     assert "-e" in command and "DISPLAY" not in command

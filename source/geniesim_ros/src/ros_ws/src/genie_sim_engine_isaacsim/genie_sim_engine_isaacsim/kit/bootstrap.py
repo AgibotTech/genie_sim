@@ -122,10 +122,22 @@ _LAUNCHED: dict[str, str] = {}
 def _isaac_package_root() -> tuple[str, str]:
     """Return ``(path, how)`` for the installed ``isaacsim`` package dir.
 
-    ``how`` is ``"importlib"`` when the package resolved properly,
+    ``how`` is ``"bundled"`` for the registered unpacked SDK,
+    ``"importlib"`` when the package resolved properly,
     ``"literal"`` when only the hardcoded dist-packages path exists, or
     ``"unresolved"``.
     """
+    try:
+        from importlib import metadata
+        import json
+
+        manifest = metadata.distribution("isaacsim").read_text("geniesim-bundled.json")
+        if manifest:
+            root = json.loads(manifest)["root"]
+            if os.path.isfile(os.path.join(root, "VERSION")) and os.path.isdir(os.path.join(root, "apps")):
+                return (root, "bundled")
+    except (metadata.PackageNotFoundError, OSError, ValueError, KeyError, TypeError):
+        pass
     try:
         import importlib.util as _iu  # local import keeps cold-path overhead off
 
@@ -145,8 +157,8 @@ def resolve_isaac_paths() -> dict[str, dict]:
     Returns ``{name: {"path": str, "how": str, "exists": bool}}`` for
     ``package_root``, ``kit_experience`` and ``urdf_prebundle``.
 
-    Resolution order per path: an operator env override, then the
-    hardcoded literal (a documented fast path -- it is correct in the
+    Resolution order per path: an operator env override, the registered
+    bundled SDK, then the hardcoded literal (a documented fast path -- it is correct in the
     shipped image and costs no import), then the ``isaacsim`` package
     root.  ``how`` names the branch that won, which is the part worth
     printing: ``"literal"`` means the layout assumption still holds,
@@ -167,6 +179,13 @@ def resolve_isaac_paths() -> dict[str, dict]:
         env_val = os.environ.get(env_var, "")
         if env_val and check(env_val):
             path, how = env_val, "env"
+        elif root_how == "bundled":
+            path = os.path.join(root, *leaf)
+            how = "bundled" if check(path) else "unresolved"
+            if name == "urdf_prebundle":
+                converter = os.path.join(root, "exts", "isaacsim.asset.importer.urdf", "urdf_prebundle")
+                if check(converter):
+                    path, how = converter, "bundled"
         else:
             literal = os.path.join(_ISAAC_PKG_LITERAL, *leaf)
             if check(literal):
