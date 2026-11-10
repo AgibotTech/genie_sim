@@ -144,8 +144,8 @@ mkdir -p test-results/scenes
 
 | Runtime | Test scope / prerequisite |
 |---|---|
-| `docker6.2` | Isaac 6.2 fresh conversion and primary Isaac/Newton checks |
-| `docker` / `docker5.1` | Runtime compatibility comparison; bare `docker` still selects 5.1 |
+| `docker` / `docker6.2` | Default; Isaac 6.2 fresh conversion and primary Isaac/Newton checks |
+| `docker5.1` | Explicit combo runtime compatibility comparison |
 | `docker4.5` | Runtime compatibility comparison in Python 3.10 / Humble |
 
 Build a separate ROS overlay for each Python/ROS runtime. Cold URDF conversion

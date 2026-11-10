@@ -30,8 +30,9 @@
 
 **3.5.0 focuses on Genie Sim Benchmark**, using the `geniesim3:latest` combo
 image with bundled Isaac Sim **5.1** and system-Python Isaac Sim **6.2**.
-`geniesim docker` selects this combo. The dedicated Isaac Sim 6.2 image,
-`geniesim4:latest` via `geniesim docker6.2`, belongs to the separate **4.0**
+Use `geniesim docker5.1` for this combo. The default `geniesim docker` selects
+the dedicated Isaac Sim 6.2 image, `geniesim4:latest`, also available via
+`geniesim docker6.2`, which belongs to the separate **4.0**
 line. See [release lines and runtime selection](docker/README.md#release-lines).
 
 **Genie Sim is the simulation platform from AgiBot.** It provides developers with a complete toolchain for *environment reconstruction*, *scene generalization*, *data collection*, and *automated evaluation*. Its core module, **Genie Sim Benchmark** is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
@@ -70,7 +71,7 @@ flowchart LR
 ```bash
 # === on the host ===
 pip install -e source/geniesim_cli/      # standalone CLI wheel
-geniesim docker build                    # build the Isaac Sim 5.1 + 6.2 combo + Jazzy image
+geniesim docker build                    # build the Isaac Sim 6.2 + Jazzy image
 geniesim docker up                       # boot the container; the entrypoint
                                          # editable-installs every tier-1 from
                                          # the bind-mounted workspace
@@ -106,6 +107,9 @@ The repo ships `AGENTS.md` + per-package `skills/<name>/SKILL.md` as machine-rea
 > it is outside the umbrella's Tier-1/Tier-2 extras. See the [module tiers](source/README.md#installation-tiers).
 
 ### 3.2 🧪 Benchmark — debug locally, compete globally on RoboColiseum
+
+Isaac benchmark tasks use the explicit `geniesim docker5.1` combo; see the
+[benchmark runtime guide](source/geniesim_benchmark/README.md).
 
 ```mermaid
 flowchart LR

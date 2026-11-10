@@ -9,7 +9,7 @@ The Docker images are intended to be used as **base development/runtime images**
 From the repository root:
 
 ```bash
-# Build the default combo image: Isaac Sim 5.1 + 6.2 + ROS 2 Jazzy
+# Build the default image: Isaac Sim 6.2 + ROS 2 Jazzy
 geniesim docker build
 
 # Build using mainland China mirrors for nvcr.io, apt, and pip
@@ -28,30 +28,31 @@ geniesim docker into
 geniesim docker down
 ```
 
-`geniesim docker` is an alias for `geniesim docker5.1`, the current default variant.
+`geniesim docker` is an alias for `geniesim docker6.2`, the default variant.
+Use `geniesim docker5.1` explicitly for the 5.1 + 6.2 combo.
 
 ### Use the prebuilt combo image
 
-To skip the default combo image build, use the Docker Hub image published in
+To skip the `docker5.1` combo image build, use the Docker Hub image published in
 [issue #201](https://github.com/AgibotTech/genie_sim/issues/201). Pull it and tag
-it with the default image name expected by the CLI:
+it with the combo image name expected by the CLI:
 
 ```bash
 docker pull yonhdee/geniesim3:latest
 docker tag yonhdee/geniesim3:latest registry.agibot.com/genie-sim/geniesim3:latest
-geniesim docker up
-geniesim docker into
+geniesim docker5.1 up
+geniesim docker5.1 into
 ```
 
-This image is for `geniesim docker` / `docker5.1`, the 5.1 + 6.2 combo.
+This image is for `geniesim docker5.1`, the 5.1 + 6.2 combo.
 The dedicated `docker6.2` image and derived profiles use their own build recipes.
 
 ## Release lines
 
 | Genie Sim release line | Primary workflow | Image family | Isaac Sim runtimes | Command |
 |---|---|---|---|---|
-| **3.5.0** | `geniesim_benchmark` | `geniesim3:latest` | Bundled **5.1** + system-Python **6.2** combo | `geniesim docker` / `geniesim docker5.1` |
-| **4.0** | Dedicated Isaac Sim 6.2 / RT Engine line | `geniesim4:latest` | Dedicated **6.2** | `geniesim docker6.2` |
+| **3.5.0** | `geniesim_benchmark` | `geniesim3:latest` | Bundled **5.1** + system-Python **6.2** combo | `geniesim docker5.1` |
+| **4.0** | Dedicated Isaac Sim 6.2 / RT Engine line | `geniesim4:latest` | Dedicated **6.2** | `geniesim docker` / `geniesim docker6.2` |
 
 The 3.5.0 benchmark release uses the combo image. Its system-Python 6.2
 co-install supports task-selected runtimes within that combo. The dedicated
@@ -67,14 +68,14 @@ existing contracts when a checkout's package version changes.
 
 | Command | Dockerfile | Image | Container | Isaac Sim | OS | ROS 2 | Python strategy | Status |
 |---|---|---|---|---|---|---|---|---|
-| `geniesim docker` / `geniesim docker5.1` | `Dockerfile.5.1` | `registry.agibot.com/genie-sim/geniesim3:latest` | `geniesim3` | 5.1 + 6.2 (wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | `omni_python` for Isaac Sim 5.1, system `python3.12` for Isaac Sim 6.2 + ROS | Default dispatch; recorded system 6.2 checks pass; bundled 5.1 unqualified |
+| `geniesim docker5.1` | `Dockerfile.5.1` | `registry.agibot.com/genie-sim/geniesim3:latest` | `geniesim3` | 5.1 + 6.2 (wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | `omni_python` for Isaac Sim 5.1, system `python3.12` for Isaac Sim 6.2 + ROS | Explicit combo; recorded system 6.2 checks pass; bundled 5.1 unqualified |
 | `geniesim docker4.5` | `Dockerfile.4.5` | `registry.agibot.com/genie-sim/geniesim2:latest` | `geniesim2` | 4.5 | Ubuntu 22.04 | Humble | system `python3.10` | ⚠️ E.O.L. |
-| `geniesim docker6.2` | `Dockerfile` | `registry.agibot.com/genie-sim/geniesim4:latest` | `geniesim4` | Bundled 6.2 (exact base `6.2.0.1`) | Ubuntu 24.04 | Jazzy | system `python3.12`, bundled SDK adapter | Dedicated system runtime; see image-specific acceptance |
+| `geniesim docker` / `geniesim docker6.2` | `Dockerfile` | `registry.agibot.com/genie-sim/geniesim4:latest` | `geniesim4` | Bundled 6.2 (exact base `6.2.0.1`) | Ubuntu 24.04 | Jazzy | system `python3.12`, bundled SDK adapter | Default; see image-specific acceptance |
 
 The minor version is intentionally not encoded in the main image family name. For example, `geniesim3:latest` tracks the current 5.1-based image line.
 
-`geniesim docker` stays mapped to `docker5.1` until `docker6.2` passes runtime
-acceptance. The combo keeps bundled Isaac 5.1 and system-Python Isaac 6.2.
+`geniesim docker` selects dedicated 6.2. The explicit `docker5.1` combo keeps
+bundled Isaac 5.1 and system-Python Isaac 6.2.
 
 ### Isaac Sim 6.X — the GenieSim 4.0 target
 
@@ -188,7 +189,7 @@ at `/isaac-sim` including `/isaac-sim/python.sh`, the matched physics libraries,
 and GenieSim's runtime user/tools. Both builds check `/isaac-sim/VERSION` before
 installing dependencies and reject other Isaac Sim versions. A custom teleop
 parent must be a server image built with the `post-train` profile.
-The default `geniesim docker build` produces a 5.1-based image, which is not a
+The explicit `geniesim docker5.1 build` produces a 5.1-based image, which is not a
 compatible parent even if its system Python also has a newer Isaac Sim package.
 A stock NVIDIA Isaac image alone is insufficient. `--china` selects
 apt/pip mirrors for the added layers; it does not mirror the parent image or
@@ -329,7 +330,7 @@ Base image `isaac-sim:6.2.0.1` supplies the only Isaac SDK. A small local
 build version. It contains no SDK payload. Existing `python3` imports and ROS
 launch commands use the bundled SDK through the system interpreter.
 
-`geniesim docker` selects `docker5.1`. Use `docker6.2` explicitly for the dedicated system runtime.
+`geniesim docker` and `geniesim docker6.2` select this dedicated system runtime.
 
 #### Bundled SDK adapter and acceptance
 

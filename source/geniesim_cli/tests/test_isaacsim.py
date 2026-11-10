@@ -45,7 +45,8 @@ def test_other_respins_do_not_inherit_the_pairing():
     assert _isaacsim._wheel_matches_tag("5.1.0.0", "5.1.0")
 
 
-def test_docker62_build_dispatches_requested_pair_without_bootstrap(monkeypatch, capsys):
+@pytest.mark.parametrize("command", ["docker", "docker6.2"])
+def test_docker62_build_dispatches_requested_pair_without_bootstrap(monkeypatch, capsys, command):
     _indices(monkeypatch, {"6.2.0.0": {"cp312"}})
     monkeypatch.setattr(docker, "_libuipc_build_args", lambda _: ["--build-arg", "LIBUIPC_SM=89"])
     monkeypatch.delenv("GENIESIM_ISAACSIM_TAG", raising=False)
@@ -69,10 +70,10 @@ def test_docker62_build_dispatches_requested_pair_without_bootstrap(monkeypatch,
 
     monkeypatch.setattr("importlib.util.find_spec", find_spec)
     with pytest.raises(SystemExit) as exit_info:
-        cli.main(["docker6.2", "build"])
+        cli.main([command, "build"])
     assert exit_info.value.code == 0
     assert docker._active_variant == ""
-    assert "geniesim docker6.2 build" in capsys.readouterr().out
+    assert f"geniesim {command} build" in capsys.readouterr().out
     assert docker.get_variant("").isaacsim_series == "6.2.0.1"
     assert "ISAACSIM_TAG=6.2.0.1" in commands[0]
     assert "ISAACSIM_PIP_VERSION=6.2.0.0" in commands[0]
@@ -91,8 +92,8 @@ def test_offline_pin_keeps_requested_base(monkeypatch):
     assert "ARG ISAACSIM_PIP_VERSION=6.2.0.0" in dockerfile
 
 
-@pytest.mark.parametrize("command", ["docker", "docker5.1"])
-def test_default_and_explicit_docker51_keep_the_combo(monkeypatch, command):
+def test_explicit_docker51_keeps_the_combo(monkeypatch):
+    command = "docker5.1"
     calls = []
     monkeypatch.setattr(docker, "run", lambda args, **kwargs: calls.append((args, kwargs)))
 

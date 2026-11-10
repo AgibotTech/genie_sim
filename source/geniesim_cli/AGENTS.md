@@ -147,9 +147,10 @@ and the dispatcher in `main()` in sync.
 ---
 
 `docker6.2` uses the internal variant key `""` for Docker registry API calls.
-`geniesim docker` maps to `docker5.1`, which keeps bundled Isaac 5.1 plus
-system-Python Isaac 6.2.
-Help and build output for the default combo image show a notice linking to
+`geniesim docker` maps to `docker6.2`, using system Python with the bundled
+Isaac 6.2 SDK. Use explicit `docker5.1` for bundled Isaac 5.1 plus system-Python
+Isaac 6.2.
+Help and build output for the 5.1 combo image show a notice linking to
 [issue #201](https://github.com/AgibotTech/genie_sim/issues/201), which explains
 how to skip the build by pulling and retagging the Docker Hub image. The notice
 is omitted for other variants, profiles and custom `GENIESIM_IMAGE` values.

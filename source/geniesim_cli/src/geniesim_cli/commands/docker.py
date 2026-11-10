@@ -6,7 +6,7 @@
 
 Dispatched by four CLI commands:
 
-* ``geniesim docker``    — default alias for ``docker5.1``.
+* ``geniesim docker``    — default alias for ``docker6.2``.
 * ``geniesim docker6.2`` — Isaac Sim 6.2 variant (geniesim4).
 * ``geniesim docker5.1`` — Isaac Sim 5.1 variant (geniesim3).
 * ``geniesim docker4.5`` — Isaac Sim 4.5 variant (geniesim2 E.O.L.).
@@ -343,7 +343,7 @@ def _container_state() -> str | None:
 
 
 def _print_prebuilt_image_notice() -> None:
-    """Show the published combo-image alternative for the default image."""
+    """Show the published combo-image alternative for the 5.1 variant."""
     if _active_profile or _active_variant != "5.1" or _image() != get_variant("5.1").image:
         return
     print(f"  {CYAN}💡 Skip the geniesim3 build: pull and retag the prebuilt Docker Hub image.{RST}")
@@ -732,7 +732,7 @@ def run(args: list[str], variant: str = "", invoked_as: str = "docker") -> None:
             f"║  published and its runtime is unverified — build it yourself   ║\n"
             f"║  and expect rough edges. See docker/README.md.                 ║\n"
             f"║                                                                ║\n"
-            f"║  For a stable container use geniesim docker (→ docker5.1).     ║\n"
+            f"║  For the default container use geniesim docker (→ docker6.2).  ║\n"
             f"╚════════════════════════════════════════════════════════════════╝"
             f"{RST}\n"
         )

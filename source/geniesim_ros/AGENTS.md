@@ -21,7 +21,8 @@ Maintain shared Python code for both Python 3.10 and Python 3.12. Keep
 `requires-python = ">=3.10,<3.13"` and the existing 3.11 combo-runtime support.
 Validate changed shared code on both maintained versions; SDK-specific imports
 stay behind the existing interpreter/runtime boundaries. Do not raise the Python
-minimum to follow Isaac 6.2. `geniesim docker` remains the `docker5.1` default.
+minimum to follow Isaac 6.2. `geniesim docker` defaults to `docker6.2`;
+select the combo explicitly with `geniesim docker5.1`.
 Acceptance is recorded separately for each runtime.
 
 Use uppercase Markdown filenames in `docs/` (for example, `STEP_MODES.md`).

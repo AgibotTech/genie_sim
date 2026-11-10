@@ -51,7 +51,7 @@ genie_sim_bringup/
 │   ├── physics_backend.launch.py ← physics sub-launch
 │   └── utils.py                   ← shared launch helpers (pure I/O, no ROS state)
 ├── config/
-│   ├── launcher_ovrtx_isaac_physx.yaml  ← Isaac Sim 5.1 + PhysX + OVRtx renderer (stable default)
+│   ├── launcher_ovrtx_isaac_physx.yaml  ← Isaac Sim PhysX + OVRtx renderer (default launcher)
 │   ├── launcher_ovrtx_isaac_newton.yaml ← Isaac Sim 6.x + Isaac's Newton wrapper + OVRtx (rigid only, experimental)
 │   ├── launcher_newton_mjwarp.yaml      ← newton-standalone, MuJoCo-Warp rigid (no cloth)
 │   ├── launcher_newton_mjvbd.yaml       ← newton-standalone, MuJoCo-Warp rigid + VBD cloth

@@ -8,8 +8,8 @@ injected by the CLI (`docker.py` → `start.sh` → `entrypoint.sh`).
 
 | File | Isaac Sim | Ubuntu | ROS 2 | Python | Image | Status |
 |------|-----------|--------|-------|--------|-------|--------|
-| `Dockerfile` | 6.X — exact base `6.2.0.1`, adapter compatibility version `6.2.0.0` | 24.04 Noble | Jazzy | system `python3` 3.12 using bundled SDK | geniesim4 | Dedicated 6.2 runtime; see acceptance |
-| `Dockerfile.5.1` | **5.1 + 6.2** (combo; tag `5.1.0`, wheel `6.2.0.0`) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.2 pip-installed) | geniesim3 | ✅ default |
+| `Dockerfile` | 6.X — exact base `6.2.0.1`, adapter compatibility version `6.2.0.0` | 24.04 Noble | Jazzy | system `python3` 3.12 using bundled SDK | geniesim4 | ✅ default; see acceptance |
+| `Dockerfile.5.1` | **5.1 + 6.2** (combo; tag `5.1.0`, wheel `6.2.0.0`) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.2 pip-installed) | geniesim3 | Explicit combo variant |
 | `Dockerfile.4.5` | 4.5 (tag + wheel `4.5.0`) | 22.04 Jammy | Humble | system `python3` 3.10 (pip-installed isaacsim) | geniesim2 | ⚠️ E.O.L. |
 
 ## Release-line ownership
@@ -71,7 +71,8 @@ lines pin unsuffixed bases. Run it with the existing CPU workflow:
 python3 -m pytest -q docker/tests
 ```
 
-The Isaac 6.2 command is `geniesim docker6.2 {build,up,into,down,logs}`.
+`geniesim docker {build,up,into,down,logs}` aliases the Isaac 6.2 command
+`geniesim docker6.2 {build,up,into,down,logs}`.
 The internal variant registry key remains
 `""` for downstream callers of `get_variant` / `variant_env`.
 
@@ -106,8 +107,8 @@ Two things to know about that resolver:
 
 `Dockerfile.5.1` deliberately has **no** spec: it is a 5.1-base/6.2-wheel combo,
 a pairing the correspondence rule cannot express. It keeps both literal pins.
-`geniesim docker` stays mapped to this variant until `docker6.2` passes its
-runtime acceptance gates. Keep bundled 5.1 and the system-Python 6.2 co-install.
+Select this combo explicitly with `geniesim docker5.1`. Keep bundled 5.1 and
+the system-Python 6.2 co-install; default `geniesim docker` selects dedicated 6.2.
 
 System and bundled Python require separate acceptance checks. Build the combo image
 with the normal `geniesim docker5.1 build` command and select `docker6.2 up`
@@ -196,7 +197,7 @@ The public post-training workflow builds the default base `registry.agibot.com/g
 locally with `geniesim docker6.2 build`; `Dockerfile.post-train` uses it as its
 default `BASE_IMAGE` without registry access. The base must include bundled Isaac Sim 6.2.x
 at `/isaac-sim`. Both profile Dockerfiles check `/isaac-sim/VERSION`.
-The default 5.1 variant has a different bundled runtime and is not a compatible
+The explicit 5.1 variant has a different bundled runtime and is not a compatible
 parent, even when its system Python also has Isaac Sim 6.2.
 
 `PROFILES` in `commands/docker.py` owns their image/container defaults and runtime

@@ -46,8 +46,8 @@ These measurements apply to the identified images and source snapshots. They
 are recorded evidence, not a rerun of the current checkout or qualification of
 another image tag. Use the [bringup matrix](../src/ros_ws/src/genie_sim_bringup/README.md#scene-testing)
 for scenario pass criteria and the [workspace roadmap](ROADMAP.md) for open gates.
-`geniesim docker` selects the `docker5.1` combo image; `geniesim docker6.2`
-selects the dedicated 6.2 image.
+`geniesim docker` and `geniesim docker6.2` select the dedicated 6.2 image;
+explicit `geniesim docker5.1` selects the combo image.
 
 ### geniesim3 system Python, 2026-10-25
 

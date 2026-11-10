@@ -137,8 +137,8 @@ GenieSim entrypoint's `isaac-sim` user and runtime tools. The post-training
 build checks the bundled version reported by `/isaac-sim/VERSION`.
 
 The `isaac_fused` backend runs with `/isaac-sim/python.sh` and uses the
-Isaac Sim 6.2 tiled camera API. Use `geniesim docker6.2` for its base;
-`geniesim docker build` selects the 5.1-based image, whose bundled runtime
+Isaac Sim 6.2 tiled camera API. Use `geniesim docker` or `geniesim docker6.2`
+for its base; explicit `geniesim docker5.1 build` selects the combo, whose bundled runtime
 is incompatible with this backend.
 
 On the simulation host, mount the checkout and assets and enter the server

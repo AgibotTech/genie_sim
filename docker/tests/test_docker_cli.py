@@ -101,12 +101,13 @@ def test_profile_build_uses_the_selected_parent_layer(cli, profile, dockerfile, 
     ]
 
 
-def test_default_docker_still_builds_51(cli):
+@pytest.mark.parametrize("verb", ["docker", "docker6.2"])
+def test_default_and_explicit_docker_build_62(cli, verb):
     run, _ = cli
-    result, commands = run("docker", "build", "--build-arg", "TEST_BUILD_ARG=1")
+    result, commands = run(verb, "build", "--no-resolve", "--build-arg", "TEST_BUILD_ARG=1")
     assert result.returncode == 0, result.stdout + result.stderr
-    assert commands[0][2] == str(ROOT / "docker/Dockerfile.5.1")
-    assert commands[0][4] == "registry.agibot.com/genie-sim/geniesim3:latest"
+    assert commands[0][2] == str(ROOT / "docker/Dockerfile")
+    assert commands[0][4] == "registry.agibot.com/genie-sim/geniesim4:latest"
 
 
 def test_profile_propagates_build_failure(cli):
@@ -138,9 +139,7 @@ def test_profiles_share_uid_mounts_and_seeded_shader_caches(cli, profile, name):
     assert f"{ROOT}/docker/entrypoint.sh:/usr/local/bin/geniesim-entrypoint:ro" in command
     assert "--entrypoint" not in command
     assert not any("/usr/local/bin/geniesim-profile-entrypoint" in arg for arg in command)
-    assert (
-        f"source={name}-isaacsim-kit-cache,target=/isaac-sim/kit/cache" in command
-    )
+    assert f"source={name}-isaacsim-kit-cache,target=/isaac-sim/kit/cache" in command
     assert f"source={name}-ovrtx-cache,target=/usr/local/lib/python3.12/dist-packages/ovrtx/bin/cache" in command
     assert "-e" in command and "DISPLAY" not in command
 
@@ -164,7 +163,7 @@ def test_legacy_running_container_does_not_wait_for_profile_readiness(cli, verb)
 @pytest.mark.parametrize(
     "verb, name, image, python, ros",
     [
-        ("docker", "geniesim3", "geniesim3:latest", "omni_python", "jazzy"),
+        ("docker", "geniesim4", "geniesim4:latest", "python3", "jazzy"),
         ("docker5.1", "geniesim3", "geniesim3:latest", "omni_python", "jazzy"),
         ("docker4.5", "geniesim2", "geniesim2:latest", "python3", "humble"),
         ("docker6.2", "geniesim4", "geniesim4:latest", "python3", "jazzy"),
@@ -209,13 +208,36 @@ def test_legacy_help_still_checks_the_host_environment(cli):
     assert not commands
 
 
-def test_docker62_help_does_not_require_acknowledgment(cli):
+@pytest.mark.parametrize("verb", ["docker", "docker6.2"])
+def test_docker62_help_does_not_require_acknowledgment(cli, verb):
     run, _ = cli
-    result, commands = run("docker6.2", "--help")
+    result, commands = run(verb, "--help")
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "geniesim docker6.2" in result.stdout
+    assert f"geniesim {verb}" in result.stdout
+    assert "registry.agibot.com/genie-sim/geniesim4:latest" in result.stdout
+    assert "issues/201" not in result.stdout
     assert "Press [ENTER]" not in result.stdout
     assert not commands
+
+
+def test_docker51_help_keeps_its_combo_prebuilt_notice(cli):
+    run, _ = cli
+    result, commands = run("docker5.1", "--help")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "registry.agibot.com/genie-sim/geniesim3:latest" in result.stdout
+    assert "issues/201" in result.stdout
+    assert not commands
+
+
+@pytest.mark.parametrize("action", ["up", "down", "into", "logs"])
+def test_default_lifecycle_matches_explicit_docker62(cli, action):
+    run, _ = cli
+    default, default_commands = run("docker", action, FAKE_STATE="running")
+    explicit, explicit_commands = run("docker6.2", action, FAKE_STATE="running")
+    assert default.returncode == explicit.returncode == 0
+    assert default_commands == explicit_commands
+    assert all("geniesim3" not in argument for command in default_commands for argument in command)
+    assert any("geniesim4" in command for command in default_commands)
 
 
 @pytest.mark.parametrize("verb", ["up", "down", "into", "logs"])

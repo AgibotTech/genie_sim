@@ -204,12 +204,10 @@ def _print_usage() -> None:
     print(f"  {CYAN}status{RST}                              🔍 Health-check all geniesim distributions")
     print(f"  {CYAN}doctor{RST}                              🩺 Diagnose & repair (status + rosdep + more)")
     print(
-        f"  {CYAN}docker{RST} <build|up|down|into|logs>    🐳 Manage the Genie Sim container {DIM}(default → docker5.1){RST}"
+        f"  {CYAN}docker{RST} <build|up|down|into|logs>    🐳 Manage the Genie Sim container {DIM}(default → docker6.2){RST}"
     )
-    print(
-        f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4) {DIM}— behaviour unverified{RST}"
-    )
-    print(f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant (geniesim3, default)")
+    print(f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4, default)")
+    print(f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant (geniesim3)")
     print(
         f"  {CYAN}docker --profile{RST} post-train|post-train-teleop <command>  🐳 Post-training server / teleop image layer{RST}"
     )
@@ -299,7 +297,7 @@ def main(argv: list[str] | None = None) -> None:
     if cmd == "docker":
         from geniesim_cli.commands import docker as _m
 
-        _m.run(sub_args, variant="5.1", invoked_as="docker")
+        _m.run(sub_args, variant="", invoked_as="docker")
         sys.exit(0)
 
     if cmd == "post-train":

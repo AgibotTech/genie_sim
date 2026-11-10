@@ -32,7 +32,7 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim bootstrap` | Install required peers from local sources in dependency order |
 | `geniesim env` | Show `GENIESIM_*` env vars |
 | `geniesim completion bash\|zsh` | Generate shell completion |
-| `geniesim docker {build,up,down,into,logs}` | Manage the Genie Sim container |
+| `geniesim docker {build,up,down,into,logs}` | Manage the default Isaac Sim 6.2 container (alias of `docker6.2`) |
 | `geniesim docker5.1 …` / `docker6.2 …` / `docker4.5 …` | Per–Isaac-Sim variants |
 | `geniesim docker --profile post-train …` / `--profile post-train-teleop …` | post-training simulation server / optional teleop layer; see [Docker profiles](../../docker/README.md#post-training-profiles) |
 | `geniesim post-train server start\|status\|stop\|logs …` | Operate post-training server processes inside the prepared runtime; see [the server workflow](../rlinf_geniesim/README.md#start-and-initialize) |
@@ -88,7 +88,7 @@ The 3.5.0 benchmark release uses the `geniesim3:latest` Isaac Sim 5.1 + 6.2
 combo. The dedicated `geniesim4:latest` / `docker6.2` variant remains the
 separate 4.0 line; see [Docker release lines](../../docker/README.md#release-lines).
 
-To skip building the default combo image, pull and retag the prebuilt Docker Hub
+To skip building the explicit `docker5.1` combo image, pull and retag the prebuilt Docker Hub
 image using [issue #201](https://github.com/AgibotTech/genie_sim/issues/201).
 See the [copyable pull commands](../../docker/README.md#use-the-prebuilt-combo-image).
 
