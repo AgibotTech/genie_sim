@@ -119,7 +119,6 @@ def peer_environment(root: Path) -> dict[str, str]:
 
 def standalone(output: Path) -> int:
     """Qualify SDK Torch outside Kit, including CUDA, Triton and coexistence."""
-    import ctypes
     import torch
     import torch.nn.functional as functional
     import torchvision
@@ -127,7 +126,6 @@ def standalone(output: Path) -> int:
     import rclpy
     import warp as wp
     import newton
-    import uipc
     from cuda.bindings import runtime as cudart
 
     root = Path("/isaac-sim")
@@ -156,10 +154,11 @@ def standalone(output: Path) -> int:
     torch.cuda.synchronize()
     wp.init()
     assert wp.get_device("cuda:0").is_cuda
-    native = Path(uipc.__file__).parent / "_native"
-    ctypes.CDLL(str(native / "libuipc_backend_cuda.so"))
-    links = {path.name: str(path.resolve()) for path in native.glob("*.so*") if path.is_symlink()}
-    assert len(links) == 6 and all("/nvidia/cu13/lib/" in path for path in links.values()), links
+    retired = {"nvidia-cublas", "nvidia-cuda-runtime", "nvidia-cusolver", "nvidia-cusparse", "nvidia-nvjitlink"}
+    installed = {dist.metadata["Name"].lower().replace("_", "-") for dist in metadata.distributions()}
+    assert not retired & installed, f"CUDA 13 packages remain: {retired & installed}"
+    assert not (site / "nvidia/cu13").exists(), "CUDA 13 runtime directory remains"
+    assert util.find_spec("uipc") is None, "Incompatible native IPC payload is installed"
     assert Path(rclpy.__file__).is_relative_to("/opt/ros/jazzy")
     result = {
         "pass": True,
@@ -175,7 +174,8 @@ def standalone(output: Path) -> int:
         "warp": wp.__version__,
         "newton": newton.__version__,
         "rclpy": rclpy.__file__,
-        "libuipc_cuda13": links,
+        "cuda13_packages": sorted(retired & installed),
+        "native_ipc": "unavailable: supplied wheels require CUDA 13",
         "kit_loaded": "carb" in sys.modules,
     }
     assert not result["kit_loaded"]

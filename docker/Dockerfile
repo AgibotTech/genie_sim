@@ -5,13 +5,13 @@
 #   geniesim docker6.2 build --china      # select the China mirror preset
 #
 # Or manually:
-#   docker build -f docker/Dockerfile --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
+#   docker build -f docker/Dockerfile -t registry.agibot.com/genie-sim/geniesim4:latest .
 #   docker build -f docker/Dockerfile \
 #       --build-arg ISAACSIM_REGISTRY=nvcr.m.daocloud.io/nvidia \
 #       --build-arg ISAACSIM_TAG=6.2.0.1 \
 #       --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu \
 #       --build-arg PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-#       --build-arg LIBUIPC_SM=89 -t registry.agibot.com/genie-sim/geniesim4:latest .
+#       -t registry.agibot.com/genie-sim/geniesim4:latest .
 #
 # Base: NVIDIA's published Isaac Sim 6.X image (Ubuntu 24.04).
 # The image already ships Isaac Sim under /isaac-sim with
@@ -173,14 +173,13 @@ COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
 COPY source/geniesim_teleop/pyproject.toml /tmp/source/geniesim_teleop/pyproject.toml
 ARG WUJI_SDK_VERSION=2026.8.17
 COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
-COPY docker/libuipc-cuda13.txt /opt/geniesim/docker/libuipc-cuda13.txt
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     python3 /opt/geniesim/docker/bundled_isaacsim.py --torch-providers --output /tmp/torch-providers && \
     python3 /opt/geniesim/docker/collect_runtime_constraints.py \
         --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
     python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
     python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
-        /tmp/torch-providers/*.whl -r /opt/geniesim/docker/libuipc-cuda13.txt \
+        /tmp/torch-providers/*.whl \
         "wuji-sdk==${WUJI_SDK_VERSION}" \
         --extra-index-url "${ISAACSIM_PYPI_INDEX}" \
         -c /opt/geniesim/docker/isaac-constraints.txt && \
@@ -196,12 +195,14 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
 COPY docker/check_newton_pins.py /tmp/check_newton_pins.py
 RUN python3 /tmp/check_newton_pins.py && rm -f /tmp/check_newton_pins.py
 
-# Preinstall the host-selected native artifact and dependencies without a build GPU.
+# Prepare IPC's Python dependencies only. The supplied native wheels require
+# CUDA 13 and are incompatible with this CUDA 12 image. Keep LIBUIPC_SM as the
+# CLI's architecture-selection input, without installing an incompatible wheel.
 ARG LIBUIPC_SM
 COPY docker/install_libuipc.py /opt/geniesim/docker/
 COPY 3rdparty/pyuipc-sm89.whl 3rdparty/pyuipc-sm120.whl 3rdparty/pyuipc-LICENSE 3rdparty/pyuipc-README.md /opt/geniesim/3rdparty/
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python3 /opt/geniesim/docker/install_libuipc.py --build-sm "${LIBUIPC_SM}"
+    python3 /opt/geniesim/docker/install_libuipc.py --dependencies-only
 
 # Place the entrypoint at a stable absolute path so the image is
 # self-sufficient (no requirement to bind-mount the repo just to find

@@ -505,8 +505,12 @@ configs retain their separate names.
 
 ## Automatic native libuipc installation
 
-Jazzy base image builds select host GPU 0 and install its bundled SM89/SM120
-artifact during construction. `--build-arg LIBUIPC_SM=89|120` overrides detection;
+Jazzy base image builds select host GPU 0. The 5.1 combo installs its bundled
+SM89/SM120 artifact during construction; the dedicated 6.2 image prepares only
+IPC Python dependencies because the supplied native wheels require CUDA 13,
+which that image does not install. Native IPC is unavailable there and its
+optional bootstrap warning does not block startup.
+`--build-arg LIBUIPC_SM=89|120` overrides detection;
 unsupported/unreadable capability fails before Docker. Humble and derived
 post-training builds retain their existing paths.
 

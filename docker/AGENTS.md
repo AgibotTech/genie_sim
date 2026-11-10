@@ -152,9 +152,10 @@ SDK versions and upstream dependencies, including the `+cu128` suffix. Their
 RECORDs own local metadata and generated console scripts, never SDK payload or
 SDK metadata. Keep Triton
 installed for `torch.compile`. Do not download another Torch/CUDA 12 stack.
-`libuipc-cuda13.txt` retains the five CUDA 13 distributions supplying the six
-SONAMEs required by `install_libuipc.py:_link_cuda_runtime`; Torch's CUDA 12.8
-provider does not replace this native runtime.
+The dedicated 6.2 image installs no CUDA 13 runtime packages. Its IPC step
+prepares Python dependencies only: the supplied native wheels require CUDA 13
+and are incompatible with this image. Keep this limitation explicit; do not
+restore CUDA 13 to make optional IPC loading pass.
 The shared entrypoint repairs only the selected bundled Kit's runtime
 `config`, `data`, `logs` and named cache directories for the remapped UID.
 Pip-layout Kit paths do not enter the bundled-directory repair branch.
@@ -427,15 +428,19 @@ license remain in `3rdparty/`; see [the artifact notes](../3rdparty/pyuipc-READM
 The CLI detects host GPU 0 for Jazzy base builds and forwards `LIBUIPC_SM=89|120`.
 Explicit Docker build arguments take precedence, including bare arguments using
 the host environment. Invalid overrides and unsupported/unreadable capability
-fail before Docker. Raw builds must pass the architecture explicitly. Humble
+fail before Docker. The 5.1 raw build must pass the architecture explicitly. Humble
 and derived post-training profiles keep their existing build paths. Both base
 contexts already include `docker/**` and `3rdparty/**`.
 
-Only system CPython 3.12 is supported. Build stages need no GPU but require the
-complete CUDA 13 provider for native linking. The common entrypoint invokes
+Only system CPython 3.12 is supported. The 5.1 build stage needs no GPU but
+requires the complete CUDA 13 provider for native linking. The dedicated 6.2
+image retains the architecture argument for CLI compatibility, prepares only
+IPC Python dependencies and has no native IPC installation or image marker.
+Its raw build does not need an architecture argument. The common entrypoint invokes
 system Python's `bootstrap --libuipc-only`, using the mounted CLI source. Marked
 images verify without pip; unmarked environments may install/repair. Failures
-warn and leave existing container startup available. Bootstrap bounds installer
+warn and leave existing container startup available; this is expected for the
+CUDA 13-only IPC artifacts in the CUDA 12 dedicated image. Bootstrap bounds installer
 execution and cleans up the process group on timeout or interruption.
 
 Preserve existing runtime constraints, Newton guards, mirrors, ROS SDK cache

@@ -1,4 +1,5 @@
 # Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
 """Exercise native artifact integrity and mode boundaries without native execution."""
@@ -127,7 +128,7 @@ def test_verified_image_returns_before_installation(monkeypatch):
     installer.main(["--if-needed"])
 
 
-@pytest.mark.parametrize("recipe", ["Dockerfile", "Dockerfile.5.1"])
+@pytest.mark.parametrize("recipe", ["Dockerfile.5.1"])
 @pytest.mark.parametrize("sm", ["", "89", "120"])
 def test_native_build_requires_and_forwards_selected_architecture(tmp_path, recipe, sm):
     text = (ROOT / "docker" / recipe).read_text()
@@ -145,6 +146,22 @@ def test_native_build_requires_and_forwards_selected_architecture(tmp_path, reci
     )
     assert log.read_text().splitlines() == ["/opt/geniesim/docker/install_libuipc.py", "--build-sm", sm]
     assert result.returncode == (0 if sm else 2)
+
+
+def test_cuda12_recipe_prepares_only_ipc_python_dependencies(tmp_path):
+    text = (ROOT / "docker/Dockerfile").read_text()
+    block = text.split("ARG LIBUIPC_SM", 1)[1].split("\n\n", 1)[0]
+    command = block.split("RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked", 1)[1]
+    log = tmp_path / "calls"
+    python = tmp_path / "python3"
+    python.write_text('#!/bin/sh\nprintf "%s\\n" "$@" > "$CALLS"\n')
+    python.chmod(0o755)
+    subprocess.run(
+        ["/bin/sh", "-eu", "-c", command],
+        env={**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin", "CALLS": str(log)},
+        check=True,
+    )
+    assert log.read_text().splitlines() == ["/opt/geniesim/docker/install_libuipc.py", "--dependencies-only"]
 
 
 @pytest.mark.parametrize("code", [0, 1])

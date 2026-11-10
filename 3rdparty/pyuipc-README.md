@@ -27,13 +27,17 @@ When apt and pip expose multiple versions, only the version selected by the
 current interpreter is constrained. A non-root user can reuse a healthy
 root-installed artifact without needing write access to its installation lock.
 
-Both Jazzy Dockerfiles preinstall the native wheel and its Python dependencies
-with `install_libuipc.py --build-sm <SM>`. `geniesim docker build` (5.1 combo)
-and `geniesim docker6.2 build` detect host GPU 0 and pass `LIBUIPC_SM` to Docker.
+The 5.1 combo Dockerfile preinstalls the native wheel and its Python dependencies
+with `install_libuipc.py --build-sm <SM>`. The dedicated 6.2 image prepares only
+Python dependencies with `--dependencies-only`; it uses the bundled CUDA 12
+stack and does not install CUDA 13. These native wheels cannot load there.
+Both Jazzy CLI build commands detect host GPU 0 and pass `LIBUIPC_SM` to Docker;
+the 6.2 recipe retains the argument for CLI compatibility without installing a
+native artifact.
 For a build host without a supported GPU, select the deployment architecture:
 
 ```bash
-geniesim docker6.2 build --build-arg LIBUIPC_SM=89
+geniesim docker5.1 build --build-arg LIBUIPC_SM=89
 # For SM120 deployment: --build-arg LIBUIPC_SM=120
 ```
 

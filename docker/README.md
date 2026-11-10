@@ -347,8 +347,10 @@ Local metadata-only wheels retain their exact bundled versions and upstream
 dependencies; uninstalling those wheels does not remove SDK files. The finder
 routes those imports without starting Kit, and the SDK CUDA archive supplies
 their CUDA 12 libraries and Python bindings. Triton remains installed for
-`torch.compile`. The CUDA 13 components in [libuipc-cuda13.txt](libuipc-cuda13.txt)
-remain independently installed for the bundled native libuipc wheels.
+`torch.compile`. The dedicated image installs no CUDA 13 runtime packages.
+IPC Python dependencies are included, but the supplied native wheels require
+CUDA 13 and cannot run in this image. Optional IPC bootstrap failures leave
+ordinary container startup available.
 Other external dependencies remain installed for standalone workflows.
 The adapter does not flatten unrelated extension
 archives with conflicting versions into the system environment. SDK/colcon
@@ -368,11 +370,11 @@ driver 580.105.08 through the normal entrypoint as UID 1000:
 | Standalone Torch | SDK Torch/TorchVision/TorchAudio; GPU matmul, autograd, cuDNN and Triton passed without Kit |
 | CUDA Python | Bundled bindings imported and queried the CUDA 12 runtime |
 | Newton GPU | 240 MuJoCo-Warp steps; sphere settled on the ground at z=0.09963 m with bundled Torch loaded |
-| Native libuipc | Cloth, rigid and mixed cases; 30 steps per case plus reset/readback passed with bundled Torch loaded |
+| Native libuipc | Unavailable: supplied wheels require CUDA 13; only Python dependencies are installed |
 | Open3D | CUDA tensor addition passed, matching the baseline image |
 | ROS | `rclpy` from `/opt/ros/jazzy`, same process as Kit |
 | PhysX | 240 steps; falling 0.5 m cube settled at z=0.24999994 m |
-| RGB-D | 64×48 RGBA; spatial RGB variation 15.81; centre depth 2.5 m |
+| RGB-D | 64×48 RGBA; spatial RGB variation 17.72; centre depth 2.5 m |
 | External ROS peer | Received pose and 12,288-byte image; simulator received acknowledgement |
 | OVRTX RGB-D | 64×48 RGBA; spatial RGB variation 16.09; centre depth 2.75 m |
 
@@ -391,8 +393,9 @@ ROS_DOMAIN_ID=211 timeout -k 5s 480s python3 \
 ```
 
 The standalone check exercises GPU matrix multiplication, autograd, cuDNN and
-Triton compilation, validates TorchVision/TorchAudio imports and libuipc's six
-CUDA 13 links, and confirms Kit is not loaded. The 6.2 recipe also disables pip
+Triton compilation, validates TorchVision/TorchAudio imports, confirms that
+CUDA 13 runtime packages and the incompatible native IPC installation are absent, and
+confirms Kit is not loaded. The 6.2 recipe also disables pip
 bytecode compilation and removes `.pyc` files with matching Python source in
 the installation layer. Sourceless bytecode and bundled SDK files are kept.
 OVRTX's `bin/mdl/omniverse_exts` search directory is prepared at build time so
@@ -406,14 +409,19 @@ post-training images. Image size must be measured after a fresh recipe build;
 deleting SDK files in a container does not shrink its parent image layers.
 
 The 2026-11-10 fresh build
-`sha256:eb7a5121e0a73fe2644147c4cb132c6fda643df7ac1c599add9ed657e6805958`
+`sha256:b50ff5bb7c8d1642b4fb8d5dc4d8089bcdfdd272b58853ea1685773de1eafb50`
 passed the probe from cold shader caches through the normal entrypoint as UID
 1000. Concurrent cold Kit and OVRTX runs initialized shaders for about four
-minutes. Its uncompressed image size is **32.77 GB**, compared with **36.00 GB**
-before Torch reuse and bytecode cleanup: **3.23 GB (9.0%) smaller**. The Python
-dependency layer decreased from **10.5 GB to 7.31 GB**. System NVIDIA package
-files decreased from **2.84 GB to 1.11 GB**, retaining libuipc's required CUDA 13
-runtime. No second Torch payload is installed in the system package directory.
+minutes. Its uncompressed image size is **31.60 GB**, compared with **32.77 GB**
+before removal of the remaining CUDA 13 packages and native IPC installation:
+**1.17 GB (3.6%) smaller**. The Python dependency layer is **6.20 GB**.
+The five CUDA 13 runtime distributions (`nvidia-cublas`, `nvidia-cuda-runtime`,
+`nvidia-cusolver`, `nvidia-cusparse`, `nvidia-nvjitlink`) and the system
+`nvidia/cu13` directory are absent. The image reports `cuda-toolkit==12.8.1`
+and `torch==2.11.0+cu128`, with no duplicate system Torch payload.
+The supplied CUDA 13-only IPC wheels are not installed; their optional startup
+check fails without blocking `GENIESIM_READY`. Native IPC is intentionally
+unavailable in this dedicated image.
 The build's SDK guards, native artifact check and `pip check` passed.
 System-Python CPU tests reported **47 passed / 3 native-PhysX skips** outside
 Kit; the separate Kit sysid run reported **24 passed**. Docker 5.1's recipe and
@@ -836,23 +844,30 @@ This skips X11, Xauthority, and `/dev/input` mounts.
 
 ## Native libuipc runtime
 
-Jazzy base builds install the bundled architecture-specific libuipc wheel into
-system Python 3.12. The CLI selects host GPU 0 automatically:
+The 5.1 combo build installs the bundled architecture-specific libuipc wheel
+into system Python 3.12. The CLI selects host GPU 0 automatically:
 
 ```bash
-geniesim docker build
-geniesim docker6.2 build
+geniesim docker5.1 build
 # Select a deployment GPU architecture explicitly, including on a GPU-less host:
-geniesim docker build --build-arg LIBUIPC_SM=89
-geniesim docker6.2 build --build-arg LIBUIPC_SM=120
+geniesim docker5.1 build --build-arg LIBUIPC_SM=89
+geniesim docker5.1 build --build-arg LIBUIPC_SM=120
 ```
 
 Only SM89 and SM120 are supported. Unsupported or unreadable GPU capability
 stops the build before Docker, with a manual override hint. Raw `docker build`
 requires `--build-arg LIBUIPC_SM=89` or `120`; the Docker build stage itself
-needs no GPU. Native linking requires the image's complete CUDA 13 provider.
+needs no GPU. Native linking in the combo requires its complete CUDA 13 provider.
 Both artifacts require Linux x86_64 CPython 3.12; bundled `omni_python` 3.11,
 the Humble base and derived post-training layers do not receive this build step.
+
+The dedicated `geniesim docker6.2` image uses the bundled CUDA 12 stack and
+installs no CUDA 13 runtime packages. It prepares IPC Python dependencies only;
+the current native wheels are incompatible and IPC is unavailable. Its raw
+Docker build needs no architecture argument. The CLI retains `LIBUIPC_SM`
+selection for compatibility, but that argument does not install a native wheel
+in the dedicated image. The common entrypoint's optional IPC warning does not
+block other runtimes.
 
 The installer verifies SHA256, preserves installed SDK dependency versions and
 restores the previous native installation if publication fails. The image
