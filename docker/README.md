@@ -870,9 +870,11 @@ geniesim bootstrap --libuipc-only
 geniesim bootstrap
 
 geniesim docker6.2 build --build-arg LIBUIPC_SM=89
-# The explicit combo image uses the same acquisition path:
-geniesim docker5.1 build --build-arg LIBUIPC_SM=89
 ```
+
+The dedicated 6.2 image preinstalls native libuipc. The `docker5.1` combo
+omits it during both image construction and automatic container startup;
+its build does not detect GPU architecture or pass native asset inputs.
 
 Native installation still requires system CPython 3.12, Linux x86_64, a supported
 GPU (SM89/SM120), and the complete CUDA 12.8 runtime, including the bundled Isaac 6.2 provider. The Docker CLI detects GPU 0
@@ -916,10 +918,12 @@ scoped main-thread alarm and restores any previous alarm after a transfer.
 Undersized files remain available for the next range request. Corrupt cache entries are reacquired;
 corrupt explicit local assets fail without being overwritten.
 
-Both Jazzy images retain the selected verified wheel in their image-owned cache
+The dedicated 6.2 image retains the selected verified wheel in its image-owned cache
 at the existing `/opt/geniesim/3rdparty` location. Keep that cache in the final
 image: the existing version/archive checks open the wheel, so offline startup
 must not depend on the build's temporary mount or the caller's home directory.
+The shared entrypoint checks native libuipc only when the image contains
+`/opt/geniesim/docker/install_libuipc.py`.
 Only the selected architecture is fetched by a normal install/build. Fetching
 alone on a control host can use `python3 docker/install_libuipc.py --download-sm 89`;
 this mode performs no pip installation, GPU query, ABI or native loading check.

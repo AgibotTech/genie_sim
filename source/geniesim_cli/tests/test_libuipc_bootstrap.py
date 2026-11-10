@@ -65,9 +65,9 @@ def test_missing_gpu_reports_manual_build_override(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "variant,profile,expected", [("", "", True), ("5.1", "", True), ("4.5", "", False), ("", "post-train", False)]
+    "variant,profile,expected", [("", "", True), ("5.1", "", False), ("4.5", "", False), ("", "post-train", False)]
 )
-def test_real_build_command_selects_native_runtime_only_for_jazzy_base_images(monkeypatch, variant, profile, expected):
+def test_real_build_command_selects_native_runtime_only_for_prepared_recipes(monkeypatch, variant, profile, expected):
     monkeypatch.setattr(docker, "_active_variant", variant)
     monkeypatch.setattr(docker, "_active_profile", profile)
     monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
@@ -82,6 +82,25 @@ def test_real_build_command_selects_native_runtime_only_for_jazzy_base_images(mo
     docker._do_build(["--no-resolve"])
     assert (calls[0][0] == "nvidia-smi") is expected
     assert ("LIBUIPC_SM=89" in calls[-1]) is expected
+
+
+def test_combo_build_omits_native_runtime_even_with_asset_environment(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(docker, "_active_variant", "5.1")
+    monkeypatch.setattr(docker, "_active_profile", "")
+    monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
+    monkeypatch.setattr(docker, "_isaacsim_build_args", lambda _: [])
+    monkeypatch.setattr(docker, "_libuipc_build_args", lambda _: pytest.fail("native GPU selection attempted"))
+    (tmp_path / "wheels").mkdir()
+    monkeypatch.setenv("GENIESIM_ASSETS_SRC", str(tmp_path))
+    monkeypatch.setenv("GENIESIM_LIBUIPC_SOURCE", "huggingface")
+    monkeypatch.setenv("GENIESIM_LIBUIPC_REVISION", "a" * 40)
+    calls = []
+    monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(returncode=0))
+    docker._do_build(["--no-resolve"])
+    assert len(calls) == 1 and calls[0][:2] == ["docker", "build"]
+    assert not any("LIBUIPC" in arg or "libuipc_assets=" in arg for arg in calls[0])
+    docker._print_usage()
+    assert "LIBUIPC_SM" not in capsys.readouterr().out
 
 
 def test_failed_selection_does_not_start_docker(monkeypatch):

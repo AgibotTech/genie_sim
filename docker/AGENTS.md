@@ -377,9 +377,9 @@ a specific cache; it must not recurse into source assets or unrelated scenes.
   `WARP_CACHE_PATH=/tmp/geniesim-newton-warp-<uid>` so containers that still run as
   image UID 1234 cannot poison the remapped developer user's kernel cache.
 
-- **5.1 combo image.** `Dockerfile.5.1` is a superset of `Dockerfile`: Isaac
-  Sim 5.1 (via `omni_python`) and Isaac Sim 6.X (via `python3`) coexist in the
-  same container. All geniesim packages are importable from both interpreters.
+- **5.1 combo image.** Isaac Sim 5.1 (via `omni_python`) and Isaac Sim 6.X
+  (via `python3`) coexist in `Dockerfile.5.1`. Native libuipc is omitted from
+  its build and automatic startup installation.
 
 ## Adding a new variant
 
@@ -437,7 +437,9 @@ resolved commit. The optional revision override must be a 40-character commit an
 applies only to the primary source. Explicit HF selection never retries MS. The
 240-second total budget reserves its second half for HF fallback.
 
-The CLI detects GPU 0 for Jazzy base builds or accepts `LIBUIPC_SM=89|120`.
+The dedicated 6.2 recipe declares `LIBUIPC_SM`; the CLI detects GPU 0 for
+that build or accepts `LIBUIPC_SM=89|120`. The 5.1 combo omits native libuipc
+and does not probe GPU architecture or forward native asset build inputs.
 Local `GENIESIM_ASSETS_SRC/wheels` is an optional named BuildKit context
 `libuipc_assets`. Without local bytes, the installer downloads the selected
 pinned publication. Explicit contexts/build arguments take precedence over
@@ -447,6 +449,8 @@ Only system CPython 3.12 / Linux x86_64 is supported. Builds need no GPU but
 require a complete CUDA 12.8 provider, including the bundled Isaac 6.2 SDK provider. Keep the selected verified wheel in the
 image-owned `GENIESIM_LIBUIPC_CACHE`: startup uses the mounted CLI and installer,
 which still open the original archive for version/dependency verification.
+The shared entrypoint enables this phase only when the image contains
+`/opt/geniesim/docker/install_libuipc.py`; the 5.1 combo does not contain it.
 Cache hits must work read-only and without network. Marked images verify without
 pip; unmarked environments may install/repair. Optional native failures preserve
 container startup; failed native preparation fails image construction.

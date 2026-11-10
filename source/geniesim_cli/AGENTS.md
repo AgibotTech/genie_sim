@@ -524,11 +524,14 @@ Explicit HuggingFace selection does not retry ModelScope. Release bytes remain p
 publication requires no code edits. An explicit commit override remains optional.
 Only Linux x86_64 system CPython 3.12, SM89/SM120 and CUDA 12.8 are supported.
 
-Jazzy base Docker builds select GPU 0 or explicit `LIBUIPC_SM`. The CLI forwards
+Dedicated 6.2 Docker builds select GPU 0 or explicit `LIBUIPC_SM`. The CLI forwards
 the local `wheels/` directory as named context `libuipc_assets`, and forwards
 `GENIESIM_LIBUIPC_SOURCE`/`GENIESIM_LIBUIPC_REVISION` as build arguments; explicit
 arguments/contexts win. Images retain `GENIESIM_LIBUIPC_CACHE` for offline startup
-checks. Humble and derived profiles retain their existing paths.
+checks. The CLI enables this build path only for recipes declaring `LIBUIPC_SM`.
+The 5.1 combo omits native libuipc from image construction and automatic startup;
+it does not probe GPU architecture or forward native asset build inputs.
+Humble and derived profiles retain their existing paths.
 
 Usage, publication and cache contracts are documented in
 [asset-backed installation](../../docker/README.md#asset-backed-native-libuipc-installation).

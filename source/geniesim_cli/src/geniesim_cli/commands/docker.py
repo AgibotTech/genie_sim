@@ -383,7 +383,7 @@ def _print_usage() -> None:
             f"{DIM}Isaac Sim series to resolve the pins from (default: {v_series}){RST}"
         )
         print(f"  {WHITE}--no-resolve{RST}       {DIM}skip version resolution; use the Dockerfile ARG defaults{RST}")
-    if not _active_profile and _active_variant != "4.5":
+    if not _active_profile and _active_variant == "":
         print(
             f"  {WHITE}--build-arg LIBUIPC_SM=89|120{RST}  "
             f"{DIM}override host GPU 0 detection for native IPC preinstallation{RST}"
@@ -555,7 +555,7 @@ def _do_build(extra: list[str]) -> None:
     # Resolved inside the banner block: the "Isaac Sim:" line it prints
     # belongs with Repo root / Dockerfile / Tag, above the blank separator.
     resolved = _isaacsim_build_args(series if resolve_pins else None)
-    if not _active_profile and _VARIANT_PYTHON_TAG.get(_active_variant) == "cp312":
+    if not _active_profile and "LIBUIPC_SM" in supported:
         try:
             resolved += _libuipc_build_args(_mirrors.as_flags(values))
             source = os.environ.get(_env.GENIESIM_ASSETS_SRC.name)

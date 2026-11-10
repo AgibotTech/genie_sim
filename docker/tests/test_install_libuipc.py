@@ -152,10 +152,9 @@ def test_verified_image_returns_before_installation(monkeypatch, fixture_wheels)
     installer.main(["--if-needed"])
 
 
-@pytest.mark.parametrize("recipe", ["Dockerfile", "Dockerfile.5.1"])
 @pytest.mark.parametrize("sm", ["", "89", "120"])
-def test_native_build_requires_and_forwards_selected_architecture(tmp_path, recipe, sm):
-    text = (ROOT / "docker" / recipe).read_text()
+def test_native_build_requires_and_forwards_selected_architecture(tmp_path, sm):
+    text = (ROOT / "docker/Dockerfile").read_text()
     block = text.split("ARG LIBUIPC_SM", 1)[1].split("\n\n", 1)[0]
     command = block.split("RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked", 1)[1]
     command = command.replace("--mount=from=libuipc_assets,target=/libuipc-assets/wheels,ro", "")
@@ -181,10 +180,15 @@ def test_native_build_requires_and_forwards_selected_architecture(tmp_path, reci
 
 
 @pytest.mark.parametrize("code", [0, 1])
-def test_entrypoint_uses_system_bootstrap_and_keeps_startup_available(tmp_path, code):
+@pytest.mark.parametrize("prepared", [False, True])
+def test_entrypoint_only_bootstraps_native_prepared_images(tmp_path, code, prepared):
     text = (ROOT / "docker/entrypoint.sh").read_text()
     block = text.split("# Phase 3b —", 1)[1].split("# Phase 4 —", 1)[0]
-    block = block[block.index("if ! GENIESIM_REPO_ROOT=") :]
+    block = block[block.index("if [ -f ") :]
+    installer = tmp_path / "install_libuipc.py"
+    if prepared:
+        installer.touch()
+    block = block.replace("/opt/geniesim/docker/install_libuipc.py", str(installer))
     log = tmp_path / "calls"
     python = tmp_path / "python3"
     python.write_text(
@@ -208,6 +212,10 @@ def test_entrypoint_uses_system_bootstrap_and_keeps_startup_available(tmp_path, 
         text=True,
         check=True,
     )
+    if not prepared:
+        assert not log.exists()
+        assert not result.stdout
+        return
     assert log.read_text().splitlines() == ["-m", "geniesim_cli", "bootstrap", "--libuipc-only"]
     root, path = Path(str(log) + ".env").read_text().splitlines()
     assert root == "/workspace" and path.split(":")[0] == "/workspace/source/geniesim_cli/src"

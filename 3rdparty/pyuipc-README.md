@@ -1,7 +1,7 @@
 # Main IPC native runtime
 
 **Default: install the prebuilt wheel directly** through `geniesim bootstrap`
-or a Jazzy Docker build. Building libuipc is optional. For the official source
+or a dedicated 6.2 Docker build. Building libuipc is optional. For the official source
 commit, the two ordered patches and build/package commands, see
 [the source build guide](libuipc/README.md).
 
@@ -39,11 +39,12 @@ When apt and pip expose multiple versions, only the version selected by the
 current interpreter is constrained. A non-root user can reuse a healthy
 root-installed artifact without needing write access to its installation lock.
 
-Both Jazzy Dockerfiles preinstall the selected CUDA 12.8 wheel and its Python
+The dedicated 6.2 Dockerfile preinstalls the selected CUDA 12.8 wheel and its Python
 dependencies with `install_libuipc.py --build-sm <SM>`. The default
 `geniesim docker build` and `geniesim docker6.2 build` select dedicated 6.2;
-`geniesim docker5.1 build` selects the combo image. Both paths detect host GPU 0
-and pass `LIBUIPC_SM` to Docker.
+these commands detect host GPU 0 and pass `LIBUIPC_SM` to Docker.
+The `geniesim docker5.1` combo omits native libuipc during image construction
+and automatic startup installation.
 For a build host without a supported GPU, select the deployment architecture:
 
 ```bash

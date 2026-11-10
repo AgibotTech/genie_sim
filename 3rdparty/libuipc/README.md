@@ -1,6 +1,6 @@
 # libuipc installation and optional source build
 
-Use the prebuilt wheel by default. `geniesim bootstrap` and the Jazzy Docker
+Use the prebuilt wheel by default. `geniesim bootstrap` and dedicated 6.2 Docker
 builds select the SM89 or SM120 wheel from the asset repository's
 `wheels/libuipc/`, verify its size and SHA256, and install it directly. They do
 not compile libuipc. ModelScope is the default remote source, with automatic
