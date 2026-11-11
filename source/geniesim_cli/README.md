@@ -33,7 +33,7 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim env` | Show `GENIESIM_*` env vars |
 | `geniesim completion bash\|zsh` | Generate shell completion |
 | `geniesim docker {build,up,down,into,logs}` | Manage the default Isaac Sim 6.2 container (alias of `docker6.2`) |
-| `geniesim docker5.1 …` / `docker6.2 …` / `docker4.5 …` | Per–Isaac-Sim variants |
+| `geniesim docker5.1 …` / `docker6.2 …` / `docker4.5 …` | Isaac Sim variants; `docker4.5` and `docker5.1` are ⚠️ E.O.L. / deprecated |
 | `geniesim docker --profile post-train …` / `--profile post-train-teleop …` | post-training simulation server / optional teleop layer; see [Docker profiles](../../docker/README.md#post-training-profiles) |
 | `geniesim post-train server start\|status\|stop\|logs …` | Operate post-training server processes inside the prepared runtime; see [the server workflow](../rlinf_geniesim/README.md#start-and-initialize) |
 | `geniesim post-train teleop …` | Connect Pico debugging; see [teleoperation](../rlinf_geniesim/TELEOP_USAGE.md) |
@@ -46,6 +46,10 @@ runs even on a control node where the rest of the SDK isn't installed.
 | `geniesim teleop run` | Launch the teleop loop |
 
 Run `geniesim -h` for the full list.
+
+`docker4.5` (`geniesim2`) and `docker5.1` (`geniesim3`) are E.O.L. and deprecated.
+Their commands print an advisory and remain available without an extra confirmation.
+Use `geniesim docker` / `docker6.2` for new deployments.
 
 
 ---

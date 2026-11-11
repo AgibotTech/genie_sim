@@ -8,8 +8,8 @@ Dispatched by four CLI commands:
 
 * ``geniesim docker``    — default alias for ``docker6.2``.
 * ``geniesim docker6.2`` — Isaac Sim 6.2 variant (geniesim4).
-* ``geniesim docker5.1`` — Isaac Sim 5.1 variant (geniesim3).
-* ``geniesim docker4.5`` — Isaac Sim 4.5 variant (geniesim2 E.O.L.).
+* ``geniesim docker5.1`` — Isaac Sim 5.1 variant (geniesim3; E.O.L., deprecated).
+* ``geniesim docker4.5`` — Isaac Sim 4.5 variant (geniesim2; E.O.L., deprecated).
 * ``geniesim docker --profile post-train`` — post-training simulation server layer.
 * ``geniesim docker --profile post-train-teleop`` — optional teleoperation layer.
 
@@ -83,8 +83,10 @@ class Variant:
                  concrete ``ISAACSIM_TAG`` / ``ISAACSIM_PIP_VERSION`` build
                  args by ``geniesim_cli._isaacsim`` at build time. ``None``
                  means "don't resolve" — the Dockerfile's literal ``ARG``
-                 defaults stand. Appended last and optional, so downstream
+                 defaults stand. Optional, so downstream
                  positional construction keeps working.
+    deprecated : E.O.L. variant; display an advisory without blocking commands.
+                 Optional and appended for downstream constructor compatibility.
     """
 
     dockerfile: str
@@ -94,6 +96,7 @@ class Variant:
     implemented: bool = True
     dir: str = "docker"
     isaacsim_series: str | None = None
+    deprecated: bool = False
 
     def __post_init__(self) -> None:
         # Enforce read-only env at construction time so ``dataclasses.replace(v,
@@ -130,6 +133,7 @@ VARIANTS: Mapping[str, Variant] = MappingProxyType(
             dockerfile="Dockerfile.4.5",
             image="registry.agibot.com/genie-sim/geniesim2:latest",
             container="geniesim2",
+            deprecated=True,
             env=MappingProxyType(
                 {
                     "ROS_DISTRO": "humble",
@@ -146,6 +150,7 @@ VARIANTS: Mapping[str, Variant] = MappingProxyType(
             dockerfile="Dockerfile.5.1",
             image="registry.agibot.com/genie-sim/geniesim3:latest",
             container="geniesim3",
+            deprecated=True,
             env=MappingProxyType(
                 {
                     "ROS_DISTRO": "jazzy",
@@ -728,6 +733,12 @@ def run(args: list[str], variant: str = "", invoked_as: str = "docker") -> None:
             print(f"{RED}❌ Unsupported arguments for {sub}: {' '.join(rest)}{RST}")
             sys.exit(2)
     _ensure_docker_cli()
+
+    if _selected_variant().deprecated:
+        print(
+            f"{YELLOW}⚠️ geniesim {_cmd_label()} is E.O.L. and deprecated. "
+            f"Use geniesim docker or geniesim docker6.2.{RST}\n"
+        )
 
     # ---- experimental variant warning -----------------------------------
     # Generic gate for any variant marked ``implemented=False``: let

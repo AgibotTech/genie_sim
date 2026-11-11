@@ -182,6 +182,7 @@ def test_legacy_up_preserves_runtime_defaults_and_workspace_override(cli, verb, 
         GENIESIM_SHM_SIZE="8g",
     )
     assert result.returncode == 0, result.stdout + result.stderr
+    assert ("E.O.L. and deprecated" in result.stdout) == (verb in {"docker4.5", "docker5.1"})
     command = next(call for call in commands if call[0] == "run")
     assert command[command.index("--name") + 1] == name
     assert command[-4:] == [f"registry.agibot.com/genie-sim/{image}", "tail", "-f", "/dev/null"]

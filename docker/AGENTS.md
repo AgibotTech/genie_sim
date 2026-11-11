@@ -9,10 +9,14 @@ injected by the CLI (`docker.py` → `start.sh` → `entrypoint.sh`).
 | File | Isaac Sim | Ubuntu | ROS 2 | Python | Image | Status |
 |------|-----------|--------|-------|--------|-------|--------|
 | `Dockerfile` | 6.X — exact base `6.2.0.1`, adapter compatibility version `6.2.0.0` | 24.04 Noble | Jazzy | system `python3` 3.12 using bundled SDK | geniesim4 | ✅ default; see acceptance |
-| `Dockerfile.5.1` | **5.1 + 6.2** (combo; tag `5.1.0`, wheel `6.2.0.0`) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.2 pip-installed) | geniesim3 | Explicit combo variant |
-| `Dockerfile.4.5` | 4.5 (tag + wheel `4.5.0`) | 22.04 Jammy | Humble | system `python3` 3.10 (pip-installed isaacsim) | geniesim2 | ⚠️ E.O.L. |
+| `Dockerfile.5.1` | **5.1 + 6.2** (combo; tag `5.1.0`, wheel `6.2.0.0`) | 24.04 Noble | Jazzy | `omni_python` (5.1 bundled) + system `python3` 3.12 (6.2 pip-installed) | geniesim3 | ⚠️ E.O.L. / deprecated |
+| `Dockerfile.4.5` | 4.5 (tag + wheel `4.5.0`) | 22.04 Jammy | Humble | system `python3` 3.10 (pip-installed isaacsim) | geniesim2 | ⚠️ E.O.L. / deprecated |
 
 ## Release-line ownership
+
+Docker 4.5 and 5.1 are E.O.L. and deprecated. Their explicit CLI commands
+remain available and print an advisory without a confirmation prompt.
+Use `geniesim docker` / `docker6.2` for new deployments.
 
 Genie Sim **3.5.0** is the benchmark-focused release using `geniesim3:latest`,
 the Isaac Sim 5.1 + 6.2 combo in `Dockerfile.5.1`. The dedicated 6.2 recipe,

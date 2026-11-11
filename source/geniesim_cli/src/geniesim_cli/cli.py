@@ -207,11 +207,17 @@ def _print_usage() -> None:
         f"  {CYAN}docker{RST} <build|up|down|into|logs>    🐳 Manage the Genie Sim container {DIM}(default → docker6.2){RST}"
     )
     print(f"  {CYAN}docker6.2{RST} <build|up|down|into|logs>  🐳 Isaac Sim 6.2 variant (geniesim4, default)")
-    print(f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant (geniesim3)")
+    print(
+        f"  {CYAN}docker5.1{RST} <build|up|down|into|logs>  🐳 Isaac Sim 5.1 variant "
+        f"{YELLOW}(geniesim3; ⚠️ E.O.L., deprecated){RST}"
+    )
     print(
         f"  {CYAN}docker --profile{RST} post-train|post-train-teleop <command>  🐳 Post-training server / teleop image layer{RST}"
     )
-    print(f"  {CYAN}docker4.5{RST} <build|up|down|into|logs>  🐳 Isaac Sim 4.5 variant (geniesim2 E.O.L.)")
+    print(
+        f"  {CYAN}docker4.5{RST} <build|up|down|into|logs>  🐳 Isaac Sim 4.5 variant "
+        f"{YELLOW}(geniesim2; ⚠️ E.O.L., deprecated){RST}"
+    )
     print(f"  {CYAN}post-train{RST} <server|teleop> [...]         🧪 Manage post-training simulation services{RST}")
     print(f"  {CYAN}bootstrap{RST}           🪄 Bootstrap / re-initialize the geniesim stack")
     print(f"  {CYAN}bootstrap --libuipc-only{RST}  🪄 Check / install only the optional native IPC runtime")

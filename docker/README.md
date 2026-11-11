@@ -2,6 +2,9 @@
 
 This directory contains the Docker image definitions and runtime scripts for running GenieSim with NVIDIA Isaac Sim and ROS 2.
 
+> **⚠️ E.O.L. / deprecated:** `docker4.5` (`geniesim2`) and `docker5.1` (`geniesim3`).
+> Their explicit commands remain available for existing deployments. Use `geniesim docker` / `docker6.2` for new deployments.
+
 The Docker images are intended to be used as **base development/runtime images**. Users normally bind-mount the GenieSim workspace into `/workspace`, and the container entrypoint installs the mounted tier-1 GenieSim packages in editable mode each time the container starts. This keeps the heavy simulator and ROS layers baked into the image while allowing active GenieSim source development without rebuilding the image.
 
 ## Quick start
@@ -29,11 +32,11 @@ geniesim docker down
 ```
 
 `geniesim docker` is an alias for `geniesim docker6.2`, the default variant.
-Use `geniesim docker5.1` explicitly for the 5.1 + 6.2 combo.
+The deprecated `geniesim docker5.1` command selects the legacy 5.1 + 6.2 combo.
 
 ### Use the prebuilt combo image
 
-To skip the `docker5.1` combo image build, use the Docker Hub image published in
+For existing deployments, skip the deprecated `docker5.1` combo image build with the Docker Hub image published in
 [issue #201](https://github.com/AgibotTech/genie_sim/issues/201). Pull it and tag
 it with the combo image name expected by the CLI:
 
@@ -68,8 +71,8 @@ existing contracts when a checkout's package version changes.
 
 | Command | Dockerfile | Image | Container | Isaac Sim | OS | ROS 2 | Python strategy | Status |
 |---|---|---|---|---|---|---|---|---|
-| `geniesim docker5.1` | `Dockerfile.5.1` | `registry.agibot.com/genie-sim/geniesim3:latest` | `geniesim3` | 5.1 + 6.2 (wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | `omni_python` for Isaac Sim 5.1, system `python3.12` for Isaac Sim 6.2 + ROS | Explicit combo; recorded system 6.2 checks pass; bundled 5.1 unqualified |
-| `geniesim docker4.5` | `Dockerfile.4.5` | `registry.agibot.com/genie-sim/geniesim2:latest` | `geniesim2` | 4.5 | Ubuntu 22.04 | Humble | system `python3.10` | ⚠️ E.O.L. |
+| `geniesim docker5.1` | `Dockerfile.5.1` | `registry.agibot.com/genie-sim/geniesim3:latest` | `geniesim3` | 5.1 + 6.2 (wheel `6.2.0.0`) | Ubuntu 24.04 | Jazzy | `omni_python` for Isaac Sim 5.1, system `python3.12` for Isaac Sim 6.2 + ROS | ⚠️ E.O.L. / deprecated |
+| `geniesim docker4.5` | `Dockerfile.4.5` | `registry.agibot.com/genie-sim/geniesim2:latest` | `geniesim2` | 4.5 | Ubuntu 22.04 | Humble | system `python3.10` | ⚠️ E.O.L. / deprecated |
 | `geniesim docker` / `geniesim docker6.2` | `Dockerfile` | `registry.agibot.com/genie-sim/geniesim4:latest` | `geniesim4` | Bundled 6.2 (exact base `6.2.0.1`) | Ubuntu 24.04 | Jazzy | system `python3.12`, bundled SDK adapter | Default; see image-specific acceptance |
 
 The minor version is intentionally not encoded in the main image family name. For example, `geniesim3:latest` tracks the current 5.1-based image line.

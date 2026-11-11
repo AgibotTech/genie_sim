@@ -43,6 +43,21 @@ def test_unknown_variant_has_a_helpful_error():
         docker.get_variant("unknown")
 
 
+@pytest.mark.parametrize("name,deprecated", [("", False), ("4.5", True), ("5.1", True)])
+def test_deprecated_variant_help_warns_without_confirmation(monkeypatch, capsys, name, deprecated):
+    monkeypatch.setattr(docker, "_active_variant", "")
+    monkeypatch.setattr(docker, "_active_profile", "")
+    monkeypatch.setattr(docker, "_invoked_as", "docker")
+    monkeypatch.setattr(docker, "_ensure_docker_cli", lambda: None)
+    monkeypatch.setattr("builtins.input", lambda *args: pytest.fail("deprecation must not prompt"))
+    assert docker.get_variant(name).deprecated is deprecated
+    docker.run(["--help"], variant=name, invoked_as=f"docker{name}")
+    output = capsys.readouterr().out
+    assert ("E.O.L. and deprecated" in output) is deprecated
+    if deprecated:
+        assert "Use geniesim docker or geniesim docker6.2" in output
+
+
 @pytest.fixture
 def build_calls(monkeypatch):
     monkeypatch.setattr(docker, "_active_variant", "")

@@ -35,6 +35,9 @@ the dedicated Isaac Sim 6.2 image, `geniesim4:latest`, also available via
 `geniesim docker6.2`, which belongs to the separate **4.0**
 line. See [release lines and runtime selection](docker/README.md#release-lines).
 
+> **⚠️ E.O.L. / deprecated:** `geniesim docker4.5` (`geniesim2`) and
+> `geniesim docker5.1` (`geniesim3`). Use `geniesim docker` / `docker6.2` for new deployments.
+
 **Genie Sim is the simulation platform from AgiBot.** It provides developers with a complete toolchain for *environment reconstruction*, *scene generalization*, *data collection*, and *automated evaluation*. Its core module, **Genie Sim Benchmark** is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
 
 The platform integrates **3D reconstruction** with **visual generation** to create a high-fidelity simulation environment. It pioneers **LLM-driven technology** to generate vast simulation scenes and evaluation configurations in minutes. The evaluation system covers **200+ tasks** across **100,000+ scenarios** to establish a comprehensive capability profile for models. Genie Sim also opens over **10,000 hours of synthetic data** including real-world robot operation scenarios.

@@ -150,6 +150,11 @@ and the dispatcher in `main()` in sync.
 `geniesim docker` maps to `docker6.2`, using system Python with the bundled
 Isaac 6.2 SDK. Use explicit `docker5.1` for bundled Isaac 5.1 plus system-Python
 Isaac 6.2.
+`docker4.5` (`geniesim2`) and `docker5.1` (`geniesim3`) are E.O.L. and deprecated.
+The public `Variant.deprecated` field defaults to `False` and is appended for
+constructor compatibility. These two variants set it to `True`; dispatch prints
+a yellow advisory recommending `docker` / `docker6.2`, without blocking commands
+or adding a prompt. Root help and the Docker guides show the same lifecycle status.
 Help and build output for the 5.1 combo image show a notice linking to
 [issue #201](https://github.com/AgibotTech/genie_sim/issues/201), which explains
 how to skip the build by pulling and retagging the Docker Hub image. The notice
