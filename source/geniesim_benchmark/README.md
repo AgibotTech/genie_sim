@@ -2,6 +2,10 @@
 
 See [Benchmark usage](benchmark_test_docs.md) for setup, task discovery and per-task smoke commands.
 
+Isaac tasks run with system Python 3.12 and Isaac Sim 6.2 in the dedicated
+`geniesim4:latest` image (`geniesim docker` / `geniesim docker6.2`). Newton and
+libuipc tasks use the same interpreter; native MuJoCo keeps its separate runtime.
+
 <a id="deformable-evaluation"></a>
 <a id="deformable-scoring"></a>
 

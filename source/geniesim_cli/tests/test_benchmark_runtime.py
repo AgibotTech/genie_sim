@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Offline routing checks for the dual-interpreter benchmark image."""
+"""Offline routing checks for Isaac 6.2 benchmark interpreters."""
 
 import os
 from pathlib import Path
@@ -11,7 +11,6 @@ import unittest
 from unittest.mock import patch
 
 from geniesim_cli.commands import benchmark
-
 
 CONFIGS = Path(__file__).resolve().parents[2] / "geniesim_benchmark/src/geniesim_benchmark/config"
 RT_TASKS = {
@@ -43,9 +42,11 @@ class BenchmarkRuntimeTests(unittest.TestCase):
                         cmd = benchmark._build_app_cmd(config, [], "localhost:8999")
                         if runtime in ("newton", "libuipc"):
                             selected_rt[config.stem] = runtime
-                            self.assertEqual(cmd[:3], ["/usr/bin/python3.12", "-m", f"geniesim_benchmark.{runtime}.runner"])
+                            self.assertEqual(
+                                cmd[:3], ["/usr/bin/python3.12", "-m", f"geniesim_benchmark.{runtime}.runner"]
+                            )
                         elif runtime == "isaac":
-                            self.assertEqual(cmd[0], "omni_python")
+                            self.assertEqual(cmd[0], "/usr/bin/python3.12")
                         else:
                             self.assertEqual(runtime, "mujoco")
                             self.assertTrue(cmd[1].endswith("scripts/run_mujoco.py"))
@@ -54,7 +55,7 @@ class BenchmarkRuntimeTests(unittest.TestCase):
 
     def test_child_environment_tracks_task_choice(self):
         for task, expected in (
-            ("g2op_crsemb_pour_50ml_into_graduated_cylinder", "omni_python"),
+            ("g2op_crsemb_pour_50ml_into_graduated_cylinder", "/usr/bin/python3.12"),
             *((task, "/usr/bin/python3.12") for task in RT_TASKS),
         ):
             for default in ("python3", "omni_python"):
@@ -66,10 +67,19 @@ class BenchmarkRuntimeTests(unittest.TestCase):
                     self.assertEqual(env["GENIESIM_PY_CMD"], expected)
                     self.assertEqual(os.environ["GENIESIM_PY_CMD"], default)
 
-    def test_missing_bundled_runtime_does_not_fall_back_to_62(self):
+    def test_isaac_62_does_not_require_bundled_51_wrapper(self):
+        with patch.dict(os.environ, {"GENIESIM_PY_CMD": "omni_python"}), patch.object(
+            benchmark.shutil, "which", side_effect=lambda name: "/usr/bin/python3.12" if name == "python3.12" else None
+        ):
+            cmd = benchmark._build_app_cmd(CONFIGS / "g2op_crsemb_pour_50ml_into_graduated_cylinder.yaml", [], None)
+            self.assertEqual(cmd[0], "/usr/bin/python3.12")
+
+    def test_missing_system_runtime_for_isaac_does_not_fall_back_to_51(self):
         with patch.dict(os.environ, {"GENIESIM_PY_CMD": "python3"}), patch.object(
-            benchmark.shutil, "which", return_value=None
-        ), self.assertRaisesRegex(RuntimeError, "Isaac Sim 5.1"):
+            benchmark.shutil,
+            "which",
+            side_effect=lambda name: "/usr/local/bin/omni_python" if name == "omni_python" else None,
+        ), self.assertRaisesRegex(RuntimeError, "Python 3.12"):
             benchmark._build_app_cmd(CONFIGS / "g2op_crsemb_pour_50ml_into_graduated_cylinder.yaml", [], None)
 
     def test_missing_system_runtime_does_not_fall_back_to_51(self):
@@ -86,7 +96,10 @@ class BenchmarkRuntimeTests(unittest.TestCase):
             python.touch()
             with patch.dict(os.environ, {"GENIESIM_PY_CMD": "omni_python"}), patch.object(
                 benchmark.shutil, "which", side_effect=combo_command
-            ), patch("geniesim_benchmark.rt_engine.environment.runtime_environment", return_value={"VIRTUAL_ENV": str(virtualenv)}):
+            ), patch(
+                "geniesim_benchmark.rt_engine.environment.runtime_environment",
+                return_value={"VIRTUAL_ENV": str(virtualenv)},
+            ):
                 cmd, env = benchmark._prepared_app_cmd(CONFIGS / "g2crsbwuji_dexmanip_wok_flip.yaml", [], None)
                 self.assertEqual(cmd[0], str(python))
                 self.assertEqual(env["GENIESIM_PY_CMD"], str(python))
@@ -98,7 +111,9 @@ class BenchmarkRuntimeTests(unittest.TestCase):
             python.touch()
             with patch.dict(os.environ, {"GENIESIM_PY_CMD": "omni_python"}), patch.object(
                 benchmark.shutil, "which", side_effect=combo_command
-            ), patch("geniesim_benchmark.rt_engine.environment.runtime_environment", return_value={"VIRTUAL_ENV": root}):
+            ), patch(
+                "geniesim_benchmark.rt_engine.environment.runtime_environment", return_value={"VIRTUAL_ENV": root}
+            ):
                 cmd, env = benchmark._prepared_app_cmd(CONFIGS / "g2crsbwuji_dexmanip_wok_flip.yaml", [], None)
                 self.assertEqual(cmd[0], "/usr/bin/python3.12")
                 self.assertEqual(env["GENIESIM_PY_CMD"], cmd[0])
@@ -110,13 +125,12 @@ class BenchmarkRuntimeTests(unittest.TestCase):
                 self.assertEqual(cmd[0], "/prepared/bin/python")
                 self.assertEqual(env["GENIESIM_PY_CMD"], "/prepared/bin/python")
 
-
-
     def test_native_mujoco_backend_override_keeps_its_environment(self):
         with patch.dict(os.environ, {"GENIESIM_PY_CMD": "omni_python"}):
             cmd, env = benchmark._prepared_app_cmd(
                 CONFIGS / "g2op_crsemb_pour_50ml_into_graduated_cylinder.yaml",
-                ["--benchmark.backend=mujoco"], None,
+                ["--benchmark.backend=mujoco"],
+                None,
             )
             self.assertTrue(cmd[1].endswith("scripts/run_mujoco.py"))
             self.assertIsNone(env)

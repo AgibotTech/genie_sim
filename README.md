@@ -28,12 +28,10 @@
 
 # 1. 🌍 Genie Sim
 
-**3.5.0 focuses on Genie Sim Benchmark**, using the `geniesim3:latest` combo
-image with bundled Isaac Sim **5.1** and system-Python Isaac Sim **6.2**.
-Use `geniesim docker5.1` for this combo. The default `geniesim docker` selects
-the dedicated Isaac Sim 6.2 image, `geniesim4:latest`, also available via
-`geniesim docker6.2`, which belongs to the separate **4.0**
-line. See [release lines and runtime selection](docker/README.md#release-lines).
+**Genie Sim Benchmark** runs with system Python **3.12** and Isaac Sim **6.2**.
+Use `geniesim docker` or `geniesim docker6.2` to select
+the dedicated image, `geniesim4:latest`, on the **4.0** runtime line.
+See [release lines and runtime selection](docker/README.md#release-lines).
 
 > **⚠️ E.O.L. / deprecated:** `geniesim docker4.5` (`geniesim2`) and
 > `geniesim docker5.1` (`geniesim3`). Use `geniesim docker` / `docker6.2` for new deployments.
@@ -111,7 +109,7 @@ The repo ships `AGENTS.md` + per-package `skills/<name>/SKILL.md` as machine-rea
 
 ### 3.2 🧪 Benchmark — debug locally, compete globally on RoboColiseum
 
-Isaac benchmark tasks use the explicit `geniesim docker5.1` combo; see the
+Isaac benchmark tasks use `geniesim docker` / `geniesim docker6.2`; see the
 [benchmark runtime guide](source/geniesim_benchmark/README.md).
 
 ```mermaid

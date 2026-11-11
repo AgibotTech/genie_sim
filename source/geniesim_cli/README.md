@@ -88,9 +88,10 @@ is a symlink to that file. Separate runtime environments do not change the
 release version. Independent modules, service packages, data formats, and
 third-party dependencies keep their own versions.
 
-The 3.5.0 benchmark release uses the `geniesim3:latest` Isaac Sim 5.1 + 6.2
-combo. The dedicated `geniesim4:latest` / `docker6.2` variant remains the
-separate 4.0 line; see [Docker release lines](../../docker/README.md#release-lines).
+Benchmark commands use system Python 3.12 and Isaac Sim 6.2 in the dedicated
+`geniesim4:latest` / `docker6.2` runtime. This image retains the 4.0 runtime
+line; package versions still follow the root `VERSION`. See
+[Docker release lines](../../docker/README.md#release-lines).
 
 To skip building the explicit `docker5.1` combo image, pull and retag the prebuilt Docker Hub
 image using [issue #201](https://github.com/AgibotTech/genie_sim/issues/201).

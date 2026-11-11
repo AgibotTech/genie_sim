@@ -24,6 +24,12 @@ def ws_connect_compat(uri: str, **kwargs: Any) -> "websockets.sync.client.Client
         params = inspect.signature(websockets.sync.client.connect).parameters
     except (TypeError, ValueError):
         params = {}
+    # Older synchronous clients forward **kwargs to socket.create_connection;
+    # accepting **kwargs does not mean they implement WebSocket keepalive.
+    if params:
+        for name in ("ping_interval", "ping_timeout"):
+            if name not in params:
+                kwargs.pop(name, None)
     if params and not any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()):
         kwargs = {k: v for k, v in kwargs.items() if k in params}
     return websockets.sync.client.connect(uri, **kwargs)

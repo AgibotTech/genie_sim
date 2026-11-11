@@ -489,7 +489,7 @@ class APICore:
         n_envs,
         env_spacing,
     ):
-        from omni.isaac.cloner import GridCloner
+        from isaacsim.core.cloner import GridCloner
 
         self._set_robot_cfg(RobotCfg(str(system_utils.app_root_path()) + "/robot_cfg/" + robot_cfg))
         robot_usd_path = str(system_utils.assets_path()) + "/" + self.robot_cfg.robot_usd
@@ -1420,8 +1420,21 @@ class APICore:
             # Reading annotators inside a physics callback can pair the previous
             # render with an already updated USD pose, which invalidates the wrist
             # calibration. Refresh on the render loop without advancing physics.
-            rep.orchestrator.step(rt_subframes=1, pause_timeline=False, delta_time=0.0, wait_for_render=True)
-            return self._get_obs_bundle(*args)
+            import carb
+
+            try:
+                rep.orchestrator.step(rt_subframes=1, pause_timeline=False, delta_time=0.0, wait_for_render=True)
+                return self._get_obs_bundle(*args)
+            finally:
+                # A synchronous capture leaves Replicator STEPPED. Restore the
+                # playing timeline's continuous capture so later RGB observations
+                # and recordings do not keep the single captured frame.
+                if (
+                    self.ui_builder.my_world.is_playing()
+                    and carb.settings.get_settings().get_as_bool("/omni/replicator/captureOnPlay")
+                    and rep.orchestrator.get_status() == rep.orchestrator.Status.STEPPED
+                ):
+                    rep.orchestrator.resume()
 
         return self.run_on_render_loop(capture)
 

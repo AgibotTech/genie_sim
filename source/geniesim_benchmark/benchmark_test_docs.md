@@ -6,7 +6,9 @@
 
 ## 1. Build and start
 
-Use `registry.agibot.com/genie-sim/geniesim3:latest` (container `geniesim3`).
+Use `registry.agibot.com/genie-sim/geniesim4:latest` (container `geniesim4`),
+with Isaac Sim 6.2, system Python 3.12 and ROS Jazzy. Isaac, Newton and libuipc
+benchmarks select system Python 3.12 even when `omni_python` is available.
 Requires an NVIDIA GPU and the task assets.
 
 ```bash
@@ -15,10 +17,10 @@ python3 -m venv .venv-cli
 source .venv-cli/bin/activate
 python3 -m pip install -e source/geniesim_cli
 export GENIESIM_ASSETS_SRC=/path/to/geniesim_assets
-geniesim docker5.1 build             # Optional: add --china.
-geniesim docker5.1 up --headless
-geniesim docker5.1 logs              # Wait for GENIESIM_READY.
-geniesim docker5.1 into
+geniesim docker6.2 build             # Optional: add --china.
+geniesim docker6.2 up --headless
+geniesim docker6.2 logs              # Wait for GENIESIM_READY.
+geniesim docker6.2 into
 ```
 
 ```bash

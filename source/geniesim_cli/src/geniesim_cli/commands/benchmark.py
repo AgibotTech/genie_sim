@@ -7,7 +7,7 @@
 
 The underlying invocation this verb wraps is::
 
-    omni_python <geniesim_benchmark>/app/app.py \\
+    python3.12 <geniesim_benchmark>/app/app.py \\
         --config <geniesim_benchmark>/config/<NAME>.yaml \\
         --benchmark.infer_host=<HOST:PORT> [other --key=value...]
 
@@ -23,9 +23,8 @@ up the second token in :data:`_KNOWN_CATEGORIES` gives us a simple,
 deterministic tag inference without having to maintain per-file
 metadata.
 
-The task runtime selects the interpreter in the combo image: legacy Isaac
-tasks use bundled 5.1 through ``omni_python``; libuipc cloth/bag tasks and the
-Newton wok task use system ``python3.12`` with Isaac 6.2 and ROS Jazzy. Generic
+Isaac, libuipc and Newton tasks use system ``python3.12`` with Isaac 6.2
+and ROS Jazzy, including when bundled Isaac 5.1 is also installed. Generic
 ``GENIESIM_PY_CMD`` container defaults do not override this task selection.
 A custom prepared Python path still applies. Newton tasks load their built ROS
 overlay automatically before exec; IPC tasks use the caller's sourced overlay.
@@ -123,13 +122,8 @@ def _app_py() -> Path:
 
 
 def _python_cmd() -> str:
-    """Select bundled Isaac 5.1, independently of the container's default."""
-    override = _prepared_python_override()
-    if override:
-        return override
-    if shutil.which("omni_python"):
-        return "omni_python"
-    raise RuntimeError("This Isaac benchmark requires bundled Isaac Sim 5.1 (omni_python). Use the combo image.")
+    """Use the same Isaac 6.2 interpreter for direct and managed benchmarks."""
+    return _rt_python_cmd()
 
 
 def _prepared_python_override() -> str | None:
@@ -148,7 +142,9 @@ def _rt_python_cmd() -> str:
     interpreter = shutil.which("python3.12")
     if interpreter:
         return interpreter
-    raise RuntimeError("This RT benchmark requires system Python 3.12 with Isaac Sim 6.2 and ROS Jazzy.")
+    raise RuntimeError(
+        "This benchmark requires system Python 3.12 with Isaac Sim 6.2 and ROS Jazzy. Use geniesim docker6.2."
+    )
 
 
 def _all_configs() -> list[Path]:
@@ -259,10 +255,6 @@ def _extract_flag(args: list[str], name: str) -> tuple[str | None, list[str]]:
         rest.append(a)
         i += 1
     return val, rest
-
-
-
-
 
 
 def _task_runtime(config_path: Path, forwarded: list[str]) -> str:
