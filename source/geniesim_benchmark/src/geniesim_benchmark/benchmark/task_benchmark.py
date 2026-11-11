@@ -427,7 +427,7 @@ class TaskBenchmark(object):
                 robot_cfg=self.task_config.get("robot_cfg", ""),
                 realprobe=self.task_config.get("robot", {}).get("realprobe", False)
                 or getattr(self.args, "realprobe", False),
-                ik_backend=self.task_config.get("robot", {}).get("ik_backend", "ik_sdk"),
+                ik_backend=self.task_config.get("robot", {}).get("ik_backend", "auto"),
             )
         elif self.args.policy_class == "DemoPolicy":
             self.policy = DemoPolicy(
@@ -747,7 +747,7 @@ class TaskBenchmark(object):
             sub_task_name=sub_task_name,
             preview=self.args.preview,
             robot_cfg=self.task_config.get("robot_cfg", ""),
-            ik_backend=self.task_config.get("robot", {}).get("ik_backend", "ik_sdk"),
+            ik_backend=self.task_config.get("robot", {}).get("ik_backend", "auto"),
         )
         return policy
 

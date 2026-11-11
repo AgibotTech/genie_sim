@@ -15,7 +15,7 @@ from geniesim_benchmark.utils.data_courier import DataCourier
 from geniesim_benchmark.utils.infer_pre_process import TaskInfo
 from geniesim_benchmark.benchmark.config.robot_init_states import TASK_INFO_DICT
 from geniesim_benchmark.utils.name_utils import robot_type_mapping, ROBOT_CONFIGS
-from geniesim_benchmark.utils.ikfk_utils import IKFKSolver, get_shared_ikfk_solver
+from geniesim_benchmark.utils.ikfk_utils import get_shared_ikfk_solver
 from geniesim_benchmark.utils.generalization_utils import (
     apply_joint_pd_generalization,
     apply_material_generalization,
@@ -64,11 +64,16 @@ class BaseEnv(AderEnv):
                 self.init_gripper,
             ) = self.robot_task_info.init_pose()
 
+        from pathlib import Path
+        from geniesim_benchmark.utils.system_utils import assets_path
+
         self.ikfk_solver = get_shared_ikfk_solver(
             self.init_arm,
             self.init_head,
             self.init_waist,
             robot_cfg=self.robot_cfg,
+            ik_backend="hard",
+            robot_usd_path=str(Path(assets_path()) / api_core.robot_cfg.robot_usd),
         )
         self.task = None
 

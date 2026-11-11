@@ -81,6 +81,45 @@ geniesim benchmark run "$TASK" --infer-host="$INFER_HOST" \
 `--benchmark.num_episode=1` requests one evaluation pass; tasks with multiple
 instructions may execute one episode per instruction. Omit it to use task defaults.
 
+### Joint and EEF control
+
+Supported robots accept `JOINT_ABS` or `EEF_ABS` for both arms. EEF rows are
+`[x,y,z,qx,qy,qz,qw]` in metres, with matching per-arm `base_link` set to
+`base_link` (default) or `arm_base_link`. Effector channels retain their usual
+dimensions, including all 40 Wuji finger targets.
+
+IK/FK uses the bundled `ik_solver` wheel (Pinocchio + NLopt). It uses the
+runtime robot USD when supplied, the loaded native model for MuJoCo Rubik,
+and the matching embodiment URDF otherwise. EEF commands must satisfy joint
+limits and pose tolerances; a solution outside those tolerances raises an
+error without returning an approximate command. Legacy `robot.ik_backend`
+values remain compatible aliases for the same solver.
+
+The 6.2 image includes the matching native wheel. For a separately prepared
+Python 3.12 environment, install the repository wheel:
+
+```bash
+python3.12 -m pip install --no-deps 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl
+```
+
+Run the kinematics checks from the repository root inside the 6.2 container:
+
+```bash
+GENIESIM_IK_TEST_ASSETS=/geniesim_assets python3 - <<'PY'
+import isaacsim
+import pytest
+raise SystemExit(pytest.main([
+    "-q", "-rs",
+    "source/geniesim_benchmark/tests/test_hard_ik.py",
+    "source/geniesim_benchmark/tests/test_ik_runtime_models.py",
+]))
+PY
+```
+
+These checks cover FK/IK, frames, joint limits, effector preservation and
+available USD/native models. Missing USD assets are reported as skips;
+they do not count as verified models or full task evaluations.
+
 ## 4. Test every added task
 
 Define this helper once. Each command below runs one task with the same parameters

@@ -60,7 +60,16 @@ def joint_array(value):
     return array.astype(float)
 
 
-def parse_actions(reply, contract, max_chunk_size, hand_target_tolerance=0.0, projection_log=None):
+def parse_actions(
+    reply,
+    contract,
+    max_chunk_size,
+    hand_target_tolerance=0.0,
+    projection_log=None,
+    *,
+    measured_state=None,
+    ik_solver=None,
+):
     """Reject unsupported kinds, shapes, limits and ambiguous action encodings."""
     if not np.isfinite(hand_target_tolerance) or not 0 <= hand_target_tolerance <= 0.05:
         raise PolicyError("Hand target tolerance must be in [0,0.05] radians")
@@ -79,6 +88,23 @@ def parse_actions(reply, contract, max_chunk_size, hand_target_tolerance=0.0, pr
     if result.get("hist_frame_interval", 0):
         raise PolicyError("History images are not implemented in the native Rubik interface")
     try:
+        if any(
+            isinstance(result.get(key), dict) and result[key].get("kind") == "EEF_ABS"
+            for key in ("left_arm", "right_arm")
+        ):
+            if measured_state is None or ik_solver is None:
+                raise ValueError("EEF control requires measured_state and the native IK solver")
+            from geniesim_benchmark.utils.eef_control import convert_eef_result
+
+            frames = [
+                result[key].get("base_link") or result.get("base_link") or "base_link"
+                for key in ("left_arm", "right_arm")
+                if isinstance(result.get(key), dict)
+            ]
+            transform = ik_solver.base_transform() if "base_link" in frames else None
+            result = convert_eef_result(
+                result, measured_state["arm_joint_states"], arm_base_transform=transform, solver=ik_solver
+            )
         if "joint_targets" in result:
             if any(k in result for k in ("left_arm", "right_arm", "left_effector", "right_effector")):
                 raise ValueError("Ambiguous joint_targets and CoRobot actions")
@@ -120,7 +146,7 @@ def parse_actions(reply, contract, max_chunk_size, hand_target_tolerance=0.0, pr
                     changed_values=int(np.count_nonzero(difference)), maximum_projection_radians=float(difference.max())
                 )
             actions[:, 14:] = projected
-    except (KeyError, TypeError, ValueError, OverflowError) as error:
+    except (KeyError, TypeError, ValueError, OverflowError, RuntimeError) as error:
         raise PolicyError(str(error)) from error
     return actions, done
 
@@ -141,9 +167,7 @@ class WebsocketPolicy:
                 parameters = signature(connect).parameters
                 # In 14.x, **kwargs are socket options, not keepalive support.
                 keepalive = {
-                    name: value
-                    for name, value in (("ping_interval", 20), ("ping_timeout", 60))
-                    if name in parameters
+                    name: value for name, value in (("ping_interval", 20), ("ping_timeout", 60)) if name in parameters
                 }
                 self.connection = self.stack.enter_context(
                     connect(

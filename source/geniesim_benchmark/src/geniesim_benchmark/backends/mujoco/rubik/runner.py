@@ -21,6 +21,7 @@ from .config import load_config, config_dict
 from .cameras import calibration
 from .native import NativeEnvironment, PhysicsError, TaskFailure
 from .policy import HoldPolicy, WebsocketPolicy, PolicyError, InferenceError, parse_actions, payload_for
+from .kinematics import NativeIKFKSolver
 from .scoring import RubikScorer, summarize
 from .viewer import ViewerClosed
 from .scenes import episode_scenes
@@ -64,6 +65,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
         if not cfg.app.headless:
             env.open_viewer()
         policy.reset()
+        native_ik = None
         while env.steps < max_steps and not scorer.success:
             if env.viewer is not None:
                 env.viewer.sync()
@@ -85,8 +87,24 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
             inference_count += 1
             (directory / f"reply-{inference_count:04d}.msgpack").write_bytes(msgpack.packb(reply, use_bin_type=True))
             projection = {}
+            result = reply.get("result") if isinstance(reply, dict) else None
+            if (
+                native_ik is None
+                and isinstance(result, dict)
+                and any(
+                    isinstance(result.get(key), dict) and reply["result"][key].get("kind") == "EEF_ABS"
+                    for key in ("left_arm", "right_arm")
+                )
+            ):
+                native_ik = NativeIKFKSolver(env.model, env.data, env.arm_q, env.action_bounds[:14])
             actions, done = parse_actions(
-                reply, env.action_contract(), cfg.rubik.max_chunk_size, cfg.rubik.hand_target_tolerance, projection
+                reply,
+                env.action_contract(),
+                cfg.rubik.max_chunk_size,
+                cfg.rubik.hand_target_tolerance,
+                projection,
+                measured_state=payload["params"]["states"],
+                ik_solver=native_ik,
             )
             if env.viewer is not None:
                 print(f"Policy replied in {reply_seconds:.2f}s; executing {len(actions)} actions", flush=True)
@@ -226,8 +244,11 @@ def run(cfg):
         env = NativeEnvironment(cfg.rubik)
         env.task_name = cfg.benchmark.task_name
         scenes = episode_scenes(
-            env.scene_catalog, cfg.benchmark.task_name, cfg.benchmark.seed,
-            cfg.benchmark.num_instances, cfg.benchmark.num_episode,
+            env.scene_catalog,
+            cfg.benchmark.task_name,
+            cfg.benchmark.seed,
+            cfg.benchmark.num_instances,
+            cfg.benchmark.num_episode,
         )
         env.reset(cfg.rubik.scramble or "R'", scenes[0] if scenes else None)
         env.configure_renderer(cfg.app.headless, out)
@@ -286,8 +307,9 @@ def run(cfg):
             scramble = cfg.rubik.scramble or str(tokens[index % len(tokens)])
             scene = scenes[index] if scenes else None
             result = run_episode(env, cfg, policy, index, scramble, out / f"episode-{index:04d}", scene)
-            result.update(instance_id=index // cfg.benchmark.num_episode,
-                          attempt_index=index % cfg.benchmark.num_episode)
+            result.update(
+                instance_id=index // cfg.benchmark.num_episode, attempt_index=index % cfg.benchmark.num_episode
+            )
             write_json(out / f"episode-{index:04d}" / "result.json", result)
             episodes.append(result)
             statistics = summarize(episodes)

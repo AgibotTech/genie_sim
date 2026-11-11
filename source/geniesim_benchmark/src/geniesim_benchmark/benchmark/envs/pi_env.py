@@ -901,9 +901,8 @@ class PiEnv(DummyEnv):
         if ik_frame(getattr(self, "robot_cfg", "")) == "base_link":
             # This embodiment's IK/FK already solves in base_link, so the two
             # declared EEF frames name the same frame. Pin the transform to
-            # identity: arx has no arm_base_link link at all, and agilex's
-            # sits 0.15m up the chassis — reading either would reintroduce an
-            # offset the solver does not apply.
+            # identity: arx has no arm_base_link link. Other embodiments
+            # use their actual arm_base_link and measured torso transform.
             obs["arm_base_transform"] = np.eye(4)
         else:
             try:

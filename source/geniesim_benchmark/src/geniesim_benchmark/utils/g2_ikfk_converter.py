@@ -18,9 +18,7 @@ if PROJECT_ROOT not in sys.path:
 
 from geniesim_benchmark.utils.ikfk_utils import (  # type: ignore
     IKFKSolver,
-    mat2xyzrpy,
     xyzquat_to_xyzrpy,
-    xyzrpy_to_xyzquat,
 )
 
 
@@ -42,19 +40,8 @@ def joints_to_eef(
     Uses ik_solver.Solver.compute_fk(joints) to compute forward kinematics.
     """
 
-    left_joints_arr = np.asarray(left_joints, dtype=np.float32)
-    right_joints_arr = np.asarray(right_joints, dtype=np.float32)
-
-    left_fk_raw = solver.left_solver.compute_fk(left_joints_arr)
-    right_fk_raw = solver.right_solver.compute_fk(right_joints_arr)
-
-    left_mat = np.asarray(left_fk_raw, dtype=np.float32).reshape(4, 4)
-    right_mat = np.asarray(right_fk_raw, dtype=np.float32).reshape(4, 4)
-
-    left_xyzrpy = mat2xyzrpy(left_mat)
-    right_xyzrpy = mat2xyzrpy(right_mat)
-
-    return left_xyzrpy, right_xyzrpy
+    poses = solver.compute_eef(list(left_joints) + list(right_joints))
+    return tuple(xyzquat_to_xyzrpy(poses[side]) for side in ("left", "right"))
 
 
 def eef_to_joints(
@@ -67,28 +54,9 @@ def eef_to_joints(
     Use IK to convert left and right end-effector xyzrpy poses
     to corresponding 7-DOF arm joint values.
     """
-    solver.left_solver.sync_target_with_joints(arm_joint_init[:7])
-    solver.right_solver.sync_target_with_joints(arm_joint_init[7:14])
-
-    left_arr = np.array(left_eef_xyzrpy, dtype=np.float32)
-    right_arr = np.array(right_eef_xyzrpy, dtype=np.float32)
-
-    left_target = xyzrpy_to_xyzquat(left_arr)
-    right_target = xyzrpy_to_xyzquat(right_arr)
-
-    solver.left_solver.update_target_quat(
-        target_pos=left_target[:3],
-        target_quat=left_target[3:],
-    )
-    solver.right_solver.update_target_quat(
-        target_pos=right_target[:3],
-        target_quat=right_target[3:],
-    )
-
-    left_joints = solver.left_solver.solve()
-    right_joints = solver.right_solver.solve()
-
-    return left_joints.tolist(), right_joints.tolist()
+    target = np.r_[left_eef_xyzrpy, right_eef_xyzrpy, 0.0, 0.0]
+    joints = solver.eef_actions_to_joint([target], arm_joint_init, [])[0]
+    return joints[: solver.arm_dof], joints[solver.arm_dof : 2 * solver.arm_dof]
 
 
 def main() -> None:
@@ -164,7 +132,7 @@ def main() -> None:
         "--robot-cfg",
         type=str,
         default="G2",
-        help="robot_cfg passed into IKFKSolver (must contain 'G2', default 'G2').",
+        help="Robot configuration for IK/FK (G2 is an alias for G2_omnipicker).",
     )
     parser.add_argument(
         "--eef-type",

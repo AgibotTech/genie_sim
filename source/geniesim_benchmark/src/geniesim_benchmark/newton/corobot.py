@@ -6,7 +6,7 @@
 
 Wuji observations and actions use the legacy joint order and native radians.
 Fixed scene joints appear in observations but accept only their initial hold
-position. No legacy policy, simulator, IK solver or task runtime is imported.
+position. EEF replies use the shared URDF hard IK, loaded only when needed.
 """
 
 from __future__ import annotations
@@ -178,13 +178,15 @@ def parse_result(
     held_positions: Mapping[str, float],
     initial_positions: Mapping[str, float],
     groups: JointGroups = WUJI_GROUPS,
+    measured_positions: Mapping[str, float] | None = None,
+    ik_solver=None,
 ) -> ActionChunk:
     """Validate a whole reply before exposing any executable target.
 
     Engine-fixed/missing joints can only hold their scene-initial value. The
     returned dictionaries include every controllable joint, holding previous
-    targets for optional groups the server omitted. EEF and chassis control
-    are deliberately unsupported on this path.
+    targets for optional groups the server omitted. EEF arms use hard IK;
+    chassis control remains unsupported on this path.
     """
     if not isinstance(reply, Mapping):
         raise ValueError("CoRobot reply must be a mapping")
@@ -201,6 +203,31 @@ def parse_result(
         return ActionChunk((), server_episode_done=True, history_interval=interval)
     if result.get("wheels") is not None:
         raise ValueError("wheels/chassis control is unsupported by Newton evaluation")
+    if any(
+        isinstance(result.get(key), Mapping) and result[key].get("kind") == "EEF_ABS"
+        for key in ("left_arm", "right_arm")
+    ):
+        from geniesim_benchmark.utils.eef_control import convert_eef_result
+        from geniesim_benchmark.utils.ikfk_utils import get_shared_ikfk_solver
+
+        positions = _finite_positions(
+            measured_positions if measured_positions is not None else held_positions, "measured_positions"
+        )
+        solver = ik_solver
+        if solver is None:
+            from geniesim_benchmark.utils.usd_ik import runtime_robot_usd_path
+
+            solver = get_shared_ikfk_solver(
+                [], [], [], "G2_crsB_wuji", "hard", robot_usd_path=runtime_robot_usd_path("G2_crsB_wuji")
+            )
+        joints = [positions[name] for name in solver.joint_names]
+        frames = [
+            result[key].get("base_link") or result.get("base_link") or "base_link"
+            for key in ("left_arm", "right_arm")
+            if isinstance(result.get(key), Mapping)
+        ]
+        transform = solver.base_transform(positions) if "base_link" in frames else None
+        result = convert_eef_result(result, joints, arm_base_transform=transform, solver=solver)
     held = _finite_positions(held_positions, "held_positions")
     initial = _finite_positions(initial_positions, "initial_positions")
     controlled = tuple(controllable_joints)
@@ -293,6 +320,15 @@ class CorobotClient:
                 held_positions=held_positions,
                 initial_positions=initial_positions,
                 groups=groups,
+                measured_positions=dict(
+                    zip(
+                        groups.all_joints,
+                        payload["params"]["states"]["arm_joint_states"]
+                        + payload["params"]["states"]["gripper_states"]
+                        + payload["params"]["states"]["waist_joint_states"]
+                        + payload["params"]["states"]["head_joint_states"],
+                    )
+                ),
             )
         except BaseException:
             try:

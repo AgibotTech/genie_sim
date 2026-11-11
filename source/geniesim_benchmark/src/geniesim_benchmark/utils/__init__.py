@@ -2,5 +2,4 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-from .system_utils import *
-from .generalization_utils import *
+"""Utilities load their runtime dependencies only when explicitly imported."""

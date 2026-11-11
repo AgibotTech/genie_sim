@@ -17,6 +17,7 @@ Current interfaces are defined by:
 |---|---|
 | Task runtime selection | [runtime.py](src/geniesim_benchmark/runtime.py) |
 | Isaac task parameters | [params.py](src/geniesim_benchmark/config/params.py) |
+| EEF conversion and IK acceptance | [eef_control.py](src/geniesim_benchmark/utils/eef_control.py), [hard_ik.py](src/geniesim_benchmark/utils/hard_ik.py), [usd_ik.py](src/geniesim_benchmark/utils/usd_ik.py) |
 | Scores and episode summaries | [eval_utils.py](src/geniesim_benchmark/plugins/output_system/eval_utils.py) |
 | Inference preflight | [check-inference](skills/check-inference/SKILL.md) |
 

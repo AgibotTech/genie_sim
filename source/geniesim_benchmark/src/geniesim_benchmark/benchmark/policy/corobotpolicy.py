@@ -60,6 +60,7 @@ def _transform_pose_to_frame(pose_xyzquat, tf_mat):
 
 
 class CoRobotPolicy(BasePolicy):
+
     def __init__(
         self,
         task_name,
@@ -70,7 +71,7 @@ class CoRobotPolicy(BasePolicy):
         preview=False,
         robot_cfg="",
         realprobe=False,
-        ik_backend="ik_sdk",
+        ik_backend="auto",
     ):
         super().__init__(task_name=task_name, sub_task_name=sub_task_name)
         self.ts_str = time.strftime("%Y%m%d_%H%M", time.localtime(time.time()))
@@ -586,6 +587,9 @@ class CoRobotPolicy(BasePolicy):
         # Frame the server declares its EEF_ABS poses in; accepted per-arm or
         # top-level. Absent means base_link (the historical assumption).
         eef_frame = left_arm.get("base_link") or result_dict.get("base_link") or "base_link"
+        right_frame = right_arm.get("base_link") or result_dict.get("base_link") or "base_link"
+        if left_arm_kind == "EEF_ABS" and eef_frame != right_frame:
+            raise ValueError(f"Left/right EEF frames must match: {eef_frame}, {right_frame}")
         if eef_frame not in ("base_link", "arm_base_link"):
             raise ValueError(f"Unsupported EEF frame: {eef_frame}")
 
@@ -656,41 +660,22 @@ class CoRobotPolicy(BasePolicy):
         raw_arm = raw_entry["arm"]
         raw_gripper = raw_entry["gripper"]
 
-        if kind == "EEF_ABS" and self._ikfk_solver is not None:
-            left_eef = raw_arm[:7]
-            right_eef = raw_arm[7:14]
+        if kind == "EEF_ABS":
+            if self._ikfk_solver is None:
+                raise RuntimeError("EEF_ABS requires an available IK solver")
+            from geniesim_benchmark.utils.eef_control import eef_poses_to_joints
 
-            # IK solves in arm_base_link, so base_link poses need one transform;
-            # arm_base_link poses go straight through.
-            if raw_entry.get("eef_frame", "base_link") == "arm_base_link":
-                left_eef_abl = np.asarray(left_eef, dtype=np.float64)
-                right_eef_abl = np.asarray(right_eef, dtype=np.float64)
-            elif arm_base_tf is not None:
-                left_eef_abl = _transform_pose_to_frame(left_eef, arm_base_tf)
-                right_eef_abl = _transform_pose_to_frame(right_eef, arm_base_tf)
-            else:
-                raise RuntimeError(
-                    "EEF_ABS action declared in base_link but arm_base_transform is "
-                    "unavailable; cannot convert to the IK frame"
-                )
-
-            left_xyzrpy = np.concatenate(
-                [
-                    left_eef_abl[:3],
-                    R.from_quat(left_eef_abl[3:7]).as_euler("xyz"),
-                ]
-            )
-            right_xyzrpy = np.concatenate(
-                [
-                    right_eef_abl[:3],
-                    R.from_quat(right_eef_abl[3:7]).as_euler("xyz"),
-                ]
-            )
-
-            eef_action = np.concatenate([left_xyzrpy, right_xyzrpy, raw_gripper[:1], raw_gripper[1:2]])
-            joint_action = self._ikfk_solver.eef_actions_to_joint([eef_action.tolist()], cur_arm, [0.0, 0.0])[0]
-            arm = [float(v) for v in joint_action[: self._arm_dim]]
-            gripper_raw = joint_action[self._arm_dim : self._arm_dim + self._gripper_dim]
+            joints = eef_poses_to_joints(
+                self._ikfk_solver,
+                [raw_arm[:7]],
+                [raw_arm[7:14]],
+                cur_arm,
+                raw_entry.get("eef_frame", "base_link"),
+                arm_base_tf,
+            )[0]
+            arm = [float(v) for v in joints]
+            # IK owns arm joints only; retain all effector targets (e.g. 40 WUJI joints).
+            gripper_raw = raw_gripper
 
             logger.info(f"[EEF_ABS] IK result joints: {[round(v, 4) for v in arm]}")
         else:
