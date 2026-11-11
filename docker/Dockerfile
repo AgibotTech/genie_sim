@@ -227,6 +227,17 @@ RUN apt-get update && \
     rosdep install --from-paths /tmp/geniesim_ros_src --ignore-src -y --rosdistro jazzy && \
     rm -rf /tmp/geniesim_ros_src /var/lib/apt/lists/*
 
+# Benchmark CPU kinematics and JIT math are not supplied by the bundled SDK.
+# Keep NumPy/llvmlite pinned to the SDK while selecting a compatible Numba.
+# Kit bundles coverage 7.4.4, which lacks Numba's optional tracer API. Load a
+# compatible coverage before Kit adds its archive paths; tracing stays disabled.
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    --mount=type=bind,source=3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl,target=/tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl,ro \
+    python3 -m pip install -c /opt/geniesim/docker/isaac-constraints.txt \
+        /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl numba "coverage>=7.6.1,<8" && \
+    python3 -c "from pathlib import Path; import sysconfig; (Path(sysconfig.get_path('purelib')) / 'geniesim_numba_coverage.pth').write_text('import coverage\n')" && \
+    python3 -c "import ik_solver, numba"
+
 # OVRTX registers this search path at renderer startup. The installed parent
 # is root-owned, so create the directory before dropping to the remapped UID.
 RUN mkdir -p /usr/local/lib/python3.12/dist-packages/ovrtx/bin/mdl/omniverse_exts && \

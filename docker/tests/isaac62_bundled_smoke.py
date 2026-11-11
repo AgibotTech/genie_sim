@@ -118,6 +118,55 @@ def peer_environment(root: Path) -> dict[str, str]:
     return env
 
 
+def benchmark_math(output: Path) -> int:
+    """Exercise CPU FK/IK and the benchmark's actual Numba-compiled SLERP."""
+    # Load the production math module directly, without the utils package's
+    # unrelated asset/ROS imports. This fixture needs no external asset pack.
+    sys.path.insert(
+        0, str(Path(__file__).resolve().parents[2] / "source/geniesim_benchmark/src/geniesim_benchmark/utils")
+    )
+    import coverage
+    import ik_solver
+    import llvmlite
+    import numba
+    import numpy as np
+    from transform_utils import quat_slerp_jitted
+
+    q0, q1 = np.array([0.0, 0.0, 0.0, 1.0]), np.array([0.0, 0.0, 1.0, 0.0])
+    midpoint = quat_slerp_jitted(q0, q1, 0.5)
+    assert quat_slerp_jitted.nopython_signatures, "SLERP did not compile in nopython mode"
+    assert np.allclose(midpoint, [0, 0, np.sqrt(0.5), np.sqrt(0.5)]), midpoint
+    config = Path(ik_solver.__file__).parent / "config"
+    residuals = {}
+    for part in (ik_solver.RobotPart.LEFT_ARM, ik_solver.RobotPart.RIGHT_ARM):
+        solver = ik_solver.Solver(part, str(config / "A2D.urdf"), str(config / "solver.yaml"))
+        solver.set_debug_mode(False)
+        joints = np.zeros(7)
+        solver.sync_target_with_joints(joints)
+        target = np.asarray(solver.compute_fk(joints)[0])
+        assert target.shape == (4, 4) and np.isfinite(target).all(), target
+        assert np.allclose(target[3], [0, 0, 0, 1]), target
+        solution = np.asarray(solver.solve())
+        assert solution.shape == (7,) and np.isfinite(solution).all(), solution
+        residual = float(np.max(np.abs(np.asarray(solver.compute_fk(solution)[0]) - target)))
+        assert residual < 1e-4, (part, residual)
+        residuals[part.name] = residual
+    result = {
+        "pass": True,
+        "ik_solver": metadata.version("ik_solver"),
+        "numba": numba.__version__,
+        "llvmlite": llvmlite.__version__,
+        "coverage": coverage.__version__,
+        "coverage_path": coverage.__file__,
+        "numpy": np.__version__,
+        "slerp_nopython": True,
+        "builtin_robot_fk_ik_residuals": residuals,
+    }
+    (output / "benchmark-math.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("BENCHMARK_MATH_PASS", json.dumps(result), flush=True)
+    return 0
+
+
 def standalone(output: Path) -> int:
     """Qualify SDK Torch outside Kit, including CUDA, Triton and coexistence."""
     import torch
@@ -186,6 +235,7 @@ def standalone(output: Path) -> int:
         "kit_loaded": "carb" in sys.modules,
     }
     assert not result["kit_loaded"]
+    benchmark_math(output)
     (output / "standalone.json").write_text(json.dumps(result, indent=2) + "\n")
     print("BUNDLED_TORCH_STANDALONE_PASS", json.dumps(result), flush=True)
     return 0
@@ -255,6 +305,7 @@ def smoke(output: Path) -> int:
         assert Path(rclpy.__file__).is_relative_to("/opt/ros/jazzy"), rclpy.__file__
         cuda_sum = torch.tensor([1.0, 2.0, 3.0], device="cuda:0").sum().item()
         assert cuda_sum == 6.0, cuda_sum
+        benchmark_math(output)
         converted = Usd.Stage.Open(str(output / "assembly/robot.usda"))
         assert converted and converted.GetDefaultPrim(), "AS3 conversion produced no robot"
         assert any(prim.IsA(UsdPhysics.RevoluteJoint) for prim in converted.Traverse()), "Missing converted joint"
@@ -394,6 +445,7 @@ def main() -> int:
     parser.add_argument("--ros-peer", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--assemble-child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--standalone", action="store_true", help="Check bundled Torch/CUDA without Kit")
+    parser.add_argument("--benchmark-math", action="store_true", help="Check CPU IK and Numba benchmark math")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if not args.ros_peer:
@@ -405,6 +457,8 @@ def main() -> int:
         return assemble(args.output_dir)
     if args.standalone:
         return standalone(args.output_dir)
+    if args.benchmark_math:
+        return benchmark_math(args.output_dir)
     with (args.output_dir / "assembly.log").open("w") as log:
         subprocess.run(
             [sys.executable, str(Path(__file__).resolve()), "--assemble-child", "--output-dir", str(args.output_dir)],

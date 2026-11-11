@@ -352,6 +352,11 @@ IPC uses the pinned CUDA 12.8 native wheel and Python dependencies, with its
 native libraries linked to the same bundled CUDA 12.8 provider. Optional IPC
 bootstrap failures leave ordinary container startup available.
 Other external dependencies remain installed for standalone workflows.
+System Python also includes the repository's CPython 3.12 `ik_solver` wheel
+and Numba, resolved under the SDK's NumPy/llvmlite constraints. The bundled
+SDK adapter does not provide these two benchmark dependencies.
+Compatible coverage is preloaded without enabling tracing, so Kit's bundled
+coverage 7.4.4 does not break Numba imports after startup.
 The adapter does not flatten unrelated extension
 archives with conflicting versions into the system environment. SDK/colcon
 constraints, dependency repair and the Newton guard remain active. The engine
@@ -399,7 +404,10 @@ ROS_DOMAIN_ID=211 timeout -k 5s 480s python3 \
 The standalone check exercises GPU matrix multiplication, autograd, cuDNN and
 Triton compilation, validates TorchVision/TorchAudio imports, confirms that
 CUDA 13 runtime packages are absent, loads the CUDA 12.8 IPC backend, and
-confirms Kit is not loaded. The 6.2 recipe also disables pip
+confirms Kit is not loaded. It also runs the benchmark's Numba-compiled
+quaternion interpolation and the IK wheel's built-in robot FK/IK fixture.
+Run only these CPU math checks with `--benchmark-math` instead of `--standalone`.
+The 6.2 recipe also disables pip
 bytecode compilation and removes `.pyc` files with matching Python source in
 the installation layer. Sourceless bytecode and bundled SDK files are kept.
 OVRTX's `bin/mdl/omniverse_exts` search directory is prepared at build time so

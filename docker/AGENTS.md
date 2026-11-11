@@ -173,6 +173,16 @@ Prepare OVRTX's `bin/mdl/omniverse_exts` directory at build time; the remapped
 user cannot create it under the root-owned installed material directory.
 The 5.1 recipe retains its existing NVIDIA wheel install and dependency flow.
 
+The dedicated 6.2 recipe installs the repository's CPython 3.12 `ik_solver`
+wheel and Numba into system Python. Use the generated SDK constraints for
+this install: Numba must accept the pinned NumPy and llvmlite versions.
+Install compatible `coverage>=7.6.1,<8` and preload it through
+`geniesim_numba_coverage.pth`; Kit's bundled coverage 7.4.4 otherwise shadows
+it and Numba fails importing `coverage.types.Tracer`. This does not start
+coverage tracing or alter SDK files.
+The explicit acceptance probe checks the benchmark's Numba-compiled SLERP
+and FK/IK with the IK wheel's bundled robot fixture, standalone and with Kit active.
+
 Both recipes apply these constraints to their system-Python GenieSim dependency
 layer. The combo uses normal pip replacement to preserve compatible installed
 SDK packages; the fresh dedicated image overlays apt packages as described above.
