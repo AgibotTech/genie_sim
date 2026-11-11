@@ -19,7 +19,7 @@ NUMPY1_PATH="/usr/lib/python3/dist-packages"
 USER_NAME="${2:-GenieSim}"
 
 usage() {
-    echo "Usage: $0 [--isaac-version 5.1|6.2] <task_name> [user_name]"
+    echo "Usage: $0 [--isaac-version 6.2] <task_name> [user_name]"
     echo "  task_name  required, name of the recording data dir (<repo>/output/recording_data/<task_name>)"
     echo "  user_name  optional, default is GenieSim"
     exit 1

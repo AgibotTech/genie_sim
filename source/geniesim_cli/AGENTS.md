@@ -131,7 +131,7 @@ and the dispatcher in `main()` in sync.
 | `geniesim post-train teleop …` | Connect Pico debugging to an initialized server | Prepared teleop runtime |
 | `geniesim env [--all\|--unset]` | Show `GENIESIM_*` env vars | No |
 | `geniesim completion bash\|zsh` | Generate shell completion script | No |
-| `geniesim teleop run` / `teleop bridge` | Run the VR loop or image bridge | Prepared teleop runtime |
+| `geniesim teleop run` / `teleop bridge` | Run the VR loop or image bridge | Isaac 6.2 environment, system Python 3.12 + ROS Jazzy; `GENIESIM_PY_CMD` can select a prepared interpreter |
 | `geniesim benchmark <run\|list\|batch\|categories\|robots\|check-inference>` | Run / inspect benchmark tasks (see [geniesim_benchmark/README.md](../geniesim_benchmark/README.md)) | `run`/`batch`: Yes (Isaac Sim); rest: No |
 | `geniesim data-collection <install\|config\|llm\|list\|tasks\|robots\|run\|replay\|build\|up\|into\|down>` | List / run / build / manage data_collection tasks & container (see [data_collection/AGENTS.md](../data_collection/AGENTS.md)) | `run`/`up`: Docker + GPU; `build`: Docker; rest: No |
 | `geniesim tool deps-dag` | Verify the module-dependency DAG in `source/README.md` matches every peer's `pyproject.toml` (CI hook) | No |

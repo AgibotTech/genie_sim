@@ -6,9 +6,6 @@ HOST_REPO="$(cd -- "$SCRIPT_DIR/../../.." && pwd)"
 source "$SCRIPT_DIR/teleop_runtime.sh"
 teleop_select_runtime "$@"
 set -- "${TELEOP_RUNTIME_ARGS[@]}"
-if ((TELEOP_SKIP_SIMULATOR)); then
-    set -- "$@" --external-simulator
-fi
 CONTAINER="${GENIESIM_WUJI_CONTAINER:-$TELEOP_DEFAULT_CONTAINER}"
 WORKSPACE="${GENIESIM_WUJI_WORKSPACE:-/workspace}"
 
@@ -16,9 +13,9 @@ WORKSPACE="${GENIESIM_WUJI_WORKSPACE:-/workspace}"
 for arg in "$@"; do
     case "$arg" in
         --help|-h|--dry-run)
-            echo "Host option: --isaac-version 5.1|6.2 (default: 6.2). 5.1 starts Isaac; 6.2 starts controls only."
+            echo "Isaac Sim 6.2: starts simulation and manual collection; --external-simulator starts controls only."
             export SIM_REPO_ROOT="$HOST_REPO"
-            export PYTHONPATH="$HOST_REPO/source/geniesim_teleop/src:$HOST_REPO/source/geniesim_cli/src:${PYTHONPATH:-}"
+            export PYTHONPATH="$HOST_REPO/source/geniesim_teleop/src:$HOST_REPO/source/geniesim_cli/src:$HOST_REPO/source/geniesim_benchmark/src:${PYTHONPATH:-}"
             exec python3 -m geniesim_teleop.wuji.launch "$@"
             ;;
     esac

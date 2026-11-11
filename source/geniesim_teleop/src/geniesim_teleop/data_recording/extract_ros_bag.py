@@ -272,16 +272,15 @@ class Ros_Extrater:
                     current_time = (float)(msg.header.stamp.sec) + (float)(msg.header.stamp.nanosec) * np.power(
                         10.0, -9
                     )
-                    time_stamps.add("{:.4f}".format(current_time))
-            time_stamps = sorted(list(time_stamps), key=lambda x: float(x))
-            time_stamps = np.array([float(t) for t in time_stamps])
+                    time_stamps.add(round(current_time, 4))
+            time_stamps = np.array(sorted(time_stamps))
             if not len(time_stamps):
                 raise ValueError("No timestamped joint states in recording")
             dt = 1.0 / self.fps
             first, last = time_stamps[0], time_stamps[-1]
             desired = np.arange(first, last + dt / 2, dt)
             # desired keep 4 decimal places
-            desired = np.array([float("{:.4f}".format(t + dt / 10)) for t in desired])
+            desired = np.array([round(float(t + dt / 10), 4) for t in desired])
             temp_idx = np.searchsorted(time_stamps, desired, side="left")
             temp_idx = np.clip(temp_idx, 0, len(time_stamps) - 1)
             temp_idx = np.unique(temp_idx)
@@ -299,6 +298,10 @@ class Ros_Extrater:
                 for connection in reader.connections:
                     if connection.msgtype == "sensor_msgs/msg/Image":
                         image_topics[connection.topic] = {}
+                        if connection.msgcount < message_step:
+                            message_step = connection.msgcount
+                    elif connection.msgtype == "sensor_msgs/msg/CompressedImage":
+                        rgb_topics[connection.topic] = {}
                         if connection.msgcount < message_step:
                             message_step = connection.msgcount
                     elif connection.msgtype == "sensor_msgs/msg/JointState" and (
@@ -320,8 +323,9 @@ class Ros_Extrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in image_topics[connection.topic]:
-                            image_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        key = round(current_time, 4)
+                        if key not in image_topics[connection.topic]:
+                            image_topics[connection.topic][key] = msg
                     elif connection.msgtype == "sensor_msgs/msg/JointState" and (
                         connection.topic == "/joint_states" or str(connection.topic).startswith("/articulated/")
                     ):
@@ -331,8 +335,9 @@ class Ros_Extrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in joint_topics[connection.topic]:
-                            joint_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        key = round(current_time, 4)
+                        if key not in joint_topics[connection.topic]:
+                            joint_topics[connection.topic][key] = msg
                     elif connection.topic == "/tf":
                         tf_msg = reader.deserialize(msg, "tf2_msgs/msg/TFMessage")
                         current_time = (float)(tf_msg.transforms[0].header.stamp.sec) + (float)(
@@ -340,8 +345,9 @@ class Ros_Extrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in tf_topics[connection.topic]:
-                            tf_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        key = round(current_time, 4)
+                        if key not in tf_topics[connection.topic]:
+                            tf_topics[connection.topic][key] = msg
                     elif connection.topic == "/tf_static":
                         tf_static_msg = reader.deserialize(msg, "tf2_msgs/msg/TFMessage")
                         self.tf_static_msg = tf_static_msg
@@ -352,22 +358,19 @@ class Ros_Extrater:
                         ) * np.power(10.0, -9)
                         if current_time < t_start or current_time > t_end:
                             continue
-                        if "{:.4f}".format(current_time) not in rgb_topics[connection.topic]:
-                            rgb_topics[connection.topic]["{:.4f}".format(current_time)] = msg
+                        key = round(current_time, 4)
+                        if key not in rgb_topics[connection.topic]:
+                            rgb_topics[connection.topic][key] = msg
 
                 print(f"Playback time range: {self.playback_timerange}")
 
-                start_time_stamp = max(
-                    max([min(image_topics[topic].keys(), key=lambda x: float(x)) for topic in image_topics]),
-                    max([min(joint_topics[topic].keys(), key=lambda x: float(x)) for topic in joint_topics]),
-                    max([min(tf_topics[topic].keys(), key=lambda x: float(x)) for topic in tf_topics]),
-                )
-
-                end_time_stamp = min(
-                    min([max(image_topics[topic].keys(), key=lambda x: float(x)) for topic in image_topics]),
-                    min([max(joint_topics[topic].keys(), key=lambda x: float(x)) for topic in joint_topics]),
-                    min([max(tf_topics[topic].keys(), key=lambda x: float(x)) for topic in tf_topics]),
-                )
+                streams = [
+                    samples
+                    for topics in (image_topics, rgb_topics, joint_topics, tf_topics)
+                    for samples in topics.values()
+                ]
+                start_time_stamp = max(min(samples) for samples in streams)
+                end_time_stamp = min(max(samples) for samples in streams)
 
                 # remove ts earlier than start_time_stamp and insert ts if not exist
                 ts_to_remove = []
@@ -601,15 +604,16 @@ class Ros_Extrater:
                                 )
                             except Exception as exc:
                                 raise ValueError(f"Cannot decode image {key} at {ts}") from exc
-                            file_name = key.split("/")[-1]
+                            file_name = key.removesuffix("/compressed").split("/")[-1]
                             stamp[file_name] = (float)(msg.header.stamp.sec) + (float)(
                                 msg.header.stamp.nanosec
                             ) * np.power(10.0, -9)
                             img = message_to_cvimage(msg, "bgr8")
-                            file_name = self.post_process_file_name(file_name)
+                            file_name = self.post_process_file_name(file_name, "_color")
                             file_path = f"{rgb_dir}/{file_name}.jpg"
                             if not cv2.imwrite(file_path, img):
                                 raise OSError(f"Cannot write image: {file_path}")
+                            self.imag_file_name.append(file_name)
                         min_value = min(stamp.values())
                         for key in stamp:
                             stamp[key] = min_value
@@ -808,7 +812,7 @@ class Ros_Extrater:
                 with h5py.File(self.output_dir + f"/aligned_joints_all_{chunk_index}.h5", "w") as hdf:
                     hdf.create_dataset(
                         "timestamp",
-                        data=np.array(state_info["timestamp"], dtype="float32"),
+                        data=np.array(state_info["timestamp"], dtype="float64"),
                     )
                     state_group = hdf.create_group("state")
                     for state_key, state_value in state_info["state"].items():

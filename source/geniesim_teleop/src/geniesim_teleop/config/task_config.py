@@ -11,7 +11,6 @@ import json
 import math
 import os
 from pathlib import Path
-import runpy
 import tempfile
 
 import yaml
@@ -51,10 +50,11 @@ class TeleopTask:
     urdf_path: Path
 
     def initial_states(self):
-        states = runpy.run_path(str(self.benchmark_root / "benchmark/config/robot_init_states.py"))["TASK_INFO_DICT"]
+        from geniesim_benchmark.benchmark.config.robot_init_states import TASK_INFO_DICT
+
         family = robot_family(self.robot_cfg)
         for name in (self.sub_task_name, self.task_name):
-            state = states.get(name, {}).get(family)
+            state = TASK_INFO_DICT.get(name, {}).get(family)
             if state is not None:
                 for key, size in (("init_arm", 14), ("body_state", 5), ("head_state", 3)):
                     values = state.get(key, [])

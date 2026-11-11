@@ -2,7 +2,7 @@
 # Launch GenieSim teleoperation from the host.
 # Requires the container to be running. Opens the bridge, MC,
 # chassis servo (except arm-only), and Pico terminals using the same task.
-# Isaac Sim is launched only in 5.1 mode.
+# Starts Isaac Sim 6.2 in manual collection mode.
 #
 # Finally it waits for y/N to decide whether the recorded episode is kept.
 
@@ -12,15 +12,15 @@ teleop_select_runtime "$@" || exit $?
 set -- "${TELEOP_RUNTIME_ARGS[@]}"
 CONTAINER_NAME="${GENIESIM_CONTAINER:-$TELEOP_DEFAULT_CONTAINER}"
 TERMINAL_ENV="autorun"
-EXTERNAL_SIMULATOR="$TELEOP_SKIP_SIMULATOR"
+EXTERNAL_SIMULATOR=0
 for arg in "$@"; do
     case "$arg" in
         --external-simulator) EXTERNAL_SIMULATOR=1 ;;
         --help|-h)
-            echo "Usage: $0 [--isaac-version 5.1|6.2] [--external-simulator]"
-            echo "5.1 starts Isaac Sim and collection; 6.2 (default) starts only control processes."
+            echo "Usage: $0 [--isaac-version 6.2] [--external-simulator]"
+            echo "Starts Isaac Sim 6.2 and manual collection; --external-simulator starts controls only."
             echo "GENIESIM_TELEOP_CONFIG selects the shared container-side task YAML."
-            echo "GENIESIM_TELEOP_SIM_PY overrides the 5.1 simulator interpreter (default: omni_python)."
+            echo "GENIESIM_TELEOP_SIM_PY selects a prepared simulator interpreter (default: python3.12)."
             exit 0 ;;
         *) echo "Unknown argument: $arg" >&2; exit 2 ;;
     esac
@@ -75,7 +75,7 @@ if ! TELEOP_HOST_IP=$(docker exec \
 fi
 echo "Info: Pico network address: $TELEOP_HOST_IP"
 
-if ! docker exec -e PYTHONPATH="$TELEOP_SRC" -e SIM_REPO_ROOT="$REPO_IN_CONTAINER" \
+if ! docker exec -e PYTHONPATH="$TELEOP_SRC:${BENCHMARK_PKG%/*}" -e SIM_REPO_ROOT="$REPO_IN_CONTAINER" \
     -e GENIESIM_TELEOP_CONFIG="$TELEOP_YAML" "$CONTAINER_NAME" \
     python3 -m geniesim_teleop.config.task_config; then
     exit 1
@@ -185,7 +185,9 @@ if ((EXTERNAL_SIMULATOR == 0)); then
         export ROS_LOCALHOST_ONLY="${USE_CONTAINER:+0}"
         export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-1}"
         exec bash "$GENIESIM_TELEOP_PROCESS_HELPER" start "$GENIESIM_TELEOP_SIM_PID_FILE" \
-            python3 -m geniesim_cli benchmark run "$GENIESIM_TELEOP_CONFIG"
+            python3 -m geniesim_cli benchmark run "$GENIESIM_TELEOP_CONFIG" \
+                --benchmark.model_arc=pi --benchmark.policy_class=DemoPolicy \
+                --benchmark.env_class=DummyEnv --benchmark.interactive=true --benchmark.record=false
     '
     printf -v SIM_COMMAND '%q ' docker exec -it \
         -e "SIM_REPO_ROOT=$REPO_IN_CONTAINER" \

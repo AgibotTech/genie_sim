@@ -14,14 +14,8 @@
 Unknown flags are forwarded verbatim to the underlying ``argparse`` in
 each module, so this verb never has to mirror their option tables.
 
-The interpreter is picked the same way as ``geniesim benchmark`` so the
-verb works inside the 6.x container (``python3``), the 5.1 container
-(``omni_python``), and on a host with a pip-installed isaacsim
-(``sys.executable``):
-
-1. ``$GENIESIM_PY_CMD`` — explicit override, set by ``geniesim docker``
-2. ``omni_python`` if on ``$PATH`` (canonical Isaac Sim wrapper)
-3. ``sys.executable`` (or ``python3`` as last resort)
+Controls use system Python 3.12 with ROS Jazzy in the Isaac Sim 6.2
+environment. ``GENIESIM_PY_CMD`` can select a prepared interpreter explicitly.
 """
 
 from __future__ import annotations
@@ -55,9 +49,10 @@ def _python_cmd() -> str:
     override = os.environ.get("GENIESIM_PY_CMD")
     if override:
         return override
-    if shutil.which("omni_python"):
-        return "omni_python"
-    return sys.executable or "python3"
+    interpreter = shutil.which("python3.12")
+    if interpreter:
+        return interpreter
+    raise RuntimeError("Teleop requires system Python 3.12 with ROS Jazzy. Use geniesim docker6.2.")
 
 
 def _exec_module(module: str, forwarded: list[str], label: str) -> None:

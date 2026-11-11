@@ -95,6 +95,9 @@ def commands(args, config, run_dir, host_ip):
                     "run",
                     config,
                     f"--app.headless={str(args.headless).lower()}",
+                    "--benchmark.model_arc=pi",
+                    "--benchmark.policy_class=DemoPolicy",
+                    "--benchmark.env_class=DummyEnv",
                     "--benchmark.interactive=true",
                     "--benchmark.record=false",
                 ),
@@ -177,10 +180,10 @@ def runtime_preflight(args):
         if probe.returncode:
             raise RuntimeError(
                 f"Wuji SDK unavailable in control Python {sys.executable}:\n{probe.stderr}\n"
-                "Rebuild the selected image with geniesim docker5.1 build or geniesim docker6.2 build, "
+                "Rebuild the image with geniesim docker6.2 build, "
                 "then recreate the container. Updating the checkout does not update installed packages."
             )
-    if not args.external_simulator and shutil.which(os.environ.get("GENIESIM_WUJI_SIM_PY", "python3")) is None:
+    if not args.external_simulator and shutil.which(os.environ.get("GENIESIM_WUJI_SIM_PY", "python3.12")) is None:
         raise ValueError("Simulator interpreter unavailable; set GENIESIM_WUJI_SIM_PY inside the container")
     import rclpy
 
@@ -254,7 +257,9 @@ def run(args, task, host_ip):
     generate_urdf(task, run_dir / "robot.urdf")
     settings = yaml.safe_load(task.config_path.read_text())
     settings.setdefault("teleop", {})["mc_model_urdf"] = "robot.urdf"
-    settings["benchmark"].update(interactive=True, record=False)
+    settings["benchmark"].update(
+        model_arc="pi", policy_class="DemoPolicy", env_class="DummyEnv", interactive=True, record=False
+    )
     settings["benchmark"]["output_dir"] = str(run_dir / "data")
     config.write_text(yaml.safe_dump(settings, sort_keys=False))
     env = os.environ.copy()
@@ -287,7 +292,7 @@ def run(args, task, host_ip):
             logs.append(log)
             child_env = env.copy()
             if name == "simulator":
-                child_env["GENIESIM_PY_CMD"] = env.get("GENIESIM_WUJI_SIM_PY", "python3")
+                child_env["GENIESIM_PY_CMD"] = env.get("GENIESIM_WUJI_SIM_PY", "python3.12")
                 # Keep the control-only ROS/NumPy overlay out of the Isaac process.
                 child_env["PYTHONPATH"] = ":".join(
                     part

@@ -135,7 +135,7 @@ geniesim teleop run --interface=YOUR_PICO_INTERFACE
 
 # Outside the container, for the launcher (replace the interface name):
 GENIESIM_TELEOP_INTERFACE=YOUR_PICO_INTERFACE \
-  ./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 5.1
+  ./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 6.2
 ```
 
 For a multi-IP interface, select the local Pico-facing address with
@@ -166,28 +166,25 @@ git lfs pull
 export GENIESIM_ASSETS_SRC=/path/to/geniesim_assets
 ```
 
-Choose a runtime explicitly. All three host scripts accept `--isaac-version`;
-`GENIESIM_TELEOP_ISAAC_VERSION` provides its default (6.2).
+Teleop supports Isaac Sim **6.2**. Both collection launchers start simulation
+and controls by default, using `docker/Dockerfile` and container `geniesim4`.
+The simulator uses system `python3.12`; controls use system `python3` 3.12.
+All three host scripts accept `--isaac-version 6.2`; other versions are rejected.
 
-| Mode | Build / container | Simulator startup | Control interpreter |
-|---|---|---|---|
-| `--isaac-version 5.1` | `Dockerfile.5.1` / `geniesim3` | Starts Isaac Sim through `omni_python` | system `python3` 3.12 |
-| `--isaac-version 6.2` (default) | `Dockerfile` / `geniesim4` | Never starts Isaac Sim; external simulator required | system `python3` 3.12 |
-
-For the working 5.1 simulation workflow:
+Prepare the container:
 
 ```bash
-geniesim docker5.1 build
-geniesim docker5.1 up
-geniesim docker5.1 into
+geniesim docker6.2 build
+geniesim docker6.2 up
+geniesim docker6.2 into
 # Inside the container, once for ordinary chassis control:
 cd /workspace
 geniesim ros build dev
 exit
 ```
 
-For 6.2 control-only use, substitute `docker6.2` in those commands. An existing
-container must be recreated after rebuilding to use the new image dependencies.
+An existing container must be recreated after rebuilding to use the new image
+dependencies.
 The ROS controller workspace is a separate prerequisite for ordinary chassis
 control. Wuji arm/finger control does not launch the chassis servo.
 
@@ -196,17 +193,18 @@ control. Wuji arm/finger control does not launch the chassis servo.
 Run outside the container, from the repository root:
 
 ```bash
-# 5.1: starts Isaac Sim plus bridge, MC, chassis and Pico.
-./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 5.1
+# Starts Isaac Sim 6.2 plus bridge, MC, chassis and Pico.
+./source/geniesim_teleop/scripts/autoteleop.sh
 
-# 6.2: starts bridge, MC, chassis and Pico only.
-./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 6.2
+# Attach controls to an existing simulator with the same task and ROS domain.
+./source/geniesim_teleop/scripts/autoteleop.sh --external-simulator
 ```
 
-Pico waits for joint states and TF from the simulator. Control-only startup does
-not mean the simulation or recording is ready. The external simulator must
-use the matching robot/task and ROS domain. Keep `GENIESIM_TELEOP_CONFIG` aligned
-with that simulator's task configuration.
+Pico waits for joint states and TF from the simulator. Collection forces
+`model_arc: pi`, `policy_class: DemoPolicy`, `env_class: DummyEnv`,
+`interactive: true`, and `record: false`. This starts the task for manual control
+without automatic evaluation or recording; Pico B starts recording.
+An external simulator must use those same settings, task and ROS domain.
 
 For task/scene selection, configuration examples and matching post-processing
 commands, see [Changing collection tasks and scenes](#changing-collection-tasks-and-scenes).
@@ -233,11 +231,11 @@ pass `--cache-dir DIR` to that module to use a writable runtime directory.
 
 For a different YAML, set `GENIESIM_TELEOP_CONFIG` to its container-side path
 when calling `autoteleop.sh`, or pass `--config FILE` to `geniesim teleop run`.
-With the container running, 5.1 mode starts Isaac Sim with that same YAML,
+With the container running, the launcher starts Isaac Sim 6.2 with that YAML,
 then the bridge, task-specific motion controller, ROS chassis servo and Pico.
-6.2 mode launches only the controls. Pico waits for simulator TF before
-initializing tracking. `GENIESIM_TELEOP_SIM_PY` overrides the 5.1 simulator
-interpreter (default `omni_python`); controls always use system `python3`.
+Pico waits for simulator TF before initializing tracking.
+`GENIESIM_TELEOP_SIM_PY` can select a prepared simulator interpreter
+(default `python3.12`); controls use system `python3`.
 The simulator runs from the mounted repository root. Saving/discarding a session
 or exiting the script sends SIGINT to the simulator process group started by
 this run and waits for recording shutdown to complete without a forced-kill
@@ -258,9 +256,9 @@ Execute the following command under `genie_sim` root directory outside the docke
 container:
 
 ```bash
-genie_sim$ ./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 5.1 {SUB_TASK_NAME}
+genie_sim$ ./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 6.2 {SUB_TASK_NAME}
 # for example
-genie_sim$ ./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 5.1 open_door
+genie_sim$ ./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 6.2 open_door
 ```
 
 > **Note:** To improve collection efficiency, data collection and data
@@ -350,10 +348,10 @@ path passed to Docker is its **container-side** path (`/workspace` by default):
 unset GENIESIM_TELEOP_INTERFACE
 GENIESIM_TELEOP_CONFIG=/workspace/source/geniesim_benchmark/src/geniesim_benchmark/config/teleop_custom.yaml \
 GENIESIM_TELEOP_HOST_IP=YOUR_LOCAL_PICO_IP \
-  ./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 5.1
+  ./source/geniesim_teleop/scripts/autoteleop.sh --isaac-version 6.2
 
 # In another terminal; process recordings for the selected sub-task.
-./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 5.1 phone_packaging
+./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 6.2 phone_packaging
 ```
 
 For Wuji, copy its default YAML, choose a task whose robot family is
@@ -363,7 +361,7 @@ For Wuji, copy its default YAML, choose a task whose robot family is
 cp source/geniesim_teleop/src/geniesim_teleop/config/wuji_teleop.yaml \
   source/geniesim_teleop/src/geniesim_teleop/config/wuji_custom.yaml
 
-./source/geniesim_teleop/scripts/autoteleop_wuji.sh --isaac-version 5.1 \
+./source/geniesim_teleop/scripts/autoteleop_wuji.sh --isaac-version 6.2 \
   --config /workspace/source/geniesim_teleop/src/geniesim_teleop/config/wuji_custom.yaml \
   --host-ip YOUR_LOCAL_PICO_IP \
   --left-sn YOUR_LEFT_GLOVE_SN --right-sn YOUR_RIGHT_GLOVE_SN
@@ -386,11 +384,10 @@ and ROS domain; changing the control configuration does not reload its scene.
 ## Wuji teleoperation (separate launcher)
 
 Use [`scripts/autoteleop_wuji.sh`](scripts/autoteleop_wuji.sh) for Pico arm
-tracking plus Wuji glove finger control. `--isaac-version 5.1` starts Isaac Sim,
-the bridge, MC, Pico and SDK hand input. `--isaac-version 6.2` (default) starts
-only the controls, forwarding `--external-simulator` to the supervisor.
-An external Wuji simulator must publish joint states and TF in the selected
-ROS domain (91 by default). In 5.1 mode, `--external-simulator` is also optional.
+tracking plus Wuji glove finger control. It starts Isaac Sim 6.2,
+the bridge, MC, Pico and SDK hand input by default.
+Use `--external-simulator` to attach to an existing Wuji simulator, which must
+publish joint states and TF in the selected ROS domain (91 by default).
 `--source retargeting` uses an external hand publisher that you start separately. Ordinary collection continues to use
 `autoteleop.sh` and its existing configuration. The Wuji entry point uses its own process supervisor and reuses ordinary
 B-to-record behavior. Its simulator uses `benchmark.interactive: true`, which
@@ -403,9 +400,9 @@ It currently controls arms and fingers; waist and chassis control are disabled.
 The launcher runs inside an existing Genie Sim container with the source checkout
 mounted at `/workspace`. It requires the sourced ROS environment, `xacro`, `iproute2`, the
 bundled MC runtime, and (for SDK input) `wuji_sdk` exposing `RetargetSession` in
-the container's system `python3`. The 5.1 simulator uses `omni_python`; controls use the system Python apt NumPy overlay.
-Both `docker/Dockerfile` (`geniesim4`) and `docker/Dockerfile.5.1` (`geniesim3`)
-bake the teleop Python dependencies, Wuji SDK `2026.8.17`, and ROS/network tools
+the container's system `python3`. The simulator uses `python3.12`; controls use
+the system Python apt NumPy overlay. `docker/Dockerfile` (`geniesim4`)
+bakes the teleop Python dependencies, Wuji SDK `2026.8.17`, and ROS/network tools
 into system Python 3.12 and the operating system. Rebuild the image when its
 dependency definitions change; updating the checkout alone does not add
 packages to an existing image.
@@ -421,9 +418,8 @@ Replace the interface and glove serial numbers below with your devices:
 ./source/geniesim_teleop/scripts/autoteleop_wuji.sh \
   --check --interface YOUR_PICO_INTERFACE --right-sn YOUR_RIGHT_GLOVE_SN
 
-# 5.1: run from an interactive terminal; Ctrl-C stops this session's process groups.
-# Use --isaac-version 6.2 for control-only operation.
-./source/geniesim_teleop/scripts/autoteleop_wuji.sh --isaac-version 5.1 \
+# Run from an interactive terminal; Ctrl-C stops this session's process groups.
+./source/geniesim_teleop/scripts/autoteleop_wuji.sh --isaac-version 6.2 \
   --interface YOUR_PICO_INTERFACE \
   --left-sn YOUR_LEFT_GLOVE_SN --right-sn YOUR_RIGHT_GLOVE_SN
 ```
@@ -469,9 +465,8 @@ the same Wuji task and ROS domain. `--headless` applies to the launched simulato
 
 Container selection uses `GENIESIM_WUJI_CONTAINER` (default `geniesim4`), mount
 location uses `GENIESIM_WUJI_WORKSPACE` (default `/workspace`), and simulator
-interpreter selection uses `GENIESIM_WUJI_SIM_PY` (5.1 default `omni_python`).
-`--isaac-version 5.1` selects `geniesim3` unless the container is overridden. These
-are separate from ordinary collection's environment variables.
+interpreter selection uses `GENIESIM_WUJI_SIM_PY` (default `python3.12`).
+These are separate from ordinary collection's environment variables.
 **For concurrent ordinary collection, use a separate container and ROS domain.**
 The bundled MC launcher rejects another MC process within its container;
 separate ROS domains cannot isolate this singleton check. Both launchers stop
@@ -483,7 +478,7 @@ other's performance.
 Post-process kept recordings with the same watcher and converter:
 
 ```bash
-./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 5.1 take_the_scissors
+./source/geniesim_teleop/scripts/autoteleop_post_process.sh --isaac-version 6.2 take_the_scissors
 ```
 
 The final `aligned_joints.h5` retains the ordinary per-frame `action` / `state`

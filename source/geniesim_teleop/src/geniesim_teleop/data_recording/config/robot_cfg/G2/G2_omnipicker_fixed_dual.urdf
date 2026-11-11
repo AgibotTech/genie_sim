@@ -906,7 +906,7 @@
   </joint>
   <link name="arm_l_end_link"/>
   <joint name="arm_l_end_joint" type="fixed">
-    <origin rpy="3.1416 -1.5708 0" xyz="0.095 0.0 0.0"/>
+    <origin rpy="7.168545726e-06 -1.570792702 -3.141592582" xyz="0.08799999952 0 0"/>
     <parent link="arm_l_link7"/>
     <child link="arm_l_end_link"/>
   </joint>
@@ -1117,7 +1117,7 @@
     <limit effort="18" lower="-1.5708" upper="1.5708" velocity="3.1416"/>
   </joint>
   <joint name="arm_r_end_joint" type="fixed">
-    <origin rpy="3.141592653589793 -1.5707963267948966 0" xyz="0.095 0.0 0.0"/>
+    <origin rpy="-3.141592566 -1.570796327 0" xyz="0.08799999952 0 0"/>
     <parent link="arm_r_link7"/>
     <child link="arm_r_end_link"/>
   </joint>
@@ -1427,7 +1427,7 @@
   </joint>
   <!-- Gripper Connector -->
   <joint name="idx51_ee_l_joint" type="fixed">
-    <origin rpy="0 0 1.5707963267948966" xyz="0 0 0.0061"/>
+    <origin rpy="0 0 1.570796327" xyz="0 0 0.005369999912"/>
     <parent link="arm_l_end_link"/>
     <child link="gripper_l_base_link"/>
     <axis xyz="0 0 0"/>
@@ -1435,7 +1435,7 @@
   <link name="gripper_l_center_link">
     </link>
   <joint name="idx52_gripper_l_center_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.13008"/>
+    <origin rpy="0 0 -1.570796327" xyz="0 0 0.1430799961"/>
     <parent link="gripper_l_base_link"/>
     <child link="gripper_l_center_link"/>
   </joint>
@@ -1756,7 +1756,7 @@
   </joint>
   <!-- Gripper Connector -->
   <joint name="idx91_ee_r_joint" type="fixed">
-    <origin rpy="0 0 1.5707963267948966" xyz="0 0 0.0061"/>
+    <origin rpy="0 0 1.570796327" xyz="0 0 0.005369999912"/>
     <parent link="arm_r_end_link"/>
     <child link="gripper_r_base_link"/>
     <axis xyz="0 0 0"/>
@@ -1764,7 +1764,7 @@
   <link name="gripper_r_center_link">
     </link>
   <joint name="idx92_gripper_r_center_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0.0 0.0 0.13008"/>
+    <origin rpy="0 0 -1.570796327" xyz="0 0 0.1430799961"/>
     <parent link="gripper_r_base_link"/>
     <child link="gripper_r_center_link"/>
   </joint>

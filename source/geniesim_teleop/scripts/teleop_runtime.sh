@@ -10,7 +10,7 @@ teleop_select_runtime() {
         case "$1" in
             --isaac-version)
                 if (($# < 2)); then
-                    echo "--isaac-version requires 5.1 or 6.2" >&2
+                    echo "--isaac-version requires 6.2" >&2
                     return 2
                 fi
                 TELEOP_ISAAC_VERSION="$2"
@@ -19,15 +19,10 @@ teleop_select_runtime() {
             *) TELEOP_RUNTIME_ARGS+=("$1"); shift ;;
         esac
     done
-    case "$TELEOP_ISAAC_VERSION" in
-        5.1)
-            TELEOP_DEFAULT_CONTAINER=geniesim3
-            TELEOP_DEFAULT_SIM_PY=omni_python
-            TELEOP_SKIP_SIMULATOR=0 ;;
-        6.2)
-            TELEOP_DEFAULT_CONTAINER=geniesim4
-            TELEOP_DEFAULT_SIM_PY=python3
-            TELEOP_SKIP_SIMULATOR=1 ;;
-        *) echo "Unsupported Isaac version: $TELEOP_ISAAC_VERSION (use 5.1 or 6.2)" >&2; return 2 ;;
-    esac
+    if [[ "$TELEOP_ISAAC_VERSION" != "6.2" ]]; then
+        echo "Unsupported Isaac version: $TELEOP_ISAAC_VERSION (teleop requires 6.2)" >&2
+        return 2
+    fi
+    TELEOP_DEFAULT_CONTAINER=geniesim4
+    TELEOP_DEFAULT_SIM_PY=python3.12
 }

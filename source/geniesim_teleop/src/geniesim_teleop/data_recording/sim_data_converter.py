@@ -28,7 +28,6 @@ from geniesim_teleop.data_recording.derive_fields import (
     assemble_end_pose,
     chain_transform,
     effector_from_arm_end,
-    effector_from_arm_end_ctek90d,
     effector_in_base,
     link3_orientation,
     load_link_chain,
@@ -280,7 +279,7 @@ def _prepare_teleop_input(record, staging, state, config, grippers, robot):
     import h5py
     import numpy as np
     from scipy.spatial.transform import Rotation
-    from geniesim_teleop.data_recording.derive_fields import effector_from_arm_end, effector_from_arm_end_ctek90d
+    from geniesim_teleop.data_recording.derive_fields import effector_from_arm_end
     from geniesim_teleop.data_recording.robot_fk import calculate_ee_pose_batch
 
     frames = state["frames"]
@@ -355,7 +354,7 @@ def _prepare_teleop_input(record, staging, state, config, grippers, robot):
                 center = np.linalg.inv(base) @ arm_base @ chain_transform(chain, angles)
                 cp, cq = center[:3, 3], Rotation.from_matrix(center[:3, :3]).as_quat()
             elif grippers[side_idx] == "zhiyuan_gripper_ctek90d":
-                cp, cq = effector_from_arm_end_ctek90d(p, q, side)
+                cp, cq = effector_from_arm_end(p, q, "ctek90d")
             else:
                 cp, cq = effector_from_arm_end(p, q, "omnipicker")
             center = np.eye(4)
@@ -1278,9 +1277,6 @@ class SimDataConverter:
         except (KeyError, TypeError):
             log.warning("frame missing ee_center[%s]; fallback to USD gripper-center offset", side)
             model = self._gripper_model(side_idx)
-            if model == "ctek90d":
-                # 90D effectors require a side-specific rotation and translation.
-                return effector_from_arm_end_ctek90d(arm_pos, arm_quat, side)
             return effector_from_arm_end(arm_pos, arm_quat, model)
 
     def _backfill_derived_fields(self, h5_path):

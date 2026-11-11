@@ -19,6 +19,8 @@ app:
 benchmark:
   # Override config.yaml's inference model so this launches DummyEnv/DemoPolicy.
   model_arc: "pi"
+  interactive: true
+  record: false
   num_episode: 1
   policy_class: "DemoPolicy"
   env_class: "DummyEnv"

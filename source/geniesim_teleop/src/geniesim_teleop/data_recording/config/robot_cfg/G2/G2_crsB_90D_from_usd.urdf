@@ -249,21 +249,21 @@
     <origin rpy="1.570796327 0 0" xyz="0.01600000076 0 0.1209999993"/>
     <parent link="gripper_l_base_link"/>
     <child link="gripper_l_left_inner_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="-0.9099999474" upper="0" velocity="10"/>
   </joint>
   <joint name="idx32_gripper_l_outer_joint1" type="revolute">
     <origin rpy="1.570796327 0 0" xyz="0.0301409997 0 0.1041499972"/>
     <parent link="gripper_l_base_link"/>
     <child link="gripper_l_left_outer_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="-0.9099999474" upper="0" velocity="10"/>
   </joint>
   <joint name="idx33_gripper_l_left_support_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0.04035900161 0.03736500069 0"/>
     <parent link="gripper_l_left_outer_link"/>
     <child link="gripper_l_left_support_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="0" upper="0.9099999474" velocity="10"/>
   </joint>
   <joint name="idx34_gripper_l_inner_joint2" type="revolute">
@@ -284,7 +284,7 @@
     <origin rpy="0 0 0" xyz="0.04035900161 0.03736500069 0"/>
     <parent link="gripper_l_right_outer_link"/>
     <child link="gripper_l_right_support_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="0" upper="0.9099999474" velocity="10"/>
   </joint>
   <joint name="idx51_gripper_l_base_joint" type="fixed">
@@ -293,7 +293,7 @@
     <child link="gripper_l_base_link"/>
   </joint>
   <joint name="idx52_gripper_l_center_joint" type="fixed">
-    <origin rpy="0 0 1.570796327" xyz="0 0 0.2292200029"/>
+    <origin rpy="0 0 0" xyz="0 0 0.185"/>
     <parent link="arm_l_end_link"/>
     <child link="gripper_l_center_link"/>
   </joint>
@@ -355,21 +355,21 @@
     <origin rpy="1.570796327 0 0" xyz="0.01600000076 0 0.1209999993"/>
     <parent link="gripper_r_base_link"/>
     <child link="gripper_r_left_inner_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="-0.9099999474" upper="0" velocity="10"/>
   </joint>
   <joint name="idx72_gripper_r_outer_joint1" type="revolute">
     <origin rpy="1.570796327 0 0" xyz="0.0301409997 0 0.1041499972"/>
     <parent link="gripper_r_base_link"/>
     <child link="gripper_r_left_outer_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="-0.9099999474" upper="0" velocity="10"/>
   </joint>
   <joint name="idx73_gripper_r_left_support_joint" type="revolute">
     <origin rpy="0 0 0" xyz="0.04035900161 0.03736500069 0"/>
     <parent link="gripper_r_left_outer_link"/>
     <child link="gripper_r_left_support_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="0" upper="0.9099999474" velocity="10"/>
   </joint>
   <joint name="idx74_gripper_r_inner_joint2" type="revolute">
@@ -390,7 +390,7 @@
     <origin rpy="0 0 0" xyz="0.04035900161 0.03736500069 0"/>
     <parent link="gripper_r_right_outer_link"/>
     <child link="gripper_r_right_support_link"/>
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 0 -1"/>
     <limit effort="100" lower="0" upper="0.9099999474" velocity="10"/>
   </joint>
   <joint name="idx91_gripper_r_base_joint" type="fixed">
@@ -399,7 +399,7 @@
     <child link="gripper_r_base_link"/>
   </joint>
   <joint name="idx92_gripper_r_center_joint" type="fixed">
-    <origin rpy="0 0 -1.570796327" xyz="0 0 0.2292200029"/>
+    <origin rpy="0 0 0" xyz="0 0 0.185"/>
     <parent link="arm_r_end_link"/>
     <child link="gripper_r_center_link"/>
   </joint>

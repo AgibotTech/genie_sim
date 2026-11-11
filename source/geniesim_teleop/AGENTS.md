@@ -40,12 +40,13 @@ The isolated Wuji workflow has a dedicated shell entry point,
 [`scripts/autoteleop_wuji.sh`](scripts/autoteleop_wuji.sh), for Pico arm tracking
 and glove finger control. See [README — Wuji teleoperation](README.md#wuji-teleoperation-separate-launcher)
 for prerequisites and commands. It launches `geniesim_teleop.wuji.launch` and
-uses the canonical benchmark CLI for its 5.1 simulator child.
-All three host scripts source `scripts/teleop_runtime.sh`. `--isaac-version 5.1`
-selects `geniesim3` and `omni_python`, starting simulation unless explicitly
-external. `--isaac-version 6.2` (default) selects `geniesim4` and always skips
-simulation; Wuji forwards `--external-simulator`. Keep mode selection shared.
-Control processes use system Python 3.12 in both modes.
+uses the canonical benchmark CLI for its Isaac Sim 6.2 child.
+All three host scripts source `scripts/teleop_runtime.sh` and support only 6.2,
+using `geniesim4` and system `python3.12`. Both collection launchers start
+simulation unless `--external-simulator` is explicit. Both force `model_arc: pi`,
+`policy_class: DemoPolicy`, `env_class: DummyEnv`, `interactive: true`, and
+`record: false` so evaluation and automatic recording remain disabled.
+Control processes use system Python 3.12.
 
 ### Forwarded flags (run)
 
@@ -65,12 +66,8 @@ Anything not consumed by the verb is forwarded verbatim to
 
 ### Interpreter selection
 
-Same order as `geniesim benchmark`, so the verb works in every
-environment:
-
-1. `$GENIESIM_PY_CMD` — explicit override, set by `geniesim docker`
-2. `omni_python` if on `$PATH` (canonical Isaac Sim wrapper)
-3. `sys.executable` (or `python3` as last resort)
+The CLI uses `$GENIESIM_PY_CMD` when explicitly set; otherwise it requires
+system `python3.12` with ROS Jazzy in the Isaac Sim 6.2 environment.
 
 ---
 
@@ -182,7 +179,7 @@ deadzone and UDP timeout (defaults 0.4 m/s, 0.5 rad/s, 0.05, 0.25 s).
 `SimNode.pub_chassis_twist` publishes `/cmd_twist`, including neutral/reset/playback
 and input loss. Never publish wheel commands directly from Pico. The standalone
 ROS `genie_sim_controllers` servo converts Twist + feedback to wheel commands;
-`autoteleop.sh --isaac-version 5.1` starts Isaac Sim through `geniesim benchmark run` with the same
+`autoteleop.sh` starts Isaac Sim through `geniesim benchmark run` with the same
 task YAML before opening control terminals; Pico waits for TF initialization.
 `--external-simulator` skips that child. The script tracks its simulator process
 group and sends SIGINT on keep/discard/exit so recordings can finalize. Record
@@ -192,7 +189,7 @@ to exit without a forced-kill deadline. The simulator waits for every rosbag
 recorder to flush and exit before closing. Keep `stop` bounded for controls and
 post-processing. Snapshot existing episode directories before simulator startup;
 mark only new episodes after `metadata.yaml` exists.
-The selected container (`geniesim docker5.1 up` or `geniesim docker6.2 up`) and ROS build are prerequisites. It sources the canonical dev/installed
+The selected container (`geniesim docker6.2 up`) and ROS build are prerequisites. It sources the canonical dev/installed
 overlay, checks the package,
 and launches `geniesim_teleop.start_chassis` except arm-only. The bridge owns the only
 teleop `/joint_command` publisher. `DummyEnv` releases the base for tasks
@@ -339,16 +336,16 @@ fails the session; it must not mark the recording complete.
 
 | Var | Effect |
 |---|---|
-| `GENIESIM_TELEOP_ISAAC_VERSION` | Host script mode: `6.2` (default, controls only) or `5.1` (with simulation). `--isaac-version` takes precedence. |
-| `GENIESIM_CONTAINER` | Override ordinary collection/post-processing container; defaults to `geniesim4` for 6.2, `geniesim3` for 5.1. |
+| `GENIESIM_TELEOP_ISAAC_VERSION` | Host script runtime: only `6.2` is supported. `--isaac-version` takes precedence. |
+| `GENIESIM_CONTAINER` | Override ordinary collection/post-processing container; defaults to `geniesim4`. |
 | `GENIESIM_TELEOP_CONFIG` | Task YAML shared by the launcher, teleop and MC; for Docker use its container-side path. |
 | `GENIESIM_PY_CMD` | Override the interpreter that launches the teleop modules. Set automatically by `geniesim docker`. |
-| `GENIESIM_TELEOP_SIM_PY` | Ordinary 5.1 simulator interpreter, default `omni_python`; 6.2 never starts the simulator. |
+| `GENIESIM_TELEOP_SIM_PY` | Prepared ordinary simulator interpreter, default `python3.12`. |
 | `GENIESIM_TELEOP_INTERFACE` | Default for `--interface`; also forwarded by `autoteleop.sh` during network preflight. |
 | `GENIESIM_TELEOP_HOST_IP` | Default for `--host_ip`; also supported by `autoteleop.sh`. Set only one network selector. |
-| `GENIESIM_WUJI_CONTAINER` | Wuji launcher container, default `geniesim4` for 6.2 / `geniesim3` for 5.1; independent of collection's selection. |
+| `GENIESIM_WUJI_CONTAINER` | Wuji launcher container, default `geniesim4`; independent of collection's selection. |
 | `GENIESIM_WUJI_WORKSPACE` | Wuji container checkout path, default `/workspace`. |
-| `GENIESIM_WUJI_SIM_PY` | Wuji 5.1 simulator interpreter, default `omni_python`; 6.2 skips simulation. ROS/SDK children use system Python. |
+| `GENIESIM_WUJI_SIM_PY` | Prepared Wuji simulator interpreter, default `python3.12`. ROS/SDK children use system Python. |
 
 Network selection uses `ip -j -4 addr show up` (requires iproute2). Loopback
 and operationally DOWN interfaces are excluded. VPNs and active virtual
