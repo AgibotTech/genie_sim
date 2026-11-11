@@ -43,6 +43,7 @@ from geniesim_benchmark.app.utils import RobotCfg
 from geniesim_benchmark.app.utils import material_changer, Light
 from geniesim_benchmark.app.controllers.cloth_pin import ClothPinController
 from geniesim_benchmark.app.controllers.fluid_reset import snapshot_fluid_particles, restore_fluid_particles
+from geniesim_benchmark.rigid_instancer import snapshot_rigid_instancer_prototypes
 from geniesim_benchmark.app.controllers.wheel_parking import AssetWheelParking
 from geniesim_benchmark.app.utils.utils import (
     get_rotation_matrix_from_quaternion,
@@ -558,6 +559,7 @@ class APICore:
 
         time.sleep(1)
 
+        self._rigid_instancer_prototypes = snapshot_rigid_instancer_prototypes(self._stage)
         self.ui_builder.my_world.reset()
         self.frame_status = []
         # Vec doesn't call _play(), so release startup render hold here.
@@ -2184,6 +2186,7 @@ class APICore:
         add_reference_to_stage(scene_usd_path, "/World")
         self._filter_objects(scene_usd_path)
         prepare_sandbox_physics(self._stage, scene_usd_path)
+        self._rigid_instancer_prototypes = snapshot_rigid_instancer_prototypes(self._stage)
 
     def _configure_physics_scene(self):
         self.scene = UsdPhysics.Scene.Define(self._stage, Sdf.Path("/physicsScene"))

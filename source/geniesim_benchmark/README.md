@@ -11,6 +11,8 @@ libuipc tasks use the same interpreter; native MuJoCo keeps its separate runtime
 
 Task launch and evaluation: [run a task](benchmark_test_docs.md#3-run-a-task).
 
+Task-specific scoring: [scoop_popcorn rules](docs/scoop_popcorn_evaluation.md).
+
 Current interfaces are defined by:
 
 | Contract | Source |

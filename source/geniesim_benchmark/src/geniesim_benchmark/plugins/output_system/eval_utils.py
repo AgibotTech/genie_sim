@@ -91,7 +91,7 @@ TASK_STEPS = {
     "sorting_packages_continuous": ["Upright", "Upright", "Upright", "Upright"],
     "pour_workpiece": ["Inside", "Inside", "Inside", "Inside"],
     "stock_and_straighten_shelf": ["Follow", "PickUpOnGripper", "InBBox", "Follow", "Upright"],
-    "scoop_popcorn": ["VLM"],
+    "scoop_popcorn": ["ScoopPopcorn"],
     "place_block_into_box": ["Follow", "PickUpOnGripper", "Inside"],
     "take_wrong_item_shelf": ["Follow", "Inside"],
     "straighten_object": ["Follow", "Upright"],
@@ -246,7 +246,7 @@ TASK_SUBTASK_STEPS = {
     "open_door": ["PushPull"],
     "place_block_into_box": ["PickUpOnGripper", "Inside"],
     "pour_workpiece": ["Inside", "Inside", "Inside", "Inside"],
-    "scoop_popcorn": ["VLM"],
+    "scoop_popcorn": ["ScoopPopcorn"],
     "sorting_packages": ["PickUpOnGripper", "Inside", "Upright", "PickUpOnGripper", "Inside"],
     "sorting_packages_continuous": [
         "PickUpOnGripper",

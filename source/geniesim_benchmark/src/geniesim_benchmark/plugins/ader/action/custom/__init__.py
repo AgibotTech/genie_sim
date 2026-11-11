@@ -23,6 +23,7 @@ _MODULES = {
     "GripperPassing": "gripper_passing",
     "Approach": "approach",
     "VLM": "vlm",
+    "ScoopPopcorn": "popcorn",
     "LiftUp": "liftup",
     "Upright": "upright",
     "Rotated": "rotated",

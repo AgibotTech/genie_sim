@@ -43,6 +43,7 @@ CheckStainClean = _lazy_checker("CheckStainClean")
 GripperPassing = _lazy_checker("GripperPassing")
 Approach = _lazy_checker("Approach")
 VLM = _lazy_checker("VLM")
+ScoopPopcorn = _lazy_checker("ScoopPopcorn")
 LiftUp = _lazy_checker("LiftUp")
 Upright = _lazy_checker("Upright")
 Rotated = _lazy_checker("Rotated")
@@ -454,6 +455,10 @@ def parse_action(obj: dict, task_progress, env, stage_step_out=None) -> ActionBa
         elif key == "GripperPassing":
             params = value.split("|")
             act = GripperPassing(env, params[0], params[1] == "true")
+            record_act_obj(act, task_progress, value)
+            return act
+        elif key == "ScoopPopcorn":
+            act = ScoopPopcorn(env, **value)
             record_act_obj(act, task_progress, value)
             return act
         elif key == "VLM":

@@ -1,5 +1,4 @@
 {
-  "eval_type": "VLM",
   "instructions": [
     {
       "instruction": "Scoop the popcorn with the right arm and pour it into the popcorn bucket."
@@ -8,7 +7,7 @@
   "subtask_steps": [
     {
       "checker": {
-        "VLM": "scoop_popcorn|10"
+        "ScoopPopcorn": {"interval": 10}
       },
       "instruction": "Scoop the popcorn with the right arm and pour it into the popcorn bucket.",
       "step_out": 900
