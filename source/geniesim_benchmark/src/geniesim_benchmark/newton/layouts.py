@@ -284,7 +284,7 @@ def generate_layouts(
             "Run in the prepared ROS/Newton/Isaac Sim environment:\n\n"
             "```bash\ngeniesim benchmark run-layouts --bundle /absolute/path/to/this/bundle "
             "--infer-host HOST:PORT --output-dir /absolute/path/to/new/results\n```\n\n"
-            "Use `--dry-run` to inspect the launch plan. Each layout starts a fresh engine. "
+            "Use `--dry-run` to inspect the launch plan. Compatible layouts share one engine and use per-layout reset. "
             "Results, logs and Isaac Sim observer video are saved separately per layout. "
             "`layouts.json` records source hashes, full joint values and layout config hashes; "
             "`layouts.csv` lists the sampled poses. Generation alone does not validate physical task success.\n"

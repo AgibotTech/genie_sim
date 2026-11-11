@@ -285,7 +285,7 @@ starting Kit at module import. SDK-dependent USD checks skip where USD is absent
 
 ## Frozen Newton snapshot worker
 
-`isaacsim_snapshot_render.py` and `_isaac_snapshot_scene.py` receive trusted private Pipe snapshots, apply Newton geometry/body poses and render three independent cameras without a physics world or timeline advancement. Authored robot/background references retain materials while their physics is disabled. Snapshot sequence ACKs confirm image readback only. The owner closes worker, render products, temporary textures and video resources on failure/exit. `GENIE_SIM_RENDER_BUILD_OVRTX=OFF` permits Python-worker-only builds; ON preserves existing C++ targets. See [the worker protocol](docs/snapshot_renderer.md).
+`isaacsim_snapshot_render.py` and `_isaac_snapshot_scene.py` receive trusted private Pipe snapshots, apply Newton geometry/body poses and render three independent cameras without a physics world or timeline advancement. Authored robot/background references retain materials while their physics is disabled. Snapshot sequence ACKs confirm image readback only. The snapshot worker applies the shared SDK-specific launch compatibility config before Kit starts, including legacy tick scheduling for explicit 6.2 captures. The owner closes worker, render products, temporary textures and video resources on failure/exit. `GENIE_SIM_RENDER_BUILD_OVRTX=OFF` permits Python-worker-only builds; ON preserves existing C++ targets. See [the worker protocol](docs/snapshot_renderer.md).
 
 ## Synchronized IPC snapshots and episode material plans
 

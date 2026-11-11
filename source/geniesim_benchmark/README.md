@@ -24,3 +24,16 @@ Current interfaces are defined by:
 | Inference preflight | [check-inference](skills/check-inference/SKILL.md) |
 
 [License](LICENSE) · [Skills](skills/README.md) · [Challenge workflow](skills/robocoliseum/)
+
+Newton wok evaluation keeps one engine and one Isaac RTX worker alive across
+layouts, together with persistent simulation/image/score clients. Each episode
+opens a fresh inference connection. `geniesim benchmark run` and `run-layouts` validate that layouts differ
+only in robot XY, then select each layout through `reset(instances=[id])`.
+The engine restores robot/wok state, particle positions, zero velocities and
+solver carryover; the runner verifies the published base pose. One session ID
+and increasing reset epochs identify independent episodes. Native results stay
+in per-layout directories. A shared observer recording carries a frame/epoch
+sidecar and produces per-layout video clips; no physics replay is involved.
+Topology, scoring or non-XY pose differences are rejected before starting.
+Per-layout `results.json` and the top-level `batch_summary.json` retain native
+JSON reporting; layout reuse does not change scoring thresholds or budgets.

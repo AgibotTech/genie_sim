@@ -43,6 +43,11 @@ The FD is transport plumbing, not a physics/configuration knob. All caller
 selection and geometry/camera values come from the evaluation launcher's
 configuration. Do not substitute `omni_python` without checking its target:
 the current container has pip Isaac6/Python3.12 as well as `/isaac-sim` 5.1.
+The worker uses the shared `prepare_launch_config` compatibility helper before
+Kit starts. On SDK 6.2 this disables multi-tick scheduling, matching the other
+Isaac render entry points; explicit synchronous Replicator captures must not
+inherit the unsupported scheduling mode after stage replacement.
+
 Application initialization and the first render can take time compiling
 shaders; the parent must use bounded readiness/render timeouts and own
 process cleanup when a native startup failure prevents a reply.

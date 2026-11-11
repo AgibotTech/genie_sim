@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Connect the normal chef task entrypoint to independent layout engines."""
+"""Connect the normal chef task entrypoint to one resettable layout engine."""
 
 import json
 from pathlib import Path
@@ -11,7 +11,8 @@ import sys
 
 import yaml
 
-from .layout_batch import load_plans, run_batch
+from .layout_batch import load_plans
+from .shared_layouts import run_shared_batch
 from .layouts import generate_layouts
 from ..rt_engine.session import resolve_assets, resolve_bringup_file
 
@@ -40,16 +41,29 @@ def prepare_instances(config_path, config, output, assets, infer_host):
 
 def run_instances(options, config_path, config):
     if options.manifest is not None:
-        raise ValueError("layout instances require fresh engines; do not attach a shared manifest")
+        raise ValueError("layout batches own their shared engine; do not attach an external manifest")
     assets = resolve_assets(config_path, options.assets_root)
     if options.dry_run:
         with tempfile.TemporaryDirectory(prefix="wuji-layout-plan-") as temporary:
             plans = prepare_instances(config_path, config, Path(temporary) / "plan", assets, options.infer_host)
-            print(json.dumps({"num_instances": len(plans), "layouts": [
-                {"instance_id": p.layout_id, "scene": yaml.safe_load(p.scene.read_text())["robot"]["init_base_pose"]}
-                for p in plans
-            ]}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "lifecycle": "in_process_reset",
+                        "engine_starts": 1,
+                        "num_instances": len(plans),
+                        "layouts": [
+                            {
+                                "instance_id": p.layout_id,
+                                "scene": yaml.safe_load(p.scene.read_text())["robot"]["init_base_pose"],
+                            }
+                            for p in plans
+                        ],
+                    },
+                    indent=2,
+                )
+            )
         return 0
     plans = prepare_instances(config_path, config, options.output_dir, assets, options.infer_host)
-    summary = run_batch(plans, startup_timeout_s=config["ready_timeout_s"])
+    summary = run_shared_batch(plans, startup_timeout_s=config["ready_timeout_s"])
     return int(any(row["status"] != "evaluated" for row in summary["layouts"]))

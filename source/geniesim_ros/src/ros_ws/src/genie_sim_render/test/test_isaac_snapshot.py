@@ -378,7 +378,31 @@ def test_actual_factory_closes_app_when_scene_construction_fails(monkeypatch):
     with pytest.raises(RuntimeError, match="scene construction failed"):
         with ExitStack() as resources:
             worker._create_renderer(resources)
-    assert closed == [dict(headless=True, renderer="RaytracedLighting")]
+    from genie_sim_engine_isaacsim.kit.launch_config import prepare_launch_config
+
+    assert closed == [prepare_launch_config(dict(headless=True, renderer="RaytracedLighting"))]
+
+
+def test_snapshot_factory_applies_sdk62_launch_contract(monkeypatch):
+    from contextlib import ExitStack
+    from genie_sim_engine_isaacsim.kit import launch_config
+
+    configs = []
+    monkeypatch.setattr(import_module("_isaac_render_common"), "preload_warp_before_kit", lambda: None)
+    monkeypatch.setattr(launch_config.metadata, "version", lambda name: "6.2.0.0")
+    monkeypatch.delenv("ISAAC_PATH", raising=False)
+
+    def app(config):
+        configs.append(config)
+        return SimpleNamespace(close=lambda: None)
+
+    monkeypatch.setitem(sys.modules, "isaacsim", SimpleNamespace(SimulationApp=app))
+    monkeypatch.setattr(worker, "SnapshotRenderer", lambda app: SimpleNamespace(close=lambda: None))
+    with ExitStack() as resources:
+        worker._create_renderer(resources)
+    assert configs == [
+        dict(headless=True, renderer="RaytracedLighting", extra_args=["--/rtx/hydra/supportMultiTickRate=false"])
+    ]
 
 
 @pytest.fixture

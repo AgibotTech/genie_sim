@@ -171,3 +171,22 @@ The optional Isaac snapshot visualizer captures real Newton geometry while physi
 `wok_evaluation_json` explicitly enables a read-only task observer on the existing lifecycle node. It scores each completed physics tick, publishes versioned progress and fails closed on geometry/contact/transport errors. The dedicated procedural evaluation scene supplies the required geometry. Earned points remain local to evaluation and output; no checker truth is sent to the model. These hooks do not add command-correlated step acknowledgements to arrival_v1.
 
 The snapshot worker is an optional caller-supplied `genie_sim_render` installation, resolved only when selected. Bringup already includes that renderer. Do not add an unconditional Newton-to-render dependency: render depends on the Isaac package, which composes Newton assembly and would create a package cycle.
+
+### Shared chef layout resets
+
+The single-world `MuJoCoWarpAdapter` and replicated adapter share fixed-root
+mocap reset code in `adapters/base_mocap.py`. Reset offsets are relative to the
+build pose and write both MuJoCo's hold position and Newton's fixed-root parent
+transform. The single-world path also synchronizes solver state/control and
+clears warmstart and actuator activation between episodes. Chef layout tables
+use existing `instance_switch.robot_base_xy` and complete initial particle
+snapshots; no new physics tuning channel is introduced. The snapshot observer
+writes `.frames.jsonl` with real frame indices and reset epochs so the benchmark
+can extract per-layout clips from its continuous recording.
+
+For `SolverCoupledProxy`, root transforms must update both its compact
+`ModelView` and the parent model used by global FK/readback. Newton's public
+`coupled.reset(state, flags=0)` clears lagged proxy/contact caches while
+preserving restored coordinates; apply it before state/control synchronization
+because the MuJoCo sub-solver reset clears actuator control. Published base
+pose validation must pass before sending the first action for a layout.

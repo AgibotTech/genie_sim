@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Run each Wuji layout in a fresh, normally assembled ROS engine."""
+"""Plan Wuji layouts; the CLI evaluates them in one resettable ROS engine."""
 
 from __future__ import annotations
 
@@ -512,12 +512,23 @@ def main(argv: list[str] | None = None) -> int:
             shutdown_timeout_s=options.shutdown_timeout_s,
         )
         if options.dry_run:
-            for plan in plans:
-                print(f"layout {plan.layout_id:02d}; cwd={plan.run_dir}; manifest={plan.manifest}")
-                print(shlex.join(plan.engine_command))
-                print(shlex.join(plan.runner_command))
+            from .shared_layouts import shared_scene
+
+            print(
+                json.dumps(
+                    {
+                        "lifecycle": "in_process_reset",
+                        "engine_starts": 1,
+                        "layout_ids": [p.layout_id for p in plans],
+                        "scene": shared_scene(plans),
+                    },
+                    indent=2,
+                )
+            )
             return 0
-        result = run_batch(
+        from .shared_layouts import run_shared_batch
+
+        result = run_shared_batch(
             plans, startup_timeout_s=options.startup_timeout_s, shutdown_timeout_s=options.shutdown_timeout_s
         )
         if any(row["status"] == "interrupted" for row in result["layouts"]):

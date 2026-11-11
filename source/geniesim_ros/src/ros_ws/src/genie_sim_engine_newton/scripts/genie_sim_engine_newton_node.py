@@ -531,6 +531,10 @@ def run(params: dict) -> int:
                 raise RuntimeError("configured video recording requires an available Newton GL viewer")
             video_recorder = GlVideoRecorder(video_config, physics_hz=session.physics_hz)
             gl_resources.callback(video_recorder.close)
+            if isaac_renderer is not None:
+                video_config.path.parent.mkdir(parents=True, exist_ok=True)
+                video_frames = video_config.path.with_suffix(".frames.jsonl").open("x", buffering=1)
+                gl_resources.callback(video_frames.close)
             logger.info(f"Newton observer video: {video_config.path} ({video_config.fps:g} fps, simulation clock)")
         if rgb_config is not None:
             if viewer is None and isaac_renderer is None:
@@ -594,7 +598,17 @@ def run(params: dict) -> int:
             t_r0 = time.monotonic()
             try:
                 captured = _isaac_capture(sim_time, sensors=False)
-                video_recorder.record_rgb(captured["observer"], sim_time)
+                if video_recorder.record_rgb(captured["observer"], sim_time):
+                    video_frames.write(
+                        json.dumps(
+                            {
+                                "frame": video_recorder.frame_count - 1,
+                                "sim_time": sim_time,
+                                "reset_epoch": int(session.sim._reset_epoch),
+                            }
+                        )
+                        + "\n"
+                    )
             except Exception as error:
                 # Core treats ordinary render errors as recoverable step
                 # failures and retains lockstep credit. This capture is a

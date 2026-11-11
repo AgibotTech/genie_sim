@@ -116,7 +116,9 @@ def _create_renderer(resources: ExitStack) -> SnapshotRenderer:
     preload_warp_before_kit()
     from isaacsim import SimulationApp
 
-    app = SimulationApp({"headless": True, "renderer": "RaytracedLighting"})
+    from genie_sim_engine_isaacsim.kit.launch_config import prepare_launch_config
+
+    app = SimulationApp(prepare_launch_config({"headless": True, "renderer": "RaytracedLighting"}))
     resources.callback(app.close)
     renderer = SnapshotRenderer(app)
     resources.callback(renderer.close)

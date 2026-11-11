@@ -943,6 +943,24 @@ class _LifecycleMixin:
                     "task has to be rebuilt."
                 )
 
+        # Clear lagged rigid/particle feedback and sub-solver transient state.
+        # flags=0 preserves the authored coordinates restored above; the
+        # following sync re-applies PD targets after Newton clears ctrl.
+        coupled = getattr(self, "_coupled_solver", None)
+        if coupled is not None:
+            reset_options = {"flags": 0}
+            worlds = int(getattr(self, "_num_envs", 1) or 1)
+            if len(set(env_ids)) < worlds:
+                import warp as wp
+
+                reset_options["world_mask"] = wp.array(
+                    [w in env_ids for w in range(worlds)] + [False], dtype=wp.bool, device=self._model.device
+                )
+            coupled.reset(s0, **reset_options)
+            self._logger.info(
+                "[newton-standalone] coupled solver transient state reset; authored coordinates preserved"
+            )
+
         # Push the restored state into the live mjw_data. The adapter runs
         # with ``update_data_interval=0`` and does no per-substep sync back,
         # so without this explicit push the PD targets would restore the

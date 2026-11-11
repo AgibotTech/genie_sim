@@ -23,6 +23,8 @@ from genie_sim_engine_newton.engine.newton.adapters.base import (
     resolve_mjc_iterations,
 )
 
+from .base_mocap import BaseMocapResetMixin
+
 # Threshold for treating ``joint_target_ke`` as "unset" by the URDF.
 #
 # Isaac Sim's URDF importer writes a vestigial ``DriveAPI`` with
@@ -113,7 +115,7 @@ _DEFAULT_NJMAX = 1024
 _DEFAULT_NCONMAX = 512
 
 
-class MuJoCoWarpAdapter(SolverAdapter):
+class MuJoCoWarpAdapter(BaseMocapResetMixin, SolverAdapter):
     def __init__(
         self,
         *,
@@ -1133,6 +1135,7 @@ class MuJoCoWarpAdapter(SolverAdapter):
         # folded into the loop-closure fix-up.
         self._cap_gripper_master_force(logger)
         self._cap_arm_actuator_force(logger)
+        self._snapshot_base_mocap(logger)
 
         return self._solver
 

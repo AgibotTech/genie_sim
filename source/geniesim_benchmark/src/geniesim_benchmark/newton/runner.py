@@ -195,6 +195,78 @@ def _resolve_launcher(value: str, config_path: Path) -> Path:
     return path.resolve(strict=True)
 
 
+def verify_layout_reset(snapshot, scene, instance):
+    """Independently verify fixed-root placement from published body poses."""
+    switch = scene.get("instance_switch") or {}
+    if instance is None or not switch.get("robot_base_xy"):
+        return None
+    offset = switch["robot_base_xy"][str(instance)]
+    origin = scene["robot"]["init_base_pose"]
+    expected = np.array([origin["x"] + offset[0], origin["y"] + offset[1], origin["z"]])
+    indices = [i for i, path in enumerate(snapshot.schema.body_paths) if path.rsplit("/", 1)[-1] == "base_link"]
+    if len(indices) != 1:
+        raise RuntimeError("layout reset requires one published base_link body")
+    actual = snapshot.body_poses[0, indices[0], :3]
+    if not np.allclose(actual, expected, rtol=0, atol=1e-6):
+        raise RuntimeError(f"layout {instance} reset base mismatch: {actual.tolist()} != {expected.tolist()}")
+    return dict(
+        instance_id=instance,
+        reset_epoch=snapshot.reset_epoch,
+        base_xyz=actual.tolist(),
+        expected_base_xyz=expected.tolist(),
+    )
+
+
+def evaluate_attached(
+    client,
+    images,
+    policy,
+    *,
+    config,
+    scene,
+    output_dir,
+    initial_positions,
+    episodes=None,
+    max_steps=None,
+    progress=None,
+    event=None,
+):
+    """Evaluate layouts on an already-started client; retain native scoring in one place."""
+    episodes = config["episodes"] if episodes is None else episodes
+    max_steps = config["max_steps"] if max_steps is None else max_steps
+    evaluation_timeout_s = config.get("evaluation_timeout_s", 30)
+    record = event if event is not None else lambda value: None
+    results = []
+    for episode in range(episodes):
+        client.resume()
+        policy.reset()
+        instance = config.get("benchmark", {}).get("instance_id")
+        reset_snapshot = client.reset(instances=[instance] if instance is not None else None)
+        boundary = verify_layout_reset(reset_snapshot, scene, instance)
+        if boundary is not None:
+            record({"event": "layout_reset_verified", **boundary})
+        results.append(
+            run_episode(
+                client,
+                images,
+                policy,
+                instruction=config["instruction"],
+                initial_positions=initial_positions,
+                max_steps=max_steps,
+                task_name=config["task_name"],
+                episode_idx=episode,
+                observation_timeout_s=config["observation_timeout_s"],
+                progress=progress,
+                evaluation_timeout_s=evaluation_timeout_s,
+                event=record,
+            )
+        )
+        if "instance_id" in config.get("benchmark", {}):
+            results[-1]["instance_id"] = config["benchmark"]["instance_id"]
+        (output_dir / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2))
+    return results
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -279,32 +351,19 @@ def main(argv=None) -> int:
                 policy = CorobotClient(options.infer_host, timeout_s=config["inference_timeout_s"])
                 stack.callback(policy.close)
                 try:
-                    for episode in range(episodes):
-                        if episode:
-                            client.resume()
-                            policy.reset()
-                        client.reset()
-                        results.append(
-                            run_episode(
-                                client,
-                                images,
-                                policy,
-                                instruction=config["instruction"],
-                                initial_positions=initial,
-                                max_steps=max_steps,
-                                task_name=config["task_name"],
-                                episode_idx=episode,
-                                observation_timeout_s=config["observation_timeout_s"],
-                                progress=progress,
-                                evaluation_timeout_s=evaluation_timeout_s,
-                                event=record,
-                            )
-                        )
-                        if "instance_id" in config.get("benchmark", {}):
-                            results[-1]["instance_id"] = config["benchmark"]["instance_id"]
-                        (options.output_dir / "results.json").write_text(
-                            json.dumps(results, ensure_ascii=False, indent=2)
-                        )
+                    results = evaluate_attached(
+                        client,
+                        images,
+                        policy,
+                        config=config,
+                        scene=scene,
+                        output_dir=options.output_dir,
+                        initial_positions=initial,
+                        episodes=episodes,
+                        max_steps=max_steps,
+                        progress=progress,
+                        event=record,
+                    )
                 except BaseException:
                     try:
                         client.pause()
