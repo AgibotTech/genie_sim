@@ -1,7 +1,7 @@
 # Genie Sim World 🌍
 
 Release version: the local `VERSION` links to the repository root `VERSION`
-(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+(**3.6.0**). Wheel metadata and runtime `__version__` use that release value.
 
 `Genie Sim World` creates immersive explorable 3D world for robot manipulation task within seconds.
 This project implements the methods from ***Genie Sim PanoRecon** - Fast Immersive Scene Generation from a Single Equirectangular Panorama*

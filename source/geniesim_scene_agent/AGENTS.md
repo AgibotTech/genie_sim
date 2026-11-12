@@ -1,7 +1,7 @@
 # geniesim_scene_agent — Agent Development Guide
 
 Release version: the local `VERSION` links to the repository root `VERSION`
-(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+(**3.6.0**). Wheel metadata and runtime `__version__` use that release value.
 
 > Maintenance contract: update this guide, the README, and the skill index when
 > package entry points, output contracts, dependencies, or skill workflows change.

@@ -83,7 +83,7 @@ See [`AGENTS.md` § 0 — Fresh-machine setup](AGENTS.md) for the install-order 
 ## Release version
 
 The eight first-class `geniesim` / `geniesim_*` distributions share the root
-[`VERSION`](../../VERSION), currently **3.5.0**. Each package's local `VERSION`
+[`VERSION`](../../VERSION), currently **3.6.0**. Each package's local `VERSION`
 is a symlink to that file. Separate runtime environments do not change the
 release version. Independent modules, service packages, data formats, and
 third-party dependencies keep their own versions.
@@ -101,7 +101,7 @@ From a source checkout:
 
 ```bash
 geniesim version --check            # check package links and owned ROS manifests
-geniesim version --bump 3.5.0       # set the release and synchronize metadata
+geniesim version --bump 3.6.0       # set the release and synchronize metadata
 geniesim version --sync             # synchronize after editing root VERSION
 ```
 

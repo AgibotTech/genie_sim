@@ -1,7 +1,7 @@
 # Genie Sim Dream 🌙
 
 Release version: the local `VERSION` links to the repository root `VERSION`
-(**3.5.0**). Wheel metadata and runtime `__version__` use that release value.
+(**3.6.0**). Wheel metadata and runtime `__version__` use that release value.
 
 Genie Sim Dream generates G1 and G2 robot videos in a browser. Start with one
 of [20 examples](examples/) and choose how actions are supplied:

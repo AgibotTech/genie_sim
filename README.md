@@ -300,27 +300,36 @@ flowchart LR
   v31["<b>v3.1 · Apr 2026</b><br/>Genie Sim World<br/>RLinf"]
   v32["<b>v3.2 · Jun 2026</b><br/>🧞 CLI · 🤖 SKILLs<br/>⚡ RT Engine"]
   v35["<b>v3.5.0 · Nov 2, 2026</b><br/>Benchmark-focused release<br/>Isaac Sim 5.1 + 6.2 combo"]
+  v36["<b>v3.6.0</b><br/>Isaac Sim 6.2 runtime<br/>Reproducible dependency locks"]
   next["<b>v4.0 line</b><br/>Dedicated Isaac Sim 6.2<br/>RT Engine qualification"]
-  v2 --> v30 --> v31 --> v32 --> v35 --> next
+  v2 --> v30 --> v31 --> v32 --> v35 --> v36 --> next
 
   classDef done fill:#d1f0d8,stroke:#1f6f3d,color:#0b3b1f
   classDef current fill:#cfe2ff,stroke:#084298,color:#084298,stroke-width:2px
   classDef future fill:#fff3cd,stroke:#856404,color:#5c4400
-  class v2,v30,v31,v32 done
-  class v35 current
+  class v2,v30,v31,v32,v35 done
+  class v36 current
   class next future
 ```
 
 ## 📜 Release log
 
-<details open><summary><b>[11/2/2026] v3.5.0 — Benchmark release with the Isaac Sim 5.1 + 6.2 combo</b></summary>
+<details open><summary><b>v3.6.0 — Isaac Sim 6.2</b></summary>
+
+- 🐳 **Dedicated Isaac Sim 6.2 runtime** — system Python uses the bundled SDK in `geniesim4:latest`; benchmark, IK/FK and teleoperation workflows target this runtime.
+- 🔒 **Reproducible dependencies** — pinned uv, compact locks with artifact hashes, and SDK/provider validation for the dedicated 6.2 image.
+- 🔖 **Package version** — all eight first-class Genie Sim distributions and 15 owned ROS manifests share `VERSION=3.6.0`. Image-family names, dependency versions and independent modules retain their own versions.
+
+</details>
+
+<details><summary><b>[11/2/2026] v3.5.0 — Benchmark release with the Isaac Sim 5.1 + 6.2 combo</b></summary>
 
 - 🧪 **Extended benchmark suites** — fine manipulation, dexterous manipulation, whole-body coordination, and cross-embodiment tasks, plus 25 unscored open-world sandbox scenarios.
 - ⚙️ **Task-selected runtimes** — direct Isaac evaluation, managed Newton wok evaluation, and native MuJoCo Rubik execution with separate observation rendering.
 - 🐳 **Benchmark combo runtime** — `geniesim3:latest` retains bundled Isaac Sim 5.1 and the system-Python Isaac Sim 6.2 co-install. Each benchmark entry selects its runtime. The dedicated `geniesim4:latest` image remains on the separate 4.0 line.
 - 🌙 **Genie Sim Dream** — G1/G2 world-model inference, policy integration, visual evaluation, and a browser UI in dedicated environments.
 - 📥 **Collection and post-training workflows** — independent Isaac Sim 5.1/cuRobo v2 collection and replay, scene-agent authoring workflows, and RLinf server/client integration.
-- 🔖 **Checkout package version** — all eight first-class Genie Sim distributions and owned ROS package metadata in this release checkout share `VERSION=3.5.0`. This package version does not relabel the dedicated 4.0 image line. Dependencies, recording formats, and independently maintained modules keep their own versions.
+- 🔖 **Package version at release** — all eight first-class Genie Sim distributions and owned ROS package metadata shared `VERSION=3.5.0`. This package version did not relabel the dedicated 4.0 image line. Dependencies, recording formats, and independently maintained modules kept their own versions.
 
 See the [module index](source/README.md) and [benchmark task commands](source/geniesim_benchmark/benchmark_test_docs.md) for workflow details.
 

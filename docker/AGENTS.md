@@ -18,12 +18,13 @@ Docker 4.5 and 5.1 are E.O.L. and deprecated. Their explicit CLI commands
 remain available and print an advisory without a confirmation prompt.
 Use `geniesim docker` / `docker6.2` for new deployments.
 
-Genie Sim **3.5.0** is the benchmark-focused release using `geniesim3:latest`,
-the Isaac Sim 5.1 + 6.2 combo in `Dockerfile.5.1`. The dedicated 6.2 recipe,
+Genie Sim **3.5.0** used `geniesim3:latest`, the Isaac Sim 5.1 + 6.2 combo
+in `Dockerfile.5.1`, for its benchmark-focused release. The dedicated 6.2 recipe,
 `Dockerfile`, remains the separate **4.0** line under `geniesim4:latest`.
-A 3.5 package-version bump must not relabel the dedicated recipe or change its
-SDK pins, image family, dispatch, or qualification status. The shared entrypoint
-reads the mounted checkout; the 4.0 line uses its matching source checkout.
+The current checkout's eight first-class packages share **3.6.0** through the
+root `VERSION`. A package-version bump must not relabel the dedicated recipe or
+change its SDK pins, image family, dispatch, or qualification status. The shared entrypoint
+reads the mounted checkout; package versions and image-family names are independent.
 
 ## Image naming — one tag per family, no minor versions
 
