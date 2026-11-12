@@ -174,19 +174,27 @@ COPY source/geniesim/pyproject.toml /tmp/source/geniesim/pyproject.toml
 COPY source/geniesim_benchmark/pyproject.toml /tmp/source/geniesim_benchmark/pyproject.toml
 COPY source/geniesim_ros/pyproject.toml /tmp/source/geniesim_ros/pyproject.toml
 COPY source/geniesim_teleop/pyproject.toml /tmp/source/geniesim_teleop/pyproject.toml
+ARG ISAACSIM_TAG
 ARG WUJI_SDK_VERSION=2026.8.17
-COPY docker/collect_runtime_constraints.py /opt/geniesim/docker/collect_runtime_constraints.py
+ARG UV_VERSION=0.10.9
+COPY docker/collect_deps.py docker/collect_runtime_constraints.py docker/lock_isaac62.py docker/libuipc-artifacts.json /opt/geniesim/docker/
+COPY docker/isaac62 /opt/geniesim/docker/isaac62
+COPY 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl /opt/geniesim/docker/providers/
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    python3 /opt/geniesim/docker/bundled_isaacsim.py --torch-providers --output /tmp/torch-providers && \
-    python3 /opt/geniesim/docker/collect_runtime_constraints.py \
-        --constraints /opt/geniesim/docker/isaac-constraints.txt --repairs /tmp/runtime-repairs.txt && \
-    python3 /tmp/collect_deps.py /tmp/source --include-peer geniesim_teleop > /tmp/geniesim_deps.txt && \
-    python3 -m pip install --ignore-installed -r /tmp/geniesim_deps.txt -r /tmp/runtime-repairs.txt \
-        /tmp/torch-providers/*.whl \
-        "wuji-sdk==${WUJI_SDK_VERSION}" \
-        --extra-index-url "${ISAACSIM_PYPI_INDEX}" \
-        -c /opt/geniesim/docker/isaac-constraints.txt && \
-    rm -rf /tmp/collect_deps.py /tmp/source /tmp/geniesim_deps.txt /tmp/runtime-repairs.txt /tmp/torch-providers && \
+    --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    python3 -m pip install "uv==${UV_VERSION}" && \
+    python3 /opt/geniesim/docker/lock_isaac62.py --source /tmp/source \
+        --isaacsim-tag "${ISAACSIM_TAG}" --wuji-sdk-version "${WUJI_SDK_VERSION}" && \
+    uv --no-config pip install --python /usr/bin/python3 --no-python-downloads --break-system-packages \
+        --no-deps --link-mode copy /opt/geniesim/docker/providers/*.whl && \
+    uv --no-config pip install --python /usr/bin/python3 --no-python-downloads --break-system-packages \
+        --no-deps --link-mode copy --require-hashes -r /opt/geniesim/docker/isaac62/requirements.txt \
+        --index "${PIP_INDEX_URL}" --default-index "${ISAACSIM_PYPI_INDEX}" \
+        --index-strategy unsafe-best-match && \
+    uv --no-config pip install --python /usr/bin/python3 --no-python-downloads --break-system-packages \
+        --no-deps --link-mode copy --require-hashes -r /opt/geniesim/docker/isaac62/nvidia-requirements.txt \
+        --default-index "${ISAACSIM_PYPI_INDEX}" && \
+    rm -rf /tmp/collect_deps.py /tmp/source && \
     python3 /opt/geniesim/docker/bundled_isaacsim.py --clean-bytecode /usr/local/lib/python3.12/dist-packages
 
 # ------------------------------------------------------------
@@ -231,11 +239,7 @@ RUN apt-get update && \
 # Keep NumPy/llvmlite pinned to the SDK while selecting a compatible Numba.
 # Kit bundles coverage 7.4.4, which lacks Numba's optional tracer API. Load a
 # compatible coverage before Kit adds its archive paths; tracing stays disabled.
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
-    --mount=type=bind,source=3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl,target=/tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl,ro \
-    python3 -m pip install -c /opt/geniesim/docker/isaac-constraints.txt \
-        /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl numba "coverage>=7.6.1,<8" && \
-    python3 -c "from pathlib import Path; import sysconfig; (Path(sysconfig.get_path('purelib')) / 'geniesim_numba_coverage.pth').write_text('import coverage\n')" && \
+RUN python3 -c "from pathlib import Path; import sysconfig; (Path(sysconfig.get_path('purelib')) / 'geniesim_numba_coverage.pth').write_text('import coverage\n')" && \
     python3 -c "import ik_solver, numba"
 
 # OVRTX registers this search path at renderer startup. The installed parent

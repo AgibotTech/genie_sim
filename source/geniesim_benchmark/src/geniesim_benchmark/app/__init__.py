@@ -5,7 +5,6 @@
 """Package containing the core framework."""
 
 import os
-import toml
 
 # Path to the extension source directory
 # Conveniences to other module directories via relative paths

@@ -497,7 +497,9 @@ This keeps Docker layer invalidation smaller:
 
 `collect_deps.py` reads tier-1 package names from `source/geniesim/pyproject.toml`, skips internal `geniesim*` dependencies, and skips packages provided by the simulator/runtime layer such as `isaacsim`, `cv_bridge`, `numpy`, and `scipy`.
 
-Tier-2 packages such as teleop, scene agent, and world are intentionally not baked into the default image. Users opt into them inside the container, for example:
+The Jazzy recipes explicitly include teleop's third-party dependencies for
+Pico/Wuji and recording. Installing the optional source peers remains opt-in;
+scene agent and world keep their separate dependency selections. For example:
 
 ```bash
 pip install -e "source/geniesim/[teleop]"
@@ -505,6 +507,65 @@ pip install -e "source/geniesim/[scene_agent]"
 pip install -e "source/geniesim/[world]"
 pip install -e "source/geniesim/[all]"
 ```
+
+#### Docker 6.2 dependency lock
+
+The dedicated 6.2 recipe uses pinned `uv==0.10.9` with the existing system
+Python 3.12. [isaac62/requirements.txt](isaac62/requirements.txt) and
+[isaac62/nvidia-requirements.txt](isaac62/nvidia-requirements.txt) pin and hash
+the registry dependencies; [isaac62/manifest.json](isaac62/manifest.json) binds
+them to the source metadata, collector scripts, SDK constraints, Python/ABI,
+Wuji version and local providers. It records the SDK base-image digest for
+provenance. The first lock retains the versions from the qualified image.
+The generated hashes cover wheels compatible with Linux x86_64 / system
+CPython 3.12, plus source archives for build fallback. Lock updates use uv's
+artifact metadata to discard other platforms' hashes without adding unverified
+artifacts or changing package pins. OVRtx retains only its NVIDIA artifacts.
+The lock covers Python runtime package versions and registry artifacts;
+apt/rosdep packages and native-wheel selection retain their existing contracts.
+
+`lock_isaac62.py` rejects stale inputs before installation. Ordinary builds
+consume the checked-in lock without resolving dependency ranges. SDK Torch/CUDA
+providers and the repository's IK wheel install locally with `--no-deps`;
+registry packages install with `--no-deps --require-hashes`. This does not run
+an exact environment sync or remove apt/SDK packages absent from the lock.
+The provider wheels are retained under `/opt/geniesim/docker/providers`.
+`isaac62/requirements.in` includes benchmark math additions and the pinned IPC
+wheels' Python requirements. Keep those requirements aligned with wheel
+`Requires-Dist` metadata when updating `libuipc-artifacts.json`; the native
+installer still verifies its own dependency and byte-integrity contracts.
+
+The selected `PIP_INDEX_URL` and `ISAACSIM_PYPI_INDEX` are passed explicitly to
+uv, which does not read pip's configuration. The common install prioritizes the
+selected primary mirror. [isaac62/nvidia.in](isaac62/nvidia.in) declares vendor
+source ownership without duplicating version requirements: OVRtx's PyPI sdist
+is a bootstrap package, so its full wheel is resolved and installed through
+NVIDIA. The generated vendor lock keeps those full-wheel hashes. Resolution uses uv's
+`unsafe-best-match` index strategy to preserve the prior pip behavior: some
+SDK-pinned releases exist only on NVIDIA, while others exist only on PyPI.
+The committed hashes determine which downloaded artifacts can be installed.
+Docker 5.1, shared editable installs and CLI bootstrap retain pip.
+
+To update the lock, use a prepared system-Python 6.2 container with the pinned
+uv version and a writable checkout. Run from the repository root:
+
+```bash
+geniesim_lock_work=$(mktemp -d)
+mkdir -p "$geniesim_lock_work/providers"
+cp 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl "$geniesim_lock_work/providers/"
+python3 docker/lock_isaac62.py \
+  --source source --providers "$geniesim_lock_work/providers" \
+  --isaacsim-tag 6.2.0.1 --wuji-sdk-version 2026.8.17 \
+  --base-image nvcr.io/nvidia/isaac-sim@sha256:72d85e83fe76ac0dbe3cf6e77523c9ee9664db02c2e0fc92be35ee3c16cf3402 \
+  --update
+```
+
+Use the actual SDK base digest when updating the runtime. Pass `--index-url`
+and `--extra-index-url` to select mirrors during a lock update. Existing pins
+are preferred when compatible; edit the owning package requirements or
+`isaac62/requirements.in` to request a dependency change. Review both generated
+locks and their manifest, rebuild with `geniesim docker6.2 build`, run the Docker/CLI tests and
+repeat the GPU/ROS acceptance probes before publishing an image.
 
 ### Isaac/colcon package versions
 
@@ -516,15 +577,16 @@ GenieSim requirements resolve under the combined SDK constraints.
 
 For Isaac 6.2, this preserves NumPy 2.3.1, absl-py 2.4.0, etils 1.13.0,
 fsspec 2026.2.0 and glfw 2.10.0, while setuptools follows colcon's `<80,>=30.3.0`
-range. The versions are read from metadata, not duplicated in a hand-maintained
-lock file. The constraints preserve the SDK version requirements, and the Isaac
+range. SDK constraints are read from metadata. The dedicated 6.2 lock is
+generated under those constraints and checked against them on each build;
+the combo recipe retains its existing constrained pip solve. The Isaac
 profile's final `pip check` fails the build if declared dependencies disagree.
 Newton's optional sim requirements are also checked by `check_newton_pins.py`.
 
-In a fresh dedicated 6.2 image, SDK and GenieSim dependencies are populated in
-one `--ignore-installed` solve under the combined constraints because
-Ubuntu's apt Python packages lack pip uninstall records. The combo recipe keeps
-its existing SDK wheel install followed by normal constrained replacement.
+In a fresh dedicated 6.2 image, uv installs the locked external dependencies
+alongside Ubuntu's apt Python packages, preserving apt-owned distributions
+without pip uninstall records. The combo recipe keeps its existing SDK wheel
+install followed by normal constrained replacement.
 
 The generated constraints remain at `/opt/geniesim/docker/isaac-constraints.txt`.
 Apply them explicitly when installing additional packages into system Python.

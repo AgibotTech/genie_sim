@@ -163,13 +163,40 @@ The shared entrypoint repairs only the selected bundled Kit's runtime
 `config`, `data`, `logs` and named cache directories for the remapped UID.
 Pip-layout Kit paths do not enter the bundled-directory repair branch.
 
-For the fresh 6.2 image, populate system SDK and GenieSim dependencies in one
-`--ignore-installed` solve under the generated constraints. Ubuntu's
-NumPy, PyYAML, packaging, psutil and other apt distributions have no pip
-uninstall RECORD. This is the initial external dependency install, not a
-second SDK payload. Resolving both requirement sets together prevents temporary
-versions that conflict with GenieSim limits; source packages declare their own
-isolated build dependencies.
+The dedicated 6.2 dependency layer uses pinned uv with Ubuntu's system Python.
+`lock_isaac62.py --update` compiles the collected peer requirements, all SDK
+constraints and `isaac62/requirements.in`. The committed registry lock carries
+artifact hashes for compatible Linux x86_64 / CPython 3.12 wheels and source
+archives. Updates use uv's pylock artifact metadata to prune incompatible hashes;
+retained hashes must also occur in the resolved requirements lock. Fail before
+publishing if any pin has no matching artifact. Its manifest binds the lock to source inputs, tool version,
+SDK constraints, ABI and local providers, and records SDK base-digest provenance.
+The extra input covers benchmark math and the pinned IPC wheels' Python
+requirements; keep it aligned with their `Requires-Dist` metadata. Changes to
+`libuipc-artifacts.json` invalidate the lock as well.
+Builds validate that manifest and install the lock with `--no-deps --require-hashes`.
+They never refresh the lock implicitly. Keep registry dependencies separate
+from SDK Torch/CUDA providers and the local IK wheel; the latter install with
+`--no-deps` and remain in `/opt/geniesim/docker/providers`. The lock already
+encodes SDK constraints; do not pass floating constraints to the hashed install.
+Do not use `uv sync`/`uv pip sync` on this shared apt/SDK environment.
+Ubuntu distributions without uninstall RECORDs remain apt-owned.
+
+`isaac62/nvidia.in` owns vendor routing only, not version pins. Its generated
+`nvidia-requirements.txt` installs through the NVIDIA index alone; this avoids
+OVRtx's same-version PyPI bootstrap sdist. Lock generation reads the full vendor
+wheel metadata; the common locked install prioritizes the selected primary mirror.
+Hash-check both generated files. Never replace a rejected full-wheel hash with
+a bootstrap artifact hash to make installation pass.
+
+Pass primary and NVIDIA index URLs explicitly from the existing mirror build
+arguments. uv does not read `/etc/pip.conf`; its `unsafe-best-match` strategy
+preserves the prior pip candidate set for SDK pins split across these indexes.
+Preserve artifact hashes. Shared entrypoint editable installs and bootstrap
+remain on pip because they use the remapped user's writable site; uv has no
+pip-style user-install fallback. Keep Docker 5.1 on its existing dependency flow.
+Update commands and qualification requirements are in
+[the dependency-layer guide](README.md#docker-62-dependency-lock).
 The dedicated recipe sets `PIP_NO_COMPILE=1` and removes regenerable system
 bytecode in the same dependency layer. Preserve sourceless bytecode, SDK files
 and symlink targets. Do not delete inherited SDK bytecode in a later layer.
