@@ -26,7 +26,7 @@ installs in topological order.
 | 🧪 [`geniesim_benchmark/`](geniesim_benchmark/) | Benchmark tasks and scoring with Isaac, Newton, and native MuJoCo runtimes | [README.md](geniesim_benchmark/README.md) | [run-benchmark](geniesim_benchmark/skills/run-benchmark/SKILL.md), [check-inference](geniesim_benchmark/skills/check-inference/SKILL.md) |
 | 🏗️ [`geniesim_scene_agent/`](geniesim_scene_agent/) | Asset search, scene authoring, and task orchestration | [AGENTS.md](geniesim_scene_agent/AGENTS.md) | [geniesim-scene-generation](geniesim_scene_agent/skills/geniesim-scene-generation/SKILL.md), [geniesim-asset-search](geniesim_scene_agent/skills/geniesim-asset-search/SKILL.md), [scene-to-data](geniesim_scene_agent/skills/geniesim-scene-to-data/SKILL.md) |
 | ⚡ [`geniesim_ros/`](geniesim_ros/) | **Genie Sim RT Engine** — realtime interactive ROS 2 simulation | [README.md](geniesim_ros/README.md) · [AGENTS.md](geniesim_ros/AGENTS.md) | [build-workspace](geniesim_ros/skills/build-workspace/SKILL.md), [launch-scene](geniesim_ros/skills/launch-scene/SKILL.md), [moveit-wbc](geniesim_ros/skills/moveit-wbc/SKILL.md), [add-robot](geniesim_ros/skills/add-robot/SKILL.md), [teleop-bridge](geniesim_ros/skills/teleop-bridge/SKILL.md), [record-episode](geniesim_ros/skills/record-episode/SKILL.md), [debug-physics](geniesim_ros/skills/debug-physics/SKILL.md), [material-override](geniesim_ros/skills/material-override/SKILL.md) |
-| 🎮 [`geniesim_teleop/`](geniesim_teleop/) | VR / Pico teleoperation bridge | [AGENTS.md](geniesim_teleop/AGENTS.md) | [run-teleop](geniesim_teleop/skills/run-teleop/SKILL.md) |
+| 🎮 [`geniesim_teleop/`](geniesim_teleop/) | VR / Pico teleoperation bridge | [AGENTS.md](geniesim_teleop/AGENTS.md) | [Legacy 5.1 skill (E.O.L.)](geniesim_teleop/skills/run-teleop/SKILL.md); current commands in README |
 | 🌍 [`geniesim_world/`](geniesim_world/) | Multimodal spatial world model (panorama → 3D world) | [README.md](geniesim_world/README.md) · [AGENTS.md](geniesim_world/AGENTS.md) | [generate-world](geniesim_world/skills/generate-world/SKILL.md) |
 | 🌙 [`geniesim_dream/`](geniesim_dream/) | G1/G2 world-model inference, policy and VLM evaluation; own environments | [README.md](geniesim_dream/README.md) · [AGENTS.md](geniesim_dream/AGENTS.md) | [run-dream](geniesim_dream/skills/run-dream/SKILL.md) |
 
@@ -129,7 +129,7 @@ others are active out-of-band collaborations.
 | Directory | Description |
 |---|---|
 | [`agent2act/`](agent2act/README.md) | LLM-to-action runtime with motion/policy/auto execution, CoRobot WebSocket service, and a separate uv environment |
-| [`data_collection/`](data_collection/) | Independent Isaac Sim 5.1 / cuRobo v2 collection and replay |
+| [`data_collection/`](data_collection/) | Independent Isaac Sim 6.2 / cuRobo v2 collection and replay |
 | 🎓 [`rlinf_geniesim/`](rlinf_geniesim/) | RL training (RLinf, human-in-the-loop, distributed) |
 | [`scene_reconstruction/`](scene_reconstruction/) | 3D reconstruction pipeline (Dockerfile, third-party deps) |
 | [`external/`](external/) | Vendored third-party code (ml-sharp, DA360, …) |

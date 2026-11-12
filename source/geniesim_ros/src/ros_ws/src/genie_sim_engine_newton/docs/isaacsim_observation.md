@@ -25,10 +25,10 @@ ros2 launch genie_sim_bringup app.launch.py \
 ```
 
 The engine's **current Python interpreter** must have the actual Isaac Sim 6
-runtime, RTX/Replicator, the repository-pinned Newton/Warp and ROS dependencies. The parent
-starts the worker with `sys.executable`; it does not select another Python
-using `omni_python`. In a container with both pip Isaac6 and `/isaac-sim` 5.1,
-activate the intended environment before launch. The bringup argument remains
+runtime, RTX/Replicator, the repository-pinned Newton/Warp and ROS dependencies.
+The parent starts the worker with `sys.executable`. Use system Python 3.12 in
+the dedicated Isaac 6.2 container; the 5.1 + 6.2 combo is deprecated (E.O.L.).
+The bringup argument remains
 `headless:=false` to enable this backend observation path, while the worker
 itself creates a headless `SimulationApp`. A usable RTX GPU is required.
 

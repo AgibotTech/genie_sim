@@ -16,8 +16,9 @@ Routing / contributor map: [AGENTS.md](AGENTS.md)
 Shared runtime references and acceptance: [docs/README.md](docs/README.md)
 
 Shared Python code is maintained for Python **3.10 and 3.12**. `geniesim docker`
-defaults to `docker6.2`; select the combo with explicit `docker5.1`. The dedicated
-6.2 image has measured component coverage; see [runtime acceptance](docs/ISAACSIM_ACCEPTANCE.md).
+defaults to dedicated `docker6.2`. Isaac Sim **4.5**, standalone **5.1**, and
+the **5.1 + 6.2 combo** are **deprecated (E.O.L.)**; their code is retained.
+See [runtime acceptance](docs/ISAACSIM_ACCEPTANCE.md) for measured 6.2 coverage.
 
 ---
 
@@ -29,11 +30,11 @@ defaults to `docker6.2`; select the combo with explicit `docker5.1`. The dedicat
 | 🧮 **Multiple physics backends, one workspace** | Pick at launch with `launcher_config:=…`: Isaac Sim PhysX (stable rigid), Isaac Sim Newton (rigid, experimental), or **Newton-standalone** (Kit-free, supports cloth + soft bodies in addition to rigid). |
 | 👕 **Cloth & soft body in the loop** | Newton-standalone is designed for deformables — cloth folding, fabric drape, FEM tet bars — alongside the rigid robot. Multiple solvers are wired in so a scene yaml can opt into the one that fits the material; the engine bridges them all to the same render and RViz feedback. |
 | 🦿 **Customizable robots, AS3-native assets** | `genie_sim_robot_model` ships multiple robots out of the box (Genie G2 family, Franka, UR5, Aloha, ARX, …) and lets you bring your own via xacro / URDF — the offline mesh tools normalize OBJ names, inject missing inertials, and stage the result into Isaac Sim's **AS3 asset layout** (per-robot directory with `robot.usda` + `payloads/Physics/{physics,physx,mujoco}.usda`). The engine consumes that layout uniformly; switching physics backends never rewrites the asset. |
-| 🤖 **Isaac Sim runtimes** | `docker` defaults to `docker6.2`, using the SDK bundled in base 6.2.0.1 through a system-Python adapter, without a duplicate SDK install. Explicit `docker5.1` selects bundled 5.1 and system Python 6.2. `docker4.5` provides the Python 3.10/Humble compatibility runtime. AS2/AS3 import and layout differences are handled at the runtime boundary; acceptance is recorded per image and interpreter. |
+| 🤖 **Isaac Sim runtimes** | `docker` defaults to `docker6.2`, using the SDK bundled in base 6.2.0.1 through a system-Python adapter, without a duplicate SDK install. Standalone 5.1, the 5.1 + 6.2 combo and 4.5 runtimes are deprecated (E.O.L.); compatibility code remains. AS2/AS3 import and layout differences are handled at the runtime boundary; acceptance is recorded per image and interpreter. |
 | 🦾 **MoveIt 2 for Genie G2** | Drop-in `move_group` + WBC RViz for the Genie G2 family (G2 is the Tier 1 robot). Ships three IK plugins (KDL-coupled, bio_ik-coupled, relaxed-IK) with G2 coupled-joint constraints, plus an RRT-Connect + TOPP-RA planner. Other robots run on the engine but don't have a packaged MoveIt config — port the SRDF and `coupled_constraints.yaml` if you need one. |
 | 🎨 **OVRtx rendering, two modes** | **Inline OVRtx** runs inside the Newton-standalone process — zero-copy `body_q → omni:xform` via Warp, photoreal viewport with no IPC. **Standalone OVRtx render node** runs as a separate ROS process consuming `/tf_scene` and robot `/tf`, ideal when physics and rendering need different CPU/GPU budgets. Both paths print a first-run shader-compile heartbeat so operators know warmup vs hang. |
 | 📦 **Ships as a single pip wheel** | A built `geniesim_ros` wheel contains the pre-built colcon `--merge-install` tree (modes preserved via a tarball trick); consumers don't need colcon. Editable installs still let you `geniesim ros build dev` for iteration. |
-| 🌐 **ROS 2 Jazzy** | Jazzy is the system runtime for the 5.1 combo and dedicated 6.2 containers. Python 3.10/Humble compatibility uses the 4.5 container. |
+| 🌐 **ROS 2 Jazzy** | Jazzy is the active system runtime for the dedicated 6.2 container. Shared Python 3.10/Humble code checks do not qualify the E.O.L. Isaac 4.5 runtime. |
 | 🛰️ **Live RViz integrations** | Custom marker / PointCloud2 publishers for deformable surfaces, free-joint rigid objects, and an RViz2-driven free-camera pose plugin. The renderer's `/tf_render` channel pushes per-body local transforms so the USD stage stays in lockstep with physics. |
 
 ---
@@ -185,9 +186,9 @@ is exposed; bare `geniesim docker` aliases to the default (`docker6.2`).
 
 | Isaac Sim | ROS 2 | Container image | CLI entry | Status |
 |---|---|---|---|---|
-| **5.1 bundled / 6.2 system** | **Jazzy** | `geniesim3` | `geniesim docker5.1` | Explicit combo; see runtime acceptance |
 | 6.2 (base **6.2.0.1**, bundled SDK / system-Python adapter) | Jazzy | `geniesim4` | `geniesim docker` / `geniesim docker6.2` | **Default**; component checks recorded, full release acceptance incomplete |
-| 4.5 | Humble | `geniesim2` | `geniesim docker4.5` | Python 3.10 / Humble compatibility; GPU capture not qualified on RTX 5090 |
+| **5.1 bundled / 6.2 system** | **Jazzy** | `geniesim3` | `geniesim docker5.1` | Deprecated (E.O.L.); code retained |
+| 4.5 | Humble | `geniesim2` | `geniesim docker4.5` | Deprecated (E.O.L.); code retained |
 
 ### Robot tiers (from `genie_sim_robot_model`)
 

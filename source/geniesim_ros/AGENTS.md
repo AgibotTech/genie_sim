@@ -18,11 +18,12 @@ Public intro: [README.md](README.md)
 Shared documentation index: [docs/README.md](docs/README.md)
 
 Maintain shared Python code for both Python 3.10 and Python 3.12. Keep
-`requires-python = ">=3.10,<3.13"` and the existing 3.11 combo-runtime support.
+`requires-python = ">=3.10,<3.13"` and existing interpreter compatibility code.
 Validate changed shared code on both maintained versions; SDK-specific imports
 stay behind the existing interpreter/runtime boundaries. Do not raise the Python
 minimum to follow Isaac 6.2. `geniesim docker` defaults to `docker6.2`;
-select the combo explicitly with `geniesim docker5.1`.
+Isaac Sim 4.5, standalone 5.1 and the 5.1 + 6.2 combo are deprecated (E.O.L.).
+Retain their code until explicit retirement; do not add legacy qualification work.
 Acceptance is recorded separately for each runtime.
 
 Use uppercase Markdown filenames in `docs/` (for example, `STEP_MODES.md`).
@@ -101,8 +102,7 @@ formatting noise and no unrelated reflow.
 Isaac release declarations live in the repository's
 [Docker runtime guide](../../docker/README.md). The dedicated 6.2 image uses base
 `ISAACSIM_TAG=6.2.0.1`; its system-Python adapter registers the existing bundled
-SDK with compatibility version `ISAACSIM_PIP_VERSION=6.2.0.0`. The 5.1 combo
-continues installing the NVIDIA 6.2 wheel in system Python.
+SDK with compatibility version `ISAACSIM_PIP_VERSION=6.2.0.0`.
 Newton is installed by the SDK; the ROS package declares MuJoCo's coupled
 requirement `mujoco~=3.12.0` from Newton 1.6.1's metadata.
 CoACD (`coacd>=1.0.7`) is a default ROS distribution dependency, so ordinary
@@ -126,7 +126,6 @@ Verify actual imports, not only metadata, for the selected interpreter:
 python3 -c "import newton, mujoco, warp; print(newton.__version__, newton.__file__, mujoco.__version__, warp.__version__)"
 ```
 
-Run the equivalent check through `omni_python` when qualifying bundled 5.1.
 Version-dependent code names its branch version in a comment. Loaded paths and
 startup/config readback determine which runtime a result applies to. See
 [runtime acceptance](docs/ISAACSIM_ACCEPTANCE.md) and the [roadmap](docs/ROADMAP.md).
@@ -364,15 +363,14 @@ app.launch.py ──► physics_backend.launch.py
 
 ## Isaac Sim compatibility & asset layouts
 
-The workspace targets three Isaac Sim runtimes, each with its own
-URDF→USD importer and resulting asset layout. The same
-`genie_sim_engine_isaacsim` source code runs against all of them — design rules
-below keep the dispatch transparent. The `physics_engine` selector is
-the user-visible switch:
+The active runtime is Isaac Sim 6.2. Deprecated (E.O.L.) 4.5, 5.1 and combo
+paths retain their importer and asset-layout compatibility code until retirement.
+The table below describes the retained dispatch code. The `physics_engine`
+selector is the user-visible switch for the active runtime:
 
 | `physics_engine` | Solver | URDF→USD importer / Asset layout | Mimic-joint enforcement | Cloth / soft bodies |
 |---|---|---|---|---|
-| (Isaac Sim 4.x / 5.x — no engine selector; PhysX-only) | PhysX (`omni.physx`) | `URDFParseAndImportFile` (kit command); **AS2 / flat** single-file `robot.usda`, every link direct child of `/<robot_prefix>` | engine-side broadcast (manifest `mimic_joints` block) | yes via PhysX (PhysxSchema) |
+| (E.O.L. Isaac Sim 4.5 / 5.1 — retained PhysX-only code) | PhysX (`omni.physx`) | `URDFParseAndImportFile` (kit command); **AS2 / flat** single-file `robot.usda`, every link direct child of `/<robot_prefix>` | engine-side broadcast (manifest `mimic_joints` block) | yes via PhysX (PhysxSchema) |
 | `isaac_physx` (Isaac Sim 6.x) | PhysX 5 (`omni.physx`) | `urdf_usd_converter.Converter` + `importer_utils.convert_joints_attributes` (PhysX post-pass) + `run_asset_transformer_profile`; **AS3** multi-file package with links nested under `/<prefix>/Geometry/.../link`, physics split across `payloads/Physics/{physics,physx,mujoco}.usda` | `PhysxMimicJointAPI:<axis>` (PhysX articulation solver) | yes via PhysX (`PhysxParticleClothAPI`, etc.) |
 | `isaac_newton` (Isaac Sim 6.x) | Newton via `isaacsim.physics.newton` wrapper | `urdf_usd_converter.Converter` (raw, no PhysX post-pass); **AS3** — same nesting | `NewtonMimicAPI` (Newton native constraint) | **no** — wrapper bridges only `NewtonArticulationRootAPI` / `NewtonMaterialAPI` / `NewtonMimicAPI` (rigid-body schemas only); `newton_usd_schemas` defines no cloth/particle/deformable APIs |
 

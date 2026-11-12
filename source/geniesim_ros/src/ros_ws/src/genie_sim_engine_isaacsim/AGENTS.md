@@ -3,7 +3,7 @@
 | Runtime | PhysX | Isaac Newton |
 |---|---|---|
 | 6.2 | AS3 variant selection and overlay inventory checks | Public configuration API and MuJoCo scene schema |
-| 5.1 / 4.5 | Flat conversion/runtime paths retained | Not covered by the 6.2 public configuration contract |
+| 5.1 / 4.5 and 5.1 + 6.2 combo | Deprecated (E.O.L.); flat conversion/runtime code retained | Outside current qualification |
 
 This package owns Kit backends and Isaac-specific assembly. Keep Isaac/USD
 imports lazy in assemble helpers; core must remain independent of all backends.
@@ -23,7 +23,7 @@ Use only launcher/scene YAML configuration routes described in
   system-Python adapter distribution, so version metadata remains available
   without a second SDK payload. `kit/bootstrap.py` reads its
   `geniesim-bundled.json` manifest for apps/converter paths; the AS3 converter
-  uses that same resolver. Pip-only and combo runtimes retain their resolution.
+  uses that same resolver. E.O.L. pip-only and combo runtime code retains its resolution.
 
 - `assemble/physics_variant.py`: select the known AS3 `physx` or legacy `PhysX`
   variant and check movable joints against URDF inventory. Prefer `physx` when
@@ -100,8 +100,9 @@ app. A normal host run reports these as skipped, not as live acceptance.
 
 The explicit `tests/isaac62_smoke.py` runtime smoke is documented in the migration roadmap. It must
 read live solver options after stepping; reading only the pending public
-configuration does not close the runtime gate. Keep 5.1/4.5 regressions and the
-full scene/task/render matrix open until they have their own evidence.
+configuration does not close the runtime gate. Keep the full 6.2
+scene/task/render matrix open until it has its own evidence. Deprecated 5.1,
+4.5 and combo runtimes have no active qualification gate.
 
 ## Runtime sysid precedence
 

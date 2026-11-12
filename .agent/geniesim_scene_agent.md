@@ -10,7 +10,7 @@ scene generation, task reference retrieval, and automatic collection task author
 | --- | --- |
 | Installation and usage | [README](../source/geniesim_scene_agent/README.md) |
 | Skill workflows | [skill index](../source/geniesim_scene_agent/skills/README.md) |
-| Isaac Sim 5.1 image | [container guide](../source/geniesim_scene_agent/docker/README.md) |
+| Isaac Sim 6.2 image | [container guide](../source/geniesim_scene_agent/docker/README.md) |
 | Task library | [examples](../source/geniesim_scene_agent/examples/README.md) |
 
 The umbrella extra is `[scene_agent]`. Install the local peer first; default

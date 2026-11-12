@@ -17,8 +17,8 @@ Shared core code is also checked with Python 3.10 / ROS Humble.
 Skipped checks are not runtime acceptance. Full scene motion, camera attachment,
 long-run stability, cache behavior and autonomous task success require the
 [bringup checklist](../src/ros_ws/src/genie_sim_bringup/README.md#scene-testing).
-The Isaac Newton rigid wrapper remains experimental. Bundled Python and older
-Isaac runtimes are outside this system-Python qualification.
+The Isaac Newton rigid wrapper remains experimental. Isaac Sim 4.5, standalone 5.1 and the 5.1 + 6.2 combo are
+deprecated (E.O.L.) and outside current qualification. Their code remains.
 
 ## Live G2 smoke
 
@@ -47,37 +47,7 @@ are recorded evidence, not a rerun of the current checkout or qualification of
 another image tag. Use the [bringup matrix](../src/ros_ws/src/genie_sim_bringup/README.md#scene-testing)
 for scenario pass criteria and the [workspace roadmap](ROADMAP.md) for open gates.
 `geniesim docker` and `geniesim docker6.2` select the dedicated 6.2 image;
-explicit `geniesim docker5.1` selects the combo image.
-
-### geniesim3 system Python, 2026-10-25
-
-The measured local clean rebuild has image configuration ID
-`sha256:31a683881401097ca8562db74ab97c4fe9a86671d245ed81502b831ad7af7a49`
-and size **51,576,579,322 bytes (51.6 GB)**. Its NVIDIA 5.1 base manifest is
-`sha256:f3563cb2ba0c18af0b2fb321360dcb73a917b899f879e3213623d6bee484fa54`.
-The system SDK payload was copied once from a cached installation without
-inheriting donor image layers. This does not establish fresh upstream-download
-reproducibility. OS/ROS dependencies used source
-`e4759a02008f412ce6451c865dbbcc1c2afffa2b` and the `isaac` dependency profile.
-Bundled `/isaac-sim/kit/python` was preserved and is outside this qualification.
-
-| Check | Recorded result |
-| --- | --- |
-| Physics/render versions | Python 3.12.3, Isaac 6.2.0.0, Newton 1.6.1, MuJoCo/MuJoCo-Warp 3.12.0, OVRtx 0.4.1.364340 |
-| Imported system packages | NumPy 2.3.1, absl 2.4.0, fsspec 2026.2.0, pydantic-core 2.33.2; typing-extensions 4.12.2 files verified |
-| Dependencies / CPU | `pip check` and Newton guards pass; 139 SDK/colcon constraints, zero repairs; 93 CPU tests pass |
-| Fresh R01 assembly | `scene_flat_g2_sp` regenerates on PhysX and Newton; crsB/Swiftpicker sysid selections apply after class defaults |
-| PhysX + OVRtx | 42 finite joint positions, TF/clock, 640×400 RGB/depth and exact YAML CameraInfo K; RGB standard deviation 110.42; all 256000 depth pixels finite positive |
-| PhysX head command | +0.1 rad target; error 0.017153 rad, within the 0.02 rad probe tolerance |
-| Newton MJ-Warp head command | Headless, no visualizer; 42 finite joint positions and TF/clock; +0.1 rad target, error 0.016708 rad |
-| Direct SDK camera | 48×64 RGB standard deviation 91.90; cube-centre depth 4.0 m; imported NumPy explicitly checked |
-
-Imported package versions and file records matched the installed wheels, with
-no duplicate distribution metadata in system pip's installation directory.
-Metadata alone is insufficient for an import audit. Both ROS runs used a freshly
-built overlay and private scene caches. These probes do not qualify full robot
-sweeps, camera attachment under chassis motion, cache/reset criteria, Newton
-GL/inline OVRtx or other scenes on this image.
+legacy variants remain in code but have no active qualification gate.
 
 ### Dedicated Isaac 6.2, 2026-10-22
 
@@ -97,8 +67,7 @@ asset revision.
 
 The wrapper's direct warm solver calls measured 96.7–97.3 Hz. Those calls and the
 paced ROS/render loop are different workloads on a shared GPU; neither establishes
-isolated 100 Hz acceptance. Bundled 5.1 and Isaac 4.5 runtime acceptance are not
-established by these system-Python results.
+isolated 100 Hz acceptance. These results apply only to the identified 6.2 runtime.
 
 ## Reproduce
 

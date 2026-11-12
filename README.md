@@ -33,8 +33,8 @@ Use `geniesim docker` or `geniesim docker6.2` to select
 the dedicated image, `geniesim4:latest`, on the **4.0** runtime line.
 See [release lines and runtime selection](docker/README.md#release-lines).
 
-> **⚠️ E.O.L. / deprecated:** `geniesim docker4.5` (`geniesim2`) and
-> `geniesim docker5.1` (`geniesim3`). Use `geniesim docker` / `docker6.2` for new deployments.
+> **⚠️ Deprecated (E.O.L.):** Isaac Sim **4.5**, standalone **5.1**, and the **5.1 + 6.2 combo**.
+> Their code remains until retirement. Use `geniesim docker` / `docker6.2` for current workflows.
 
 **Genie Sim is the simulation platform from AgiBot.** It provides developers with a complete toolchain for *environment reconstruction*, *scene generalization*, *data collection*, and *automated evaluation*. Its core module, **Genie Sim Benchmark** is a standardized tool dedicated to establishing the most accurate and authoritative evaluation for embodied intelligence.
 
@@ -83,6 +83,10 @@ geniesim status                          # per-distribution health probe
 geniesim doctor                          # diagnose & repair (rosdep, env, …)
 geniesim bootstrap                       # install or repair required Tier-1 peers
 ```
+
+To skip `geniesim docker build`, follow the
+[prebuilt-image instructions](docker/PREBUILT_IMAGE.md), then continue with
+`geniesim docker up` / `into`.
 
 #### 🤖 With an AI assistant — just ask
 
@@ -224,7 +228,7 @@ flowchart LR
   linkStyle 0,1,2 stroke:#0369a1,stroke-width:2px
 ```
 
-Collect automated tasks with cuRobo v2 trajectory planning in an independent Isaac Sim 5.1 image. The host CLI registers the module and locates external assets and task libraries; runtime dependencies are installed in the collection image.
+Collect automated tasks with cuRobo v2 trajectory planning in an independent Isaac Sim 6.2 image. The host CLI registers the module and locates external assets and task libraries; runtime dependencies are installed in the collection image.
 
 ```bash
 # 1. Register the module and build its complete runtime image:
@@ -239,7 +243,7 @@ geniesim data-collection run <TASK> --scene <SCENE_ID> --run-times 1 --render
 geniesim data-collection run --task-json tasks/my_job.json --headless --standalone
 ```
 
-The image defaults to `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and builds directly from official Isaac Sim 5.1. Configure external assets with `GENIESIM_ASSETS_PATH` and task libraries with `GENIESIM_LLM_TASK_ROOT` or the install command's `--assets-root` / `--task-root` options.
+The image defaults to `registry.agibot.com/genie-sim/geniesim4-data-collection:latest` and extends the dedicated `geniesim4:latest` base with Isaac Sim 6.2 and ROS 2 Jazzy. Configure external assets with `GENIESIM_ASSETS_PATH` and task libraries with `GENIESIM_LLM_TASK_ROOT` or the install command's `--assets-root` / `--task-root` options.
 
 Episodes land in `source/data_collection/recording_data/`. See [the collection guide](source/data_collection/README.md), [task configuration](source/data_collection/TASK_CONFIG_GUIDE.md), and [replay](source/data_collection/replay/README.md) for the runtime and output contracts.
 
@@ -322,11 +326,11 @@ flowchart LR
 
 </details>
 
-<details><summary><b>[11/2/2026] v3.5.0 — Benchmark release with the Isaac Sim 5.1 + 6.2 combo</b></summary>
+<details><summary><b>[11/2/2026] v3.5.0 — Benchmark release (5.1 + 6.2 combo now E.O.L.)</b></summary>
 
 - 🧪 **Extended benchmark suites** — fine manipulation, dexterous manipulation, whole-body coordination, and cross-embodiment tasks, plus 25 unscored open-world sandbox scenarios.
 - ⚙️ **Task-selected runtimes** — direct Isaac evaluation, managed Newton wok evaluation, and native MuJoCo Rubik execution with separate observation rendering.
-- 🐳 **Benchmark combo runtime** — `geniesim3:latest` retains bundled Isaac Sim 5.1 and the system-Python Isaac Sim 6.2 co-install. Each benchmark entry selects its runtime. The dedicated `geniesim4:latest` image remains on the separate 4.0 line.
+- 🐳 **Benchmark combo runtime** — `geniesim3:latest` used bundled Isaac Sim 5.1 and the system-Python Isaac Sim 6.2 co-install; that combo is now deprecated (E.O.L.). The dedicated `geniesim4:latest` image remains on the separate 4.0 line.
 - 🌙 **Genie Sim Dream** — G1/G2 world-model inference, policy integration, visual evaluation, and a browser UI in dedicated environments.
 - 📥 **Collection and post-training workflows** — independent Isaac Sim 5.1/cuRobo v2 collection and replay, scene-agent authoring workflows, and RLinf server/client integration.
 - 🔖 **Package version at release** — all eight first-class Genie Sim distributions and owned ROS package metadata shared `VERSION=3.5.0`. This package version did not relabel the dedicated 4.0 image line. Dependencies, recording formats, and independently maintained modules kept their own versions.

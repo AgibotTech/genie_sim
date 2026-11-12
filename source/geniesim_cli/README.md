@@ -47,7 +47,9 @@ runs even on a control node where the rest of the SDK isn't installed.
 
 Run `geniesim -h` for the full list.
 
-`docker4.5` (`geniesim2`) and `docker5.1` (`geniesim3`) are E.O.L. and deprecated.
+Isaac Sim **4.5**, standalone **5.1**, and the **5.1 + 6.2 combo** are
+**deprecated (E.O.L.)**. The `docker4.5` (`geniesim2`) and `docker5.1`
+(`geniesim3`) command handlers remain until code retirement.
 Their commands print an advisory and remain available without an extra confirmation.
 Use `geniesim docker` / `docker6.2` for new deployments.
 
@@ -78,6 +80,12 @@ geniesim doctor                       # 4. repair if not
 
 See [`AGENTS.md` § 0 — Fresh-machine setup](AGENTS.md) for the install-order contract.
 
+### Skip the Docker build
+
+Follow the [prebuilt-image instructions](../../docker/PREBUILT_IMAGE.md) to use
+the dedicated Isaac Sim 6.2 image without building locally. Then start the
+container with `geniesim docker up` and enter it with `geniesim docker into`.
+
 ---
 
 ## Release version
@@ -92,10 +100,6 @@ Benchmark commands use system Python 3.12 and Isaac Sim 6.2 in the dedicated
 `geniesim4:latest` / `docker6.2` runtime. This image retains the 4.0 runtime
 line; package versions still follow the root `VERSION`. See
 [Docker release lines](../../docker/README.md#release-lines).
-
-To skip building the explicit `docker5.1` combo image, pull and retag the prebuilt Docker Hub
-image using [issue #201](https://github.com/AgibotTech/genie_sim/issues/201).
-See the [copyable pull commands](../../docker/README.md#use-the-prebuilt-combo-image).
 
 From a source checkout:
 
@@ -206,7 +210,7 @@ the local `wheels/` directory as named context `libuipc_assets`, and forwards
 `GENIESIM_LIBUIPC_SOURCE`/`GENIESIM_LIBUIPC_REVISION` as build arguments; explicit
 arguments/contexts win. Images retain `GENIESIM_LIBUIPC_CACHE` for offline startup
 checks. The CLI enables this build path only for recipes declaring `LIBUIPC_SM`.
-The 5.1 combo omits native libuipc from image construction and automatic startup;
+The deprecated (E.O.L.) 5.1 combo omits native libuipc from image construction and automatic startup;
 it does not probe GPU architecture or forward native asset build inputs.
 Humble and derived profiles retain their existing paths.
 

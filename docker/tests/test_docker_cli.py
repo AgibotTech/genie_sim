@@ -216,17 +216,49 @@ def test_docker62_help_does_not_require_acknowledgment(cli, verb):
     assert result.returncode == 0, result.stdout + result.stderr
     assert f"geniesim {verb}" in result.stdout
     assert "registry.agibot.com/genie-sim/geniesim4:latest" in result.stdout
+    assert "docker/PREBUILT_IMAGE.md" in result.stdout
+    assert "yonhdee" not in result.stdout
     assert "issues/201" not in result.stdout
     assert "Press [ENTER]" not in result.stdout
     assert not commands
 
 
-def test_docker51_help_keeps_its_combo_prebuilt_notice(cli):
+@pytest.mark.parametrize("verb", ["docker4.5", "docker5.1"])
+def test_legacy_help_does_not_recommend_a_prebuilt_image(cli, verb):
     run, _ = cli
-    result, commands = run("docker5.1", "--help")
+    result, commands = run(verb, "--help")
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "registry.agibot.com/genie-sim/geniesim3:latest" in result.stdout
-    assert "issues/201" in result.stdout
+    assert "E.O.L. and deprecated" in result.stdout
+    assert "docker pull" not in result.stdout
+    assert "PREBUILT_IMAGE.md" not in result.stdout
+    assert "issues/201" not in result.stdout
+    assert not commands
+
+
+@pytest.mark.parametrize("verb", ["docker", "docker6.2"])
+def test_build_prints_prebuilt_guide_without_pulling(cli, verb):
+    run, _ = cli
+    result, commands = run(verb, "build", "--no-resolve")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "docker/PREBUILT_IMAGE.md" in result.stdout
+    assert "yonhdee" not in result.stdout
+    assert len(commands) == 1 and commands[0][0] == "build"
+
+
+@pytest.mark.parametrize(
+    "args,overrides",
+    [
+        (("docker", "--help"), {"GENIESIM_IMAGE": "review:custom"}),
+        (("docker", "--profile", "post-train", "--help"), {}),
+        (("docker", "--profile", "post-train-teleop", "--help"), {}),
+    ],
+)
+def test_custom_images_and_profiles_do_not_offer_base_pull_commands(cli, args, overrides):
+    run, _ = cli
+    result, commands = run(*args, **overrides)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "docker pull" not in result.stdout
+    assert "PREBUILT_IMAGE.md" not in result.stdout
     assert not commands
 
 

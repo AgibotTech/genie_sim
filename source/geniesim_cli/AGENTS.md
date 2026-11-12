@@ -148,17 +148,20 @@ and the dispatcher in `main()` in sync.
 
 `docker6.2` uses the internal variant key `""` for Docker registry API calls.
 `geniesim docker` maps to `docker6.2`, using system Python with the bundled
-Isaac 6.2 SDK. Use explicit `docker5.1` for bundled Isaac 5.1 plus system-Python
-Isaac 6.2.
+Isaac 6.2 SDK. Standalone Isaac Sim 5.1, Isaac Sim 4.5 and the 5.1 + 6.2 combo
+are deprecated (E.O.L.); legacy handlers remain until code retirement.
 `docker4.5` (`geniesim2`) and `docker5.1` (`geniesim3`) are E.O.L. and deprecated.
 The public `Variant.deprecated` field defaults to `False` and is appended for
 constructor compatibility. These two variants set it to `True`; dispatch prints
 a yellow advisory recommending `docker` / `docker6.2`, without blocking commands
 or adding a prompt. Root help and the Docker guides show the same lifecycle status.
-Help and build output for the 5.1 combo image show a notice linking to
-[issue #201](https://github.com/AgibotTech/genie_sim/issues/201), which explains
-how to skip the build by pulling and retagging the Docker Hub image. The notice
-is omitted for other variants, profiles and custom `GENIESIM_IMAGE` values.
+Help and build output for `docker` / `docker6.2` point to
+`docker/PREBUILT_IMAGE.md` for skipping the local build. Publisher account names
+and copyable commands live only in that secondary guide. The notice is
+informational; `build` still builds normally.
+It is omitted for E.O.L. variants, derived profiles and custom `GENIESIM_IMAGE`
+values. The same commands are in the
+[prebuilt-image guide](../../docker/PREBUILT_IMAGE.md).
 The `docker6.2` variant resolves the exact base spec `6.2.0.1` to
 `nvcr.io/nvidia/isaac-sim:6.2.0.1`, paired explicitly with the available
 `isaacsim==6.2.0.0` cp312 wheel. The Dockerfile carries the same offline
@@ -205,7 +208,7 @@ Isaac Sim variant commands.
 
 The dedicated `docker6.2` variant uses the bundled SDK through a lightweight
 system-Python adapter. Its Kit/EULA and named shader-cache paths are
-`/isaac-sim/kit` and `/isaac-sim/kit/cache`. The 5.1 combo retains its separate
+`/isaac-sim/kit` and `/isaac-sim/kit/cache`. The E.O.L. 5.1 combo retains its separate
 system pip SDK and cache paths. Keep these variant environments distinct.
 
 Docker build mirrors come from `docker/mirrors.toml`. Base builds select
@@ -546,7 +549,7 @@ the local `wheels/` directory as named context `libuipc_assets`, and forwards
 `GENIESIM_LIBUIPC_SOURCE`/`GENIESIM_LIBUIPC_REVISION` as build arguments; explicit
 arguments/contexts win. Images retain `GENIESIM_LIBUIPC_CACHE` for offline startup
 checks. The CLI enables this build path only for recipes declaring `LIBUIPC_SM`.
-The 5.1 combo omits native libuipc from image construction and automatic startup;
+The deprecated (E.O.L.) 5.1 combo omits native libuipc from image construction and automatic startup;
 it does not probe GPU architecture or forward native asset build inputs.
 Humble and derived profiles retain their existing paths.
 

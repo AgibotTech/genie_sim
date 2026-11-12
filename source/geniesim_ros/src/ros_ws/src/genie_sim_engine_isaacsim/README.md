@@ -6,7 +6,7 @@ Newton standalone and native IPC are separate backend packages.
 | Runtime | PhysX | Isaac Newton |
 |---|---|---|
 | Isaac Sim 6.2 | AS3 conversion and isolated G2 live smoke passed | Public config/scene APIs and isolated G2 live smoke passed |
-| Isaac Sim 5.1 / 4.5 | Existing flat-asset path retained; not revalidated by the 6.2 smoke | No class-default monkeypatch fallback |
+| Isaac Sim 5.1 / 4.5 and 5.1 + 6.2 combo | Deprecated (E.O.L.); flat-asset code retained | Outside current qualification |
 
 AS3 output must select `Physics=physx` before overlays or body/joint discovery.
 That variant includes the common physics payload while retaining DriveAPI.

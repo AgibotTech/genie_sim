@@ -41,8 +41,8 @@ ready = parent.recv()  # {"ready": True, "renderer": "isaacsim"}
 
 The FD is transport plumbing, not a physics/configuration knob. All caller
 selection and geometry/camera values come from the evaluation launcher's
-configuration. Do not substitute `omni_python` without checking its target:
-the current container has pip Isaac6/Python3.12 as well as `/isaac-sim` 5.1.
+configuration. Use system Python 3.12 with the bundled Isaac Sim 6.2 SDK
+in the dedicated container. The 5.1 + 6.2 combo is deprecated (E.O.L.).
 The worker uses the shared `prepare_launch_config` compatibility helper before
 Kit starts. On SDK 6.2 this disables multi-tick scheduling, matching the other
 Isaac render entry points; explicit synchronous Replicator captures must not

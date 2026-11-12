@@ -186,8 +186,9 @@ installed into an existing symlink-install config directory.
 
 `make_render_isaacsim_node()` honors `GENIESIM_PY_CMD`, otherwise uses the launch
 interpreter when its installed metadata includes Isaac. Preserve the ROS underlay
-for that same-interpreter case (system Python 3.12 with Isaac 6.2, or 3.10 with
-Isaac 4.5). Only bundled `omni_python` filters incompatible system native paths.
+for the active system Python 3.12 / Isaac 6.2 case. Existing 4.5, 5.1 and
+combo branches are deprecated (E.O.L.) and retained until code retirement.
+The bundled-interpreter branch still filters incompatible system native paths.
 
 ---
 

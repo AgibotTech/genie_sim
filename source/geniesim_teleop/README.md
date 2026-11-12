@@ -4,6 +4,11 @@ A VR-driven teleop loop that streams device poses into the simulator
 over ROS 2, plus device drivers and a data-recording pipeline that
 turns recorded rosbags into HDF5 episodes.
 
+Current startup uses Isaac Sim **6.2**. Isaac Sim **4.5**, standalone **5.1**,
+and the **5.1 + 6.2 combo** are **deprecated (E.O.L.)**. The retained
+`run-teleop` skill describes the legacy 5.1 workflow; use this guide's 6.2
+commands for current operation.
+
 License: [Mozilla Public License Version 2.0](LICENSE)
 Third-party dependency notices: [Wuji SDK (MIT)](src/geniesim_teleop/THIRD_PARTY_NOTICES.md).
 

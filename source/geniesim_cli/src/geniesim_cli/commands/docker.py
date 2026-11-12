@@ -348,11 +348,11 @@ def _container_state() -> str | None:
 
 
 def _print_prebuilt_image_notice() -> None:
-    """Show the published combo-image alternative for the 5.1 variant."""
-    if _active_profile or _active_variant != "5.1" or _image() != get_variant("5.1").image:
+    """Show how to use the dedicated 6.2 image without building locally."""
+    if _active_profile or _active_variant != "" or _image() != get_variant("").image:
         return
-    print(f"  {CYAN}💡 Skip the geniesim3 build: pull and retag the prebuilt Docker Hub image.{RST}")
-    print(f"  {DIM}Instructions:{RST} {CYAN}https://github.com/AgibotTech/genie_sim/issues/201{RST}")
+    print(f"  {CYAN}💡 Skip the build: use a prebuilt Isaac Sim 6.2 image.{RST}")
+    print(f"  {DIM}Instructions: docker/PREBUILT_IMAGE.md{RST}")
     print()
 
 

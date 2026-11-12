@@ -35,7 +35,7 @@ The `geniesim` CLI is the single entry point for every operator-level workflow. 
 | `geniesim bootstrap` | Install every peer distribution in topological order (the umbrella) |
 | `geniesim status` | Per-distribution health probe — never raises on missing siblings |
 | `geniesim doctor` | Diagnose & repair (status + rosdep + env) |
-| `geniesim docker {build,up,into,down,logs}` | Manage the Genie Sim container (default: Isaac Sim 6.2; explicit 5.1 / 4.5 variants) |
+| `geniesim docker {build,up,into,down,logs}` | Manage the Genie Sim container (default: Isaac Sim 6.2; retained 5.1 / 4.5 variants are E.O.L.) |
 | `geniesim ros build {dev,release,cleanup}` | `colcon build` the ROS 2 workspace |
 | `geniesim ros doctor` | Repair rosdep |
 | `geniesim benchmark run <CONFIG>` | Run one benchmark task |

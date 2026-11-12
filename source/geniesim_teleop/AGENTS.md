@@ -429,7 +429,7 @@ python3 -m geniesim_teleop.teleop --device_type=pico
 
 | Skill | Trigger |
 |---|---|
-| [run-teleop](skills/run-teleop/SKILL.md) | "start teleop", "run the teleop loop" |
+| [run-teleop](skills/run-teleop/SKILL.md) | Legacy Isaac Sim 5.1 workflow — deprecated (E.O.L.); use the README for current 6.2 commands |
 
 ---
 

@@ -18,20 +18,27 @@ Docker 4.5 and 5.1 are E.O.L. and deprecated. Their explicit CLI commands
 remain available and print an advisory without a confirmation prompt.
 Use `geniesim docker` / `docker6.2` for new deployments.
 
-Genie Sim **3.5.0** used `geniesim3:latest`, the Isaac Sim 5.1 + 6.2 combo
-in `Dockerfile.5.1`, for its benchmark-focused release. The dedicated 6.2 recipe,
-`Dockerfile`, remains the separate **4.0** line under `geniesim4:latest`.
-The current checkout's eight first-class packages share **3.6.0** through the
-root `VERSION`. A package-version bump must not relabel the dedicated recipe or
-change its SDK pins, image family, dispatch, or qualification status. The shared entrypoint
-reads the mounted checkout; package versions and image-family names are independent.
+The [prebuilt-image guide](PREBUILT_IMAGE.md) owns the publisher account and
+copyable pull/tag commands. Major READMEs and the CLI help/build notice link
+to that guide without repeating publisher details. Derived profiles still
+require their own build.
+
+The current checkout's eight first-class packages share **3.6.0** through
+root `VERSION`. Dedicated Isaac Sim 6.2 uses `geniesim4:latest`; its 4.0
+runtime-line label is independent of package versions. Package bumps must not
+change SDK pins, image families, dispatch or qualification status.
+
+Standalone Isaac Sim **5.1**, Isaac Sim **4.5**, and the **5.1 + 6.2 combo**
+are **deprecated (E.O.L.)**. Retain their implementation and shared-script
+compatibility until explicit code retirement. Do not present them as current
+setup choices or add legacy-runtime qualification work.
 
 ## Image naming — one tag per family, no minor versions
 
 **Canonical form: `registry.agibot.com/genie-sim/geniesim<N>:latest`**, where
 `<N>` is the family major only — `geniesim2`, `geniesim3`, `geniesim4`. Image
-tags drop the minor version on purpose: `geniesim3:latest` follows whatever the
-current 5.1-variant build is, so version bumps don't require renaming images,
+tags drop the minor version on purpose: `geniesim4:latest` follows the
+dedicated 6.2 build, so version bumps don't require renaming images,
 containers, or CLI dispatch.
 
 **Never write a minor-suffixed image name**, such as `geniesim4.0`. A tag that differs from downstream `FROM` references does not update those downstream builds.
@@ -53,7 +60,7 @@ Rules, in this directory and downstream:
   by the `ISAACSIM_TAG` / `ISAACSIM_PIP_VERSION` build args — see "Three
   strings, one release" below — not by the tag.
 - **Derived images keep the family prefix and add a role, not a version:**
-  `geniesim3-data-collection:latest`. Intermediate images never published to
+  `geniesim4-data-collection:latest`. Intermediate images never published to
   the registry use their own short name (`rlinf-geniesim:cloud`,
   `rlinf-geniesim:teleop`) and still pin their base to an unsuffixed tag.
 - **Container names follow the same families** (`geniesim2`/`geniesim3`/
@@ -109,15 +116,6 @@ Two things to know about that resolver:
   kept current as the pinned fallback. `--no-resolve` skips the network;
   `--isaacsim <spec>` overrides the variant's spec; `GENIESIM_ISAACSIM_TAG` +
   `GENIESIM_ISAACSIM_PIP_VERSION` pin both verbatim.
-
-`Dockerfile.5.1` deliberately has **no** spec: it is a 5.1-base/6.2-wheel combo,
-a pairing the correspondence rule cannot express. It keeps both literal pins.
-Select this combo explicitly with `geniesim docker5.1`. Keep bundled 5.1 and
-the system-Python 6.2 co-install; default `geniesim docker` selects dedicated 6.2.
-
-System and bundled Python require separate acceptance checks. Build the combo image
-with the normal `geniesim docker5.1 build` command and select `docker6.2 up`
-with the combo image override to use system Python. See [the runtime guide](README.md#system-python-runtime).
 
 **The third string cannot be resolved the same way, so it is checked instead.**
 The `isaacsim` meta-wheel's `Requires-Dist` names only `isaacsim-kernel` plus
@@ -203,7 +201,6 @@ bytecode in the same dependency layer. Preserve sourceless bytecode, SDK files
 and symlink targets. Do not delete inherited SDK bytecode in a later layer.
 Prepare OVRTX's `bin/mdl/omniverse_exts` directory at build time; the remapped
 user cannot create it under the root-owned installed material directory.
-The 5.1 recipe retains its existing NVIDIA wheel install and dependency flow.
 
 The dedicated 6.2 recipe installs the repository's CPython 3.12 `ik_solver`
 wheel and Numba into system Python. Use the generated SDK constraints for
@@ -215,22 +212,13 @@ coverage tracing or alter SDK files.
 The explicit acceptance probe checks the benchmark's Numba-compiled SLERP
 and FK/IK with the IK wheel's bundled robot fixture, standalone and with Kit active.
 
-Both recipes apply these constraints to their system-Python GenieSim dependency
-layer. The combo uses normal pip replacement to preserve compatible installed
-SDK packages; the fresh dedicated image overlays apt packages as described above.
-
-Before that install, the combo recipe overlays only `blinker` with
-`--ignore-installed --no-deps` under the same constraints. Ubuntu's packaged
-`blinker` lacks pip uninstall metadata; this targeted overlay avoids attempting
-to uninstall the apt-owned copy when teleop dependencies require a newer version.
 The generated file remains at `/opt/geniesim/docker/isaac-constraints.txt` for
 later deliberate installs with `-c`; it is not a global `PIP_CONSTRAINT`, because
 derived profiles can declare their own constraints. `collect_deps.py` continues to
 skip runtime-owned packages; skipping alone is not version protection.
 
 The Isaac profile runs `python3 -m pip check` after the final build layers and
-retains `check_newton_pins.py` for Newton's optional sim requirements. The bundled 5.1 interpreter keeps its existing legacy
-dependency install and NumPy/SciPy pins; system-Python constraints do not apply to it.
+retains `check_newton_pins.py` for Newton's optional sim requirements.
 
 The collector tests live in `docker/tests/test_collect_runtime_constraints.py`.
 Run them with the existing `python3 -m pytest -q docker/tests` CPU workflow.
@@ -238,7 +226,7 @@ Run them with the existing `python3 -m pytest -q docker/tests` CPU workflow.
 `tests/isaac62_bundled_smoke.py` is an explicit GPU/ROS acceptance probe for
 system Python with the bundled 6.2 SDK and adapter-only metadata. It is outside
 CPU pytest. See [bundled SDK acceptance](README.md#bundled-sdk-adapter-and-acceptance)
-for measured coverage. The 5.1 combo keeps its existing pip SDK installation.
+for measured coverage.
 
 ## Variant-specific build notes
 
@@ -296,29 +284,6 @@ Use `python3 -m pytest docker/tests/test_docker_cli.py` for CLI/startup coverage
 - `GENIESIM_EXTRA_CACHE_DIRS="kit pip numba"` creates runtime cache directories.
 - See acceptance for measured coverage; no simulator-wide pass follows from an image build.
 
-**Dockerfile.5.1 (combo: 5.1 + 6.2)**
-- Installs the same Pico/Wuji and recording dependencies as `Dockerfile` into
-  system Python 3.12, including `WUJI_SDK_VERSION=2026.8.17` and the apt
-  NumPy/SciPy/OpenCV control overlay. The bundled Python 3.11 retains its
-  simulator dependency selection; Wuji SDK input runs under system Python.
-- The recorded clean local rebuild qualifies system Python 3.12/Isaac 6.2 with the `isaac` dependency profile. Bundled Python 3.11 has separate open acceptance work in the roadmap.
-- Isaac Sim 5.1 is pre-installed in the NVIDIA base image at `/isaac-sim`.
-- `omni_python` wrapper (`/usr/local/bin/omni_python`) execs `/isaac-sim/python.sh` so `$0` stays correct.
-- `chmod o+rx /isaac-sim` — NVIDIA base ships `/isaac-sim` as `drwxr-x---`; opened for the remapped user.
-- Isaac Sim 6.2 is **also** pip-installed into system python3.12, pinned `==6.2.0.0` via `ISAACSIM_PIP_VERSION`; it does not use the dedicated 6.2 adapter.
-- Both EULA vars are set: `ACCEPT_EULA=Y` (5.1) and `OMNI_KIT_ACCEPT_EULA=Y` (6.X).
-- `typing_extensions.py` patch applied for the 6.X install.
-- GeneSim deps installed into **both** interpreters at runtime (entrypoint.sh).
-- numpy/scipy pinned for `omni_python`: `numpy==1.26.4`, `scipy==1.13.1`.
-- Runtime default interpreter (`GENIESIM_PY_CMD`) is `omni_python`; use `python3` for 6.X features.
-
-**Dockerfile.4.5**
-- Isaac Sim installed via `pip install "isaacsim[all,extscache]==4.5.0"` into system python3.10.
-- Two pre-conditions must be met before the ROS repo is added (see Dockerfile comments):
-  1. `libbrotli1` must be downgraded to `1.0.9-2build6` — the base image ships `1.1.0` from sury.org which conflicts with `libbrotli-dev` pulled by `ros-humble-desktop`.
-  2. `libfreetype6-dev` / `libfontconfig1-dev` must be installed from Ubuntu repos first to avoid "held broken packages" once the ROS repo is present.
-- `ACCEPT_EULA=Y` is the EULA env var.
-
 ## Build mirror contract
 
 `mirrors.toml` is the provider-preset source. The CLI defaults base builds to
@@ -352,7 +317,7 @@ the CLI variant/process tests.
 
 `start.sh` passes these into the container; `entrypoint.sh` reads them:
 
-| Var | Purpose | 6.X (6.2) | 5.1 (combo) | 4.5 |
+| Var | Purpose | 6.X (6.2) | 5.1 combo (E.O.L.) | 4.5 (E.O.L.) |
 |-----|---------|-----|-------------|-----|
 | `ROS_DISTRO` | ROS distro for sourcing and bashrc | jazzy | jazzy | humble |
 | `GENIESIM_PY_CMD` | default interpreter for editable pip install | python3 | omni_python | python3 |
@@ -419,7 +384,7 @@ a specific cache; it must not recurse into source assets or unrelated scenes.
   `WARP_CACHE_PATH=/tmp/geniesim-newton-warp-<uid>` so containers that still run as
   image UID 1234 cannot poison the remapped developer user's kernel cache.
 
-- **5.1 combo image.** Isaac Sim 5.1 (via `omni_python`) and Isaac Sim 6.X
+- **E.O.L. 5.1 combo code.** Isaac Sim 5.1 (via `omni_python`) and Isaac Sim 6.X
   (via `python3`) coexist in `Dockerfile.5.1`. Native libuipc is omitted from
   its build and automatic startup installation.
 

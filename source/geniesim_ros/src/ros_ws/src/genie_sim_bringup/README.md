@@ -145,8 +145,8 @@ mkdir -p test-results/scenes
 | Runtime | Test scope / prerequisite |
 |---|---|
 | `docker` / `docker6.2` | Default; Isaac 6.2 fresh conversion and primary Isaac/Newton checks |
-| `docker5.1` | Explicit combo runtime compatibility comparison |
-| `docker4.5` | Runtime compatibility comparison in Python 3.10 / Humble |
+| `docker5.1` | Deprecated (E.O.L.) 5.1 + 6.2 combo; excluded from current scene acceptance |
+| `docker4.5` | Deprecated (E.O.L.) Isaac 4.5; excluded from current scene acceptance |
 
 Build a separate ROS overlay for each Python/ROS runtime. Cold URDF conversion
 needs the Isaac importer. Missing prerequisites are **Blocked**. Deformable

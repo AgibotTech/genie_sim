@@ -138,8 +138,8 @@ build checks the bundled version reported by `/isaac-sim/VERSION`.
 
 The `isaac_fused` backend runs with `/isaac-sim/python.sh` and uses the
 Isaac Sim 6.2 tiled camera API. Use `geniesim docker` or `geniesim docker6.2`
-for its base; explicit `geniesim docker5.1 build` selects the combo, whose bundled runtime
-is incompatible with this backend.
+for its base. Isaac Sim 4.5, standalone 5.1 and the 5.1 + 6.2 combo are
+deprecated (E.O.L.) and are not compatible parents for this backend.
 
 On the simulation host, mount the checkout and assets and enter the server
 container. The host only needs the CLI, Docker, and the NVIDIA container runtime;
