@@ -18,56 +18,10 @@ from geniesim_cli import _env
 from geniesim_cli.commands import bootstrap, docker
 
 
-@pytest.mark.parametrize("capability,sm", [("8.9\n", "89"), ("12.0\n", "120")])
-def test_build_selects_host_gpu_zero(monkeypatch, capability, sm):
-    calls = []
-
-    def query(command, **kwargs):
-        calls.append((command, kwargs))
-        return SimpleNamespace(stdout=capability)
-
-    monkeypatch.setattr(docker.subprocess, "run", query)
-    assert docker._libuipc_build_args([]) == ["--build-arg", f"LIBUIPC_SM={sm}"]
-    assert calls[0][0] == ["nvidia-smi", "--id=0", "--query-gpu=compute_cap", "--format=csv,noheader"]
-    assert calls[0][1]["timeout"] == 15
-
-
 @pytest.mark.parametrize(
-    "flags", [["--build-arg", "LIBUIPC_SM=120"], ["--build-arg=LIBUIPC_SM=120"], ["--build-arg", "LIBUIPC_SM"]]
+    "variant,profile", [("", ""), ("5.1", ""), ("4.5", ""), ("", "post-train")]
 )
-def test_explicit_architecture_needs_no_host_gpu(monkeypatch, flags):
-    monkeypatch.setenv("LIBUIPC_SM", "120")
-    monkeypatch.setattr(docker.subprocess, "run", lambda *a, **k: pytest.fail("GPU queried"))
-    assert docker._libuipc_build_args(flags) == []
-
-
-@pytest.mark.parametrize("value", ["", "90", "sm_89"])
-def test_invalid_explicit_architecture_fails_before_gpu(monkeypatch, value):
-    monkeypatch.setattr(docker.subprocess, "run", lambda *a, **k: pytest.fail("GPU queried"))
-    with pytest.raises(RuntimeError, match="LIBUIPC_SM must be 89 or 120"):
-        docker._libuipc_build_args(["--build-arg", f"LIBUIPC_SM={value}"])
-
-
-@pytest.mark.parametrize("capability", ["9.0", "", "8.9\n12.0", "N/A"])
-def test_unsupported_or_ambiguous_gpu_never_selects_fallback(monkeypatch, capability):
-    monkeypatch.setattr(docker.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=capability))
-    with pytest.raises(RuntimeError, match="Unsupported host GPU capability"):
-        docker._libuipc_build_args([])
-
-
-def test_missing_gpu_reports_manual_build_override(monkeypatch):
-    def missing(*args, **kwargs):
-        raise FileNotFoundError("nvidia-smi")
-
-    monkeypatch.setattr(docker.subprocess, "run", missing)
-    with pytest.raises(RuntimeError, match="pass --build-arg LIBUIPC_SM=89"):
-        docker._libuipc_build_args([])
-
-
-@pytest.mark.parametrize(
-    "variant,profile,expected", [("", "", True), ("5.1", "", False), ("4.5", "", False), ("", "post-train", False)]
-)
-def test_real_build_command_selects_native_runtime_only_for_prepared_recipes(monkeypatch, variant, profile, expected):
+def test_real_build_needs_no_gpu_or_architecture(monkeypatch, variant, profile):
     monkeypatch.setattr(docker, "_active_variant", variant)
     monkeypatch.setattr(docker, "_active_profile", profile)
     monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
@@ -75,13 +29,14 @@ def test_real_build_command_selects_native_runtime_only_for_prepared_recipes(mon
     calls = []
 
     def run(command, **kwargs):
+        assert command[0] == "docker", "Build must not query the host GPU"
         calls.append(command)
-        return SimpleNamespace(returncode=0, stdout="8.9\n")
+        return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr(docker.subprocess, "run", run)
     docker._do_build(["--no-resolve"])
-    assert (calls[0][0] == "nvidia-smi") is expected
-    assert ("LIBUIPC_SM=89" in calls[-1]) is expected
+    assert len(calls) == 1
+    assert not any("LIBUIPC_SM" in arg for arg in calls[0])
 
 
 def test_combo_build_omits_native_runtime_even_with_asset_environment(monkeypatch, tmp_path, capsys):
@@ -89,7 +44,6 @@ def test_combo_build_omits_native_runtime_even_with_asset_environment(monkeypatc
     monkeypatch.setattr(docker, "_active_profile", "")
     monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
     monkeypatch.setattr(docker, "_isaacsim_build_args", lambda _: [])
-    monkeypatch.setattr(docker, "_libuipc_build_args", lambda _: pytest.fail("native GPU selection attempted"))
     (tmp_path / "wheels").mkdir()
     monkeypatch.setenv("GENIESIM_ASSETS_SRC", str(tmp_path))
     monkeypatch.setenv("GENIESIM_LIBUIPC_SOURCE", "huggingface")
@@ -101,19 +55,6 @@ def test_combo_build_omits_native_runtime_even_with_asset_environment(monkeypatc
     assert not any("LIBUIPC" in arg or "libuipc_assets=" in arg for arg in calls[0])
     docker._print_usage()
     assert "LIBUIPC_SM" not in capsys.readouterr().out
-
-
-def test_failed_selection_does_not_start_docker(monkeypatch):
-    monkeypatch.setattr(docker, "_active_variant", "")
-    monkeypatch.setattr(docker, "_active_profile", "")
-    monkeypatch.setattr(docker, "_repo_root", lambda: Path(__file__).resolve().parents[3])
-    monkeypatch.setattr(docker, "_isaacsim_build_args", lambda _: [])
-    calls = []
-    monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(stdout="9.0"))
-    with pytest.raises(SystemExit) as error:
-        docker._do_build([])
-    assert error.value.code == 2
-    assert [cmd[0] for cmd in calls] == ["nvidia-smi"]
 
 
 @pytest.fixture
@@ -254,7 +195,7 @@ def test_base_build_uses_local_wheel_context_and_download_overrides(monkeypatch,
     monkeypatch.setenv("GENIESIM_LIBUIPC_REVISION", "a" * 40)
     calls = []
     monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(returncode=0))
-    docker._do_build(["--no-resolve", "--build-arg", "LIBUIPC_SM=89", "--build-arg", "LIBUIPC_SOURCE=modelscope"])
+    docker._do_build(["--no-resolve", "--build-arg", "LIBUIPC_SOURCE=modelscope"])
     command = calls[-1]
     assert f"libuipc_assets={wheels}" in command
     assert "LIBUIPC_SOURCE=modelscope" in command
@@ -272,7 +213,7 @@ def test_explicit_native_asset_context_takes_precedence(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(docker.subprocess, "run", lambda cmd, **kw: calls.append(cmd) or SimpleNamespace(returncode=0))
     docker._do_build(
-        ["--no-resolve", "--build-arg", "LIBUIPC_SM=89", "--build-context", "libuipc_assets=/explicit/wheels"]
+        ["--no-resolve", "--build-context", "libuipc_assets=/explicit/wheels"]
     )
     assert calls[-1].count("--build-context") == 1
     assert "libuipc_assets=/explicit/wheels" in calls[-1]

@@ -1,7 +1,7 @@
 # libuipc installation and optional source build
 
 Use the prebuilt wheel by default. `geniesim bootstrap` and dedicated 6.2 Docker
-builds select the SM89 or SM120 wheel from the asset repository's
+builds use one CUDA 12.8 wheel containing SM89 and SM120 native code from the asset repository's
 `wheels/libuipc/`, verify its size and SHA256, and install it directly. They do
 not compile libuipc. ModelScope is the default remote source, with automatic
 HuggingFace fallback. See [wheel installation](../pyuipc-README.md) and
@@ -10,8 +10,8 @@ HuggingFace fallback. See [wheel installation](../pyuipc-README.md) and
 ```bash
 # From the GenieSim code repository, using system CPython 3.12:
 geniesim bootstrap --libuipc-only
-# Or build the image for the deployment GPU:
-geniesim docker6.2 build --build-arg LIBUIPC_SM=89
+# Or build the image without GPU detection:
+geniesim docker6.2 build
 ```
 
 Before remote publication, set `GENIESIM_ASSETS_SRC` to the local asset checkout
@@ -79,7 +79,7 @@ The dependency prefix must include `libdwarf.a`, `libzstd.a`, `libz.a`,
 existing prefix and rebuilds the included cpptrace/urdfdom sources separately;
 it does not provision the complete vcpkg prefix. The build copies the dependency
 prefix instead of modifying it. Python build dependencies are installed into a
-separate venv per architecture using the patch's pinned
+separate build venv using the patch's pinned
 `tools/wheel_cuda128/python-build-requirements.txt` and the configured pip index.
 
 Set the three input variables in your shell to their actual directories, then:
@@ -96,15 +96,15 @@ python3.12 tools/wheel_cuda128/build_dependencies.py \
   --cc gcc-11 --cxx g++-11 --jobs 8
 
 python3.12 tools/wheel_cuda128/build_wheels.py \
-  --arch both --work-dir "$UIPC_WORK_ROOT/native" \
+  --arch universal --work-dir "$UIPC_WORK_ROOT/native" \
   --cuda-root "$UIPC_CUDA_ROOT" \
   --dependency-prefix "$UIPC_DEPENDENCY_PREFIX" \
   --clean-dependency-lib "$UIPC_WORK_ROOT/third-party/install/lib" \
   --python python3.12 --vcpkg-root "$UIPC_VCPKG_ROOT"
 ```
 
-`--arch both` builds separate SM89 and SM120 outputs. Use `--arch 89` or
-`--arch 120` to build one target, and package only that target below. Each native
+`--arch universal` builds a single backend with native SM89 and SM120 code.
+The driver chooses the matching code at runtime. Each native
 architecture output directory must be fresh. The recipe disables examples,
 tests, benchmarks and GUI, and uses 32 native compile jobs. `--dry-run` prints
 the native build plan without compiling; `--configure-only` prepares the venv
@@ -112,30 +112,28 @@ and CMake configuration without compiling.
 
 ## Package and install the locally built wheel
 
-After the native build completes, package each target with its build venv:
+After the native build completes, package the universal target with its build venv:
 
 ```bash
-for UIPC_ARCH in 89 120; do
-  "$UIPC_WORK_ROOT/native/sm$UIPC_ARCH-cu128/venv/bin/python" \
-    tools/wheel_cuda128/package_wheel.py \
-    --arch "$UIPC_ARCH" \
-    --build-dir "$UIPC_WORK_ROOT/native/sm$UIPC_ARCH-cu128/build" \
-    --python "$UIPC_WORK_ROOT/native/sm$UIPC_ARCH-cu128/venv/bin/python" \
-    --cuda-root "$UIPC_CUDA_ROOT" \
-    --clean-dependency-lib "$UIPC_WORK_ROOT/third-party/install/lib" \
-    --output-dir "$UIPC_WORK_ROOT/wheels" \
-    --work-dir "$UIPC_WORK_ROOT/package-sm$UIPC_ARCH"
-done
+"$UIPC_WORK_ROOT/native/sm89sm120-cu128/venv/bin/python" \
+  tools/wheel_cuda128/package_wheel.py \
+  --arch universal \
+  --build-dir "$UIPC_WORK_ROOT/native/sm89sm120-cu128/build" \
+  --python "$UIPC_WORK_ROOT/native/sm89sm120-cu128/venv/bin/python" \
+  --cuda-root "$UIPC_CUDA_ROOT" \
+  --clean-dependency-lib "$UIPC_WORK_ROOT/third-party/install/lib" \
+  --output-dir "$UIPC_WORK_ROOT/wheels" \
+  --work-dir "$UIPC_WORK_ROOT/package-universal"
 
-# Example: install the standard-named SM89 wheel into a separate Python 3.12 venv.
-python3.12 -m venv "$UIPC_BUILD_ROOT/runtime-sm89"
-"$UIPC_BUILD_ROOT/runtime-sm89/bin/python" -m pip install \
-  "$UIPC_WORK_ROOT"/wheels/pyuipc-*sm89*.whl
+# The universal package filename does not contain GPU architecture names.
+python3.12 -m venv "$UIPC_BUILD_ROOT/runtime"
+"$UIPC_BUILD_ROOT/runtime/bin/python" -m pip install \
+  "$UIPC_WORK_ROOT"/wheels/pyuipc-0.9.0+pdfopt.ef5bfa2.cu128.licensefix2.pathfix1-cp312-cp312-linux_x86_64.whl
 
 # Direct pip installation does not create GenieSim's CUDA provider links.
 # Use the same CUDA 12.8 toolkit for this process's runtime library lookup.
 LD_LIBRARY_PATH="$UIPC_CUDA_ROOT/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
-  "$UIPC_BUILD_ROOT/runtime-sm89/bin/python" - <<'PYUIPC'
+  "$UIPC_BUILD_ROOT/runtime/bin/python" - <<'PYUIPC'
 import ctypes
 from pathlib import Path
 import uipc
@@ -174,4 +172,4 @@ environment, or publish and explicitly pin a new artifact release for integratio
 | File | SHA256 |
 | --- | --- |
 | `0001-nvidia-optimizations.patch` | `d5d5b5632bc2ac04194927270ead778a95867129f1f1dd62cc8d704545ee5544` |
-| `0002-agibot-full-abd-cuda128-wheel.patch` | `ef377382e88c618d3ebce78e29003e5436cf8f5a9043b95135bdf7bec5c25e13` |
+| `0002-agibot-full-abd-cuda128-wheel.patch` | `76a6211fa807c4ad9e5bff3581f41e6b760623ab6b24ce1449e7d85a93169884` |

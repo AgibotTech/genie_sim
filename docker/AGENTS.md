@@ -449,13 +449,14 @@ resolved commit. The optional revision override must be a 40-character commit an
 applies only to the primary source. Explicit HF selection never retries MS. The
 240-second total budget reserves its second half for HF fallback.
 
-The dedicated 6.2 recipe declares `LIBUIPC_SM`; the CLI detects GPU 0 for
-that build or accepts `LIBUIPC_SM=89|120`. The 5.1 combo omits native libuipc
-and does not probe GPU architecture or forward native asset build inputs.
-Local `GENIESIM_ASSETS_SRC/wheels` is an optional named BuildKit context
-`libuipc_assets`. Without local bytes, the installer downloads the selected
-pinned publication. Explicit contexts/build arguments take precedence over
-environment defaults. Humble and derived profiles keep their existing paths.
+The dedicated 6.2 recipe installs one universal CUDA 12.8 wheel containing
+SM89 and SM120 native code. The CLI does not detect GPUs or select architecture.
+Recipes declaring `LIBUIPC_SOURCE` accept source/revision overrides and the
+optional `GENIESIM_ASSETS_SRC/wheels` named BuildKit context `libuipc_assets`.
+Without local bytes, the installer downloads the pinned universal publication.
+Explicit contexts/build arguments take precedence over environment defaults.
+The 5.1 combo omits native libuipc and these inputs; Humble and derived profiles
+keep their existing paths.
 
 Only system CPython 3.12 / Linux x86_64 is supported. Builds need no GPU but
 require a complete CUDA 12.8 provider, including the bundled Isaac 6.2 SDK provider. Keep the selected verified wheel in the

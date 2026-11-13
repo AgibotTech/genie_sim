@@ -776,12 +776,12 @@ The default installation uses a prebuilt wheel directly; bootstrap and Docker
 builds do not compile libuipc. If you need to build it yourself, follow the
 [source build guide](../3rdparty/libuipc/README.md): check out official commit
 `292c98c3fec2dfbe9ae2c2407572f2f446a4a738`, apply the NVIDIA patch followed by
-the AgiBot patch, then build and package the required GPU architecture.
+the AgiBot patch, then build and package the universal CUDA 12.8 wheel.
 
-The SM89/SM120 wheels live in the asset repository under
+The universal SM89/SM120 wheel lives in the asset repository under
 `wheels/libuipc/`, rather than in this Git
-repository. `docker/libuipc-artifacts.json` pins their unchanged sizes, SHA256,
-versions and hosting-source identities. The installer remains standalone
+repository. `docker/libuipc-artifacts.json` pins its size, SHA256,
+version and hosting-source identities. The installer remains standalone
 and standard-library-only; no scene index or simulator import is needed to fetch a wheel.
 
 Before HF/ModelScope publication, point at the local asset checkout:
@@ -793,20 +793,21 @@ geniesim bootstrap --libuipc-only
 # Or install/check it after required peers:
 geniesim bootstrap
 
-geniesim docker6.2 build --build-arg LIBUIPC_SM=89
+geniesim docker6.2 build
 ```
 
 The dedicated 6.2 image preinstalls native libuipc. The E.O.L. `docker5.1` combo
 omits it during both image construction and automatic container startup;
 its build does not detect GPU architecture or pass native asset inputs.
 
-Native installation still requires system CPython 3.12, Linux x86_64, a supported
-GPU (SM89/SM120), and the complete CUDA 12.8 runtime, including the bundled Isaac 6.2 provider. The Docker CLI detects GPU 0
-unless `LIBUIPC_SM` is explicit. It passes only the local asset `wheels/` directory
-as the named BuildKit context `libuipc_assets`, when present. Raw Docker builds
-can supply `--build-context libuipc_assets=../assets/wheels` together with an
-explicit `--build-arg LIBUIPC_SM=89` or `120`. Default/explicit named contexts
-remain separate from scene mounts; existing profiles and Humble are unchanged.
+Native installation requires system CPython 3.12, Linux x86_64 and a complete
+CUDA 12.8 runtime, including the bundled Isaac 6.2 provider. GPU execution
+requires SM89 or SM120 hardware. Installation and Docker builds need no GPU
+probe or architecture selection. The CLI passes the local asset `wheels/`
+directory as the named BuildKit context `libuipc_assets`, when present.
+Raw Docker builds can supply `--build-context libuipc_assets=../assets/wheels`.
+Default/explicit named contexts remain separate from scene mounts; existing
+profiles and Humble are unchanged.
 
 Remote installation works without an installation-specific revision setting.
 The code pins the wheel path, package version, size and SHA256. On a
@@ -842,14 +843,14 @@ scoped main-thread alarm and restores any previous alarm after a transfer.
 Undersized files remain available for the next range request. Corrupt cache entries are reacquired;
 corrupt explicit local assets fail without being overwritten.
 
-The dedicated 6.2 image retains the selected verified wheel in its image-owned cache
+The dedicated 6.2 image retains the verified universal wheel in its image-owned cache
 at the existing `/opt/geniesim/3rdparty` location. Keep that cache in the final
 image: the existing version/archive checks open the wheel, so offline startup
 must not depend on the build's temporary mount or the caller's home directory.
 The shared entrypoint checks native libuipc only when the image contains
 `/opt/geniesim/docker/install_libuipc.py`.
-Only the selected architecture is fetched by a normal install/build. Fetching
-alone on a control host can use `python3 docker/install_libuipc.py --download-sm 89`;
+A normal install/build fetches the same `wheels/libuipc/pyuipc.whl` on every host.
+Fetching alone can use `python3 docker/install_libuipc.py --download-only`;
 this mode performs no pip installation, GPU query, ABI or native loading check.
 
 The existing dependency constraints, staging/rollback and CUDA linking stay in

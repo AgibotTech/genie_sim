@@ -1,4 +1,4 @@
-Subject: [PATCH 2/2] AgiBot Full ABD, CUDA 12.8 and wheel build support
+Subject: [PATCH 2/2] AgiBot Full ABD and CUDA 12.8 SM89/SM120 universal wheel
 
 Base: 292c98c3fec2dfbe9ae2c2407572f2f446a4a738 (official libuipc v0.0.25).
 Apply 0001-nvidia-optimizations.patch first, then this patch, with git apply.
@@ -8,31 +8,33 @@ License: Mozilla Public License Version 2.0
 
 Identified AgiBot contributions retain MPL-2.0; NVIDIA Full ABD follow-up,
 libuipc, Eigen and third-party contributions keep their original notices.
-Component notices and original license texts are retained in the patches
-and the official baseline.
+All required notices and license texts are included in these patches or
+retained from the official baseline.
 
 CUDA 12.8 variant: SM89 and SM120; wheel version uses cu128. CUDA 13
 builds must not be repackaged as cu128. Build in a fresh directory using
 CUDA 12.8 headers/libraries and matching native outputs. The source-level
 thrust::counting_iterator compatibility change remains valid in CUDA 12.8.
-This variant has static/recipe checks only; no native build or GPU validation.
+Universal variant: one CUDA backend contains both native SM89 and SM120
+device code. The driver selects the target at runtime. The earlier single-
+architecture modes remain available; --arch both still produces two wheels.
 
 Build entry: tools/wheel_cuda128/build_wheels.py (add --dry-run for a plan).
 Use CPython 3.12, GCC/G++ 11, CMake 3.26+, Ninja and CUDA 12.8.
 First build clean dependencies with tools/wheel_cuda128/build_dependencies.py.
 Example after supplying the external dependency paths:
-  python3.12 tools/wheel_cuda128/build_wheels.py --arch both \
+  python3.12 tools/wheel_cuda128/build_wheels.py --arch universal \
     --cuda-root /usr/local/cuda-12.8 --work-dir /build/uipc-cu128 \
     --dependency-prefix /opt/deps/x64-linux --vcpkg-root /opt/vcpkg \
     --clean-dependency-lib /build/third-party/install/lib
 Package with tools/wheel_cuda128/package_wheel.py using the same --cuda-root
-and native build directory sm89-cu128/build or sm120-cu128/build.
+and native build directory sm89sm120-cu128/build and --arch universal.
 
 diff --git a/NOTICE b/NOTICE
-index eb6c07f88277f0062282170aa8a54869114555be..acf2368aebd6cbcb39f1b03ca8e8422b032cc24f 100644
+index eb6c07f88277f0062282170aa8a54869114555be..2dd941a72ec5f71ca683265062d558ad06e7db7c 100644
 --- a/NOTICE
 +++ b/NOTICE
-@@ -11,3 +11,19 @@ Original Eigen source: https://gitlab.com/libeigen/eigen/-/tree/3.4.0 .
+@@ -11,3 +11,22 @@ Original Eigen source: https://gitlab.com/libeigen/eigen/-/tree/3.4.0 .
  The corresponding NVIDIA-modified source supplied by this patch is
  src/backends/cuda/utils/fixed_bank_soa_evd.h, made available under MPL-2.0.
  The original Eigen URL does not contain the NVIDIA modifications.
@@ -52,6 +54,9 @@ index eb6c07f88277f0062282170aa8a54869114555be..acf2368aebd6cbcb39f1b03ca8e8422b
 +These contributions are provided under MPL-2.0. Existing libuipc, NVIDIA,
 +Eigen and other third-party notices retain their original scope.
 +See tools/wheel_cuda128/NOTICE and tools/wheel_cuda128/THIRD_PARTY_NOTICES.md for component boundaries.
++
++The AgiBot build contributions also include preserving the CUDA architecture
++list in src/backends/cuda/CMakeLists.txt for the SM89/SM120 combined wheel.
 diff --git a/scripts/after_build_pyuipc.py b/scripts/after_build_pyuipc.py
 index af36bf65761652a2793d0c6cc8218bbbd8af1f8e..ac331afae1bf660d3a8885d6185cf4506311ff7c 100644
 --- a/scripts/after_build_pyuipc.py
@@ -94,6 +99,34 @@ index af36bf65761652a2793d0c6cc8218bbbd8af1f8e..ac331afae1bf660d3a8885d6185cf450
 -        flush_info()
 \ No newline at end of file
 +        flush_info()
+diff --git a/src/backends/cuda/CMakeLists.txt b/src/backends/cuda/CMakeLists.txt
+index fc35e2131521c567417e550afb67746eab7a5b3f..c5caf42251a0d0fc55c44a00ce1df78fef41a635 100644
+--- a/src/backends/cuda/CMakeLists.txt
++++ b/src/backends/cuda/CMakeLists.txt
+@@ -1,3 +1,14 @@
++# Genie Sim Team contribution: preserve the full CUDA architecture list.
++# This notice covers this modification; existing upstream code retains its notices.
++# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
++# Author: Genie Sim Team
++# License: Mozilla Public License Version 2.0
++# SPDX-License-Identifier: MPL-2.0
++#
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at https://mozilla.org/MPL/2.0/.
++
+ set(CMAKE_CUDA_ARCHITECTURES ${UIPC_CUDA_ARCHITECTURES})
+ uipc_info("CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}.")
+ enable_language(CUDA)
+@@ -27,7 +38,7 @@ target_include_directories(cuda PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+ set_target_properties(cuda PROPERTIES
+     CUDA_SEPARABLE_COMPILATION ON
+     CUDA_RESOLVE_DEVICE_SYMBOLS ON
+-    CUDA_ARCHITECTURES ${UIPC_CUDA_ARCHITECTURES}
++    CUDA_ARCHITECTURES "${UIPC_CUDA_ARCHITECTURES}"
+     CUDA_STANDARD_REQUIRED ON
+     CUDA_STANDARD 20
+ )
 diff --git a/src/backends/cuda/affine_body/abd_diag_preconditioner.cu b/src/backends/cuda/affine_body/abd_diag_preconditioner.cu
 index 7ee014e23837168f0815c8a18451bcd58f4a7dc4..568a5e1c1f763f2b5d2895c0255a6c0373bb2a63 100644
 --- a/src/backends/cuda/affine_body/abd_diag_preconditioner.cu
@@ -1710,10 +1743,10 @@ index 0000000000000000000000000000000000000000..3b1f7c0ef07a2110f29cde2492bfd7a0
 +    raise SystemExit(main())
 diff --git a/tools/wheel_cuda128/build_wheels.py b/tools/wheel_cuda128/build_wheels.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6ec366562f
+index 0000000000000000000000000000000000000000..f98020df2ddea22c9369e51abda5a135a6178c77
 --- /dev/null
 +++ b/tools/wheel_cuda128/build_wheels.py
-@@ -0,0 +1,293 @@
+@@ -0,0 +1,298 @@
 +#!/usr/bin/env python3
 +# Genie Sim Team contributions: CUDA 12.8 wheel build and packaging support.
 +# This notice covers our additions and modifications, not pre-existing
@@ -1742,6 +1775,7 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +    --clean-dependency-lib /opt/uipc-clean-dependencies/lib \
 +    --python python3.12 --cmake cmake --vcpkg-root /opt/vcpkg
 +
++Use --arch universal for a single SM89/SM120 wheel (sm89sm120-cu128).
 +Add --dry-run to print the complete plan without writing or running anything.
 +Add --configure-only to prepare fresh environments and configure without building.
 +Each invocation needs fresh architecture directories under --work-dir. To build
@@ -1776,7 +1810,8 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +
 +def arguments(argv=None):
 +    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-+    parser.add_argument('--arch', choices=('89', '120', 'both'), default='both')
++    parser.add_argument('--arch', choices=('89', '120', 'both', 'universal'), default='both',
++                        help='89/120: one target; both: two wheels; universal: one wheel for SM89 and SM120')
 +    parser.add_argument('--work-dir', required=True, type=Path, help='fresh per-architecture outputs are created here')
 +    parser.add_argument('--cuda-root', required=True, type=Path, help='CUDA 12.8 toolkit containing bin/nvcc, include, and lib64')
 +    parser.add_argument('--dependency-prefix', required=True, type=Path, help='provisioned vcpkg x64-linux prefix; copied, never edited')
@@ -1808,7 +1843,9 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +    include_cccl = '-I' + str(args.cuda_root / 'include')
 +    runs = []
 +    for arch in (('89', '120') if args.arch == 'both' else (args.arch,)):
-+        run_root = args.work_dir / ('sm' + arch + '-cu128')
++        architectures = ['89', '120'] if arch == 'universal' else [arch]
++        arch_tag = '89sm120' if arch == 'universal' else arch
++        run_root = args.work_dir / ('sm' + arch_tag + '-cu128')
 +        build = run_root / 'build'
 +        venv = run_root / 'venv'
 +        python = venv / 'bin/python'
@@ -1834,7 +1871,7 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +            '-DVCPKG_MANIFEST_INSTALL=OFF',
 +            '-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON',
 +            '-DUIPC_PYTHON_EXECUTABLE_PATH=' + str(python), '-DPython_EXECUTABLE=' + str(python),
-+            '-DUIPC_CUDA_ARCHITECTURES=' + arch,
++            '-DUIPC_CUDA_ARCHITECTURES=' + ';'.join(architectures),
 +            '-DUIPC_BUILD_PYBIND=ON', '-DUIPC_BUILD_PYTHON_WHEEL=ON',
 +            '-DUIPC_BUILD_TESTS=OFF', '-DUIPC_BUILD_EXAMPLES=OFF',
 +            '-DUIPC_BUILD_BENCHMARKS=OFF', '-DUIPC_BUILD_GUI=OFF',
@@ -1856,7 +1893,7 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +            'configure': configure,
 +            'build': [args.cmake, '--build', str(build), '-j32', '--config', 'RelWithDebInfo'],
 +        }
-+        runs.append({'arch': arch, 'root': str(run_root), 'build': str(build), 'venv': str(venv),
++        runs.append({'arch': arch, 'architectures': architectures, 'root': str(run_root), 'build': str(build), 'venv': str(venv),
 +                     'dependency_copy': str(prefix), 'python_output': str(build / 'python'),
 +                     'environment': environment, 'commands': commands})
 +    return {'source_root': str(source), 'script_dir': str(script_dir), 'work_dir': str(args.work_dir),
@@ -1927,8 +1964,9 @@ index 0000000000000000000000000000000000000000..532f5e8d330bab2eaebd05ee1532ed6e
 +        raise ValueError('--cuda-root must point to a CUDA 12.8 toolkit')
 +    supported = set(capture([tools['nvcc'], '--list-gpu-code']).split())
 +    for run in plan['runs']:
-+        if 'sm_' + run['arch'] not in supported:
-+            raise ValueError('CUDA compiler does not support requested sm_' + run['arch'])
++        for arch in run['architectures']:
++            if 'sm_' + arch not in supported:
++                raise ValueError('CUDA compiler does not support requested sm_' + arch)
 +    return {'python': python, 'cmake': cmake, 'gcc': gcc, 'gxx': gxx, 'nvcc': nvcc}
 +
 +
@@ -2185,10 +2223,10 @@ index 0000000000000000000000000000000000000000..9da1c17160766d013ed72db3d798b04e
 +        sys.exit(2)
 diff --git a/tools/wheel_cuda128/license_materials.py b/tools/wheel_cuda128/license_materials.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..e5e2c515fd10851e0dea3adeb2c3b0d0f3c0a68e
+index 0000000000000000000000000000000000000000..97446a150be61853c0a81714d45eec7010bdf746
 --- /dev/null
 +++ b/tools/wheel_cuda128/license_materials.py
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,96 @@
 +# Genie Sim Team contributions: CUDA 12.8 wheel build and packaging support.
 +# This notice covers our additions and modifications, not pre-existing
 +# libuipc, NVIDIA, Eigen, or vendored third-party code.
@@ -2241,6 +2279,8 @@ index 0000000000000000000000000000000000000000..e5e2c515fd10851e0dea3adeb2c3b0d0
 +        'src/core/core/scene_default_config.cpp',
 +    ):
 +        inputs.append((source / relative, 'covered-source/' + relative, 'source/' + relative))
++    relative = 'src/backends/cuda/CMakeLists.txt'
++    inputs.append((source / relative, 'covered-source/' + relative, 'source/' + relative))
 +    required = [source / 'NOTICE', tools / 'DISTRIBUTION-LICENSE.txt',
 +                tools / 'THIRD_PARTY_NOTICES.md', *(path for path, _, _ in inputs)]
 +    copyrights = sorted((dependency_prefix / 'share').glob('*/copyright'))
@@ -2285,10 +2325,10 @@ index 0000000000000000000000000000000000000000..e5e2c515fd10851e0dea3adeb2c3b0d0
 +    return inventory
 diff --git a/tools/wheel_cuda128/package_wheel.py b/tools/wheel_cuda128/package_wheel.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383afefe9d6cd
+index 0000000000000000000000000000000000000000..695f18d638d65160c73e19c3c9f0c4138dcaf9c8
 --- /dev/null
 +++ b/tools/wheel_cuda128/package_wheel.py
-@@ -0,0 +1,388 @@
+@@ -0,0 +1,404 @@
 +#!/usr/bin/env python3
 +# Genie Sim Team contributions: CUDA 12.8 wheel build and packaging support.
 +# This notice covers our additions and modifications, not pre-existing
@@ -2380,7 +2420,16 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +
 +    @property
 +    def version(self):
-+        return VERSION_TEMPLATE.format(arch=self.arch)
++        return (VERSION_TEMPLATE.replace('.sm{arch}', '') if self.arch == 'universal'
++                else VERSION_TEMPLATE.format(arch=self.arch_tag))
++
++    @property
++    def arch_tag(self):
++        return '89sm120' if self.arch == 'universal' else self.arch
++
++    @property
++    def architectures(self):
++        return ['89', '120'] if self.arch == 'universal' else [self.arch]
 +
 +    @property
 +    def stage(self):
@@ -2393,7 +2442,7 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +
 +def parse_args(argv=None):
 +    parser = argparse.ArgumentParser(description=__doc__)
-+    parser.add_argument('--arch', required=True, choices=['89', '120'])
++    parser.add_argument('--arch', required=True, choices=['89', '120', 'universal'])
 +    parser.add_argument('--build-dir', required=True, type=Path)
 +    parser.add_argument('--python', required=True, help='CPython 3.12 executable, including its venv path')
 +    parser.add_argument('--cuda-root', required=True, type=Path)
@@ -2431,7 +2480,7 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +    text = replace_project_value(text, 'version', version)
 +    text = replace_project_value(text, 'requires-python', '==3.12.*')
 +    description = project.get('description', '').replace('CUDA 12.6+ required',
-+                                                       f'CUDA 12.8 libraries required; sm_{arch}')
++                                                       'CUDA 12.8 libraries required; ' + ('sm_89 and sm_120' if arch == 'universal' else f'sm_{arch}'))
 +    text = replace_project_value(text, 'description', description)
 +    text = re.sub(r'(?m)^[ \t]*["\']Programming Language :: Python :: 3\.(?!12["\'])\d+["\'],?[ \t]*\n', '', text)
 +    # The wheel contains separately licensed components. Its LICENSE summary
@@ -2481,6 +2530,13 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +
 +
 +
++def validate_cubin_architectures(listing: str, architectures: list[str]):
++    actual = set(re.findall(r'sm_\d+[a-z]?', listing))
++    expected = {'sm_' + arch for arch in architectures}
++    require(actual == expected,
++            f'backend cubin architectures differ from target: expected {sorted(expected)}, got {sorted(actual)}')
++
++
 +def validate_cuda_toolchain(config: Config):
 +    """Reject a different toolkit or a build made with another compiler."""
 +    version_file = config.cuda / 'version.json'
@@ -2500,7 +2556,7 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +
 +
 +def validate(config: Config, require_clean: bool = True):
-+    require(config.arch in ['89', '120'], 'architecture must be 89 or 120')
++    require(config.arch in ['89', '120', 'universal'], 'architecture must be 89, 120 or universal')
 +    versions = validate_cuda_toolchain(config)
 +    if config.source_url:
 +        url = urlsplit(config.source_url)
@@ -2536,7 +2592,7 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +    require(all(python['tools'].values()), 'selected Python needs setuptools, wheel, pybind11_stubgen, and numpy')
 +    backend = config.build / 'RelWithDebInfo/bin/libuipc_backend_cuda.so'
 +    listing = subprocess.check_output([str(config.cuda / 'bin/cuobjdump'), '--all-fatbin', '--list-elf', str(backend)], text=True)
-+    require(set(re.findall(r'sm_\d+[a-z]?', listing)) == {f'sm_{config.arch}'}, 'backend cubin architecture differs from --arch')
++    validate_cubin_architectures(listing, config.architectures)
 +    patched = (config.source / CUDA_SOURCE).read_text(encoding='utf-8')
 +    require('#include <thrust/iterator/counting_iterator.h>' in patched and
 +            'thrust::counting_iterator<IndexT>' in patched and
@@ -2600,10 +2656,10 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +        'cuda_toolkit': info['cuda_versions']['cuda']['version'],
 +        'nvcc_version': info['cuda_versions'].get('cuda_nvcc', {}).get('version'),
 +        'cuda_component_versions': info['cuda_versions'], 'recommended_runtime_driver_branch': 'R570 or newer with support for the selected GPU',
-+        'cuda_architectures': [config.arch], 'build_type': 'RelWithDebInfo',
++        'cuda_architectures': config.architectures, 'build_type': 'RelWithDebInfo',
 +        'optimization_flags': '-O3 -g -DNDEBUG', 'muda_runtime_checks': False,
 +        'python_abi': 'cp312', 'platform': 'linux_x86_64',
-+        'runtime_requirements': ['CPython 3.12', 'Linux x86_64', f'sm_{config.arch} GPU',
++        'runtime_requirements': ['CPython 3.12', 'Linux x86_64', ' or '.join('sm_' + arch for arch in config.architectures) + ' GPU',
 +            'NVIDIA driver compatible with CUDA 12.8 and the selected GPU (R570 or newer recommended)', 'CUDA 12.8 runtime, cuBLAS, cuSPARSE, cuSOLVER and their dependencies'],
 +        'python_dependencies': 'Unchanged from source pyproject.toml, including huggingface_hub for uipc.assets',
 +        'packaging_changes': ['binary CPython 3.12 wheel', 'bundle clean urdfdom', 'strip debug symbols',
@@ -2637,7 +2693,7 @@ index 0000000000000000000000000000000000000000..17b0a63b3a82615b58aff002b6e383af
 +        subprocess.run(['patchelf', '--set-rpath', '$ORIGIN', str(path)], check=True)
 +    manifest = build_manifest(config, info, native)
 +    (native / 'build_manifest.json').write_text(manifest, encoding='utf-8')
-+    (config.output / f'sm{config.arch}-build_manifest.json').write_text(manifest, encoding='utf-8')
++    (config.output / f'sm{config.arch_tag}-build_manifest.json').write_text(manifest, encoding='utf-8')
 +    with (config.work / 'package.log').open('w', encoding='utf-8') as log:
 +        subprocess.run([str(config.python), '-s', '-m', 'pip', 'wheel', str(config.stage), '--no-deps',
 +                        '--no-build-isolation', '--no-index', '--no-cache-dir', '--wheel-dir', str(config.output)],

@@ -1,7 +1,7 @@
 # Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
 # License: Mozilla Public License Version 2.0
 
-"""Fetch and install a pinned native libuipc wheel for SM 89 or 120, without Newton."""
+"""Fetch and install a pinned native libuipc wheel containing SM89 and SM120 code, without Newton."""
 
 from __future__ import annotations
 
@@ -30,43 +30,24 @@ from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 ARTIFACTS = json.loads(Path(__file__).with_name("libuipc-artifacts.json").read_text())
-WHEELS = {int(sm): (row["filename"], row["sha256"]) for sm, row in ARTIFACTS["artifacts"].items()}
 DOWNLOAD_TIMEOUT = 240
 
 
 def validate_platform() -> None:
-    """Both supplied native extensions require this ABI, regardless of wheel tag."""
+    """The supplied native extension requires this ABI, regardless of wheel tag."""
     if (
         sys.platform != "linux"
         or platform.machine() != "x86_64"
         or platform.python_implementation() != "CPython"
         or sys.version_info[:2] != (3, 12)
     ):
-        raise RuntimeError("The libuipc wheels require Linux x86_64 CPython 3.12")
+        raise RuntimeError("The libuipc wheel requires Linux x86_64 CPython 3.12")
 
 
-def detect_sm(gpu: int) -> int:
-    """Read the selected nvidia-smi GPU's compute capability without CUDA imports."""
-    result = subprocess.run(
-        ["nvidia-smi", f"--id={gpu}", "--query-gpu=compute_cap", "--format=csv,noheader"],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=15,
-    )
-    capability = result.stdout.strip()
-    match = re.fullmatch(r"(\d+)\.(\d)", capability)
-    if not match:
-        raise RuntimeError(f"Cannot read GPU {gpu} compute capability: {capability!r}")
-    return int(match[1]) * 10 + int(match[2])
-
-
-def select_wheel(sm: int) -> Path:
-    """Acquire only the selected architecture, publishing verified bytes to a durable cache."""
-    if sm not in WHEELS:
-        raise RuntimeError(f"Unsupported GPU sm_{sm}; only sm_89 and sm_120 are supported")
-    name, expected = WHEELS[sm]
-    row = ARTIFACTS["artifacts"][str(sm)]
+def select_wheel() -> Path:
+    """Acquire the universal artifact, publishing verified bytes to a durable cache."""
+    row = ARTIFACTS["artifacts"]["universal"]
+    name, expected = row["filename"], row["sha256"]
     path = PurePosixPath(row["path"])
     if (
         ARTIFACTS.get("schema_version") != 1
@@ -199,7 +180,7 @@ def _valid_artifact(path: Path, size: int, expected: str) -> bool:
 
 @contextmanager
 def _download_lock(directory: Path):
-    """Serialize writers to one artifact while allowing different architectures in parallel."""
+    """Serialize writers to one artifact without locking verified cache readers."""
     import fcntl
 
     path = directory / ".download.lock"
@@ -423,16 +404,14 @@ def _install_dependencies(requirements: list[str], directory: Path) -> None:
 
 
 def install_python_dependencies() -> None:
-    """Prepare both wheels' Python requirements during a GPU-free image build."""
-    requirements = set()
-    for sm in WHEELS:
-        with ZipFile(select_wheel(sm)) as archive:
-            path = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
-            metadata = Parser().parsestr(archive.read(path).decode())
-            requirements.update(metadata.get_all("Requires-Dist") or [])
+    """Prepare the universal wheel's Python requirements without a GPU."""
+    with ZipFile(select_wheel()) as archive:
+        path = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
+        metadata = Parser().parsestr(archive.read(path).decode())
+        requirements = metadata.get_all("Requires-Dist") or []
     with _installation_lock(), tempfile.TemporaryDirectory(prefix="libuipc-deps-") as directory:
-        _install_dependencies(sorted(requirements), Path(directory))
-    print("[libuipc] Python dependencies installed; GPU wheel selection is deferred to runtime", flush=True)
+        _install_dependencies(requirements, Path(directory))
+    print("[libuipc] Python dependencies installed", flush=True)
 
 
 def _remove_installation_path(path: Path) -> None:
@@ -476,7 +455,7 @@ def _install(wheel: Path, *, no_deps: bool = False) -> None:
         new_info = next(payload.glob("pyuipc-*.dist-info"))
         if {path.name for path in payload.iterdir()} != {"uipc", new_info.name}:
             raise RuntimeError("Unexpected native wheel layout; refusing to modify the environment")
-        _link_cuda_runtime(payload, wheel)
+        _link_cuda_runtime(payload)
         check_native(payload)
         backup = directory / "backup"
         backup.mkdir()
@@ -548,9 +527,9 @@ def _cuda_runtime_roots(major: int) -> list[Path]:
     ]
 
 
-def _link_cuda_runtime(payload: Path, wheel: Path) -> None:
+def _link_cuda_runtime(payload: Path) -> None:
     """Use the backend's $ORIGIN RUNPATH without changing the shared SDK loader."""
-    major, solver = {"pyuipc-sm89.whl": (12, 11), "pyuipc-sm120.whl": (12, 11)}[wheel.name]
+    major, solver = 12, 11
     components = {
         f"libcudart.so.{major}": "cuda_runtime",
         f"libcublas.so.{major}": "cublas",
@@ -598,7 +577,7 @@ def installed_matches(wheel: Path) -> bool:
         with ZipFile(wheel) as archive:
             path = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
             version = Parser().parsestr(archive.read(path).decode())["Version"]
-        digest = next(digest for name, digest in WHEELS.values() if name == wheel.name)
+        digest = ARTIFACTS["artifacts"]["universal"]["sha256"]
         return (
             package.version == version and direct_url.get("archive_info", {}).get("hashes", {}).get("sha256") == digest
         )
@@ -624,16 +603,16 @@ def check_native(root: Path | None = None) -> None:
     )
 
 
-def install_image(sm: int, wheel: Path) -> None:
-    """Bake one architecture into an image without requiring a build-time GPU."""
+def install_image(wheel: Path) -> None:
+    """Bake the universal artifact into an image without requiring a build-time GPU."""
     marker = Path(sysconfig.get_path("purelib")) / ".libuipc-image.json"
     with _installation_lock():
         _install(wheel)
-        marker.write_text(json.dumps({"sm": sm, "sha256": WHEELS[sm][1]}) + "\n")
-    print(f"[libuipc] Image preinstalled for sm_{sm}; runtime installation disabled", flush=True)
+        marker.write_text(json.dumps({"sha256": ARTIFACTS["artifacts"]["universal"]["sha256"]}) + "\n")
+    print("[libuipc] Universal image artifact preinstalled; runtime installation disabled", flush=True)
 
 
-def verify_image(sm: int, wheel: Path) -> bool:
+def verify_image(wheel: Path) -> bool:
     """Check a baked artifact without pip or automatic runtime replacement."""
     marker = Path(sysconfig.get_path("purelib")) / ".libuipc-image.json"
     if not marker.exists():
@@ -641,8 +620,8 @@ def verify_image(sm: int, wheel: Path) -> bool:
     with _installation_lock():
         try:
             baked = json.loads(marker.read_text())
-            if baked != {"sm": sm, "sha256": WHEELS[sm][1]} or not installed_matches(wheel):
-                raise RuntimeError(f"Image artifact does not match GPU sm_{sm}")
+            if baked != {"sha256": ARTIFACTS["artifacts"]["universal"]["sha256"]} or not installed_matches(wheel):
+                raise RuntimeError("Image artifact does not match the pinned universal wheel")
             with ZipFile(wheel) as archive:
                 path = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
                 requirements = Parser().parsestr(archive.read(path).decode()).get_all("Requires-Dist") or []
@@ -651,7 +630,7 @@ def verify_image(sm: int, wheel: Path) -> bool:
             check_native()
         except (ValueError, RuntimeError, OSError, subprocess.SubprocessError) as error:
             raise RuntimeError(
-                f"{error}; rebuild the image for this GPU with geniesim docker build "
+                f"{error}; rebuild the image with geniesim docker build "
                 "(or docker6.2 build for the dedicated 6.2 image)"
             ) from error
     print("[libuipc] Preinstalled image artifact verified; no installation required", flush=True)
@@ -660,9 +639,8 @@ def verify_image(sm: int, wheel: Path) -> bool:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--gpu", type=int, default=0, help="nvidia-smi GPU index to select (default: 0)")
     parser.add_argument(
-        "--dry-run", action="store_true", help="detect GPU and verify the selected wheel without installing"
+        "--dry-run", action="store_true", help="verify the universal wheel without installing"
     )
     parser.add_argument(
         "--no-deps", action="store_true", help="install only the wheel into an already prepared environment"
@@ -671,47 +649,35 @@ def main(argv: list[str] | None = None) -> None:
         "--if-needed", action="store_true", help="skip a matching installed artifact and verify native loading"
     )
     parser.add_argument(
-        "--dependencies-only", action="store_true", help="install both wheels' Python dependencies without a GPU"
+        "--dependencies-only", action="store_true", help="install the universal wheel's Python dependencies without a GPU"
     )
-    parser.add_argument(
-        "--build-sm", type=int, choices=sorted(WHEELS), help="preinstall an image for this SM without a GPU"
-    )
-    parser.add_argument(
-        "--download-sm",
-        type=int,
-        choices=sorted(WHEELS),
-        help="cache and verify this SM's wheel without GPU or runtime ABI checks",
-    )
+    parser.add_argument("--build-image", action="store_true", help="preinstall the universal wheel in an image")
+    parser.add_argument("--download-only", action="store_true", help="cache the wheel without runtime ABI checks")
     args = parser.parse_args(argv)
-    if args.dependencies_only and (args.dry_run or args.no_deps or args.if_needed):
-        parser.error("--dependencies-only cannot be combined with --dry-run, --no-deps or --if-needed")
-    if args.build_sm is not None and (args.dependencies_only or args.dry_run or args.no_deps or args.if_needed):
-        parser.error("--build-sm cannot be combined with other installation modes")
-    if args.download_sm is not None and (
-        args.build_sm is not None or args.dependencies_only or args.dry_run or args.no_deps or args.if_needed
-    ):
-        parser.error("--download-sm cannot be combined with other installation modes")
+    modes = sum((args.dependencies_only, args.build_image, args.download_only, args.dry_run))
+    if modes > 1 or (modes and (args.no_deps or args.if_needed)):
+        parser.error("--dependencies-only, --build-image, --download-only and --dry-run cannot be combined "
+                     "with other installation modes")
 
     def cancelled(signum, frame):
         raise InterruptedError("libuipc installation cancelled; rolling back native files")
 
     previous = signal.signal(signal.SIGTERM, cancelled)
     try:
-        if args.download_sm is not None:
-            print(f"[libuipc] Verified wheel: {select_wheel(args.download_sm)}", flush=True)
+        if args.download_only:
+            print(f"[libuipc] Verified wheel: {select_wheel()}", flush=True)
             return
         validate_platform()
         if args.dependencies_only:
             install_python_dependencies()
             return
-        if args.build_sm is not None:
-            install_image(args.build_sm, select_wheel(args.build_sm))
+        if args.build_image:
+            install_image(select_wheel())
             return
-        sm = detect_sm(args.gpu)
-        wheel = select_wheel(sm)
-        print(f"[libuipc] GPU {args.gpu}: sm_{sm} -> {wheel.name}", flush=True)
+        wheel = select_wheel()
+        print(f"[libuipc] Universal wheel: {wheel.name}", flush=True)
         if not args.dry_run:
-            if verify_image(sm, wheel):
+            if verify_image(wheel):
                 return
             matched = False
             if args.if_needed:
