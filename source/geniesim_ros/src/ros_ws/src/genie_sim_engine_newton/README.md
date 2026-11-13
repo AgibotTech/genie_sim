@@ -68,3 +68,18 @@ is active. Plugins with `on_record_snapshot` may expose
 `newton.chef.food_state.enabled` configuration and stops requesting snapshots
 if its publisher is unavailable. See [the recording contract](AGENTS.md#recording-snapshot-consumers)
 for compatibility and reset behavior.
+
+## Orderly shutdown
+
+The standalone node owns SIGINT and SIGTERM from startup through resource
+cleanup. The first signal unwinds the engine loop through its existing
+`finally` blocks; later termination signals do not interrupt encoder draining.
+This also works when a background shell inherited an ignored SIGINT: shutting
+down rclpy alone does not stop the independent C++ physics context.
+
+The observer encoder must close its input, finish successfully and release its
+resources before the node exits. A process-group escalation still fails the
+benchmark's video-finalization check. Its cleanup receipt records each signal,
+whether it was sent, and the surviving process identities; `forced` describes
+the process group, not a particular physics node. CPU signal/encoder tests do
+not replace an actual Newton/Isaac GPU shutdown acceptance run.

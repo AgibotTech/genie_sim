@@ -111,6 +111,7 @@ simulation_app = None
 
 from genie_sim_engine_core.common.loop import _parse_args  # noqa: E402
 from genie_sim_engine_newton.common.session import GenieSimEngineSession, SimpleLogger  # noqa: E402
+from genie_sim_engine_newton.common.shutdown_signals import shutdown_signals  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -677,26 +678,27 @@ def run(params: dict) -> int:
 
 
 def main() -> int:
-    params = _parse_args(sys.argv[1:], prefix="genie_sim_engine_newton")
-    try:
-        return run(params)
-    except KeyboardInterrupt:
-        return 0
-    except Exception as exc:
-        print(f"[genie_sim_engine_newton] fatal: {exc}", file=sys.stderr)
-        import traceback
-
-        traceback.print_exc()
-        return 1
-    finally:
-        # ``simulation_app`` is permanently None on Kit-free
-        # newton-standalone; nothing to close.  Kept the try/except
-        # shape for parity with the other entry-point scripts.
+    with shutdown_signals():
         try:
-            if simulation_app is not None:
-                simulation_app.close()
-        except Exception:
-            pass
+            params = _parse_args(sys.argv[1:], prefix="genie_sim_engine_newton")
+            return run(params)
+        except KeyboardInterrupt:
+            return 0
+        except Exception as exc:
+            print(f"[genie_sim_engine_newton] fatal: {exc}", file=sys.stderr)
+            import traceback
+
+            traceback.print_exc()
+            return 1
+        finally:
+            # ``simulation_app`` is permanently None on Kit-free
+            # newton-standalone; nothing to close.  Kept the try/except
+            # shape for parity with the other entry-point scripts.
+            try:
+                if simulation_app is not None:
+                    simulation_app.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

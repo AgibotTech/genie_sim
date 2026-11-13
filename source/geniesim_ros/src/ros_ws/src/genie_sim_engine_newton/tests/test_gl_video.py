@@ -368,13 +368,17 @@ def _isaac_run_wiring(
 ):
     instance, encoder, _ = recorder
     events = []
-    views = tuple(SimpleNamespace(name=name, fov_degrees=65) for name in ("head", "hand_left", "hand_right"))
+    views = tuple(
+        SimpleNamespace(name=name, fov_degrees=65, width=None, height=None, calibration=None)
+        for name in ("head", "hand_left", "hand_right")
+    )
     poses = np.zeros((3, 7))
     poses[:, 6] = 1
     sim = SimpleNamespace(
         _state_0=SimpleNamespace(body_q=SimpleNamespace(numpy=lambda: poses)),
         _sim_time_acc=0,
         _body_paths=["head", "left", "right"],
+        _reset_epoch=0,
         _lifecycle=SimpleNamespace(_node=object(), start_listener=lambda: None),
         start_joint_feedback_listener=lambda: None,
         start_deformable_publisher=lambda: None,

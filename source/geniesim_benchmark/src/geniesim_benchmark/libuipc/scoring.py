@@ -22,6 +22,7 @@ import yaml
 
 PACKAGE = Path(__file__).resolve().parents[1]
 TASK_ALIASES = {"fold_cloth": "fold", "cloth_hanger": "hanger", "drawstring_bag": "bag"}
+SCORING_FRAME_INTERVAL = 10
 PROFILE_HASHES = {
     "fold_cloth": "32c2256e6ab9f831a1d622d8111f93fbde6269ef2729c39d72ccb011c8ecfd5f",
     "cloth_hanger": "c230c6c0fc6e742a41acce09ee22af11b0db79291ce474216dcac098ea3257cc",
@@ -425,8 +426,31 @@ def physical_provenance(
     }
 
 
+def scoring_frame_count(physical_frames):
+    """Count the initial frame, every tenth frame and a distinct final frame."""
+    if physical_frames == 0:
+        return 0
+    last = physical_frames - 1
+    return 1 + last // SCORING_FRAME_INTERVAL + int(last % SCORING_FRAME_INTERVAL != 0)
+
+
+def sampled_frames(archive):
+    """Sample checker inputs while exhausting the strict reader's full verification.
+
+    Keep the initial state and the final state even for short episodes. The
+    follower must reach clean EOF before a final unsampled frame is scored.
+    """
+    last = None
+    for index, frame in enumerate(archive.iter_frames()):
+        last = index, frame
+        if index % SCORING_FRAME_INTERVAL == 0:
+            yield index, frame
+    if last is not None and last[0] % SCORING_FRAME_INTERVAL != 0:
+        yield last
+
+
 def named_frames(archive, task, profile):
-    """Return all physical frames with manifest-bound cloth and named bodies."""
+    """Return sampled physical frames with manifest-bound cloth and named bodies."""
     metadata = archive.manifest.get("metadata", {})
     name = "drawstring_bag" if task == "drawstring_bag" else "tshirt"
     matches = [obj for obj in metadata.get("objects", []) if obj.get("name") == name]
@@ -453,12 +477,12 @@ def named_frames(archive, task, profile):
     indices = {name: labels.index(name) for name in names}
 
     def frames():
-        for frame in archive.iter_frames():
+        for frame_index, frame in sampled_frames(archive):
             arrays = frame["state"]
             particles = arrays["particle_q"]
             if particles.ndim != 2 or particles.shape[1] != 3 or start + count > len(particles):
                 raise ValueError("Deformable particle range exceeds archived array")
-            values = (frame["tick"], frame["sim_time"], particles[start : start + count])
+            values = (frame_index, frame["tick"], frame["sim_time"], particles[start : start + count])
             if names:
                 bodies = arrays["body_q"]
                 if bodies.shape != (len(labels), 7):
@@ -515,7 +539,7 @@ def score_physical_episode(
     count, trajectory = 0, hashlib.sha256()
     success_notified = False
     with (output / "checker_frames.jsonl").open("w") as stream:
-        for tick, sim_time, *values in frames:
+        for frame_index, tick, sim_time, *values in frames:
             check_scoring_cancelled(cancel)
             runner.update(tick, sim_time, *values)
             count += 1
@@ -526,6 +550,7 @@ def score_physical_episode(
             stream.write(
                 json.dumps(
                     {
+                        "physical_frame_index": frame_index,
                         "tick": tick,
                         "sim_time_s": sim_time,
                         "score": result["score"],
@@ -547,6 +572,7 @@ def score_physical_episode(
                 success_notified = True
                 on_success(
                     {
+                        "physical_frame_index": frame_index,
                         "tick": tick,
                         "sim_time_s": sim_time,
                         "observed_frames": count,
@@ -571,7 +597,8 @@ def score_physical_episode(
     )
     if checker_sources(task, repo_root) != sources:
         raise ValueError("Checker sources changed during final archive verification")
-    if count != archive.manifest["frame_count"]:
+    physical_frames = archive.manifest["frame_count"]
+    if frame_index + 1 != physical_frames or count != scoring_frame_count(physical_frames):
         raise ValueError("Scored frame count differs from verified physical archive")
     result = runner.result()
     trajectory_key = "trajectory_points_sha256" if task == "fold_cloth" else "trajectory_sha256"
@@ -579,6 +606,8 @@ def score_physical_episode(
         scoring_status="scored",
         scoring_framework="ader",
         observed_frames=count,
+        physical_frames=physical_frames,
+        scoring_frame_interval=SCORING_FRAME_INTERVAL,
         profile_id=profile["profile_id"],
         checker_sources=sources,
         task_tree_finished=runner.env.execute_action.is_finished(),

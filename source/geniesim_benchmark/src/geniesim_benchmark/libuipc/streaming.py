@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+
 """Run a CPU-only archive follower and publish its score after final verification."""
 
 from __future__ import annotations
@@ -105,7 +109,7 @@ def _live_group(pgid):
 class StreamingScoringJob:
     """Own one scorer process; partial output stays private until finish()."""
 
-    def __init__(self, task, episode_dir, repo_root, *, drain_timeout_s=900.0, success_token=None):
+    def __init__(self, task, episode_dir, repo_root, *, drain_timeout_s=3600.0, success_token=None):
         if task not in SCORERS:
             raise ValueError("Unknown Wuji scoring task")
         if (
@@ -227,6 +231,8 @@ class StreamingScoringJob:
             or notification["tick"] < 0
             or type(notification.get("observed_frames")) is not int
             or notification["observed_frames"] < 2
+            or type(notification.get("physical_frame_index")) is not int
+            or notification["physical_frame_index"] < notification["observed_frames"] - 1
         ):
             raise ValueError("Success notification contains invalid score, success or frame evidence")
         if self._success is not None and notification != self._success:
@@ -238,16 +244,26 @@ class StreamingScoringJob:
         notification = self.success_notification()
         if notification is None:
             return
-        if report.get("success") is not True or report.get("score") != 1 or notification["observed_frames"] > count:
+        if (
+            report.get("success") is not True
+            or report.get("score") != 1
+            or notification["observed_frames"] > report["observed_frames"]
+            or notification["physical_frame_index"] >= count
+        ):
             raise ValueError("Final streaming report contradicts its success notification")
         try:
-            for path, clock_key, check_score in (
-                (self.staging / "checker_frames.jsonl", "sim_time_s", True),
-                (self.episode_dir / "physical_state/frames.jsonl", "sim_time", False),
+            for path, clock_key, check_score, frame_number in (
+                (self.staging / "checker_frames.jsonl", "sim_time_s", True, notification["observed_frames"]),
+                (
+                    self.episode_dir / "physical_state/frames.jsonl",
+                    "sim_time",
+                    False,
+                    notification["physical_frame_index"] + 1,
+                ),
             ):
                 with path.open() as stream:
                     for index, line in enumerate(stream, 1):
-                        if index == notification["observed_frames"]:
+                        if index == frame_number:
                             frame = json.loads(line)
                             break
                     else:
@@ -257,12 +273,15 @@ class StreamingScoringJob:
                     or frame.get("tick") != notification["tick"]
                     or frame.get(clock_key) != notification["sim_time_s"]
                     or (check_score and (type(frame.get("score")) not in (int, float) or frame["score"] != 1))
+                    or (check_score and frame.get("physical_frame_index") != notification["physical_frame_index"])
                 ):
                     raise ValueError("Success notification frame differs from final archive")
         except (OSError, ValueError) as exc:
             raise ValueError("Final archive does not include the success notification frame") from exc
 
     def _validate_report(self, report, count):
+        from .scoring import SCORING_FRAME_INTERVAL, scoring_frame_count
+
         if report.get("scoring_status") != "scored" or report.get("scoring_framework") != "ader":
             raise ValueError("Streaming report does not contain a completed ADER score")
         if not isinstance(report.get("profile_id"), str) or not report["profile_id"].strip():
@@ -286,7 +305,14 @@ class StreamingScoringJob:
             or type(report.get("success")) is not bool
         ):
             raise ValueError("Streaming report contains an invalid score or success value")
-        if type(report.get("observed_frames")) is not int or report["observed_frames"] != count:
+        if (
+            type(report.get("observed_frames")) is not int
+            or report["observed_frames"] != scoring_frame_count(count)
+            or type(report.get("physical_frames")) is not int
+            or report["physical_frames"] != count
+            or type(report.get("scoring_frame_interval")) is not int
+            or report["scoring_frame_interval"] != SCORING_FRAME_INTERVAL
+        ):
             raise ValueError("Streaming report frame count differs from verified archive")
         manifest = _read_json(self.episode_dir / "physical_state/manifest.json", "physical manifest")
         if (

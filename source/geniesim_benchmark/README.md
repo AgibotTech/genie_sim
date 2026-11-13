@@ -45,7 +45,10 @@ CPU MuJoCo and synchronized render session across their material layouts. All
 episode plans are declared in startup YAML. Each episode seals its own physical
 archive and score before the next native reset; material receipts, observations
 and score records retain separate source epochs. Geometry changes are rejected
-rather than rebuilt implicitly. The explicit GPU lifecycle diagnostic
+rather than rebuilt implicitly. Scoring evaluates the initial frame, every tenth
+physical frame and the final frame; raw state recording and full archive integrity
+checks remain unchanged. Scoring drain waits up to 3600 seconds after episode
+finish. The explicit GPU lifecycle diagnostic
 [sequence probe](tests/native_libuipc_sequence_smoke.py) uses a deterministic hold
 policy and is separate from model evaluation.
 

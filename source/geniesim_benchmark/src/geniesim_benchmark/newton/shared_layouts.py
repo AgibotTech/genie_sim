@@ -21,7 +21,7 @@ import time
 import yaml
 
 from geniesim_benchmark.plugins.output_system.dexhand2 import read_summary_details, write_summary
-from .layout_batch import OwnedProcessTree, _assert_engine_idle, _prepare, _wait_for_manifest
+from .layout_batch import OwnedProcessTree, _assert_engine_idle, _prepare, _wait_for_manifest, verify_video
 
 
 def shared_scene(plans):
@@ -242,59 +242,75 @@ def run_shared_batch(plans, *, startup_timeout_s=600, shutdown_timeout_s=60, com
                 finally:
                     save()
     finally:
-        if tree is not None:
-            summary["cleanup"] = tree.close(shutdown_timeout_s + 10)
-        evaluations = [
-            e for p, r in zip(plans, rows) if r["status"] == "evaluated" for e in read_summary_details(p.run_dir)
-        ]
-        write_summary(output, evaluations)
-        if summary.get("cleanup", {}).get("forced"):
-            raise RuntimeError("shared engine required forced shutdown; video finalization unconfirmed")
-        frames_path = shared / "observer.frames.jsonl"
-        frames = [json.loads(line) for line in frames_path.read_text().splitlines()] if frames_path.exists() else []
-        for plan, row in zip(plans, rows):
-            epochs = {r["evaluation"]["reset_epoch"] for r in row.get("episode_results", [])}
-            selected = [f["frame"] for f in frames if f["reset_epoch"] in epochs]
-            if row["status"] == "evaluated" and not selected:
-                raise RuntimeError(f"layout {plan.layout_id} has no recorded observer frames")
-            if selected:
-                row["video_frames"] = [min(selected), max(selected) + 1]
-                clip = plan.run_dir / "observer.mp4"
-                result = subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-v",
-                        "error",
-                        "-n",
-                        "-i",
-                        str(shared / "observer.mp4"),
-                        "-vf",
-                        f"trim=start_frame={min(selected)}:end_frame={max(selected)+1},setpts=PTS-STARTPTS",
-                        "-c:v",
-                        "libx264",
-                        "-crf",
-                        "18",
-                        "-threads",
-                        "2",
-                        "-pix_fmt",
-                        "yuv420p",
-                        str(clip),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=120,
-                )
-                if result.returncode:
-                    raise RuntimeError(f"layout video extraction failed: {result.stderr[-1000:]}")
-                (plan.run_dir / "video.json").write_text(
-                    json.dumps(
-                        {
-                            "source": str(shared / "observer.mp4"),
-                            "frame_range_exclusive": row["video_frames"],
-                            "reset_epochs": sorted(epochs),
-                        },
-                        indent=2,
-                    )
-                )
-        save()
+        try:
+            if tree is not None:
+                summary["cleanup"] = tree.close(shutdown_timeout_s + 10)
+                save()
+                print("Newton cleanup: " + json.dumps(summary["cleanup"]), flush=True)
+            evaluations = [
+                e for p, r in zip(plans, rows) if r["status"] == "evaluated" for e in read_summary_details(p.run_dir)
+            ]
+            write_summary(output, evaluations)
+            _finalize_videos(shared, plans, rows, summary)
+        except Exception as exc:
+            summary["finalization_error"] = f"{type(exc).__name__}: {exc}"
+            raise
+        finally:
+            save()
     return summary
+
+
+def _finalize_videos(shared, plans, rows, summary):
+    """Verify the closed shared recording and every extracted layout clip."""
+    frames_path = shared / "observer.frames.jsonl"
+    frames = [json.loads(line) for line in frames_path.read_text().splitlines()] if frames_path.exists() else []
+    source = shared / "observer.mp4"
+    if source.exists() or frames or any(row["status"] == "evaluated" for row in rows):
+        summary["video_verification"] = verify_video(source, expected_frames=len(frames))
+    if summary.get("cleanup", {}).get("forced"):
+        raise RuntimeError("shared engine required SIGTERM/SIGKILL during shutdown")
+    for plan, row in zip(plans, rows):
+        epochs = {r["evaluation"]["reset_epoch"] for r in row.get("episode_results", [])}
+        selected = [f["frame"] for f in frames if f["reset_epoch"] in epochs]
+        if row["status"] == "evaluated" and not selected:
+            raise RuntimeError(f"layout {plan.layout_id} has no recorded observer frames")
+        if selected:
+            row["video_frames"] = [min(selected), max(selected) + 1]
+            clip = plan.run_dir / "observer.mp4"
+            result = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-n",
+                    "-i",
+                    str(shared / "observer.mp4"),
+                    "-vf",
+                    f"trim=start_frame={min(selected)}:end_frame={max(selected)+1},setpts=PTS-STARTPTS",
+                    "-c:v",
+                    "libx264",
+                    "-crf",
+                    "18",
+                    "-threads",
+                    "2",
+                    "-pix_fmt",
+                    "yuv420p",
+                    str(clip),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode:
+                raise RuntimeError(f"layout video extraction failed: {result.stderr[-1000:]}")
+            row["video_verification"] = verify_video(clip, expected_frames=max(selected) + 1 - min(selected))
+            (plan.run_dir / "video.json").write_text(
+                json.dumps(
+                    {
+                        "source": str(shared / "observer.mp4"),
+                        "frame_range_exclusive": row["video_frames"],
+                        "reset_epochs": sorted(epochs),
+                    },
+                    indent=2,
+                )
+            )

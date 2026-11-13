@@ -249,24 +249,40 @@ def _group_alive(pgid: int) -> bool:
     return any(state != "Z" and group == pgid for state, _, group, _ in _process_rows().values())
 
 
+def _group_members(pgid: int) -> list[dict]:
+    members = []
+    for pid, (state, _, group, start) in sorted(_process_rows().items()):
+        if group != pgid:
+            continue
+        try:
+            comm = Path(f"/proc/{pid}/comm").read_text().strip()
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            comm = None
+        members.append({"pid": pid, "state": state, "comm": comm, "start_ticks": start})
+    return members
+
+
 def _stop_group(pgid: int, timeout: float, poll: Callable, *, expected_start: int | None = None) -> dict:
-    forced = False
+    result = {"forced": False, "pgid": pgid, "signals": []}
     for signum, grace in ((signal.SIGINT, timeout), (signal.SIGTERM, 5), (signal.SIGKILL, 5)):
         leader = _process_row(pgid)
         if expected_start is not None and leader is not None and leader[3] != expected_start:
-            return {"forced": forced, "pid_reused": True}
+            return {**result, "pid_reused": True}
         if not _group_alive(pgid):
-            return {"forced": forced}
-        forced = forced or signum != signal.SIGINT
+            return result
+        stage = {"signal": signal.Signals(signum).name, "sent": False, "members": _group_members(pgid)}
+        result["signals"].append(stage)
         try:
             os.killpg(pgid, signum)
         except ProcessLookupError:
-            continue
+            return result
+        stage["sent"] = True
+        result["forced"] = result["forced"] or signum != signal.SIGINT
         deadline = time.monotonic() + grace
         while time.monotonic() < deadline:
             poll()
             if not _group_alive(pgid):
-                return {"forced": forced}
+                return result
             time.sleep(0.05)
     raise RuntimeError(f"owned process group {pgid} did not exit after SIGKILL")
 
@@ -277,6 +293,7 @@ def stop_process_group(process: subprocess.Popen, timeout: float = 60) -> dict:
     start = getattr(process, "_layout_start_ticks", row[3] if row is not None else None)
     result = _stop_group(process.pid, timeout, process.poll, expected_start=start)
     process.wait()
+    result["returncode"] = process.returncode
     return result
 
 
@@ -328,14 +345,63 @@ class OwnedProcessTree:
                 row = rows.get(pid)
                 if pid == self.process.pid or row is None or row[3] != start or row[0] == "Z" or row[2] != pid:
                     continue
-                _stop_group(pid, timeout, lambda: None, expected_start=start)
-                detached.append(pid)
+                outcome = _stop_group(pid, timeout, lambda: None, expected_start=start)
+                detached.append({"pid": pid, **outcome})
             if error is not None:
                 raise error
-            return {"forced": result["forced"] or bool(detached), "detached_cleanup": detached}
+            return {
+                "forced": result["forced"] or any(item["forced"] for item in detached),
+                "main_cleanup": result,
+                "detached_cleanup": [item["pid"] for item in detached],
+                "detached_results": detached,
+            }
         finally:
             self._done.set()
             self._thread.join(timeout=2)
+
+
+def verify_video(path: Path, *, expected_frames: int | None = None, timeout_s: float = 120) -> dict:
+    """Fully decode a closed recording and reject missing, changing or partial output."""
+    path = Path(path)
+    if not path.is_file() or path.stat().st_size == 0:
+        raise RuntimeError(f"video recording is missing or empty: {path}")
+    before = path.stat()
+    try:
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-xerror",
+                "-nostdin",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-i",
+                str(path),
+                "-map",
+                "0:v:0",
+                "-f",
+                "null",
+                "-",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"video decoding could not complete: {path}: {exc}") from exc
+    progress = dict(line.split("=", 1) for line in result.stdout.splitlines() if "=" in line)
+    decoded = progress.get("frame", "").strip()
+    if result.returncode or progress.get("progress") != "end" or not decoded.isdigit() or int(decoded) < 1:
+        raise RuntimeError(f"video decoding failed: {path}: {result.stderr[-1000:]}")
+    after = path.stat()
+    if any(getattr(before, key) != getattr(after, key) for key in ("st_ino", "st_dev", "st_size", "st_mtime_ns")):
+        raise RuntimeError(f"video recording changed during verification: {path}")
+    count = int(decoded)
+    if expected_frames is not None and count != expected_frames:
+        raise RuntimeError(f"video frame count mismatch: {path}: decoded {count}, expected {expected_frames}")
+    return {"status": "verified", "path": str(path), "decoded_frames": count, "bytes": after.st_size}
 
 
 def _wait_runner(runner: subprocess.Popen, engine: subprocess.Popen) -> int:
@@ -469,6 +535,14 @@ def run_batch(
                     row.update(status="infrastructure_error", error=f"cleanup: {type(error).__name__}: {error}")
             signal.signal(signal.SIGINT, previous_sigint)
             row["cleanup"] = cleanup
+            if row["status"] == "evaluated":
+                try:
+                    row["video_verification"] = verify_video(plan.run_dir / "observer.mp4")
+                except Exception as error:
+                    cleanup_failed = True
+                    row.update(
+                        status="infrastructure_error", error=f"video finalization: {type(error).__name__}: {error}"
+                    )
             if row["status"] != "evaluated":
                 row["score"], row["task_success"] = None, None
             save()
