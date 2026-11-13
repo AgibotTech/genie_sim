@@ -658,13 +658,19 @@ _ROS_EXPECTED_LICENSE_TEXT = "Mozilla Public License Version 2.0"
 
 
 def _audit_metadata_ros(repo: Path) -> list[str]:
-    """Every ROS package.xml uses the shared maintainer + license lines
-    and ships a LICENSE file alongside it. Enforces the convention
+    """Parent-owned ROS packages use the shared maintainer + license lines
+    and ship a LICENSE file alongside them. Submodules own their metadata.
+    Enforces the convention
     documented in geniesim_cli/AGENTS.md."""
     import xml.etree.ElementTree as ET
 
+    from .version import _submodule_paths
+
     violations: list[str] = []
+    submodules = _submodule_paths(repo)
     for pkg in _enumerate_ros_packages(repo):
+        if any(pkg.resolve().is_relative_to(root) for root in submodules):
+            continue
         rel = pkg.relative_to(repo)
         xml_path = pkg / "package.xml"
         if not xml_path.is_file():

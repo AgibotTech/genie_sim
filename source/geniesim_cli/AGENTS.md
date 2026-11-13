@@ -194,7 +194,9 @@ compatible when adding optional fields.
 The ROS metadata audit requires one maintainer named `Genie Sim Team` with
 email `yangwendisheng@agibot.com`, one license entry with
 `file="LICENSE"` and text `Mozilla Public License Version 2.0`, and a
-`LICENSE` file beside each source `package.xml`.
+`LICENSE` file beside each parent-owned source `package.xml`. Packages beneath
+submodule paths declared in `.gitmodules` own their maintainer and license metadata
+and are excluded from this shared-convention audit.
 
 Docker profiles reuse the `Variant` value type through `PROFILES` in
 `commands/docker.py`; the public Isaac-version `VARIANTS`, `get_variant`, and

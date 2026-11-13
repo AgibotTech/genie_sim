@@ -26,6 +26,27 @@ def test_metadata_accepts_shared_convention(tmp_path):
     assert tool._audit_metadata_ros(tmp_path) == []
 
 
+def test_metadata_preserves_submodule_ownership(tmp_path):
+    package = _package(tmp_path, "independent/robot")
+    manifest = package / "package.xml"
+    manifest.write_text(
+        manifest.read_text()
+        .replace("yangwendisheng@agibot.com", "maintainer@example.com")
+        .replace("Genie Sim Team", "Independent Maintainer")
+        .replace("Mozilla Public License Version 2.0", "Apache-2.0")
+    )
+    assert len(tool._audit_metadata_ros(tmp_path)) == 2
+    relative = package.parent.relative_to(tmp_path)
+    (tmp_path / ".gitmodules").write_text(f'[submodule "independent"]\n\tpath = {relative}\n')
+    sibling = _package(tmp_path, "independent_sibling")
+    (sibling / "LICENSE").unlink()
+
+    findings = tool._audit_metadata_ros(tmp_path)
+
+    assert len(findings) == 1
+    assert "independent_sibling: missing LICENSE" in findings[0]
+
+
 @pytest.mark.parametrize("generated", ["devel", "devel_build", "devel_log", "build", "install", "external"])
 def test_generated_packages_cannot_shadow_source(tmp_path, generated):
     source = _package(tmp_path)

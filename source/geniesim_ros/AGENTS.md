@@ -553,7 +553,7 @@ exits 1 and lists the violations otherwise. Four invariants checked:
 2. Every such package has a row in this file's packages table.
 3. Every markdown link in this file (and in every per-package
    `README.md` / `AGENTS.md`) points at a file that exists.
-4. Every `package.xml` uses the standard maintainer and license
+4. Every parent-owned `package.xml` uses the standard maintainer and license
    lines (see `Package metadata convention` below) and ships a
    `LICENSE` file alongside it.
 
@@ -566,7 +566,7 @@ See [`source/geniesim_cli/src/geniesim_cli/commands/tool.py`](../geniesim_cli/sr
 
 ## Package metadata convention
 
-Every `package.xml` under `src/ros_ws/src/` uses the same maintainer
+Every parent-owned `package.xml` under `src/ros_ws/src/` uses the same maintainer
 and license lines, and every package ships its own `LICENSE` file
 (a copy of the workspace-level MPL-2.0 text — the `<license
 file="LICENSE">` reference is resolved relative to the package
@@ -576,6 +576,10 @@ directory, not the workspace root):
 <maintainer email="yangwendisheng@agibot.com"> Genie Sim Team </maintainer>
 <license file="LICENSE">Mozilla Public License Version 2.0</license>
 ```
+
+Git submodules own their license and maintainer metadata and are excluded from
+this shared-convention audit. `genie_sim_robot_model` retains its repository's
+Apache-2.0 license and per-vendor third-party notices.
 
 Every package also declares `<depend>genie_sim_common</depend>` and
 calls `find_package(genie_sim_common REQUIRED)` + `genie_sim_package()`
