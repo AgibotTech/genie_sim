@@ -47,6 +47,11 @@ modules below are outside both tiers. See [installation tiers](README.md#install
 
 ---
 
+The ROS workspace's `genie_sim_robot_model` package is maintained in a separate
+repository and pinned as a Git submodule at its existing package path. See the
+[ROS build guide](geniesim_ros/README.md#1-bring-up-the-container) for initialization.
+Its version belongs to that repository, rather than parent release synchronization.
+
 ## 🔗 Module dependency DAG — methodology
 
 **The rendered diagram lives in [`source/README.md`](README.md).** This section explains how it's generated so contributors can extend the audit; the diagram itself is read on the README page (GitHub renders Mermaid inline).

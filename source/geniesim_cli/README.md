@@ -73,6 +73,7 @@ and each module's guide for environment requirements.
 git clone https://github.com/AgibotTech/genie_sim.git
 cd genie_sim
 pip install -e source/geniesim_cli/   # 1. CLI first (no heavy deps)
+git submodule update --init -- source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
 geniesim bootstrap                    # 2. installs required local peers; reports missing asset sources
 geniesim status                       # 3. all-green check
 geniesim doctor                       # 4. repair if not
@@ -95,6 +96,8 @@ The eight first-class `geniesim` / `geniesim_*` distributions share the root
 is a symlink to that file. Separate runtime environments do not change the
 release version. Independent modules, service packages, data formats, and
 third-party dependencies keep their own versions.
+ROS packages maintained as Git submodules, including `genie_sim_robot_model`,
+also own their versions and are excluded from parent release synchronization.
 
 Benchmark commands use system Python 3.12 and Isaac Sim 6.2 in the dedicated
 `geniesim4:latest` / `docker6.2` runtime. This image retains the 4.0 runtime

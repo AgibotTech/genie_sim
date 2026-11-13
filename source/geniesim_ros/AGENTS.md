@@ -165,6 +165,17 @@ the package is added to this table; the doc-coverage audit
 
 ## Build
 
+`genie_sim_robot_model` is an independently maintained Git submodule at its
+existing ROS package path. Initialize it before building:
+
+```bash
+git submodule update --init -- source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
+```
+
+Commit and publish description changes in the robot-model repository first,
+then update the parent gitlink. The parent release command reads `.gitmodules`
+and leaves submodule package versions unchanged. Do not vendor another copy.
+
 ```bash
 geniesim ros build dev      # colcon build --symlink-install (development)
 geniesim ros build release  # colcon build Release

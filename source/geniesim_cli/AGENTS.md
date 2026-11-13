@@ -21,6 +21,7 @@ The CLI is the **first thing** installed on a new machine — it ships the
 git clone https://github.com/AgibotTech/genie_sim.git
 cd genie_sim
 pip install -e source/geniesim_cli/      # 1. CLI first (no heavy deps)
+git submodule update --init -- source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
 geniesim bootstrap                       # 2. installs required peers; reports missing asset sources
 geniesim status                          # 3. all-green check
 geniesim doctor                          # 4. repair if not
@@ -179,6 +180,9 @@ the client and native IPC engine. Keep the registry and package-coverage tests
 current when adding a first-class distribution or ROS package. Independent
 modules, service packages, dependency pins, recording schemas, and prebuilt
 teleop message libraries are excluded.
+Git submodules declared in `.gitmodules` own their package versions. The
+release scanner excludes manifests beneath those paths, so a parent bump
+does not dirty `genie_sim_robot_model` or require a new submodule release.
 
 ## 4. Architectural rules (do not violate)
 

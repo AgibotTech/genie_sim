@@ -49,6 +49,16 @@ to launch the Newton XPBD engine.
 
 ### 1. Bring up the container
 
+Initialize the pinned robot descriptions from the repository root on the host:
+
+```bash
+git submodule update --init -- source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
+```
+
+`genie_sim_robot_model` is maintained independently and pinned at the existing
+ROS package path. Publish changes in its repository before updating the parent
+submodule commit. Its package version is independent of the parent release.
+
 ```bash
 geniesim docker up            # boots the Isaac Sim 6.2 + Jazzy container
 geniesim docker into          # opens an interactive shell inside it

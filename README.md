@@ -72,6 +72,7 @@ flowchart LR
 ```bash
 # === on the host ===
 pip install -e source/geniesim_cli/      # standalone CLI wheel
+git submodule update --init -- source/geniesim_ros/src/ros_ws/src/genie_sim_robot_model
 geniesim docker build                    # build the Isaac Sim 6.2 + Jazzy image
 geniesim docker up                       # boot the container; the entrypoint
                                          # editable-installs every tier-1 from

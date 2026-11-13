@@ -57,6 +57,24 @@ def test_same_release_bump_still_repairs_metadata(tmp_path):
     assert "<version>3.5.0</version>" in path.read_text()
 
 
+@pytest.mark.parametrize("git_marker", [None, ".git"])
+def test_release_bump_preserves_configured_submodule_versions(tmp_path, git_marker):
+    (tmp_path / "VERSION").write_text("3.6.0\n")
+    robot = _ros_package(tmp_path, "genie_sim_robot_model", "1.2.3")
+    owned = _ros_package(tmp_path, "genie_sim_client", "3.6.0")
+    relative = robot.parent.relative_to(tmp_path)
+    (tmp_path / ".gitmodules").write_text(f'[submodule "robot-model"]\n\tpath = {relative}\n')
+    if git_marker:
+        (robot.parent / git_marker).write_text("gitdir: unused-fixture\n")
+    original = robot.read_bytes()
+
+    version._do_bump(tmp_path, "3.7.0")
+
+    assert robot.read_bytes() == original
+    assert "<version>3.7.0</version>" in owned.read_text()
+    assert not version._scan_package_xmls(tmp_path, "3.7.0")[1]
+
+
 def test_bundled_message_dependencies_are_not_reversioned(tmp_path):
     (tmp_path / "VERSION").write_text("3.5.0\n")
     path = tmp_path / "source/geniesim_teleop/src/geniesim_teleop/app/share/geniesim_msg/package.xml"

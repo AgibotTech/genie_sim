@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from configparser import ConfigParser
 from pathlib import Path
 
 from geniesim_cli._style import BOLD, CYAN, DIM, GREEN, MAGENTA, RED, RST, WHITE, YELLOW
@@ -39,8 +40,8 @@ _FIRST_CLASS_PACKAGES: tuple[str, ...] = (
 )
 _DISTRIBUTIONS = (*_FIRST_CLASS_PACKAGES, "geniesim_assets")
 
-# package.xml files that should track the unified VERSION. Paths are
-# repo-relative; independent modules and third-party packages are excluded.
+# Candidate package.xml files for the unified VERSION. Configured Git submodules
+# own their versions and are excluded from synchronization at scan time.
 _ROS_PACKAGE_XMLS: tuple[str, ...] = (
     "source/geniesim_ros/src/ros_ws/src/genie_sim_bringup/package.xml",
     "source/geniesim_ros/src/ros_ws/src/genie_sim_client/package.xml",
@@ -118,6 +119,17 @@ def _show_installed() -> None:
     print(f"   {DIM}Python{RST}              {sys.version}")
 
 
+def _submodule_paths(repo: Path) -> tuple[Path, ...]:
+    """Read ownership from .gitmodules, including when a checkout is uninitialized."""
+    config = ConfigParser(interpolation=None)
+    config.read(repo / ".gitmodules")
+    return tuple(
+        (repo / config[section]["path"]).resolve()
+        for section in config.sections()
+        if section.startswith('submodule "') and config.has_option(section, "path")
+    )
+
+
 def _scan_package_xmls(repo: Path, expected: str) -> tuple[list[Path], list[tuple[Path, str]]]:
     """Return (in-sync, out-of-sync) splits.
 
@@ -126,8 +138,11 @@ def _scan_package_xmls(repo: Path, expected: str) -> tuple[list[Path], list[tupl
     """
     in_sync: list[Path] = []
     out_of_sync: list[tuple[Path, str]] = []
+    submodules = _submodule_paths(repo)
     for rel in _ROS_PACKAGE_XMLS:
         path = repo / rel
+        if any(path.resolve().is_relative_to(root) for root in submodules):
+            continue
         if not path.is_file():
             continue
         match = _TAG_RE.search(path.read_text())
