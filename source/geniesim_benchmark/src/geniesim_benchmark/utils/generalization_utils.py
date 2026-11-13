@@ -333,7 +333,7 @@ def apply_material_generalization(api_core, task_config):
         api_core.change_material(mesh_path, material_path)
 
 
-def apply_hdr_texture_generalization(api_core, task_config):
+def apply_hdr_texture_generalization(api_core, task_config, *, seed=None, episode_id=None, file_idx=0):
     """Apply HDR texture randomization generalization.
 
     Args:
@@ -347,7 +347,19 @@ def apply_hdr_texture_generalization(api_core, task_config):
     if not enable:
         return
 
-    api_core.randomize_hdr_textures()
+    per_episode = hdr_texture_config.get("resample_per_episode", False)
+    if per_episode and episode_id is None:
+        return
+    directory = hdr_texture_config.get("directory")
+    if directory:
+        if seed is None:
+            seed = int(np.random.randint(0, 2**31))
+        identity = f"{task_config['task']}:{task_config['scene'].get('scene_instance_id', 0)}"
+        if per_episode:
+            identity += f":file:{file_idx}:episode:{episode_id}"
+        api_core.set_hdr_background(directory, seed, identity)
+    else:
+        api_core.randomize_hdr_textures()
     logger.info("Applied HDR texture randomization")
 
 

@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Append weighted scores to a saved evaluation file without changing its source."""
+"""Write budget-adjusted weighted scores to a new file, preserving the source."""
 
 import argparse
 from copy import deepcopy
@@ -12,7 +12,7 @@ from typing import Any
 
 from geniesim_benchmark.plugins.output_system.eval_utils import extract_scores, get_statistics, get_task_steps
 from geniesim_benchmark.plugins.output_system.weighted_scoring import (
-    add_weighted_score, canonical_score_layout, get_weight_profile,
+    canonical_score_layout, get_weight_profile,
 )
 from geniesim_benchmark.plugins.output_system.policy_budget import add_policy_budget_scores
 
@@ -24,7 +24,7 @@ def reweight_results(
     *,
     weights_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Keep all original episode/legacy fields and append only weighted fields.
+    """Keep native fields and replace weighted outputs with policy-budget values.
 
     The caller chooses the source records, including any prior abnormal-attempt
     selection. This function neither retries nor filters nor selects episodes.
@@ -53,23 +53,21 @@ def reweight_results(
         detail.setdefault("instruction_mode", instruction_mode)
         result = detail["result"]
         rows = extract_scores(result, steps)
-        add_weighted_score(result, rows, profile)
         add_policy_budget_scores(result, rows, profile)
     stats = get_statistics(updated["details"], steps, profile)
-    updated.setdefault("statistics", {}).update(
+    statistics = updated.setdefault("statistics", {})
+    for alias in (
+        "weighted", "weighted_by_instruction", "weighted_process",
+        "weighted_completion_bonus", "weighted_completion_rate", "weighted_episodes",
+    ):
+        statistics.pop(alias, None)
+    statistics.update(
         {
-            key: stats[key]
-            for key in (
-                "weighted",
-                "weighted_by_instruction",
-                "weighted_scoring",
-                "weighted_process",
-                "weighted_completion_bonus",
-                "weighted_completion_rate",
-            )
+            key: value
+            for key, value in stats.items()
+            if key.startswith("policy_budget_") or key in ("weighted_scoring", "weighted_scoring_metric")
         }
     )
-    updated["statistics"].update({key: value for key, value in stats.items() if key.startswith("policy_budget_")})
     return updated
 
 

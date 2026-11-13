@@ -18,15 +18,15 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        -0.2272177883358265,
-        0.013867505110288583,
+        -0.17294161969137692,
+        -0.07286489933775693,
         0.985
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.04043220973050475,
-        0.9991822838783264
+        -0.19992875575804767,
+        0.9798104370851737
       ],
       "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
     },
@@ -362,9 +362,9 @@
     "actual_runtime_single_step_validation_pending": true
   },
   "copybook": {
-    "target_letter": "A",
+    "target_letter": "T",
     "guide_prim": "/World/Objects/paper/entity/writing_template",
-    "target_sha256": "8781aae8e29454bffb22bd2729c8fd803a360d0d502b689d4494b388f0333b92",
+    "target_sha256": "33c4f2126691fc7053e277d01c07a4b17d6fa2a80c4114399736544c5cfa05c9",
     "gray_geometry_authored_in_scene": true,
     "visual_only": true,
     "overlap_metrics": [
@@ -375,41 +375,72 @@
     ],
     "physical_validation": "pending new physical trial"
   },
-  "scene_id": "trace_copybook_a_aloha_20261023_scene_000140",
-  "task_name": "trace_copybook_a_aloha_20261023",
-  "target_letter": "A",
+  "scene_id": 10,
+  "task_name": "trace_copybook_t_aloha_20261023",
+  "target_letter": "T",
   "physical_validation": {
     "passed": false,
     "status": "new layout; physical trial pending"
   },
-  "validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "generalization": {
     "batch": "writing_generalization_4000_20261023",
     "seed": 20261023,
     "robot": "ALOHA",
-    "anchor": "ALOHA/v10/B",
+    "anchor": "ALOHA/v08/B",
     "jitter_xy_m_yaw_deg": [
-      0.004782211664173489,
-      0.00186750511028858,
-      0.634503988349369
+      0.0041957150800584165,
+      -0.0024848816153889147,
+      1.9672994530209058
     ],
     "anchor_variation": {
       "paper_xy_m": [
-        -0.006,
-        0.01
+        -0.01,
+        -0.006
       ],
-      "paper_yaw_deg": 4,
+      "paper_yaw_deg": -3,
       "holder_xy_m": [
         0,
         0
       ]
     },
     "accepted_attempt": 0,
-    "source_scene_sha256": "dad322bdda9f41fd2e153c6283504a66b6db55e4d9fe26b4a6caa1f0819914e0",
-    "target_sha256": "8781aae8e29454bffb22bd2729c8fd803a360d0d502b689d4494b388f0333b92",
+    "source_scene_sha256": "2a141c5bbd42b304c180d8e2adbe48ca98d902139f894434dd88652c02afd427",
+    "target_sha256": "33c4f2126691fc7053e277d01c07a4b17d6fa2a80c4114399736544c5cfa05c9",
     "initial_robot_joints_unchanged": true,
     "paper_height_unchanged": true,
     "physical_success": false,
     "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
-  }
+  },
+  "seed": 3856211512,
+  "benchmark_generalization": {
+    "method": "bounded_paper_adapter",
+    "translation_m": [
+      0.05886266522856462,
+      -0.06638001772236801
+    ],
+    "yaw_delta_deg": -22.03310328278919,
+    "letter": "T",
+    "original_bulk_generator_available": false,
+    "pen_and_holder_fixed": true,
+    "instance_id": 10,
+    "source_instance": 5,
+    "source_scene_sha256": "37d2abe045cbfd1df2c301611bed189a5fe0074ed023448e0c76019ed744827f",
+    "seed": 3856211512,
+    "visual_pool_index": 46,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.1908633141046305,
+    "source_slot": {
+      "letter": "T"
+    },
+    "distribution_adjustment": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending"
 }

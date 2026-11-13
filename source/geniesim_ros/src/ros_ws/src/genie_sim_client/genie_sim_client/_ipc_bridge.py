@@ -47,12 +47,17 @@ class IPCROSBridge:
             topics = {
                 "identity": (self.config.action_topic + "/identity", qos),
                 "done": (self.config.action_topic + "/done", 10),
+                "episode": (self.config.action_topic + "/episode/done", 10),
                 "snapshot": (self.config.observation_topic + "/snapshot", 10),
                 "observation": (self.config.observation_topic + "/observation", 10),
             }
             for kind, (topic, policy) in topics.items():
                 self._node.create_subscription(String, topic, lambda msg, key=kind: self._receive(key, msg), policy)
-            for kind, topic in (("action", self.config.action_topic), ("snapshot", self.config.observation_topic)):
+            for kind, topic in (
+                ("action", self.config.action_topic),
+                ("snapshot", self.config.observation_topic),
+                ("episode", self.config.action_topic + "/episode"),
+            ):
                 self._publishers[kind] = self._node.create_publisher(String, topic + "/request", 10)
             self._thread = threading.Thread(target=self._spin, name="ipc-client-ros", daemon=True)
             self._thread.start()

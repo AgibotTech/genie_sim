@@ -1,14 +1,11 @@
 ---
 name: challenge-baseline-model
 description: >
-  Provision and launch the Simulation Challenge baseline inference model end to end: clone the
+  Provision and launch the Season I baseline inference model end to end: clone the
   inference code from a given git repo/branch, download the checkpoints from ModelScope into the
   repo's local checkpoints path, install deps, and start the inference agent. Trigger: When the user
-  asks to "拉取 baseline 模型", "下载推理代码/权重", "搭一个 baseline", "clone the inference repo",
-  "download ckpts", "set up the baseline model", "跑起来 baseline", "provision the baseline", or
-  hands over a repo URL to stand up an inference server. Load even on light
-  phrasings: "部署一下 demo", "部署 demo", "跑个 demo", "deploy a/the demo", "下载一下 baseline",
-  "下载 baseline", "拉一下 baseline".
+  asks to clone the inference repo, download code or checkpoints, set up/run the baseline,
+  provision an inference server, or deploy a demo, or supplies a repository URL for that work.
 metadata:
   author: zy
   version: "1.0"
@@ -16,18 +13,22 @@ metadata:
 
 # challenge-baseline-model — Provision & run the baseline inference model
 
+> **Coverage:** the baseline example model covers the four **Season I** tracks: `instruction`,
+> `spatial`, `manip`, and `robust`. There is no Season II (`v2`) baseline; do not use these
+> checkpoints for Season II evaluation jobs.
+
 End-to-end setup of a contestant inference model: **clone code → download checkpoints → install
 deps → run agent**. Once running, the agent serves a Simulation Challenge job — hand off to
-`challenge-run-agent` for the launch contract and `challenge-inference-protocol` for the obs/action
-wire format.
+[challenge-run-agent](../challenge-run-agent/SKILL.md) for the launch contract and the
+[inference protocol](../challenge-route-inference/references/protocol.md) for the simulator's
+observation/action wire format.
 
-> ⚠️ **The CONFIG block below holds DEBUG/example values** (provided for bring-up). Replace the
-> repo URL, branch, and checkpoint specs with the official ones when ready — everything downstream
-> reads from these variables, so it's a single-place edit.
+> The CONFIG block below holds the repository, branch, and checkpoints this skill uses. Everything
+> downstream reads from these variables.
 
 ---
 
-## CONFIG — edit these (current = debug example)
+## CONFIG
 
 ```bash
 # --- code ---
@@ -40,9 +41,9 @@ REPO_DIR="${REPO_DIR:-$(pwd)}"
 # --- checkpoints ---
 # Downloaded from ModelScope (agibot_world/GenieSim3.0-Dataset, checkpoints/<name>) via the bundled
 # scripts/download_checkpoint.sh — NO rsync / SSH needed, only `pip install modelscope`.
-# From the Genie Sim checkout root; for a copied skill, use its installation directory.
-SKILL_DIR="$(pwd)/source/geniesim_benchmark/skills/robocoliseum/challenge-baseline-model"
-DL_CKPT="$SKILL_DIR/scripts/download_checkpoint.sh"
+# The downloader ships with this skill at scripts/download_checkpoint.sh and is also in the
+# genie-sim repo at ./scripts/download_checkpoint.sh.
+DL_CKPT="$(dirname "$0")/scripts/download_checkpoint.sh"   # or hard-code this skill's scripts/ path
 
 # Which checkpoints to fetch. Each name maps to a board (see table below). Pull only what the job
 # needs — list one or more of: instruction_and_robust_pi05 / manipulation_pi05 / spatial_pi05
@@ -61,6 +62,8 @@ CKPT_NAMES=(
 | `robust`      | `instruction_and_robust_pi05` |
 | `manip`       | `manipulation_pi05` |
 | `spatial`     | `spatial_pi05` |
+
+These checkpoints cover only the four Season I tracks listed above.
 
 ---
 
@@ -106,7 +109,8 @@ Script signature: `download_checkpoint.sh [CHECKPOINT_NAME] [LOCAL_DIR]` — val
 > `checkpoints/instruction_and_robust_pi05`, `spatial` → `checkpoints/spatial_pi05`, `manip` →
 > `checkpoints/manipulation_pi05`), so just download into `checkpoints/` and no symlink is needed.
 > Override the resolved path with `PI05_CKPT_DIR` if your layout differs.
-> See `challenge-inference-protocol` §3 for the per-board ckpt layout.
+> The checkpoint-to-board table above is specific to this baseline. It is not a simulator
+> protocol requirement; inspect the inference repository's current launcher for training config names.
 
 ## Step 3 — Install dependencies
 
@@ -117,25 +121,30 @@ uv sync            # or: pip install -e packages/openpi-client && pip install -r
 
 ## Step 4 — Run the inference agent
 
-Needs a live job (`challenge-submit-job` → `JOB_UUID`, `TUNNEL_ENDPOINT`) and `CHALLENGE_TOKEN`.
+Needs a live job (`challenge-submit-job` → `JOB_UUID`, `TUNNEL_ENDPOINT`, `JOB_TOKEN`).
 Pick the board to match the job's `config.board`:
 
 ```bash
 [ -f ~/.simubotix-challenge.env ] && . ~/.simubotix-challenge.env
 cd "$REPO_DIR"
-PI05_BOARD=instruction ./scripts/tunnel.sh 0 "$JOB_UUID" "$TUNNEL_ENDPOINT"
+CHALLENGE_TOKEN="${JOB_TOKEN:-$CHALLENGE_TOKEN}" PI05_BOARD=instruction \
+  ./scripts/tunnel.sh 0 "$JOB_UUID" "$TUNNEL_ENDPOINT"
 ```
+
+The `CHALLENGE_TOKEN=` prefix passes the job token to this process only (see `challenge-run-agent` Step 2).
 
 Verify it reaches `state -> RUNNING`, then cases stream in. For concurrency, GPU pinning, and the
 drain/exit lifecycle, follow `challenge-run-agent`. For decoding what flows over the wire, see
-`challenge-inference-protocol`.
+the [inference protocol](../challenge-route-inference/references/protocol.md).
 
 ### VRAM footprint & packing multiple instances on one GPU
 
 A single pi05 inference service uses **< 8 GB** of VRAM at runtime, so a 24 GB card (e.g. RTX 4090)
 fits **at most 3 services concurrently** (3 is the practical max for pi05 — more will OOM under load).
-Pass the *same* GPU index as the first arg to each `tunnel.sh` and launch them as separate processes
-(different `JOB_UUID`s):
+Pass the *same* GPU index as the first arg to each `tunnel.sh` and launch them as separate processes.
+Each job's `TUNNEL_ENDPOINT` and `JOB_TOKEN` come from its own state file; processes of the **same**
+job on one GPU each need a distinct `AGENT_SLOT` (see `challenge-run-agent`). Example with three
+different jobs:
 
 ```bash
 PI05_BOARD=instruction ./scripts/tunnel.sh 0 "$JOB_UUID_A" "$TUNNEL_ENDPOINT" &
@@ -196,8 +205,8 @@ you want to override the computed value for a specific launch.)
 - **Repo path default:** if the user doesn't give an inference-code path, `REPO_DIR` defaults to the
   current directory (`$(pwd)`) — assume you're already in (or want the repo in) the cwd. Override by
   exporting `REPO_DIR` or editing the CONFIG line.
-- **Swapping to the official model:** edit only the CONFIG block (repo URL/branch + `CKPT_NAMES`).
-  Add `manipulation_pi05` / `spatial_pi05` to `CKPT_NAMES` to fetch those boards.
+- **Model selection:** the CONFIG block (repo URL/branch + `CKPT_NAMES`) is the only place that
+  names the model. Add `manipulation_pi05` / `spatial_pi05` to `CKPT_NAMES` to fetch those boards.
 - **Idempotent:** Step 1 re-fetches if the repo already exists; Step 2's `modelscope download`
   caches/resumes, so re-running continues rather than restarting.
 - **No SSH needed:** checkpoints come from ModelScope over HTTP — the only prerequisite is

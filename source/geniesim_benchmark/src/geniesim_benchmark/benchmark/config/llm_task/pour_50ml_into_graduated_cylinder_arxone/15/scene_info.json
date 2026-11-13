@@ -1,6 +1,6 @@
 {
   "task_name": "pour_50ml_arx_generalized",
-  "scene_id": 15,
+  "scene_id": 25,
   "robot": {
     "init_arm_pose": {
       "arm_l_joint1": -0.0002,
@@ -42,15 +42,15 @@
       "usd": "benchmark_measuring_jug_001",
       "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
       "xyz": [
-        -0.19208579988009652,
-        -0.15569327987631193,
+        0.136714845609988,
+        -0.22604451821265367,
         0.72991943359375
       ],
       "xyzw": [
-        4.070109680404055e-07,
-        5.817797008677266e-06,
-        -0.07427301131855203,
-        0.9972379454050381
+        -5.820672404809412e-06,
+        3.635831654100102e-07,
+        0.998324990314653,
+        0.05785510936153616
       ],
       "prim_path": "/World/Objects/jug"
     },
@@ -58,15 +58,15 @@
       "usd": "benchmark_graduated_cylinder_001",
       "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
       "xyz": [
-        -0.0827235062026331,
-        -0.2139382331448185,
+        0.035356056256686266,
+        -0.15717391034156336,
         0.7299213409423828
       ],
       "xyzw": [
-        2.1101809353567842e-08,
-        1.830427525200056e-07,
-        0.14747298656614635,
-        0.989066083855486
+        3.444983778464996e-08,
+        -1.8100592334149082e-07,
+        -0.08170647755909256,
+        0.9966564360524902
       ],
       "prim_path": "/World/Objects/cylinder"
     },
@@ -104,18 +104,18 @@
       "initial_world_frame_baked": true
     }
   },
-  "active_arm": "left",
-  "layout_type": "reverse_stagger",
+  "active_arm": "right",
+  "layout_type": "near_pair",
   "layout_sample": {
-    "arm": "left",
-    "layout_type": "reverse_stagger",
+    "arm": "right",
+    "layout_type": "near_pair",
     "offsets": [
-      0.07915861225220172,
-      -0.046357194715824224,
-      -0.0774663711304239,
-      -0.053427622007878164
+      -0.03061117601777085,
+      0.022856498121811224,
+      -0.08159313866492747,
+      0.029109362435544323
     ],
-    "yaw_deg": 8.519115379188296,
+    "yaw_deg": -6.63320072262173,
     "applied_offset_scale": 0.8
   },
   "physics_hz": 240,
@@ -130,15 +130,15 @@
     "usd": "shared",
     "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
     "xyz": [
-      0.0051354615274031845,
-      -0.43686523440660263,
-      2.3072186938755124e-08
+      -0.013216381314357734,
+      -0.012546006090958656,
+      1.1102230246251565e-16
     ],
     "xyzw": [
-      -9.381261299524653e-10,
-      5.242865064200007e-08,
-      0.99983988603456,
-      -0.017894197226903934
+      0.0,
+      4.237440676163623e-22,
+      0.03277066491676641,
+      0.9994628975209199
     ],
     "prim_path": "/World/Objects/liquid"
   },
@@ -149,43 +149,44 @@
     "physical_parameters_unchanged": true,
     "particle_world_positions_preserved": true
   },
-  "seed": 2492702757,
+  "seed": 3982224510,
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "opposite_arm_missing_layout",
-    "active_arm": "left",
-    "layout": "reverse_stagger",
+    "active_arm": "right",
+    "layout": "near_pair",
     "sample": {
-      "arm": "left",
-      "layout_type": "reverse_stagger",
+      "arm": "right",
+      "layout_type": "near_pair",
       "offsets": [
-        0.07915861225220172,
-        -0.046357194715824224,
-        -0.0774663711304239,
-        -0.053427622007878164
+        -0.03061117601777085,
+        0.022856498121811224,
+        -0.08159313866492747,
+        0.029109362435544323
       ],
-      "yaw_deg": 8.519115379188296,
+      "yaw_deg": -6.63320072262173,
       "applied_offset_scale": 0.8
     },
     "baked_particle_count": 22500,
     "baked_surface_point_count": 9218,
     "fluid_world_transform": [
       [
-        0.9830336834911988,
-        0.18342512674583497,
-        -1.6625209282250427e-21,
-        0.0036989557112530325
+        0.983605748660516,
+        0.1803322799777848,
+        -1.6940658945086007e-21,
+        0.02342727428867067
       ],
       [
-        -0.18342512674583497,
-        0.9830336834911988,
-        -4.146913800462625e-23,
-        0.034169039456701106
+        -0.18033227997778484,
+        0.9836057486605156,
+        2.117582368135751e-22,
+        0.02034373244643778
       ],
       [
-        -2.1606381945313266e-21,
-        -1.2050690832440106e-22,
-        0.9999999999999999,
-        2.220446049250313e-16
+        1.6940658945086007e-21,
+        0.0,
+        1.0,
+        0.0
       ],
       [
         0.0,
@@ -197,7 +198,7 @@
     "table_edge_corrections_m": {
       "jug": [
         0.0,
-        0.0,
+        0.0016643254566156562,
         0.0
       ],
       "cylinder": [
@@ -207,22 +208,22 @@
       ]
     },
     "preview_safety_cylinder_correction_m": [
-      0.060018585443204917,
-      -0.03196512789582908,
+      -0.04135644783441361,
+      0.02810060893502889,
       0.0
     ],
     "convex_footprints_separated_5mm": true,
     "note": "The source generator does not gate mutual 2D vessel footprints; actual hollow geometry requires preview/physical review.",
-    "instance_id": 15,
-    "source_instance": 0,
-    "source_scene_sha256": "f9b2a1fb378878d994a7f2887599563b74ccb12b93efd829d7fa3b64d07d7760",
-    "seed": 2492702757,
-    "visual_pool_index": 32,
+    "instance_id": 25,
+    "source_instance": 1,
+    "source_scene_sha256": "c11a38e618c4fe1a99404a11e50621a05e26c1a1379154c025b643f44ce69c67",
+    "seed": 3982224510,
+    "visual_pool_index": 168,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.9119707201384883,
+    "selection_feature_distance": 1.5344832318383974,
     "source_slot": {
-      "arm": "left",
-      "layout": "reverse_stagger"
+      "arm": "right",
+      "layout": "near_pair"
     },
     "distribution_adjustment": {
       "layout_center_multiplier": 1.5,
@@ -233,6 +234,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

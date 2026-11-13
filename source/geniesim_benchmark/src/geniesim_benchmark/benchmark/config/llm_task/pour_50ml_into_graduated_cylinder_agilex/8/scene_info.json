@@ -1,6 +1,6 @@
 {
   "task_name": "pour_50ml_aloha_generalized",
-  "scene_id": "aloha_right_0420",
+  "scene_id": 18,
   "robot": {
     "init_arm_pose": {
       "arm_fl_joint1": -0.18,
@@ -42,15 +42,15 @@
       "usd": "benchmark_measuring_jug_001",
       "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
       "xyz": [
-        -0.06390361881730766,
-        -0.13859770873675287,
+        -0.08277011891971071,
+        -0.09513978580426,
         0.72991943359375
       ],
       "xyzw": [
-        -3.4597676289914294e-06,
-        4.69493641231299e-06,
-        0.5968500139735715,
-        0.8023528281159947
+        -4.703089175360366e-06,
+        3.4486768724958112e-06,
+        0.8090761301293922,
+        0.5877038502688529
       ],
       "prim_path": "/World/Objects/jug"
     },
@@ -58,15 +58,15 @@
       "usd": "benchmark_graduated_cylinder_001",
       "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
       "xyz": [
-        -0.017223787985703384,
-        0.11481811815803439,
+        -0.07477092410247627,
+        0.09441947642033485,
         0.7299213409423828
       ],
       "xyzw": [
-        -1.459063061192908e-07,
-        1.1252237751984337e-07,
-        0.7372725241153187,
-        -0.675595459712832
+        -1.4552128045509352e-07,
+        1.1301987675981765e-07,
+        0.7524243632583297,
+        -0.658678660330865
       ],
       "prim_path": "/World/Objects/cylinder"
     },
@@ -105,46 +105,40 @@
     }
   },
   "active_arm": "right",
-  "layout_type": "spout_clockwise",
+  "layout_type": "spout_counterclockwise",
   "layout_sample": {
     "arm": "right",
-    "layout_type": "spout_clockwise",
-    "sample": 20,
+    "layout_type": "spout_counterclockwise",
     "offsets": [
-      0.006976863890523183,
-      -0.00697003504401458,
-      0.01070168471746352,
-      0.011390091767592278
+      -0.029862358379630822,
+      0.03939761567654075,
+      -0.05218170031781587,
+      -0.03185724534964529
     ],
-    "yaw_deg": -16.710533315371226,
+    "yaw_deg": 18.011740147097534,
     "applied_offset_scale": 0.8
   },
   "physics_hz": 240,
   "recording_hz": 30,
   "validation": {
     "static_table_support": true,
-    "table_edge_margin_m": {
-      "jug": 0.21955659225343788,
-      "cylinder": 0.1841379073698224
-    },
     "physics_passed": false,
-    "full_kinematic_route": "pending_remote",
-    "source": "new_scene_not_previous_success"
+    "full_kinematic_route": "not_revalidated"
   },
   "original_fluid_parameters": true,
   "original_liquid_asset_layout": {
     "usd": "shared",
     "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
     "xyz": [
-      0.19137337525771952,
-      -0.053401268607479555,
+      0.1494755155363115,
+      0.018414609316261266,
       1.1102230246251565e-16
     ],
     "xyzw": [
-      -2.6392195405201407e-22,
-      -5.278439081040281e-22,
-      0.8023517314965072,
-      -0.5968514881983262
+      3.6763930597088385e-23,
+      0.0,
+      0.7199931882091309,
+      -0.693981130098255
     ],
     "prim_path": "/World/Objects/liquid"
   },
@@ -154,5 +148,91 @@
     "script_required_for_initial_liquid": false,
     "physical_parameters_unchanged": true,
     "particle_world_positions_preserved": true
-  }
+  },
+  "seed": 1580326024,
+  "benchmark_generalization": {
+    "method": "opposite_arm_missing_layout",
+    "active_arm": "right",
+    "layout": "spout_counterclockwise",
+    "sample": {
+      "arm": "right",
+      "layout_type": "spout_counterclockwise",
+      "offsets": [
+        -0.029862358379630822,
+        0.03939761567654075,
+        -0.05218170031781587,
+        -0.03185724534964529
+      ],
+      "yaw_deg": 18.011740147097534,
+      "applied_offset_scale": 0.8
+    },
+    "baked_particle_count": 22500,
+    "baked_surface_point_count": 9218,
+    "fluid_world_transform": [
+      [
+        0.9389767791279982,
+        -0.34398053470859435,
+        3.186706991030545e-22,
+        -0.055499754608707215
+      ],
+      [
+        0.34398053470859424,
+        0.9389767791279984,
+        -1.9235599799212785e-21,
+        0.05158308404180739
+      ],
+      [
+        2.497220022280763e-22,
+        -5.170412758042678e-22,
+        1.0,
+        1.1102230246251565e-16
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "table_edge_corrections_m": {
+      "jug": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cylinder": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "preview_safety_cylinder_correction_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "convex_footprints_separated_5mm": true,
+    "note": "The source generator does not gate mutual 2D vessel footprints; actual hollow geometry requires preview/physical review.",
+    "instance_id": 18,
+    "source_instance": 0,
+    "source_scene_sha256": "05207f905232ce9a9b4517044c4913bdcd04654247cf23b121895b78329a3bb1",
+    "seed": 1580326024,
+    "visual_pool_index": 100,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.3856179768205852,
+    "source_slot": {
+      "arm": "right",
+      "layout": "spout_counterclockwise"
+    },
+    "distribution_adjustment": {
+      "layout_center_multiplier": 1.5,
+      "offset_jitter_m": 0.035,
+      "yaw_jitter_deg": 15,
+      "scale": 0.8,
+      "vessel_footprint_gap_m": 0.005
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

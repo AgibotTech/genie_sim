@@ -9,49 +9,49 @@ def "World"
 {
     def "Objects"
     {
-        def Xform "table_cf8e9f18" (
+        def Xform "table_58d18c06" (
             prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
-            over "entity"
-            {
-                bool physics:kinematicEnabled = 1
-            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0.265)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
         }
 
-        def Xform "benchmark_bowl_4a3eeb38" (
+        def Xform "benchmark_bowl_41644131" (
             prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.064428, 0, 0, 0.997922)
+            quatf xformOp:orient = (0.652752, 0, 0, 0.757572)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.041, 0.173, 0.901)
+            double3 xformOp:translate = (-0.05991418619662167, -0.2524796774514678, 0.901)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_bowl_615c5b6f" (
+        def Xform "benchmark_bowl_7e835b1c" (
             prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.882236, 0, 0, 0.470807)
+            quatf xformOp:orient = (-0.69323, 0, 0, 0.720717)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.181, -0.132, 0.901)
+            double3 xformOp:translate = (0.03308581380337833, 0.18152032254853218, 0.901)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_bowl_31b44e45" (
+        def Xform "benchmark_bowl_48eb4a19" (
             prepend payload = @/geniesim_assets/objects/benchmark/bowl/benchmark_bowl_016/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.899269, 0, 0, -0.437397)
+            quatf xformOp:orient = (0.972106, 0, 0, -0.234541)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.112, -0.226, 0.901)
+            double3 xformOp:translate = (0.17908581380337835, -0.10847967745146783, 0.901)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
-
     }
 }

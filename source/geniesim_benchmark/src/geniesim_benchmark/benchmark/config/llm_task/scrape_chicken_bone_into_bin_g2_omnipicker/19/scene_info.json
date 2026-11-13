@@ -1,13 +1,13 @@
 {
-  "scene_id": 19,
-  "seed": 3152123223,
+  "scene_id": 29,
+  "seed": 741130089,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.04948714288378944,
-        -0.0030901137512047696,
-        0.36650853862126137
+        0.04447258417279383,
+        -0.002526933751121039,
+        0.3715900532461108
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.062070652824614395,
-        -0.14042280807615914,
-        0.7370990391791545
+        0.09978893191032165,
+        0.15344627964449428,
+        0.742180553804004
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.8794370742317417,
-        -0.47601515991270077
+        0.9388429139857555,
+        0.34434573158198933
       ],
       "tags": [
         "root_scene",
@@ -77,23 +77,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.9042955431347308,
-        0.42690698128124166
+        0.9494930116780497,
+        0.31378817819437854
       ],
-      "usd_quatf_rotation_quantization_rad": 1.804209059930173e-08
+      "usd_quatf_rotation_quantization_rad": 5.500815469794418e-09
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        0.1264370882686937,
-        -0.04878820126640554,
-        0.7475892341972578
+        -0.154430620519825,
+        -0.3271245886151683,
+        0.7526707488221073
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.014136319003839107,
-        0.9999000772502329
+        0.024559645409035907,
+        0.9996983664172822
       ],
       "tags": [
         "root_scene",
@@ -102,8 +102,7 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table",
-        "garbage"
+        "on_table"
       ],
       "description": {},
       "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
@@ -119,23 +118,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        -0.19547318981835718,
-        0.9807090455697024
+        0.026167690360763333,
+        0.9996575673605353
       ],
-      "usd_quatf_rotation_quantization_rad": 2.992390086831176e-07
+      "usd_quatf_rotation_quantization_rad": 3.022996240067977e-07
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.3317954674129289,
-        -0.15624206882050093,
-        0.6312516365048205
+        -0.3368100261239245,
+        0.12133950455018608,
+        0.6363331511296699
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        -6.123234e-17
+        6.123233995736766e-17
       ],
       "tags": [
         "root_scene",
@@ -174,64 +173,70 @@
         6.123234e-17
       ],
       "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
-    },
-    "trash_apple_000": {
-      "usd": "benchmark_trash_029",
-      "xyz": [
-        -0.10652399075715167,
-        0.2654897769970112,
-        0.767358120117055
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {},
+      "nodes": [
+        {
+          "id": "root_scene"
+        },
+        {
+          "id": "table_000"
+        },
+        {
+          "id": "scraper_000"
+        },
+        {
+          "id": "trash_bone_000"
+        },
+        {
+          "id": "trash_can_000"
+        }
       ],
-      "xyzw": [
-        -0.27731150419315487,
-        0.6504600907374177,
-        0.2773115041931549,
-        0.650460090737418
-      ],
-      "tags": [
-        "root_scene",
-        "trash_apple_000"
-      ],
-      "keywords": [
-        "trash",
-        "garbage",
-        "apple_core",
-        "on_table"
-      ],
-      "description": {},
-      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
-      "physics": {
-        "kinematic": false,
-        "mass_kg": 0.01
-      },
-      "scale": [
-        1.0,
-        1.0,
-        1.0
+      "links": [
+        {
+          "source": "root_scene",
+          "target": "table_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "scraper_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_bone_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_can_000"
+        }
       ]
     }
   },
-  "relations": [],
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "template_neighborhood_independent_yaw_and_trash_xy",
-    "bin_abs_table_y_m": 0.15304736013446044,
-    "handle_outward_deg": 56.85054364396387,
+    "bin_abs_table_y_m": 0.12397103323614383,
+    "handle_outward_deg": 40.284115358354384,
     "trash": [
-      "trash_bone_000",
-      "trash_apple_000"
+      "trash_bone_000"
     ],
     "tool_xy_jitter_bound_m": 0.055,
     "trash_xy_jitter_bound_m": [
       0.035,
       0.025
     ],
-    "instance_id": 19,
-    "source_instance": 2,
-    "source_scene_sha256": "beb7a5c1bcdae86c252e8c3a6185d9584024277bfb1203f1d1b4a0b666ce4c7c",
-    "seed": 3152123223,
-    "visual_pool_index": 2,
+    "instance_id": 29,
+    "source_instance": 3,
+    "source_scene_sha256": "75b4d41dca5162e2d7d23b40a4df3f0fef91e58c0cfc4ab443dcb95234b98602",
+    "seed": 741130089,
+    "visual_pool_index": 144,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 2.0491746519062697,
+    "selection_feature_distance": 1.720438283881632,
     "source_slot": {},
     "distribution_adjustment": {
       "tool_xy_jitter_m": 0.055,
@@ -250,6 +255,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

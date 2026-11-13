@@ -5,17 +5,6 @@
     upAxis = "Z"
 )
 
-# take_the_book instance 16.
-# Deterministic arrangement: seed 1, target benchmark_book_026.
-# Layout rule: books packed left->right inside the shelf compartment (dividers
-# at x=-0.241 / x=0.019, 0.002 m wall margin), gaps
-# >= 0.0012 m at wrapper-bbox level (no initial interpenetration); each book
-# keeps its authored resting z and the 90deg-about-Y display orientation; y is
-# the authored row centre + U(-0.006, +0.006) per book.
-# This workspace scene owns ALL task physics: the bookshelf (kinematic) and the
-# twelve standing books. The background scene
-# (scenes/take_the_book_benchmark/background.usda) is environment-only, so no
-# physics body is duplicated across layers.
 def Xform "World"
 {
     def Scope "Objects"
@@ -24,23 +13,69 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/shelf/benchmark_shelf_010/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (0.70710677, 0, 0, -0.70710677)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.1236463272228544, 2.6222337065168997, 0.7799664283106016)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
             }
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.00000000, -0.70710677)
+        }
+
+        def Xform "benchmark_book_011" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_011/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1236463272228544, 2.6222337065168997, 0.7799664283106016)
+            double3 xformOp:translate = (-0.21262536088764752, 2.6088595209921293, 1.046414814808053)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
+        }
+
+        def Xform "benchmark_book_012" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_012/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.19622567577300454, 2.602513102888048, 1.042736591439036)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
+        }
+
+        def Xform "benchmark_book_026" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_026/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.17708549620991054, 2.610131418918829, 1.0551813838037847)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
         }
 
         def Xform "benchmark_book_006" (
             prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_006/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.2301061986029883, 2.6031664571044613, 1.0555108120578991)
+            double3 xformOp:translate = (-0.15793035088056323, 2.6127063241396353, 1.055510812057899)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -48,97 +83,14 @@ def Xform "World"
                 float physics:mass = 0.5
             }
         }
-        def Xform "benchmark_book_008" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_008/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.2135239048126560, 2.6114013383464969, 1.0462284806236448)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
-        def Xform "benchmark_book_005" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_005/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1795732799095184, 2.6072019613032489, 1.0497817075955485)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
-        def Xform "benchmark_book_014" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_014/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1454761664882131, 2.6104292050601656, 1.0511666883787547)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
-        def Xform "benchmark_book_026" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_026/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1263981497954840, 2.6090376461675717, 1.0551813838037847)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
-        def Xform "benchmark_book_027" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_027/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0998740201675649, 2.6047801102030190, 1.0594442910024502)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
-        def Xform "benchmark_book_006_001" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_006/Aligned.usda@
-        )
-        {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0758352577266420, 2.6022896820243355, 1.0515018887785259)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
-
-            over "entity"
-            {
-                float physics:mass = 0.5
-            }
-        }
         def Xform "benchmark_book_007" (
             prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_007/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0592832208873790, 2.6093947462158247, 1.0491261573103203)
+            double3 xformOp:translate = (-0.14160097586197362, 2.61255002307636, 1.0491261573103203)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -146,13 +98,14 @@ def Xform "World"
                 float physics:mass = 0.5
             }
         }
+
         def Xform "benchmark_book_028" (
             prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_028/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0414264667923489, 2.6016378193517751, 1.0441132794274941)
+            double3 xformOp:translate = (-0.12349250060182443, 2.6082772869980615, 1.044113279427494)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -160,13 +113,14 @@ def Xform "World"
                 float physics:mass = 0.5
             }
         }
-        def Xform "benchmark_book_012" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_012/Aligned.usda@
+
+        def Xform "benchmark_book_027" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_027/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0234320458569910, 2.6057237694080295, 1.0427365914390361)
+            double3 xformOp:translate = (-0.09797198075578362, 2.6014484927458765, 1.0594442910024502)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -174,13 +128,14 @@ def Xform "World"
                 float physics:mass = 0.5
             }
         }
-        def Xform "benchmark_book_011" (
-            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_011/Aligned.usda@
+
+        def Xform "benchmark_book_008" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_008/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0070744949816288, 2.6068951400506242, 1.0464148148080530)
+            double3 xformOp:translate = (-0.07402727747494561, 2.600966026881402, 1.0462284806236448)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -188,13 +143,59 @@ def Xform "World"
                 float physics:mass = 0.5
             }
         }
+
+        def Xform "benchmark_book_006_001" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_006/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.05761609165027302, 2.602525035476091, 1.051501888778526)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
+        }
+
+        def Xform "benchmark_book_014" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_014/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.041070974659557724, 2.6122093924082512, 1.0511666883787547)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
+        }
+
         def Xform "benchmark_book_013" (
             prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_013/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.70710677, 0.00000000, 0.70710677, 0.00000000)
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.0094999661743641, 2.6111124802399313, 1.0511668240385885)
+            double3 xformOp:translate = (-0.024600500009683023, 2.6045516918958502, 1.0511668240385885)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                float physics:mass = 0.5
+            }
+        }
+
+        def Xform "benchmark_book_005" (
+            prepend payload = @/geniesim_assets/objects/benchmark/book/benchmark_book_005/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.009448343266513677, 2.6053111123714263, 1.0497817075955485)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"

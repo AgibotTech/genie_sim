@@ -137,10 +137,14 @@ class BenchmarkConfig:
     task_name: str = ""
     sub_task_name: str = ""
     output_dir: str = "output"
+    # Resume committed serial episodes in the existing task output directory.
+    resume: bool = False
+    # Optional scheduler job/model identity; must remain unchanged across retries.
+    resume_id: str = ""
     fps: int = 30
     record: bool = False
-    # Opt-in replay state and the stage-root third-person camera.
-    record_state: bool = False
+    # Save replay state with recordings; the third-person camera remains opt-in.
+    record_state: bool = True
     record_world_camera: bool = False
     record_video_dir: str = ""
     infer_host: str = "localhost:8999"

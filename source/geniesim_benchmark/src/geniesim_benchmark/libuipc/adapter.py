@@ -40,10 +40,10 @@ def finite(value):
     return isinstance(value, Real) and not isinstance(value, bool) and math.isfinite(value)
 
 
-def _rows(channel, name, width, required=False):
+def _rows(channel, name, width, required=False, kinds=("JOINT_ABS",)):
     if isinstance(channel, dict):
-        if channel.get("kind") != "JOINT_ABS":
-            raise ValueError(f"{name}: only JOINT_ABS is supported")
+        if channel.get("kind") not in kinds:
+            raise ValueError(f"{name}: expected one of {kinds}")
         channel = channel.get("values")
     elif required:
         raise ValueError(f"{name}: expected a JOINT_ABS channel")
@@ -69,12 +69,15 @@ class ActionChunk:
     optional_channels: Mapping
 
 
-def parse_result(result):
+def parse_result(result, *, measured_positions=None, ik_solver=None, robot_usd_path=None):
     """Validate the entire received chunk before returning a single target."""
     if not isinstance(result, dict):
         raise ValueError("inference result must be a mapping")
     channels = {
-        name: _rows(result.get(name), name, width, required=name.endswith("arm"))
+        name: _rows(
+            result.get(name), name, width, required=name.endswith("arm"),
+            kinds=("JOINT_ABS", "EEF_ABS") if name.endswith("arm") else ("JOINT_ABS",),
+        )
         for name, width in (("left_arm", 7), ("right_arm", 7), ("left_effector", 20), ("right_effector", 20))
     }
     optional = {
@@ -90,6 +93,25 @@ def parse_result(result):
     interval = result.get("hist_frame_interval", 0)
     if type(interval) is not int or interval < 0:
         raise ValueError("hist_frame_interval must be a nonnegative integer")
+    if any(result[name].get("kind") == "EEF_ABS" for name in ("left_arm", "right_arm")):
+        from geniesim_benchmark.utils.eef_control import convert_eef_result
+        from geniesim_benchmark.utils.ikfk_utils import get_shared_ikfk_solver
+
+        if measured_positions is None:
+            raise ValueError("EEF_ABS requires measured arm and welded torso positions")
+        if ik_solver is None:
+            if robot_usd_path is None:
+                raise ValueError("EEF_ABS requires the actual libuipc robot USD")
+            ik_solver = get_shared_ikfk_solver(
+                [], [], [], "G2_crsB_wuji", "hard", robot_usd_path=robot_usd_path
+            )
+        seed = [measured_positions[name] for name in ik_solver.joint_names]
+        frames = [result[name].get("base_link") or result.get("base_link") or "base_link"
+                  for name in ("left_arm", "right_arm")]
+        transform = ik_solver.base_transform(measured_positions) if "base_link" in frames else None
+        converted = convert_eef_result(result, seed, arm_base_transform=transform, solver=ik_solver)
+        for name in ("left_arm", "right_arm"):
+            channels[name] = _rows(converted[name], name, 7, required=True)
     targets = tuple(
         MappingProxyType(
             dict(
@@ -249,6 +271,7 @@ def build_payload(
     *,
     instruction,
     task_name,
+    task_segments=(),
     episode_idx=0,
     history=(),
     history_interval=0,
@@ -275,11 +298,14 @@ def build_payload(
         },
         prompt=instruction,
         robot_type="g2a_sim",
+        ee_type="wuji",
         task_name=task_name,
         episode_idx=episode_idx,
         episode_done=False,
         task_progress=[],
     )
+    if task_segments:
+        params["segments"] = list(task_segments)
     if history_interval:
         params["history"] = {"interval": history_interval, "images": list(history)}
     return {"method": "infer", "params": params}

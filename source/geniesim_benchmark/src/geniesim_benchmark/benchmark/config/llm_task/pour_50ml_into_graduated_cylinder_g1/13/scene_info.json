@@ -1,6 +1,6 @@
 {
   "task_name": "pour_50ml_g1_generalized",
-  "scene_id": 13,
+  "scene_id": 23,
   "robot": {
     "init_arm_pose": {
       "idx01_body_joint1": 0.42,
@@ -48,15 +48,15 @@
       "usd": "benchmark_measuring_jug_001",
       "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
       "xyz": [
-        -0.06336424796285753,
-        0.32790189049171115,
+        -0.06706770613927106,
+        -0.24319501102897634,
         0.72991943359375
       ],
       "xyzw": [
-        3.353953158680347e-06,
-        4.7711024063268094e-06,
-        -0.5787651916237004,
-        0.8154942384411855
+        -3.482759841686353e-06,
+        4.677905925455982e-06,
+        0.600779258103904,
+        0.7994149629561047
       ],
       "prim_path": "/World/Objects/jug"
     },
@@ -64,15 +64,15 @@
       "usd": "benchmark_graduated_cylinder_001",
       "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
       "xyz": [
-        0.1194904186110948,
-        0.2691296287290842,
+        0.1114895942883852,
+        -0.1364952629877684,
         0.7299213409423828
       ],
       "xyzw": [
-        1.0759108346504577e-07,
-        -1.4957972578832973e-07,
-        -0.5787311230071865,
-        0.8155184162621999
+        -1.603443924987786e-07,
+        9.077230526042611e-08,
+        0.766953616009432,
+        -0.6417025408162437
       ],
       "prim_path": "/World/Objects/cylinder"
     },
@@ -110,18 +110,18 @@
       "initial_world_frame_baked": true
     }
   },
-  "active_arm": "left",
-  "layout_type": "outer_pair",
+  "active_arm": "right",
+  "layout_type": "inner_pair",
   "layout_sample": {
-    "arm": "left",
-    "layout_type": "outer_pair",
+    "arm": "right",
+    "layout_type": "inner_pair",
     "offsets": [
-      -0.02920536508786828,
-      -0.08487803515700877,
-      0.011863030714449052,
-      -0.08641202548054237
+      -0.03383468780838525,
+      0.021005564171409682,
+      0.0018620003110620745,
+      0.07938093169610233
     ],
-    "yaw_deg": 10.72768971630467,
+    "yaw_deg": 13.851667160944132,
     "applied_offset_scale": 0.8
   },
   "physics_hz": 240,
@@ -136,15 +136,15 @@
     "usd": "shared",
     "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
     "xyz": [
-      -0.14870157453505378,
-      0.007458105222507144,
-      2.307218682773282e-08
+      0.19513735215743058,
+      -0.2172005427644589,
+      1.1102230246251565e-16
     ],
     "xyzw": [
-      2.5246853793112945e-08,
-      4.595911076517661e-08,
-      0.876464438604962,
-      0.4814666009817148
+      -2.4757711798863194e-22,
+      -4.951542359772639e-22,
+      0.8553223275799601,
+      -0.518096241969771
     ],
     "prim_path": "/World/Objects/liquid"
   },
@@ -155,43 +155,44 @@
     "physical_parameters_unchanged": true,
     "particle_world_positions_preserved": true
   },
-  "seed": 2388732898,
+  "seed": 37996397,
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "opposite_arm_missing_layout",
-    "active_arm": "left",
-    "layout": "outer_pair",
+    "active_arm": "right",
+    "layout": "inner_pair",
     "sample": {
-      "arm": "left",
-      "layout_type": "outer_pair",
+      "arm": "right",
+      "layout_type": "inner_pair",
       "offsets": [
-        -0.02920536508786828,
-        -0.08487803515700877,
-        0.011863030714449052,
-        -0.08641202548054237
+        -0.03383468780838525,
+        0.021005564171409682,
+        0.0018620003110620745,
+        0.07938093169610233
       ],
-      "yaw_deg": 10.72768971630467,
+      "yaw_deg": 13.851667160944132,
       "applied_offset_scale": 0.8
     },
     "baked_particle_count": 22500,
     "baked_surface_point_count": 9218,
     "fluid_world_transform": [
       [
-        0.9737189887905694,
-        0.22775278454646974,
-        -2.289128416788669e-22,
-        -0.07677954553471791
+        0.980124663714574,
+        -0.19838256873625107,
+        -4.235164736271502e-22,
+        -0.04698668959778236
       ],
       [
-        -0.22775278454646983,
-        0.9737189887905694,
-        1.050140740564267e-21,
-        0.06784485371547277
+        0.19838256873625099,
+        0.9801246637145739,
+        1.6940658945086007e-21,
+        0.018673888854219278
       ],
       [
-        9.702485188981718e-24,
-        4.667330276381381e-22,
-        0.9999999999999999,
-        1.1102230246251565e-16
+        8.470329472543003e-22,
+        -1.6940658945086007e-21,
+        1.0,
+        0.0
       ],
       [
         0.0,
@@ -214,21 +215,21 @@
     },
     "preview_safety_cylinder_correction_m": [
       0.0,
-      -0.0,
+      0.0,
       0.0
     ],
     "convex_footprints_separated_5mm": true,
     "note": "The source generator does not gate mutual 2D vessel footprints; actual hollow geometry requires preview/physical review.",
-    "instance_id": 13,
-    "source_instance": 0,
-    "source_scene_sha256": "e58b02de10520e37297174831b284dba87b8638bc46b585f676d805c1180370a",
-    "seed": 2388732898,
-    "visual_pool_index": 5,
+    "instance_id": 23,
+    "source_instance": 1,
+    "source_scene_sha256": "7b524e6a6282ee4a0efa03182a3a6d4ee6548fb01c8d752c937771295d0e668f",
+    "seed": 37996397,
+    "visual_pool_index": 185,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 2.221905784096955,
+    "selection_feature_distance": 1.4293527443486485,
     "source_slot": {
-      "arm": "left",
-      "layout": "outer_pair"
+      "arm": "right",
+      "layout": "inner_pair"
     },
     "distribution_adjustment": {
       "layout_center_multiplier": 1.5,
@@ -239,6 +240,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

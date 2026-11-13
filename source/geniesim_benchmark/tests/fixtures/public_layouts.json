@@ -1,0 +1,396 @@
+{
+  "catalogs": {
+    "backends/mujoco/rubik/scene_catalogs/rubik_2turn_10.zip": "a09fe13c82c34d1fad23b357c9b56ec4f4c26f1520f4c179d6b9effcd003fed4",
+    "backends/mujoco/rubik/scene_catalogs/rubik_2turn_10_ranked.zip": "ff82d966f560f8a9cf66b8967f2f5153989a03f720068e7b6bc5f82b99f805c2",
+    "backends/mujoco/rubik/scene_catalogs/rubik_2turn_10_xy.zip": "d35c71100dfffef8242de8e8a97f44cbf1ecf54f735ad5c2b9e2d84aa232d85a"
+  },
+  "source_commit": "183ea0409bab96e11c1ee2b3235810b86ef79c91",
+  "tasks": {
+    "agilex_crsemb_hang_cups_on_cup_tree": {
+      "config_value_sha256": "332823cbc80975f5581213697926b55d1d5c89f5fbb79c178860b9dc5378cfd8",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/hang_cups_on_cup_tree_agilex",
+      "layout_files": 80,
+      "layout_sha256": "0b4d32fcbc1f7237709ec2ffa11a87fb409076cbb8e85bd50bebef3fd79fea58",
+      "track": "crsemb"
+    },
+    "agilex_crsemb_keyboard_keycap_swap": {
+      "config_value_sha256": "b75b1f8e5df656d6c3f747bc5b31d897896c49fda6fc65917051c9b444b14a1c",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/keyboard_keycap_swap_agilex",
+      "layout_files": 80,
+      "layout_sha256": "c515a648747314361111477389bc7804e049f4c2e5547d263eac6207862c3317",
+      "track": "crsemb"
+    },
+    "agilex_crsemb_open_short_trash_can_and_throw_garbage": {
+      "config_value_sha256": "faf6b1203035e41155cc9ecee92264932f3c11059e2353316d619d6ae4a60e7b",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_short_trash_can_and_throw_garbage_multi_robot",
+      "layout_files": 80,
+      "layout_sha256": "af9a0b13c6dd8f349b37da8e08f6ae5c247b7280e969a6c8fbc1e66d82402f92",
+      "track": "crsemb"
+    },
+    "agilex_crsemb_pour_50ml_into_graduated_cylinder": {
+      "config_value_sha256": "673ca31157823960b797b62afffb3367c218003f517387c844f8f2b8c9fe50d2",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pour_50ml_into_graduated_cylinder_agilex",
+      "layout_files": 100,
+      "layout_sha256": "45dacf52aafdf4b220c1c83f2d0a2f2b7326f79e060b19dc32dda9576526d598",
+      "track": "crsemb"
+    },
+    "agilex_crsemb_scrape_chicken_bone_into_bin": {
+      "config_value_sha256": "08a5e90c844037d4fead1b5a06591d3f60b118225bce1f4b446914fe2725fee4",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/scrape_chicken_bone_into_bin_agilex",
+      "layout_files": 80,
+      "layout_sha256": "a152cac1862b70d3005dfb08c2e6f1e2013262f4ec14c07abb030aad913ea9c7",
+      "track": "crsemb"
+    },
+    "agilex_crsemb_write_uppercase_letter_with_pen": {
+      "config_value_sha256": "0020bc6e11807deb107b31eb477cbccc065db6c5e177383c83649f3f6421495c",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/write_uppercase_letter_with_pen_agilex",
+      "layout_files": 100,
+      "layout_sha256": "460c55b0da24722e63137123547d22e7ae2fcc1d2e6d984120ba6f46fbce2be6",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_hang_cups_on_cup_tree": {
+      "config_value_sha256": "7a26c0ae46666ccbe5aff33c07590866fcc61e71b19ed7b9ad2f6038e32c7b37",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/hang_cups_on_cup_tree_arxone",
+      "layout_files": 80,
+      "layout_sha256": "5b53c9953bd6efe1cbd53efa83d4c906d3fde558956e32344bc0e47c788f4c54",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_keyboard_keycap_swap": {
+      "config_value_sha256": "735f1f938cca61399db166ffe5fba65d21c245197d1fc337f065a0d3be1153e3",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/keyboard_keycap_swap_arxone",
+      "layout_files": 80,
+      "layout_sha256": "888e4c40d432f0ce89f7d78f41ea689cadf6d9b16b31185f17287a8357864487",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_open_short_trash_can_and_throw_garbage": {
+      "config_value_sha256": "2da57db2d38133e2b923452ad0488aca1faba8c2d42ff17971d1f94f9fef997e",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_short_trash_can_and_throw_garbage_multi_robot",
+      "layout_files": 80,
+      "layout_sha256": "af9a0b13c6dd8f349b37da8e08f6ae5c247b7280e969a6c8fbc1e66d82402f92",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_pour_50ml_into_graduated_cylinder": {
+      "config_value_sha256": "8d5f9a0a02c6430567f62e76d75faca272104cb96f824c1f2b3b29d77a38dd4a",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pour_50ml_into_graduated_cylinder_arxone",
+      "layout_files": 100,
+      "layout_sha256": "08a075a85d9352676dfa88ea7d4346fa53581ecbbdeb52ef64314fb52eb24a91",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_scrape_chicken_bone_into_bin": {
+      "config_value_sha256": "70423adc4d8ecaa2317402958c43379662d299d5e3766815400b5f8c4439ee21",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/scrape_chicken_bone_into_bin_arxone",
+      "layout_files": 80,
+      "layout_sha256": "af5ac46d4462746157152d5bf8b1318179d545f58a834359084a98f44ad42cf9",
+      "track": "crsemb"
+    },
+    "arxone_crsemb_write_uppercase_letter_with_pen": {
+      "config_value_sha256": "5d1e87b84ad088ba9ddda964ba72f3047e7f560532e5822f882d5c9b7b688f51",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/write_uppercase_letter_with_pen_arxone",
+      "layout_files": 100,
+      "layout_sha256": "1257a905645b08f8ddd2135fa7d27658ec1da898923ab0f1e76f1a949f5947c0",
+      "track": "crsemb"
+    },
+    "g1_crsemb_hang_cups_on_cup_tree": {
+      "config_value_sha256": "7372bc1d039e40ae43548e29bdec3841a559f84a4df245970ae89df3e77e001c",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/hang_cups_on_cup_tree_g1",
+      "layout_files": 80,
+      "layout_sha256": "1a31a082e0cbe33df5d31e19bd8b19fba830bbcb98c3a5ca34c1aa6c41ea5f1f",
+      "track": "crsemb"
+    },
+    "g1_crsemb_keyboard_keycap_swap": {
+      "config_value_sha256": "c13182637de5b35c9a867d2c85849b2869d1d17e698f1357904c1eece3d44099",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/keyboard_keycap_swap_g1",
+      "layout_files": 80,
+      "layout_sha256": "9d2cede1ea3533ddd7d65b9063ec91acb085407d27889099112f31cd586d7ede",
+      "track": "crsemb"
+    },
+    "g1_crsemb_open_short_trash_can_and_throw_garbage": {
+      "config_value_sha256": "6a533d4628571ac2ec73084170605490b317245a897bea58594335c5115757b8",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_short_trash_can_and_throw_garbage_multi_robot",
+      "layout_files": 80,
+      "layout_sha256": "af9a0b13c6dd8f349b37da8e08f6ae5c247b7280e969a6c8fbc1e66d82402f92",
+      "track": "crsemb"
+    },
+    "g1_crsemb_pour_50ml_into_graduated_cylinder": {
+      "config_value_sha256": "97557bebc029e76ffff5d04b9ec47a4ba7bfff89c181d3331f92835a4951ac40",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pour_50ml_into_graduated_cylinder_g1",
+      "layout_files": 100,
+      "layout_sha256": "4eeee21bd1a631c9a110dd17e66e196d8b660b906ea8d184e1c44fc6ca1f937f",
+      "track": "crsemb"
+    },
+    "g1_crsemb_scrape_chicken_bone_into_bin": {
+      "config_value_sha256": "fd146a3781016be9002d7c76f05201588e115dadf3c3db6199f637541895c817",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/scrape_chicken_bone_into_bin_g1",
+      "layout_files": 80,
+      "layout_sha256": "c23e3391c67bf5e3f8bfba7bc23c9b34a1adcb6588899bcc7d05af9ffca4bfb6",
+      "track": "crsemb"
+    },
+    "g1_crsemb_write_uppercase_letter_with_pen": {
+      "config_value_sha256": "53b0dad920ab809f1bd510f5d7c4c5fb4ac6aab1274acae738a4a3472fc53fa5",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/write_uppercase_letter_with_pen_g1",
+      "layout_files": 100,
+      "layout_sha256": "82f204e81f83836f87454d7334c9e2a6424574882b0dea6d01113b51607db2b6",
+      "track": "crsemb"
+    },
+    "g2crsb90d_finemanip_insert_building_block": {
+      "config_value_sha256": "12d94535915865384bf6cee0135bc7ad2799906dfeaa918cdbd6ab35bb47686f",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/insert_building_block",
+      "layout_files": 80,
+      "layout_sha256": "c31598aee9b6adc056aa91b07dbf4edd462b32fed22e62e55385d7826d59d017",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_insert_coin_into_money_box": {
+      "config_value_sha256": "8f9a1259466340d5bb3f4ca68e4ea55aaaaadd4ef5f1bfb5e87301ccb50d50b9",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/insert_coin_into_money_box",
+      "layout_files": 80,
+      "layout_sha256": "50cadece21dc97327da96350c0e70e4ba5940da8f0a55629d3384004563d2fc5",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_insert_ethernet_cable": {
+      "config_value_sha256": "67c95b77939fe2fb19275b18e3615586ded0e80c161debb7344d4a9627f3e37b",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/insert_ethernet_cable",
+      "layout_files": 80,
+      "layout_sha256": "40071fa28213cddfef381d91ef028ec4a7bf1d1cddeeeb4fa51c0db455b74fc1",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_insert_straw_into_milk_tea_cup": {
+      "config_value_sha256": "6196a2941bbf80f425eea5918b5a8236df3d8d06c8e0ece91f12731e83e8192b",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/insert_straw_into_milk_tea_cup",
+      "layout_files": 80,
+      "layout_sha256": "de3fd520d028a59e0f428ec69acf6663f4f8c1f9efc87bd56114d91da02af739",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_install_bearing_shaft_seat5mm": {
+      "config_value_sha256": "92f88cef5532e281a830c8ef37babffe49620811a568cf3cb4b886859b6ecc6f",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/install_bearing_shaft_seat5mm",
+      "layout_files": 80,
+      "layout_sha256": "5b65b7928419ac013f50f0c2b713342649989b44eb167141293d9e0bfb603309",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_phone_packaging": {
+      "config_value_sha256": "cea8122f0042bf7c537b82c09914bd285723acaa4c03312474c0b05a7defaf61",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/phone_packaging",
+      "layout_files": 80,
+      "layout_sha256": "b5501043b25314bf0d163a14955cec4edbb8e58dfe9a8827324ef02cfaf5143d",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_plug_charging_cable_into_phone": {
+      "config_value_sha256": "1cba110e0409a10407284455fafa5a0a4ecd1ea50fb52012b38b5854feb97ac5",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/plug_charging_cable_into_phone",
+      "layout_files": 80,
+      "layout_sha256": "b0a4ec689b5f856ffa7c35db7a75a7047ff230744fa879296c0950831b8c64d7",
+      "track": "finemanip"
+    },
+    "g2crsb90d_finemanip_put_the_cap_on_the_pen_new": {
+      "config_value_sha256": "1a78dc24191cf600e624045d064d39ddbe5d7aabccdf28568010081a430897aa",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/put_the_cap_on_the_pen_new",
+      "layout_files": 80,
+      "layout_sha256": "d943ec631ac09e1d68946322fbd5b18e4e18e3b8649b2de482edb7794e271be6",
+      "track": "finemanip"
+    },
+    "g2crsb90d_wbc_clean_the_blackboard": {
+      "config_value_sha256": "fa32ec69ab6ae64663c4a77285a9febf28b0ee28d70bee3bf20f602fe1049968",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/clean_the_blackboard",
+      "layout_files": 70,
+      "layout_sha256": "140d057ad6e36bb0a07d0a50ac84ede64cdc3a77c35135569cba1fd08e286885",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_deliver_tissues": {
+      "config_value_sha256": "ea53219986e1ec1123672e00bf82a7d1e979cf11267b86f5d8469f88b60b53d5",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/sending_food",
+      "layout_files": 80,
+      "layout_sha256": "06a7af5f608332463bcc27f1e3705f4318a77ea7468cec02ae380e6c7ca8f361",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_match_and_pick_from_conveyor": {
+      "config_value_sha256": "539dabb332e8d9640a5323fadf1c20b2baf82c5314fb02f75c9b84e0d1688657",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/match_and_pick_from_conveyor",
+      "layout_files": 70,
+      "layout_sha256": "de4cb29f1014b6b4b6f27648c550c0990c77424e52d62161e449aa6ced4b733c",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_open_the_door": {
+      "config_value_sha256": "ab289e33d3b87df1ed277e8e2e4c04950cfcbedb60beb3ce194d26e772ebf539",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_the_door",
+      "layout_files": 60,
+      "layout_sha256": "5fa3eacfa0fb440f661bbecae4a3840376e729a342869ab3ab20cbe772933692",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_open_the_roller_shutter": {
+      "config_value_sha256": "c0c01db0a44cb094b2b85f91c83a3db5335d11a29064edbd0dc8d34cc7839089",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_the_roller_shutter",
+      "layout_files": 80,
+      "layout_sha256": "3e616430cd51b9deceb25547662c97559749871dc0ab3edb4014bffb06fdae2a",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_pick_up_trash": {
+      "config_value_sha256": "1a62ac6e0079e56a1a5c8c486a41081e032bb3bb70ecf9f6f40c2d7f7bd23ea4",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pick_up_trash_wbc",
+      "layout_files": 70,
+      "layout_sha256": "0aaa9bf6d289115f4380db4d1d21437b026dc94a0b001406b536b39e2f0f713a",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_put_the_plates_on_the_shelf": {
+      "config_value_sha256": "d3f3b4d220962d175b9cf7a224bb3df26c1e5d2367bbf7a02b1c849d1f6bea0d",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/put_the_plates_on_the_shelf",
+      "layout_files": 70,
+      "layout_sha256": "81f2e0154b38294d066798fb62a4f5484e35ccb07eecde52644c2c41448f1db0",
+      "track": "wbc"
+    },
+    "g2crsb90d_wbc_transport_cartons_to_table": {
+      "config_value_sha256": "310bdc889d712b6e4d7d5a7bb22a30546649892a92cdedc52c68b54f274205fc",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/transport_cartons_to_table_wbc",
+      "layout_files": 70,
+      "layout_sha256": "69059aa75c2c588806ae7b01e31fef263dd417a5bdc849471ddfa4617f90e709",
+      "track": "wbc"
+    },
+    "g2crsbwuji_dexmanip_cloth_hanger": {
+      "config_value_sha256": "c7606fd8e1bb8feca6e6516fc5ca8ea81ff21264548976596230eebadc9b9269",
+      "episodes": 10,
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_cover_cup_lid": {
+      "config_value_sha256": "87efcc112ef255f1c029825f88f7a1754f41169074a92cb7851efab8af1beb8c",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/cover_cup_lid",
+      "layout_files": 80,
+      "layout_sha256": "6cbc9278ba67544b15584c1cc76a46ddda36ee1126914a0efd45c41e2d9f659a",
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_drawstring_bag": {
+      "config_value_sha256": "a1b00528aae4255d1ed26056f70af43bdd9953274d9cb238044faae85844d212",
+      "episodes": 10,
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_fold_cloth": {
+      "config_value_sha256": "cca84adb11d2653c1cc05eb8d8fa4845ae8cf59647003c91af130777a95e2a98",
+      "episodes": 10,
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_pick_up_a_package": {
+      "config_value_sha256": "a137fb82c3ff4e58c08cfc1cb1421511cd2b4a484671efef3a146cb687f7e1ff",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pick_up_a_package",
+      "layout_files": 80,
+      "layout_sha256": "2f862a378d6f445c6faad7d744fd86261ef3cf98d3a6ef7d5f0c43b81c14ae0e",
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_rubik_cube_solve": {
+      "config_value_sha256": "37435ee2d9cc18a464d7f5d623c0affcfd4892b094f6d6bd9a1aeb0301a6264a",
+      "episodes": 10,
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_stack_bowls": {
+      "config_value_sha256": "aba4cb98dcf1b5b6a1a0e7e0178f4b9f1f8c5a7ed3895d120736e80c8200f97b",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/stack_bowls_wuji",
+      "layout_files": 80,
+      "layout_sha256": "302febb19892e4549deeac1f2a05acaaf253af4deaeb27ee5e9654890f75bb36",
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_take_the_book": {
+      "config_value_sha256": "47bb90a96bf0a74f257f1c7f008e3c148a7a6d58d93c1acb527285bad5b772a7",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/take_the_book",
+      "layout_files": 80,
+      "layout_sha256": "a075b95d77138e2d1aad4b1f956a9940d103b979abf301f15a6755386d5941d7",
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_take_the_scissors": {
+      "config_value_sha256": "bc52eefa939b5290a8074b36bd81887ebcf0708b94860fc1288c34e67d53bce7",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/take_the_scissors",
+      "layout_files": 80,
+      "layout_sha256": "b35f3958ef676aa2ecb7819ed719376909e20b4a72c68e215e3fb801e509c439",
+      "track": "dexmanip"
+    },
+    "g2crsbwuji_dexmanip_wok_flip": {
+      "config_value_sha256": "a427e590aceab0e4a58062b17c4aaa2f41ca3a32d8d08e56bd4beb272b2edfad",
+      "episodes": 10,
+      "track": "dexmanip"
+    },
+    "g2op_crsemb_hang_cups_on_cup_tree": {
+      "config_value_sha256": "7ac30ee8fc76d2d1f7143a580b9aa903ef02aabfa3977c6cdf3a58f6deb37c5c",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/hang_cups_on_cup_tree_g2_omnipicker",
+      "layout_files": 80,
+      "layout_sha256": "0f9d6e791c29444a08bbe1e573ec9970fb8dce67d06566da0a7ea24998cffe0e",
+      "track": "crsemb"
+    },
+    "g2op_crsemb_keyboard_keycap_swap": {
+      "config_value_sha256": "7bd89d937f3c30c6e9441b9fc969023388a767a1f10cd8a637c4ec75ac3db6c0",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/keyboard_keycap_swap_g2_omnipicker",
+      "layout_files": 80,
+      "layout_sha256": "5d5726068ee644309b42b5cb64984182210ae07bfe502a8981fb194547ecf7b3",
+      "track": "crsemb"
+    },
+    "g2op_crsemb_open_short_trash_can_and_throw_garbage": {
+      "config_value_sha256": "de84d5e1cdb277b257b3aa4f2a2839d54137a2917badf03104bb27e23df66800",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/open_short_trash_can_and_throw_garbage_multi_robot",
+      "layout_files": 80,
+      "layout_sha256": "af9a0b13c6dd8f349b37da8e08f6ae5c247b7280e969a6c8fbc1e66d82402f92",
+      "track": "crsemb"
+    },
+    "g2op_crsemb_pour_50ml_into_graduated_cylinder": {
+      "config_value_sha256": "584b8e93de65b15a181fe0fcbe9071fb63646ed18f35ec439e5a2ed5494db0af",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/pour_50ml_into_graduated_cylinder_g2_omnipicker",
+      "layout_files": 100,
+      "layout_sha256": "2a385896e9927bf360a26828e244829a2cd877122f55225747bae61a0214027d",
+      "track": "crsemb"
+    },
+    "g2op_crsemb_scrape_chicken_bone_into_bin": {
+      "config_value_sha256": "e654cb99aa9a794275219ed4adacde32777a6a5e7800c512e0c0761ba28d40e4",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/scrape_chicken_bone_into_bin_g2_omnipicker",
+      "layout_files": 80,
+      "layout_sha256": "7e145753234ae302c124ee87ac948e1638eb87db5cb1abec9ed8b57e4b67534e",
+      "track": "crsemb"
+    },
+    "g2op_crsemb_write_uppercase_letter_with_pen": {
+      "config_value_sha256": "081354132da53cdd4568af0abf6b623ddce0f7cb52f8c806dac48bf1bd9e53a1",
+      "episodes": 20,
+      "layout_dir": "benchmark/config/llm_task/write_uppercase_letter_with_pen_g2_omnipicker",
+      "layout_files": 100,
+      "layout_sha256": "cd124b7ccaf107639c3f5d67fee2d1170cb9f585bc9b7507ec24ec83549e9374",
+      "track": "crsemb"
+    }
+  },
+  "total_episodes": 950
+}

@@ -1,6 +1,6 @@
-"""Deterministic bread take-out V2 des_no_gripper resolver.
+"""Deterministic bread take-out des_no_gripper resolver.
 
-Resolver-only ablation of V2: Stage2 static gripper/arm endpoint evidence
+Resolver behavior: Stage2 static gripper/arm endpoint evidence
 no longer hard-fails; Stage3 temporal still_held remains an explicit failure.
 """
 
@@ -289,7 +289,7 @@ def _read_destination_fields(
             if dest_status not in {"supported", "contradicted", "uncertain"}:
                 dest_status = "uncertain"
         elif end_state.get("destination_endpoint") is None:
-            # Missing field: treat as uncertain (V2 permissive; keeps
+            # Missing field: treat as uncertain (permissive; keeps
             # fixtures that only set toaster fields working).
             dest_status = "uncertain"
 
@@ -363,7 +363,7 @@ def _object_success(
 ) -> Tuple[Optional[bool], str, Dict[str, Any]]:
     """Return (success True/False/None, reason, check).
 
-    None means missing track ignored under V2 (not an explicit failure).
+    None means missing track ignored under the current rule (not an explicit failure).
     """
     check: Dict[str, Any] = {
         "object_id": None,
@@ -380,7 +380,7 @@ def _object_success(
         "note": None,
     }
     if track is None:
-        check["note"] = "missing_target_track_ignored_v2"
+        check["note"] = "missing_target_track_ignored"
         return None, "missing_target_track_ignored", check
 
     check["object_id"] = _str(track.get("object_id"))

@@ -1,8 +1,8 @@
 {
-  "scene_id": "hang_cups_on_cup_tree_g2_op",
-  "seed": 688900108,
+  "scene_id": 12,
+  "seed": 4232194775,
   "layout": {
-    "table_4bf53387": {
+    "table_9818126b": {
       "usd": "table_000",
       "xyz": [
         0.0,
@@ -16,9 +16,9 @@
         1.0
       ],
       "tags": [
-        "root_scene_2f3f844d",
-        "hang_cups_on_cup_tree_g2_op_803822e7",
-        "table_4bf53387"
+        "root_scene_e2bcfce5",
+        "hang_cups_on_cup_tree_g2_op_d4e102aa",
+        "table_9818126b"
       ],
       "keywords": [
         "table",
@@ -58,23 +58,23 @@
         ]
       }
     },
-    "benchmark_cup_holder_77e6b0fe": {
+    "benchmark_cup_holder_0ed2b190": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
-        0.126,
-        -0.019,
-        0.907
+        0.141169527807357,
+        0.012996338011697847,
+        0.9070824611567659
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.959486,
-        -0.281755
+        -0.3260515913883813,
+        0.9453519766484354
       ],
       "tags": [
-        "root_scene_2f3f844d",
-        "hang_cups_on_cup_tree_g2_op_803822e7",
-        "benchmark_cup_holder_77e6b0fe"
+        "root_scene_e2bcfce5",
+        "hang_cups_on_cup_tree_g2_op_d4e102aa",
+        "benchmark_cup_holder_0ed2b190"
       ],
       "keywords": [
         "cup_tree",
@@ -86,23 +86,23 @@
       ],
       "description": {}
     },
-    "benchmark_cup_58550426": {
-      "usd": "benchmark_cup_121",
+    "benchmark_cup_3a2feb57": {
+      "usd": "benchmark_cup_118",
       "xyz": [
-        -0.108,
-        -0.171,
-        0.775
+        -0.03397912446519599,
+        0.16436528835957076,
+        0.7705085119142066
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.259483,
-        0.965748
+        -0.3424110813283713,
+        0.9395502388821662
       ],
       "tags": [
-        "root_scene_2f3f844d",
-        "hang_cups_on_cup_tree_g2_op_803822e7",
-        "benchmark_cup_58550426"
+        "root_scene_e2bcfce5",
+        "hang_cups_on_cup_tree_g2_op_d4e102aa",
+        "benchmark_cup_3a2feb57"
       ],
       "keywords": [
         "cup_hang_0",
@@ -111,10 +111,21 @@
         "handled",
         "graspable",
         "front",
-        "task_side_right",
-        "POSITION_TAG_right"
+        "task_side_left",
+        "POSITION_TAG_left"
       ],
-      "description": {}
+      "description": {
+        "semantic_name": [
+          "handled cup"
+        ],
+        "object_category": [
+          "cup",
+          "mug"
+        ],
+        "full_description": [
+          "A handled cup; appearance and dimensions are defined by the selected original-scale asset."
+        ]
+      }
     }
   },
   "relations": {
@@ -126,10 +137,10 @@
       },
       "nodes": [
         {
-          "id": "root_scene_2f3f844d"
+          "id": "root_scene_e2bcfce5"
         },
         {
-          "id": "hang_cups_on_cup_tree_g2_op_803822e7"
+          "id": "hang_cups_on_cup_tree_g2_op_d4e102aa"
         },
         {
           "tags": [
@@ -138,7 +149,7 @@
             "workspace",
             "POSITION_TAG_center"
           ],
-          "id": "table_4bf53387"
+          "id": "table_9818126b"
         },
         {
           "tags": [
@@ -149,7 +160,7 @@
             "unmovable",
             "POSITION_TAG_center"
           ],
-          "id": "benchmark_cup_holder_77e6b0fe"
+          "id": "benchmark_cup_holder_0ed2b190"
         },
         {
           "tags": [
@@ -159,30 +170,65 @@
             "handled",
             "graspable",
             "front",
-            "task_side_right",
-            "POSITION_TAG_right"
+            "task_side_left",
+            "POSITION_TAG_left"
           ],
-          "id": "benchmark_cup_58550426"
+          "id": "benchmark_cup_3a2feb57"
         }
       ],
       "edges": [
         {
-          "source": "root_scene_2f3f844d",
-          "target": "hang_cups_on_cup_tree_g2_op_803822e7"
+          "source": "root_scene_e2bcfce5",
+          "target": "hang_cups_on_cup_tree_g2_op_d4e102aa"
         },
         {
-          "source": "hang_cups_on_cup_tree_g2_op_803822e7",
-          "target": "table_4bf53387"
+          "source": "hang_cups_on_cup_tree_g2_op_d4e102aa",
+          "target": "table_9818126b"
         },
         {
-          "source": "hang_cups_on_cup_tree_g2_op_803822e7",
-          "target": "benchmark_cup_holder_77e6b0fe"
+          "source": "hang_cups_on_cup_tree_g2_op_d4e102aa",
+          "target": "benchmark_cup_holder_0ed2b190"
         },
         {
-          "source": "hang_cups_on_cup_tree_g2_op_803822e7",
-          "target": "benchmark_cup_58550426"
+          "source": "hang_cups_on_cup_tree_g2_op_d4e102aa",
+          "target": "benchmark_cup_3a2feb57"
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "robot_specific_cup_asset_side_relative_layout",
+    "cup_asset": "benchmark_cup_118",
+    "side": "left",
+    "holder_xy_m": [
+      0.1411695427085182,
+      0.012996367814020263
+    ],
+    "holder_yaw_deg": -38.05859501103018,
+    "cup_yaw_deg": -40.047676854894576,
+    "footprint_separation_m": 0.1,
+    "proposal_holder": {
+      "xy_m": [
+        0.1411695427085182,
+        0.012996367814020263
+      ],
+      "yaw_deg": -38.05859501103018
+    },
+    "source_line_fraction": 0.3579375484568718,
+    "instance_id": 12,
+    "source_instance": 0,
+    "source_scene_sha256": "f87727fc2a349c0a507e65bd0bb0fac2be6c47f18c2a2e6131ed37a6158018e6",
+    "seed": 4232194775,
+    "visual_pool_index": 9,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.345777998264111,
+    "source_slot": {
+      "cup_asset_index": 2,
+      "side": "left"
+    },
+    "distribution_adjustment": null,
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

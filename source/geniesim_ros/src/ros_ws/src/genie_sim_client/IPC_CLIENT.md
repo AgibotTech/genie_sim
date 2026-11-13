@@ -34,8 +34,9 @@ All channels use `std_msgs/String` JSON. `<action prefix>/identity` uses RELIABL
 TRANSIENT_LOCAL, depth-one QoS and contains version 1, `source_id`, `epoch`,
 `tick`, `sim_time`, `physics_hz`, controlled `joint_names`,
 `reported_joint_names`, `status` and `ready`. Reported names can include fixed
-joints. Wait for ready identity before sending. Failure/closure, source or epoch
-change, or changed layout terminalizes an attached client.
+joints. Wait for ready identity before sending. Failure/closure, an unexpected source/epoch change, or changed joint layout
+terminalizes an attached client. An explicit configured sequence reset is the
+only allowed epoch transition.
 
 Action `/request` contains exactly:
 
@@ -83,8 +84,28 @@ then requests and joins new state/images; discovery alone is not completion.
 `snapshot()` returns physical state without requiring a renderer. See the
 [synchronized capture contract](../genie_sim_render/docs/SYNC_CAPTURE.md).
 
-There is no pause or reset API. After an uncertain action/capture failure, close
-the client and start a fresh caller-owned episode. `close()` releases its node,
+## Recorded episode sequence
+
+When the scene YAML supplies `libuipc.episode_sequence`, the client exposes
+`begin_episode()`, `finish_episode()` and `reset(next_index)`. Each call sends one
+JSON request on `<action prefix>/episode/request` and waits for a correlated
+`/episode/done`. Requests contain version 1, request_id, source_id, old epoch,
+operation (`begin`, `finish`, `reset`) and configured index. They carry no paths,
+material plans or physics settings. Completion includes the committed ready
+identity; reset requires exactly old epoch + 1 with the same source/joint names.
+Only the next YAML index is allowed, after finish. Exact duplicate IDs return
+cached replies without repeating native state recovery. There is no automatic
+send retry, reset-after-failure, or replay.
+
+Finish certifies a sealed physical archive and pauses the owner while scoring
+runs. Reset restores native and CPU state, opens a new archive at tick/time zero,
+and leaves it paused for correlated material capture. Begin resumes physics.
+State snapshots contain `episode_index` so the renderer applies the matching
+preloaded plan. Diagnostic identity fields engine_pid/cpu_worker_pid establish
+process reuse; they are not credentials or control inputs.
+
+After an uncertain action/capture/reset failure, close
+the client and start a fresh caller-owned session. `close()` releases its node,
 executor, thread and private context, preserves the host's global rclpy context,
 and sends no process signals. [Wuji evaluation](../../../../../geniesim_benchmark/README.md#deformable-evaluation)
 owns policy adaptation, processes, recording and scoring.

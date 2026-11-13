@@ -1,0 +1,77 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "ChassisAtTarget": "[1.23,-0.9537,0]|[0.95,0.15,15]"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PushPull": "benchmark_door_002|0.5235987755982988|3.141593|0"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ChassisAtTarget": "[1.9,-0.9537,180]|[0.4,0.3,90]"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PushPull": "benchmark_door_002|0|0.1745|0"
+              },
+              {
+                "StepOut": 3600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "open_the_door",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "ChassisAtTarget",
+              "points": 5
+            },
+            {
+              "checker": "PushPull",
+              "points": 5
+            },
+            {
+              "checker": "ChassisAtTarget",
+              "points": 10
+            },
+            {
+              "checker": "PushPull",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

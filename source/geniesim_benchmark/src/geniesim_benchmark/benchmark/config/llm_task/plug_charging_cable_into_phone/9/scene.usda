@@ -13,14 +13,15 @@ def "World"
             prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
         )
         {
-            over "entity"
-            {
-                bool physics:kinematicEnabled = 1
-            }
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0, 0, 0.365)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:kinematicEnabled = 1
+            }
         }
 
         def Xform "benchmark_phone_holder_d1fee3e1" (
@@ -29,7 +30,7 @@ def "World"
         {
             quatf xformOp:orient = (0.900715, 0, 0, -0.434411)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.024, 0.23, 0.788)
+            double3 xformOp:translate = (0.02155145859621993, 0.21580342749555784, 0.788)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -39,7 +40,7 @@ def "World"
         {
             quatf xformOp:orient = (-0.288551, -0.42354, -0.144379, 0.846467)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.017, 0.244, 0.817)
+            double3 xformOp:translate = (0.01455145859621993, 0.22980342749555782, 0.817)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
@@ -47,6 +48,11 @@ def "World"
             prepend payload = @/geniesim_assets/objects/benchmark/plug/benchmark_plug_017/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (0.685461, 0.713136, -0.106978, -0.100679)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.2615514585962199, -0.2821965725044422, 0.741)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 over "body" (
@@ -56,24 +62,21 @@ def "World"
                     uniform asset[] omni:scripting:scripts = [@/geniesim_assets/background/common/py/phone_plug_attractor.py@]
                 }
             }
-            quatf xformOp:orient = (0.685461, 0.713136, -0.106978, -0.100679)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.264, -0.268, 0.741)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         def Xform "benchmark_power_strip_storage_box_09c27d24" (
             prepend payload = @/geniesim_assets/objects/benchmark/power_strip_storage_box/benchmark_power_strip_storage_box_000/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (0.765394, 0, 0, 0.643562)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0.13955145859621992, -0.22619657250444217, 0.8)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
             }
-            quatf xformOp:orient = (0.765394, 0, 0, 0.643562)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.142, -0.212, 0.8)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
     }
 }

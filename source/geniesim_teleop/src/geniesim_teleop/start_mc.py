@@ -17,8 +17,7 @@ import xml.etree.ElementTree as ET
 import yaml
 
 from geniesim_teleop.config.task_config import load_teleop_task, robot_family
-
-APP_ROOT = Path(__file__).resolve().parent / "app"
+from geniesim_teleop.runtime import APP_ROOT, ensure_app
 
 
 class MCDumper(yaml.SafeDumper):
@@ -39,7 +38,7 @@ def prepare_mc(task, app_root=APP_ROOT, cache_root=None):
     # The shipped binary only supports the G2 platform selector. This is a
     # runtime alias; geometry still comes from the selected task, including crsB.
     mc_robot = "G2"
-    app_root = Path(app_root).resolve()
+    app_root = ensure_app(app_root).resolve()
     cache_root = Path(cache_root).resolve() if cache_root else app_root / "bin/.cache/mc"
     profile = cache_root / Path(task.robot_cfg).stem / task.task_name
     # MC resolves models relative to its executable. Each task therefore needs

@@ -273,7 +273,18 @@ class CpuStepper:
         data.qpos[self.qids] = self.targets
         data.ctrl[self.aids] = self.targets
         self._fresh = np.zeros(len(names), dtype=bool)
+        self._initial_qpos = data.qpos.copy()
+        self._initial_targets = self.targets.copy()
         mujoco.mj_forward(model, data)
+
+    def reset(self):
+        """Restore integration, contacts, warm starts and controls on this worker."""
+        self.mj.mj_resetData(self.model, self.data)
+        self.data.qpos[:] = self._initial_qpos
+        self.targets[:] = self._initial_targets
+        self.data.ctrl[self.aids] = self.targets
+        self._fresh.fill(False)
+        self.mj.mj_forward(self.model, self.data)
 
     def step(self, targets, stamps, *, now):
         """Consume fresh commands; on expiry hold the then-current position."""
@@ -429,11 +440,34 @@ def _run_worker(
 
         ready.set()
         if config.synchronization == "barrier":
-            previous, completed = 0, None
+            previous, completed, reset_epoch = 0, None, 0
             while not stop.is_set():
                 if not sync_connection.poll(0.05):
                     continue
                 packet = sync_connection.recv()
+                if isinstance(packet, dict) and packet.get("operation") == "reset":
+                    if (
+                        set(packet) not in ({"operation", "epoch"}, {"operation", "epoch", "model_bytes"})
+                        or type(packet["epoch"]) is not int
+                        or packet["epoch"] != reset_epoch + 1
+                    ):
+                        raise RuntimeError("invalid CPU reset epoch")
+                    if "model_bytes" in packet:
+                        payload = packet["model_bytes"]
+                        if not isinstance(payload, bytes) or not payload:
+                            raise ValueError("CPU replacement model must be nonempty serialized model bytes")
+                        # The owner derived this model from the next preloaded YAML;
+                        # build native MuJoCo data here, in the existing worker PID.
+                        sim = CpuStepper(payload, config, names, initial, body_names=body_names)
+                    else:
+                        sim.reset()
+                    current = np.concatenate((initial, np.zeros(n)))
+                    commands.write(current)
+                    previous, completed, count = 0, None, 0
+                    reset_epoch = packet["epoch"]
+                    write_snapshot(time.monotonic(), time.monotonic())
+                    sync_connection.send(dict(operation="reset", epoch=reset_epoch))
+                    continue
                 if not isinstance(packet, dict) or set(packet) != {
                     "sequence",
                     "targets",
@@ -519,6 +553,7 @@ class CpuJointWorker:
         self._context = context if config.execution == "process" else None
         self._sync_parent = self._sync_child = None
         self._sync_sequence = 0
+        self._reset_epoch = 0
         self._sync_sim_time = None
         self._sync_lock = threading.Lock()
         self._sync_broken = False
@@ -696,6 +731,43 @@ class CpuJointWorker:
             snapshot["sync_sequence"] = sequence
             snapshot["start_time"] = start_time
             return snapshot
+
+    def reset_sync(self, *, model_bytes=None):
+        """Reset integration, optionally loading an owner's precompiled YAML pose.
+
+        The optional payload is private owner-to-worker data, never a client
+        physics override. Existing joint/body selection and drive config remain
+        fixed. Interactive viewers cannot reload their native model yet.
+        """
+        if model_bytes is not None:
+            if not isinstance(model_bytes, bytes) or not model_bytes:
+                raise ValueError("CPU replacement model must be nonempty serialized model bytes")
+            if self.config.viewer.enabled:
+                raise ValueError("CPU model replacement requires the interactive CPU viewer to be disabled")
+        with self._sync_lock:
+            if self.config.synchronization != "barrier" or self._sync_broken or self._worker is None:
+                raise RuntimeError("in-process reset requires a healthy running CPU barrier")
+            self.check_health()
+            packet = dict(operation="reset", epoch=self._reset_epoch + 1)
+            expected_ack = dict(packet)
+            if model_bytes is not None:
+                packet["model_bytes"] = model_bytes
+            try:
+                self._sync_parent.send(packet)
+                if not self._sync_parent.poll(self.config.sync_timeout_s):
+                    raise TimeoutError("CPU reset acknowledgement timed out; never replayed")
+                if self._sync_parent.recv() != expected_ack:
+                    raise RuntimeError("CPU reset acknowledgement mismatch")
+                self.check_health()
+                self._commands.write(np.concatenate((self._initial, np.zeros(len(self.names)))))
+                self._sync_sequence = 0
+                self._sync_sim_time = None
+                self._reset_epoch += 1
+                if model_bytes is not None:
+                    self._model_bytes = model_bytes
+            except BaseException:
+                self._sync_broken = True
+                raise
 
     def _decode_snapshot(self, state):
         if state is None or state[0] == 0.0:

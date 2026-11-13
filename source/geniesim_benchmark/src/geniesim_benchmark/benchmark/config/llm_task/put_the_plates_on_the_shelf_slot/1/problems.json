@@ -1,0 +1,213 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_plate_019_00,benchmark_plate_012_01|left_gripper"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_plate_019_00,benchmark_plate_012_01|right_gripper"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "benchmark_dish_rack_001|1.0"
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "MixedRules": {
+                  "mode": "and",
+                  "strict": true,
+                  "rules": [
+                    {
+                      "name": "InsidePrecise",
+                      "params": {
+                        "object": "benchmark_plate_019_00",
+                        "reference": "benchmark_dish_rack_001",
+                        "points": [
+                          [0, 0, 0]
+                        ],
+                        "lower": [-0.048, -0.005, -0.111],
+                        "upper": [0.048, 0.065, 0.111]
+                      }
+                    },
+                    {
+                      "name": "InsidePrecise",
+                      "params": {
+                        "object": "benchmark_plate_019_00",
+                        "reference": "benchmark_dish_rack_001",
+                        "points": [
+                          [0.069, 0, 0.0],
+                          [0.0637, 0, 0.0264],
+                          [0.0488, 0, 0.0488],
+                          [0.0264, 0, 0.0637],
+                          [0.0, 0, 0.069],
+                          [-0.0264, 0, 0.0637],
+                          [-0.0488, 0, 0.0488],
+                          [-0.0637, 0, 0.0264],
+                          [-0.069, 0, 0.0],
+                          [-0.0637, 0, -0.0264],
+                          [-0.0488, 0, -0.0488],
+                          [-0.0264, 0, -0.0637],
+                          [-0.0, 0, -0.069],
+                          [0.0264, 0, -0.0637],
+                          [0.0488, 0, -0.0488],
+                          [0.0637, 0, -0.0264]
+                        ],
+                        "quantifier": "any",
+                        "lower": [-0.047, -0.073, -0.111],
+                        "upper": [0.047, -0.027, 0.111]
+                      }
+                    },
+                    {
+                      "name": "CoverPrecise",
+                      "params": {
+                        "object": "benchmark_plate_019_00",
+                        "reference": "benchmark_dish_rack_001",
+                        "source_points": [
+                          [0.069, 0, 0.0],
+                          [0.0488, 0, 0.0488],
+                          [0.0, 0, 0.069],
+                          [-0.0488, 0, 0.0488],
+                          [-0.069, 0, 0.0],
+                          [-0.0488, 0, -0.0488],
+                          [-0.0, 0, -0.069],
+                          [0.0488, 0, -0.0488]
+                        ],
+                        "target_points": [
+                          [-0.024, -0.025, 0],
+                          [0.024, -0.025, 0],
+                          [0.024, 0.033, 0],
+                          [-0.024, 0.033, 0]
+                        ],
+                        "up_axis": 2,
+                        "threshold": 0.7
+                      }
+                    },
+                    {
+                      "name": "InsidePrecise",
+                      "params": {
+                        "object": "benchmark_plate_012_01",
+                        "reference": "benchmark_dish_rack_001",
+                        "points": [
+                          [0, 0, 0]
+                        ],
+                        "lower": [-0.048, -0.005, -0.111],
+                        "upper": [0.048, 0.065, 0.111]
+                      }
+                    },
+                    {
+                      "name": "InsidePrecise",
+                      "params": {
+                        "object": "benchmark_plate_012_01",
+                        "reference": "benchmark_dish_rack_001",
+                        "points": [
+                          [0.069, 0, 0.0],
+                          [0.0637, 0, 0.0264],
+                          [0.0488, 0, 0.0488],
+                          [0.0264, 0, 0.0637],
+                          [0.0, 0, 0.069],
+                          [-0.0264, 0, 0.0637],
+                          [-0.0488, 0, 0.0488],
+                          [-0.0637, 0, 0.0264],
+                          [-0.069, 0, 0.0],
+                          [-0.0637, 0, -0.0264],
+                          [-0.0488, 0, -0.0488],
+                          [-0.0264, 0, -0.0637],
+                          [-0.0, 0, -0.069],
+                          [0.0264, 0, -0.0637],
+                          [0.0488, 0, -0.0488],
+                          [0.0637, 0, -0.0264]
+                        ],
+                        "quantifier": "any",
+                        "lower": [-0.047, -0.073, -0.111],
+                        "upper": [0.047, -0.027, 0.111]
+                      }
+                    },
+                    {
+                      "name": "CoverPrecise",
+                      "params": {
+                        "object": "benchmark_plate_012_01",
+                        "reference": "benchmark_dish_rack_001",
+                        "source_points": [
+                          [0.069, 0, 0.0],
+                          [0.0488, 0, 0.0488],
+                          [0.0, 0, 0.069],
+                          [-0.0488, 0, 0.0488],
+                          [-0.069, 0, 0.0],
+                          [-0.0488, 0, -0.0488],
+                          [-0.0, 0, -0.069],
+                          [0.0488, 0, -0.0488]
+                        ],
+                        "target_points": [
+                          [-0.024, -0.025, 0],
+                          [0.024, -0.025, 0],
+                          [0.024, 0.033, 0],
+                          [-0.024, 0.033, 0]
+                        ],
+                        "up_axis": 2,
+                        "threshold": 0.7
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "put_the_plates_on_the_shelf_slot",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 10
+            },
+            {
+              "checker": "MixedRules",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ],
+    "ScoreLayout": "put_the_plates_on_the_shelf_slot"
+  }
+}

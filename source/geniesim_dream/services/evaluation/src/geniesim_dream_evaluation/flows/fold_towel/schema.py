@@ -1,4 +1,4 @@
-"""Fold towel V2 schema constants."""
+"""Fold towel schema constants."""
 
 from __future__ import annotations
 

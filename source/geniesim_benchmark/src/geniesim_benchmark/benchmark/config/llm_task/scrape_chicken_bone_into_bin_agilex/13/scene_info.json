@@ -1,13 +1,13 @@
 {
-  "scene_id": 13,
-  "seed": 3840329033,
+  "scene_id": 23,
+  "seed": 4059281558,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        -0.10358889380482927,
-        -0.0037710403941489667,
-        0.37153053624408056
+        -0.09898839670519927,
+        0.007922204741512605,
+        0.3667519822321028
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.13393724626858922,
-        -0.037435109825712784,
-        0.7421210368019737
+        -0.23448889284306332,
+        -0.1503931218049983,
+        0.737342482789996
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9290735149313721,
-        -0.3698951254789193
+        0.8716234841125595,
+        0.4901759907864549
       ],
       "tags": [
         "root_scene",
@@ -77,23 +77,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.9042955431347308,
-        0.42690698128124166
+        0.9311145550776732,
+        0.3647268639989475
       ],
-      "usd_quatf_rotation_quantization_rad": 1.804209059930173e-08
+      "usd_quatf_rotation_quantization_rad": 1.557942019836389e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.08645969214383611,
-        -0.31389746227031096,
-        0.7526112318200769
+        -0.010240491853400528,
+        0.2868168402065481,
+        0.7478326778080993
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.08736954785923698,
-        0.9961759694486073
+        0.6882320689304703,
+        0.7254906059320715
       ],
       "tags": [
         "root_scene",
@@ -102,8 +102,7 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table",
-        "garbage"
+        "on_table"
       ],
       "description": {},
       "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
@@ -119,23 +118,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        -0.19547318981835718,
-        0.9807090455697024
+        0.7044472366798061,
+        0.7097563601223911
       ],
-      "usd_quatf_rotation_quantization_rad": 2.992390086831176e-07
+      "usd_quatf_rotation_quantization_rad": 4.041960599554529e-08
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.4848715041015476,
-        -0.1765171079938164,
-        0.6362736341276397
+        -0.48027100700191766,
+        0.17117106017129927,
+        0.631495080115662
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        -6.123234e-17
+        6.123233995736766e-17
       ],
       "tags": [
         "root_scene",
@@ -174,64 +173,70 @@
         6.123234e-17
       ],
       "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
-    },
-    "trash_apple_000": {
-      "usd": "benchmark_trash_029",
-      "xyz": [
-        -0.2814377204936285,
-        0.16036737493005332,
-        0.772380117739874
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {},
+      "nodes": [
+        {
+          "id": "root_scene"
+        },
+        {
+          "id": "table_000"
+        },
+        {
+          "id": "scraper_000"
+        },
+        {
+          "id": "trash_bone_000"
+        },
+        {
+          "id": "trash_can_000"
+        }
       ],
-      "xyzw": [
-        -0.20714844618517386,
-        0.6760839602024796,
-        0.20714844618517383,
-        0.6760839602024799
-      ],
-      "tags": [
-        "root_scene",
-        "trash_apple_000"
-      ],
-      "keywords": [
-        "trash",
-        "garbage",
-        "apple_core",
-        "on_table"
-      ],
-      "description": {},
-      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
-      "physics": {
-        "kinematic": false,
-        "mass_kg": 0.01
-      },
-      "scale": [
-        1.0,
-        1.0,
-        1.0
+      "links": [
+        {
+          "source": "root_scene",
+          "target": "table_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "scraper_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_bone_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_can_000"
+        }
       ]
     }
   },
-  "relations": [],
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "template_neighborhood_independent_yaw_and_trash_xy",
-    "bin_abs_table_y_m": 0.17264147266483176,
-    "handle_outward_deg": 43.41790756502371,
+    "bin_abs_table_y_m": 0.1633534503646226,
+    "handle_outward_deg": 58.70469071680256,
     "trash": [
-      "trash_bone_000",
-      "trash_apple_000"
+      "trash_bone_000"
     ],
     "tool_xy_jitter_bound_m": 0.055,
     "trash_xy_jitter_bound_m": [
       0.035,
       0.025
     ],
-    "instance_id": 13,
-    "source_instance": 8,
-    "source_scene_sha256": "6b76921e22341404d37ad3eeee02ef26728ee70270ce1a135f68a368160505f9",
-    "seed": 3840329033,
-    "visual_pool_index": 63,
+    "instance_id": 23,
+    "source_instance": 0,
+    "source_scene_sha256": "e9787c47f458eb4239785568480610d5a7d00565be03d5a9602f05aacc4c086a",
+    "seed": 4059281558,
+    "visual_pool_index": 152,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 2.1723427584341697,
+    "selection_feature_distance": 1.9621045482220363,
     "source_slot": {},
     "distribution_adjustment": {
       "tool_xy_jitter_m": 0.055,
@@ -250,6 +255,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

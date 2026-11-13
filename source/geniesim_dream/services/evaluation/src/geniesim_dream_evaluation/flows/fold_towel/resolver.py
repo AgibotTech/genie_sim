@@ -1,4 +1,4 @@
-"""Thin fold-towel V2 resolver: endpoint hard vetoes, else Stage3 verdict."""
+"""Thin fold-towel resolver: endpoint hard vetoes, else Stage3 verdict."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def resolve_task_completion(
 ) -> Tuple[Optional[int], str, Dict[str, Any]]:
     """Return (success 0/1/None, reason, debug).
 
-    V2 hard vetoes (priority over Stage3 success):
+    hard vetoes (priority over Stage3 success):
     - Stage2 final_fold_state == crumpled
     - Stage2 final_shape == triangle  (GT requires square/compact rectangle)
     Otherwise Stage3 completion_status maps to 1/0/0.

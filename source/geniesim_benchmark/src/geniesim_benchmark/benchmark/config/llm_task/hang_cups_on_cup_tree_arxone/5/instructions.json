@@ -1,30 +1,30 @@
 {
   "instructions": [
     {
-      "instruction": "Pick up the cup by its handle and hook it onto the cup rack",
+      "instruction": "hang the mug onto a branch of the cup tree",
       "gripper": {
         "1": {
           "handover": false,
-          "side": "left"
+          "side": "right"
         }
       },
       "target": {
-        "id1": "benchmark_cup_31f91e6f",
-        "id2": "benchmark_cup_holder_41efc23e"
+        "id1": "benchmark_cup_f3c92132",
+        "id2": "benchmark_cup_holder_cc568953"
       }
     }
   ],
   "subtask_steps": [
     {
       "checker": {
-        "PickUpOnGripper": "benchmark_cup_31f91e6f|any_gripper"
+        "PickUpOnGripper": "benchmark_cup_f3c92132|any_gripper"
       },
-      "instruction": "left gripper picks up the cup by its handle",
+      "instruction": "right gripper picks up the cup by its handle",
       "step_out": 450
     },
     {
       "checker": {
-        "Hang": "benchmark_cup_31f91e6f|0.829|8|0.01"
+        "Hang": "benchmark_cup_f3c92132|0.831|8|0.01"
       },
       "instruction": "hooks the cup's handle onto the rack, then opens the gripper so the cup hangs still",
       "step_out": 750

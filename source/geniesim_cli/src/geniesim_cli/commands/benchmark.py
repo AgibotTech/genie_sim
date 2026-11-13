@@ -26,8 +26,8 @@ metadata.
 Isaac, libuipc and Newton tasks use system ``python3.12`` with Isaac 6.2
 and ROS Jazzy, including when bundled Isaac 5.1 is also installed. Generic
 ``GENIESIM_PY_CMD`` container defaults do not override this task selection.
-A custom prepared Python path still applies. Newton tasks load their built ROS
-overlay automatically before exec; IPC tasks use the caller's sourced overlay.
+A custom prepared Python path still applies. Newton and libuipc tasks load their
+built ROS overlay automatically before exec.
 Native MuJoCo tasks use ``benchmark.python`` or the CLI interpreter and run
 without the Isaac or ROS bootstrap.
 """
@@ -177,7 +177,11 @@ def _split_name(stem: str) -> tuple[str | None, str | None]:
     return parts[0], None
 
 
+_CONFIG_ALIASES = {"g2crsb90d_wbc_sending_food": "g2crsb90d_wbc_deliver_tissues"}
+
+
 def _filter_configs(robot: str | None, category: str | None, needle: str | None) -> list[Path]:
+    needle = _CONFIG_ALIASES.get(needle, needle)
     out: list[Path] = []
     for p in _all_configs():
         r, c = _split_name(p.stem)
@@ -205,6 +209,9 @@ def _resolve_config(arg: str) -> Path:
     if p.is_file():
         return p.resolve()
 
+    alias = _CONFIG_ALIASES.get(arg.removesuffix(".yaml"))
+    if alias is not None:
+        arg = alias
     cfg_dir = _config_dir()
     candidates: list[Path] = []
     if not arg.endswith(".yaml"):
@@ -319,20 +326,43 @@ def _runtime_environment(config_path: Path, forwarded: list[str]) -> dict[str, s
     runtime = _task_runtime(config_path, forwarded)
     if runtime == "mujoco":
         return None
-    if runtime != "newton" or "--dry-run" in forwarded:
+    if runtime not in ("newton", "libuipc") or "--dry-run" in forwarded:
         return dict(os.environ)
     from geniesim_benchmark.rt_engine.environment import runtime_environment
 
-    return runtime_environment(config_path)
+    repo_root, _ = _extract_flag(forwarded, "repo-root")
+    lookup = Path(repo_root).expanduser() / "source/geniesim_benchmark/pyproject.toml" if repo_root else config_path
+    return runtime_environment(lookup)
 
 
 def _prepared_app_cmd(config_path: Path, forwarded: list[str], infer_host: str | None):
+    import yaml
+    from geniesim_benchmark.execution import output_root, task_output_directory
+
+    config = yaml.safe_load(config_path.read_text()) or {}
+    explicit, forwarded = _extract_flag(forwarded, "benchmark.output_dir")
+    alias, forwarded = _extract_flag(forwarded, "output-dir")
+    if explicit is not None and alias is not None and explicit != alias:
+        raise ValueError("conflicting output directories")
+    configured = explicit or alias
+    if configured is None and not (os.environ.get("GENIESIM_BENCHMARK_OUTPUT_ROOT") or os.environ.get("OUTPUT_DIR")):
+        configured = config.get("benchmark", {}).get("output_dir")
+    root = output_root(config_path, configured)
+    runtime = _task_runtime(config_path, forwarded)
+    for key in ("task_name", "sub_task_name"):
+        value, _ = _extract_flag(forwarded, "benchmark." + key)
+        if value is not None:
+            config.setdefault("benchmark", {})[key] = yaml.safe_load(value)
+    if runtime != "isaac":
+        flag = "benchmark.output_dir" if runtime == "mujoco" else "output-dir"
+        forwarded = [*forwarded, f"--{flag}={task_output_directory(config, root)}"]
     cmd = _build_app_cmd(config_path, forwarded, infer_host)
-    environment = _runtime_environment(config_path, forwarded)
+    environment = dict(_runtime_environment(config_path, forwarded) or os.environ)
+    environment["GENIESIM_BENCHMARK_OUTPUT_ROOT"] = str(root)
     if environment is not None and not _prepared_python_override():
         virtualenv = environment.get("VIRTUAL_ENV")
         if (
-            _task_runtime(config_path, forwarded) == "newton"
+            _task_runtime(config_path, forwarded) in ("newton", "libuipc")
             and "--dry-run" not in forwarded
             and virtualenv
             and Path(virtualenv).name == "rt_python"

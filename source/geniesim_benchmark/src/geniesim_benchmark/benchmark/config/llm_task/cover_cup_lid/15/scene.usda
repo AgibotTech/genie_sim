@@ -13,6 +13,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
@@ -33,19 +38,15 @@ def Xform "World"
                     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
                 }
             }
-            quatf xformOp:orient = (1, 0, 0, 0)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         def Xform "benchmark_cup_114" (
             prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_114/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.40497075581584513, 0.0, 0.0, 0.9143296380047752)
+            quatf xformOp:orient = (0.75277996, 0, 0, 0.65827227)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.9335485894715366, -0.1429265837150202, 0.8066190064852385)
+            double3 xformOp:translate = (0.8553134925691477, -0.13056833935249718, 0.8066190064852385)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"
@@ -57,9 +58,9 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_115/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.5106600848815834, 0.0, 0.0, 0.8597826921430404)
+            quatf xformOp:orient = (0.32472396, 0, 0, 0.9458088)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.8596597562740628, 0.08442541758091351, 0.7791975710909407)
+            double3 xformOp:translate = (0.9603267672175239, 0.03632203283152067, 0.7791975710909407)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"

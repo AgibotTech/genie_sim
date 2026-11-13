@@ -12,10 +12,18 @@ import math
 from contextlib import ExitStack
 from datetime import datetime
 from pathlib import Path
+import sys
 import time
 
 import numpy as np
 import yaml
+
+from geniesim_benchmark.plugins.output_system.dexhand2 import (
+    WOK_STAGES,
+    WOK_TASK,
+    make_evaluation,
+    write_summary,
+)
 
 from .corobot import CorobotClient, JointGroups, build_payload
 from .images import RosImages
@@ -60,12 +68,14 @@ def run_episode(
     initial_positions: dict[str, float],
     max_steps: int,
     task_name: str = "wok_flip",
+    task_segments=(),
     episode_idx: int = 0,
     observation_timeout_s: float = 30,
     groups: JointGroups = JointGroups(),
     progress=None,
     evaluation_timeout_s: float = 30,
     event=None,
+    recording=None,
 ) -> dict:
     """Run bounded action chunks; every model request occurs behind a pause barrier."""
     if type(max_steps) is not int or max_steps < 1:
@@ -73,6 +83,12 @@ def run_episode(
     record = event if event is not None else lambda value: None
     state, stamp_ns, frames = pause_observation(client, images, timeout_s=observation_timeout_s)
     evaluation = None
+
+    def capture():
+        if recording is not None:
+            from geniesim_benchmark.plugins.output_system.observations import snapshot_state
+
+            recording.capture(frames, steps, snapshot_state(state))
 
     def score_after(*, after_tick=None, after_ns=0):
         if progress is None:
@@ -83,7 +99,8 @@ def run_episode(
         record({"event": "task_progress", "steps": steps, **item.as_dict()})
         return item
 
-    steps = requests = 0
+    steps = requests = dispatches = 0
+    capture()
     evaluation = score_after(after_ns=stamp_ns)
     held = _positions(state)
     active = set(groups.left_arm + groups.right_arm + groups.left_effector + groups.right_effector)
@@ -104,6 +121,7 @@ def run_episode(
             instruction,
             groups=groups,
             task_name=task_name,
+            task_segments=task_segments,
             episode_idx=episode_idx,
             history_interval=history_interval,
             history_frames=history,
@@ -134,6 +152,8 @@ def run_episode(
             target = {**held, **target}
             values = np.asarray([[target[name] for name in state.schema.joint_names]], dtype=np.float32)
             state = client.step(values).snapshot
+            if index == 0:
+                dispatches += 1
             held = dict(target)
             steps += 1
             record({"event": "action_issued", "steps": steps})
@@ -148,6 +168,7 @@ def run_episode(
             last = index == len(chunk.targets) - 1 or steps == max_steps
             if collect or last:
                 state, stamp_ns, frames = pause_observation(client, images, timeout_s=observation_timeout_s)
+                capture()
                 evaluation = score_after(after_ns=stamp_ns)
                 if evaluation is not None and evaluation.failed:
                     reason = evaluation.failure_reason
@@ -171,6 +192,8 @@ def run_episode(
         "completion": "arrival_v1",
     }
     if evaluation is not None:
+        if task_name == WOK_TASK:
+            result["policy_dispatch_count"] = dispatches
         result.update(
             score=evaluation.score,
             max_score=evaluation.max_score,
@@ -236,7 +259,7 @@ def evaluate_attached(
     max_steps = config["max_steps"] if max_steps is None else max_steps
     evaluation_timeout_s = config.get("evaluation_timeout_s", 30)
     record = event if event is not None else lambda value: None
-    results = []
+    results, evaluations = [], []
     for episode in range(episodes):
         client.resume()
         policy.reset()
@@ -245,25 +268,62 @@ def evaluate_attached(
         boundary = verify_layout_reset(reset_snapshot, scene, instance)
         if boundary is not None:
             record({"event": "layout_reset_verified", **boundary})
-        results.append(
-            run_episode(
+        started = time.monotonic()
+        benchmark = config.get("benchmark", {})
+        episode_index = benchmark.get("episode_offset", 0) + episode
+        recording = None
+        if benchmark.get("record", False):
+            from geniesim_benchmark.plugins.output_system.observations import ObservationRecording
+
+            recording = ObservationRecording(
+                benchmark.get("recording_root", output_dir),
+                episode_index,
+                config["instruction"],
+                fps=benchmark.get("fps", 30),
+                record_state=benchmark.get("record_state", True),
+            )
+        try:
+            result = run_episode(
                 client,
                 images,
                 policy,
                 instruction=config["instruction"],
+                task_segments=config.get("segments", []),
                 initial_positions=initial_positions,
                 max_steps=max_steps,
                 task_name=config["task_name"],
-                episode_idx=episode,
+                episode_idx=episode_index,
                 observation_timeout_s=config["observation_timeout_s"],
                 progress=progress,
                 evaluation_timeout_s=evaluation_timeout_s,
                 event=record,
+                **({"recording": recording} if recording is not None else {}),
             )
-        )
+        finally:
+            bag = recording.close() if recording is not None else None
+        if bag is not None:
+            result["recording"] = bag
+        results.append(result)
         if "instance_id" in config.get("benchmark", {}):
             results[-1]["instance_id"] = config["benchmark"]["instance_id"]
         (output_dir / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2))
+        if config["task_name"] == WOK_TASK:
+            native = results[-1]
+            evaluation = make_evaluation(
+                WOK_TASK,
+                config["instruction"],
+                native,
+                stages=WOK_STAGES,
+                stage_scores=({k: int(v) for k, v in native["milestones"].items()} if "milestones" in native else None),
+                e2e=int(native["task_success"]) if native["task_success"] is not None else None,
+                count=native.get("policy_dispatch_count"),
+                step_out=max_steps,
+                steps=native["issued_steps"],
+                duration=time.monotonic() - started,
+                valid="evaluation" in native,
+            )
+            evaluations.append(evaluation)
+            write_summary(output_dir, evaluations)
     return results
 
 
@@ -277,12 +337,30 @@ def main(argv=None) -> int:
     parser.add_argument("--episodes", "--benchmark.num_episode", type=int)
     parser.add_argument("--benchmark.num_instances", dest="instances", type=int)
     parser.add_argument("--assets-root", type=Path)
+    from geniesim_benchmark.execution import boolean
+
+    for key in ("record", "record_state", "resume"):
+        parser.add_argument(f"--benchmark.{key}", dest=key, type=boolean)
+    parser.add_argument("--app.headless", dest="headless", type=boolean)
+    parser.add_argument("--benchmark.seed", dest="seed", type=int)
+    parser.add_argument("--benchmark.fps", dest="fps", type=int)
+    parser.add_argument("--benchmark.resume_id", dest="resume_id")
+    parser.add_argument("--benchmark.record_video_dir", dest="record_video_dir")
     parser.add_argument("--dry-run", action="store_true", help="print startup plan without launching ROS or physics")
     options = parser.parse_args(argv)
     config_path = options.config.expanduser().resolve(strict=True)
     config = yaml.safe_load(config_path.read_text())
+    from geniesim_benchmark.execution import output_root, task_output_directory
+
     if options.output_dir is None:
-        options.output_dir = Path("output") / config_path.stem / datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        options.output_dir = task_output_directory(config, output_root(config_path))
+    benchmark = config.setdefault("benchmark", {})
+    for key in ("record", "record_state", "resume", "resume_id", "seed", "record_video_dir", "fps"):
+        value = getattr(options, key)
+        if value is not None:
+            benchmark[key] = value
+    if options.headless is not None:
+        config["headless"] = options.headless
     if config.get("runtime") != "newton":
         parser.error("this runner requires runtime: newton")
     max_steps = options.max_steps if options.max_steps is not None else config["max_steps"]
@@ -302,13 +380,24 @@ def main(argv=None) -> int:
     for name in ("ready_timeout_s", "step_timeout_s", "observation_timeout_s", "inference_timeout_s"):
         if not math.isfinite(float(config[name])) or config[name] <= 0:
             parser.error(f"{name} must be finite and positive")
-    if "num_instances" in config.get("benchmark", {}) and "instance_id" not in config["benchmark"]:
+    if options.manifest is None and "instance_id" not in config["benchmark"]:
+        config["benchmark"].setdefault("num_instances", 1)
         from .instances import run_instances
 
         config.update(max_steps=max_steps, episodes=episodes)
         try:
             return run_instances(options, config_path, config)
-        except (ValueError, OSError) as error:
+        except ValueError as error:
+            from geniesim_benchmark.plugins.output_system.checkpoint import (
+                CheckpointRejected,
+                CHECKPOINT_REJECTED_EXIT_CODE,
+            )
+
+            if isinstance(error, CheckpointRejected):
+                print(str(error), file=sys.stderr)
+                return CHECKPOINT_REJECTED_EXIT_CODE
+            parser.error(str(error))
+        except OSError as error:
             parser.error(str(error))
     if options.manifest is None or options.dry_run:
         from geniesim_benchmark.rt_engine.session import run_managed

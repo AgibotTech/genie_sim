@@ -1,0 +1,80 @@
+{
+  "version": "dexhand2-process-weights",
+  "process_points": 100,
+  "completion_bonus_points": 25,
+  "completion_rule": "all_steps_and_native_e2e",
+  "full": {
+    "fold_cloth": {
+      "steps": [
+        "WujiFoldLeftSide",
+        "WujiFoldRightSide",
+        "WujiFoldHemToCollar"
+      ],
+      "weights": [
+        25,
+        25,
+        50
+      ],
+      "rationale": "Give equal credit to the two sides and half the process points to the final fold."
+    },
+    "cloth_hanger": {
+      "steps": [
+        "WujiLiftCloth",
+        "WujiLiftHanger",
+        "WujiHangerNearCollar",
+        "WujiHangerInserted",
+        "WujiGarmentHung"
+      ],
+      "weights": [
+        10,
+        10,
+        10,
+        30,
+        40
+      ],
+      "rationale": "Give most process points to hanger insertion and hanging the garment."
+    },
+    "drawstring_bag": {
+      "steps": [
+        "WujiBagPlaced",
+        "WujiBottle1InBin",
+        "WujiBottle2InBin",
+        "WujiBothBottlesInBag",
+        "WujiBagCinched"
+      ],
+      "weights": [
+        10,
+        5,
+        5,
+        30,
+        50
+      ],
+      "rationale": "Give most process points to loading both bottles and cinching the bag."
+    },
+    "rubik_cube_solve_2turn": {
+      "steps": [
+        "PickUp",
+        "Turn",
+        "Solve"
+      ],
+      "weights": [
+        20,
+        30,
+        50
+      ],
+      "rationale": "Use the native pickup, turn and solve point proportions."
+    },
+    "wok_flip": {
+      "steps": [
+        "stable_lift",
+        "food_toss"
+      ],
+      "weights": [
+        30,
+        70
+      ],
+      "rationale": "Give most process points to tossing the food after a stable lift."
+    }
+  },
+  "subtask": {}
+}

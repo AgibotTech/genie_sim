@@ -1,11 +1,14 @@
 runtime: newton
 task_name: wok_flip
-instruction: 用右手握住锅柄，颠锅翻动锅内的食材，并将食材接回锅中。
+instruction: Pan tossing
+segments:
+  - "Grasp the pan handle"
+  - "Toss the pan forward"
 launcher: launcher_newton_wuji_eval.yaml
 episodes: 1
 benchmark:
   num_instances: 10
-  seed: 20261021
+  seed: 1398484294
 max_steps: 600
 ready_timeout_s: 600
 step_timeout_s: 180

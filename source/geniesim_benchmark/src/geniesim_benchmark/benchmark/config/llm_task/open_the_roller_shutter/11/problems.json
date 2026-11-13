@@ -1,0 +1,91 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "benchmark_roller_shutter_000_02|1.2"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_key_001|any_gripper"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PushPull": "benchmark_roller_shutter_000_02|1.3962634015954636|1.5707963267948966|1"
+              },
+              {
+                "StepOut": 1800
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "PushPull": "benchmark_roller_shutter_000_02|1.2|3.4095025062561035|0"
+              },
+              {
+                "StepOut": 2100
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ChassisAtTarget": "[-2.22,-0.78,0.0]|[1.00,1.50,180.0]"
+              },
+              {
+                "StepOut": 750
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "open_the_roller_shutter",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "PushPull",
+              "points": 20
+            },
+            {
+              "checker": "PushPull",
+              "points": 10
+            },
+            {
+              "checker": "ChassisAtTarget",
+              "points": 10
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

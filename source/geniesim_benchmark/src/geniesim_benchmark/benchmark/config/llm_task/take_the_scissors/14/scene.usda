@@ -5,12 +5,6 @@
     upAxis = "Z"
 )
 
-# take_the_scissors instance 14.
-# Deterministic layout: seed 1, target benchmark_scissors_002.
-# This workspace scene owns ALL task physics: the table (kinematic), the two
-# support blocks (kinematic stand) and the selected scissors laid across the
-# stand. The background scene (scenes/take_the_scissors_benchmark/background
-# .usda) is environment-only, so no physics body is duplicated across layers.
 def Xform "World"
 {
     def Scope "Objects"
@@ -19,6 +13,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
@@ -39,47 +38,45 @@ def Xform "World"
                     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
                 }
             }
-            quatf xformOp:orient = (1, 0, 0, 0)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         def Xform "benchmark_building_blocks_006_00" (
             prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (0.9997005, 0, 0, 0.02447407)
+            float3 xformOp:scale = (1.5, 1.5, 1)
+            double3 xformOp:translate = (1.0274896071813768, -0.0031797226756384057, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
             }
-            quatf xformOp:orient = (0.99005528, 0.00000000, 0.00000000, -0.14067886)
-            float3 xformOp:scale = (1.50000000, 1.50000000, 1)
-            double3 xformOp:translate = (1.0060548782348633, -0.1708578169345856, 0.7801891554310714)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
         def Xform "benchmark_building_blocks_006_01" (
             prepend payload = @/geniesim_assets/objects/benchmark/building_blocks/benchmark_building_blocks_006/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (0.9997005, 0, 0, 0.02447407)
+            float3 xformOp:scale = (1.5, 1.5, 1)
+            double3 xformOp:translate = (1.0181608842275804, 0.1872328117251823, 0.7801891554310714)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
             }
-            quatf xformOp:orient = (0.99005528, 0.00000000, 0.00000000, -0.14067886)
-            float3 xformOp:scale = (1.50000000, 1.50000000, 1)
-            double3 xformOp:translate = (1.0583641529083252, 0.0094942525029182, 0.7801891554310714)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_scissors_002" (
-            prepend payload = @/geniesim_assets/objects/benchmark/scissors/benchmark_scissors_002/Aligned.usda@
+        def Xform "benchmark_scissors_003" (
+            prepend payload = @/geniesim_assets/objects/benchmark/scissors/benchmark_scissors_003/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.60084354, 0.00000000, 0.00000000, -0.79936665)
+            quatf xformOp:orient = (0.72440016, 0, 0, -0.6893797)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (1.0298516484624574, -0.0967152748912125, 0.8072893097321094)
+            double3 xformOp:translate = (1.0251133101202057, 0.0900843398448439, 0.8088893097321094)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"

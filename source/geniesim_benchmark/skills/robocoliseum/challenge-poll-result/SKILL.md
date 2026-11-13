@@ -46,9 +46,15 @@ There is no single-job status endpoint, so fetch the list and pick your job by `
 
 ```bash
 [ -f ~/.simubotix-challenge.env ] && . ~/.simubotix-challenge.env
-curl -fsS "$BASE_URL/api/challenge/jobs?page=1&per-page=20" \
+curl -fsS "$BASE_URL/api/challenge/jobs?season=${JOB_SEASON:-2}&page=1&per-page=20" \
   -H "Authorization: Bearer $CHALLENGE_TOKEN" | jq
 ```
+
+> **The list is per season.** `season=2` (default when omitted) returns only Season II jobs;
+> `season=1` returns only Season I jobs. The two seasons score differently, so they are never
+> mixed in one list. `JOB_SEASON` is saved by `challenge-submit-job` Step 4; a Season II job
+> polled without `season=2` is simply not in the list. Any other value →
+> `400 invalid season: <v> (want 1 or 2)`.
 
 > **Query param is `per-page` with a hyphen.** The server reads `per-page`; `per_page` is
 > silently ignored and you get the default page size of 20. The *response* echoes it back as
@@ -69,6 +75,7 @@ Each item, with the fields that matter for polling:
   "name": "challenge_test",
   "model_name": "test",
   "board": "instruction",
+  "model_type": "policy",
   "status": 1,
   "detailed_status": "evaluating",
   "progress": { "done": 3, "total": 12 },
@@ -78,6 +85,29 @@ Each item, with the fields that matter for polling:
   "list_on_leaderboard": true
 }
 ```
+
+Season II jobs (`"board": "v2"`) additionally carry the review state:
+
+```json
+{
+  "board": "v2",
+  "model_type": "agent",
+  "review_status": "rejected",
+  "review_rejected_reason": "…",
+  "boards": [
+    {"board": "finemanip", "score": 61.2},
+    {"board": "crsemb", "score": 48.0},
+    {"board": "wbc", "score": 55.5},
+    {"board": "dexmanip", "score": 40.1}
+  ],
+  "paper_link": ""
+}
+```
+
+- `model_type`: the model type (`policy` / `agent`) in the submitter's account profile; empty if the profile has none.
+- `review_status`: empty = not submitted for review, `pending`, `approved` (listed), `rejected` (see `review_rejected_reason`; can be re-submitted via `challenge-submit-job` Step 6). A `completed` Season II job is on the leaderboard only once `approved`.
+- `boards`: the four sub-board scores of this job, always in the order finemanip / crsemb / wbc / dexmanip. Computed live from all tasks, so it moves while the job is running; a sub-board with no finished task shows 0.
+- `paper_link`: for Season II jobs, the paper link the organizers attached when approving the result; empty unless `review_status` is `approved`.
 
 Other query params: `model_name` (fuzzy match), `order` / `sort-by` (`col:dir`, comma-separated).
 There is **no id filter** — select client-side with `jq`.
@@ -123,11 +153,11 @@ doesn't change state that quickly and you'll burn rate budget.
 ```bash
 while true; do
   [ -f ~/.simubotix-challenge.env ] && . ~/.simubotix-challenge.env
-  JOB=$(curl -fsS "$BASE_URL/api/challenge/jobs?page=1&per-page=100" \
+  JOB=$(curl -fsS "$BASE_URL/api/challenge/jobs?season=${JOB_SEASON:-2}&page=1&per-page=100" \
     -H "Authorization: Bearer $CHALLENGE_TOKEN" \
     | jq -c --argjson id "$JOB_ID" '.items[] | select(.id == $id)')
   if [ -z "$JOB" ]; then
-    echo "job $JOB_ID not found on page 1 — widen per-page or check the id"; break
+    echo "job $JOB_ID not found on page 1 — check JOB_SEASON (Season I needs season=1), widen per-page, or check the id"; break
   fi
   DS=$(echo "$JOB" | jq -r '.detailed_status // "?"')
   PROG=$(echo "$JOB" | jq -r '"\(.progress.done)/\(.progress.total)"')
@@ -175,6 +205,9 @@ Exact response shape — **two keys (`tasks`, `total`); status is on the job lis
 - `tasks[…].total` is the mean of those episodes' average scores.
 - Top-level `total` is the job's stored score. It is `0` until scoring lands, so a `0` here on a
   still-running job means "not scored yet", not "scored zero".
+- For a Season II job, `total` is the average of the four sub-board scores, not of all task totals —
+  don't recompute it from `tasks`. The per-sub-board split is on the Season II leaderboard detail
+  (`challenge-ranking`).
 - A job with no episodes yet returns `{"tasks":{},"total":0}` — that is a success, not an error.
 
 `/result` answers "what are the scores", not "is it done", so **never** use it to decide whether
@@ -230,8 +263,9 @@ Returns the newest failed case's `EmuCaseExecLog`:
   root cause is a *different* case, so don't debug this log. `1`/`3`/`4` point at your inference
   code or the case itself. `9` is **usually on your side**: the agent dropped the tunnel (process
   exit, OOM, or a long inference call starving the heartbeat). Read the sub-reason in
-  `result.error` — only `startup reconcile` is platform-side; `reconnect window expired` and
-  `liveness probe` mean your agent went away.
+  `result.error`: `reconnect window expired` means the agent was gone for more than 30 s;
+  `liveness probe: last_seen stale` means the platform's database-side check saw no sign of
+  life from the tunnel. A `(last disconnect: …)` suffix, when present, says how it dropped.
 - `result` is a free-form JSON map written by the worker. There is no guaranteed `exit_code` or
   `stderr` key — inspect what's actually there (`jq '.result | keys'`) instead of assuming.
 - **`result.stdout` is usually a URL, not the log text.** When the worker archived stdout to
@@ -278,6 +312,7 @@ Links expire after `expires_in` seconds (8h).
 ## Hand-off
 
 - `completed` → fetch `/result`, then suggest `challenge-ranking` to see where the score lands.
+  For a Season II job, offer to submit it for review (`challenge-submit-job` Step 6; ask first).
 - `failed` → pull `/log`, read `failure_reason` first, then `challenge-troubleshoot`.
 - `pending` / `inference_disconnected` for more than a few minutes → `challenge-troubleshoot`
   (no agent connected, or all dropped past the gateway's 30 s reconnect window).

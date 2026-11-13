@@ -211,6 +211,7 @@ class Ros_Extrater:
 
         for name in task_info["object_names"]["articulated_object_prims"]:
             self.articulated_object_names.append(name)
+        self.object_frame_names = {name.rsplit("/", 1)[-1] for name in self.object_names}
         self.frame_status = task_info["frame_status"]
         self.fps = task_info["fps"]
         self.with_img = True
@@ -700,7 +701,11 @@ class Ros_Extrater:
                                     transform.transform.rotation.z,
                                 ]
                             )
-                            if self.right_gripper_center_name in transform.child_frame_id:
+                            if transform.child_frame_id in self.object_frame_names:
+                                single_frame_state["objects"][transform.child_frame_id] = {
+                                    "pose": get_pose(*(position, rotation)).tolist()
+                                }
+                            elif self.right_gripper_center_name in transform.child_frame_id:
                                 single_ee_info_r = {
                                     "time_stamp": (float)(transform.header.stamp.sec)
                                     + (float)(transform.header.stamp.nanosec) * np.power(10.0, -9),

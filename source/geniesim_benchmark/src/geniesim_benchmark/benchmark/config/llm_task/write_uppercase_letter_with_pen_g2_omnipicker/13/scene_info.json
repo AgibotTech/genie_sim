@@ -18,23 +18,23 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        0.09214332860736174,
-        0.07179135365084761,
+        0.07119395620938615,
+        0.044684130338376774,
         0.8325046575220938
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.21034575060144034,
-        0.9776270583427592
+        -0.09463373797911535,
+        0.9955121574526853
       ],
       "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
     },
     "pen_holder": {
       "usd": "benchmark_stationery_021",
       "xyz": [
-        0.010000000000000002,
-        -0.1896,
+        0.015,
+        -0.1936,
         0.8718060575671304
       ],
       "xyzw": [
@@ -48,8 +48,8 @@
     "pen": {
       "usd": "benchmark_pen_009",
       "xyz": [
-        0.010000000000000002,
-        -0.1896,
+        0.015,
+        -0.1936,
         0.9070046575220938
       ],
       "xyzw": [
@@ -221,7 +221,7 @@
     ],
     "physical_validation": "pending new physical trial"
   },
-  "scene_id": 13,
+  "scene_id": 23,
   "task_name": "trace_copybook_o_g2_op_20261023",
   "target_letter": "O",
   "physical_validation": {
@@ -233,21 +233,21 @@
     "batch": "writing_generalization_4000_20261023",
     "seed": 20261023,
     "robot": "G2_OP",
-    "anchor": "G2_OP/v05/B",
+    "anchor": "G2_OP/v01/B",
     "jitter_xy_m_yaw_deg": [
-      0.007336918137226856,
-      -0.0067070828243893585,
-      1.9052037293427366
+      -0.0068115223791452816,
+      0.0064355292148651965,
+      0.8337651666140844
     ],
     "anchor_variation": {
       "paper_xy_m": [
-        -0.025,
-        0.006
-      ],
-      "paper_yaw_deg": 3,
-      "holder_xy_m": [
-        -0.01,
+        -0.015,
         0.01
+      ],
+      "paper_yaw_deg": 5,
+      "holder_xy_m": [
+        -0.005,
+        0.006
       ]
     },
     "accepted_attempt": 0,
@@ -258,24 +258,25 @@
     "physical_success": false,
     "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
   },
-  "seed": 1797701373,
+  "seed": 2505905978,
+  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
   "benchmark_generalization": {
     "method": "bounded_paper_adapter",
     "translation_m": [
-      0.06980641047013489,
-      0.06209843647523697
+      0.05300547858853143,
+      0.01784860112351158
     ],
-    "yaw_delta_deg": 19.379951563230144,
+    "yaw_delta_deg": -16.694183151035553,
     "letter": "O",
     "original_bulk_generator_available": false,
     "pen_and_holder_fixed": true,
-    "instance_id": 13,
-    "source_instance": 4,
-    "source_scene_sha256": "d1058a47643d5d1dc08a350a4714c0649d79eabf5d633ecbcc501c0a580d0436",
-    "seed": 1797701373,
-    "visual_pool_index": 42,
+    "instance_id": 23,
+    "source_instance": 8,
+    "source_scene_sha256": "873f1457ffcdd22ead73a4d4498cc2d65455ed5342ddc58ed09cc69a4e2dc95a",
+    "seed": 2505905978,
+    "visual_pool_index": 209,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.9643613465098337,
+    "selection_feature_distance": 1.0940335045115852,
     "source_slot": {
       "letter": "O"
     },
@@ -287,6 +288,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending"
+  }
 }

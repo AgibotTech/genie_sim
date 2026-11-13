@@ -6,7 +6,7 @@
 Replaces the older ROS rosbag → external extractor pipeline. Camera frames are
 pulled directly from the simulator's image cache, optionally annotated with the
 active task instruction, and piped into per-camera ffmpeg subprocesses (rawvideo
-bgr24 → libvpx-vp9 webm). On the same sampled ticks an optional state sampler
+bgr24 → libvpx-vp9 webm). On the same sampled ticks a state sampler
 (robot base pose / velocity, joint state) is appended to ``state.jsonl`` so a
 recording can be replayed, chassis included.
 """
@@ -20,6 +20,7 @@ import subprocess
 import threading
 import time
 import uuid
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
@@ -76,6 +77,32 @@ def _overlay_instruction_text(cv_image, text, font_scale=0.6, thickness=1, margi
         cv2.putText(cv_image, line, (margin, y), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
         y += margin // 2
 
+    return cv_image
+
+
+def _overlay_episode_index(cv_image, episode_idx, font_scale=0.6, thickness=1, margin=10):
+    """Render the recording's zero-based episode index in the bottom-right corner."""
+    text = f"Episode: {episode_idx}"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    img_h, img_w = cv_image.shape[:2]
+    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    if text_w > max(1, img_w - 2 * margin):
+        font_scale *= max(1, img_w - 2 * margin) / text_w
+        (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    x = max(0, img_w - margin - text_w)
+    y = max(text_h, img_h - margin - baseline)
+    padding = margin // 2
+
+    overlay = cv_image.copy()
+    cv2.rectangle(
+        overlay,
+        (max(0, x - padding), max(0, y - text_h - padding)),
+        (min(img_w - 1, x + text_w + padding), min(img_h - 1, y + baseline + padding)),
+        (0, 0, 0),
+        -1,
+    )
+    cv2.addWeighted(overlay, 0.6, cv_image, 0.4, 0, cv_image)
+    cv2.putText(cv_image, text, (x, y), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
     return cv_image
 
 
@@ -266,12 +293,12 @@ class LocalRecorder:
         self,
         fps: int = DEFAULT_FPS,
         ffmpeg_threads: int = DEFAULT_FFMPEG_THREADS,
-        record_state: bool = False,
+        record_state: bool = True,
         record_world_camera: bool = False,
     ):
         self._fps = fps
         self._ffmpeg_threads = ffmpeg_threads
-        # Opt-in extras (benchmark.record_state / benchmark.record_world_camera).
+        # Replay state is enabled by default; world-camera recording is opt-in.
         self._record_state = record_state
         self._record_world_camera = record_world_camera
 
@@ -293,6 +320,17 @@ class LocalRecorder:
         self._current_bag_path: str | None = None
         self._current_episode_idx: int = 0
         self._processed_bags: list[str] = []
+        self._checkpoint_run_id: str | None = None
+        self._last_stopped_bag = None
+
+    def restore_checkpoint(self, run_id, bag_paths):
+        """Install ordered, committed segments before starting new episodes."""
+        with self._lock:
+            if self._is_recording:
+                raise RuntimeError("Cannot restore an active recording")
+            self._checkpoint_run_id = run_id
+            self._processed_bags = list(bag_paths)
+            self._last_stopped_bag = None
 
     # ----- Configuration --------------------------------------------------
 
@@ -357,6 +395,10 @@ class LocalRecorder:
             bag_path = os.path.join(recording_dir, bag_name)
             video_dir = os.path.join(bag_path, "video")
             os.makedirs(video_dir, exist_ok=True)
+            if self._checkpoint_run_id is not None:
+                from .checkpoint import atomic_write_json
+
+                atomic_write_json(Path(bag_path) / "checkpoint_run.json", {"run_id": self._checkpoint_run_id})
 
             # Resolve canonical camera names + dedupe (multiple sim cams may
             # map to the same canonical name; first one wins).
@@ -437,7 +479,7 @@ class LocalRecorder:
 
         ``robot_interface._img_data_cache[cam_id]`` is RGBA uint8 — convert to
         BGR before submitting to ffmpeg. The head camera also gets the active
-        instruction overlaid. ``state_sampler`` is called only on sampled ticks
+        instruction and episode index overlaid. ``state_sampler`` is called only on sampled ticks
         and must return a JSON-serialisable dict.
         """
         if not self._is_recording:
@@ -451,6 +493,7 @@ class LocalRecorder:
 
         with self._lock:
             instruction = self._current_instruction
+            episode_idx = self._current_episode_idx
             cam_map = dict(self._camera_id_to_name)
             encoders = dict(self._encoders)
 
@@ -464,8 +507,9 @@ class LocalRecorder:
             # RGBA → BGR (drop alpha, swap R/B). copy() to detach from sim
             # buffer that gets overwritten next tick.
             bgr = np.ascontiguousarray(rgba[..., 2::-1])
-            if cam_name == INSTRUCTION_OVERLAY_CAMERA and instruction:
+            if cam_name == INSTRUCTION_OVERLAY_CAMERA:
                 _overlay_instruction_text(bgr, instruction)
+                _overlay_episode_index(bgr, episode_idx)
             encoder.submit(bgr)
 
         if state_sampler is not None:
@@ -492,6 +536,10 @@ class LocalRecorder:
         """Close ffmpeg pipes and write instructions_raw.json. Returns bag_path."""
         with self._lock:
             if not self._is_recording:
+                if self._checkpoint_run_id is not None and self._last_stopped_bag is not None:
+                    index, path = self._last_stopped_bag
+                    if episode_idx == index and not discard:
+                        return path
                 return None
             encoders = list(self._encoders.values())
             self._encoders.clear()
@@ -511,13 +559,20 @@ class LocalRecorder:
             if episode_idx is not None:
                 self._current_episode_idx = episode_idx
 
+        failures = []
         for encoder in encoders:
             try:
                 encoder.close()
+                if self._checkpoint_run_id is not None:
+                    if encoder._proc.returncode != 0 or encoder.frames_written == 0:
+                        failures.append(f"{encoder.camera_name}: encoder failed or produced no frames")
             except Exception as exc:
+                failures.append(f"{encoder.camera_name}: {exc}")
                 logger.error(f"[local_recorder] failed to close encoder for {encoder.camera_name}: {exc}")
         if state_file is not None:
             state_file.close()
+        if failures and self._checkpoint_run_id is not None and not discard:
+            raise RuntimeError("Episode recording failed: " + "; ".join(failures))
 
         if bag_path is None:
             return None
@@ -532,6 +587,7 @@ class LocalRecorder:
 
         with self._lock:
             self._processed_bags.append(bag_path)
+            self._last_stopped_bag = (self._current_episode_idx, bag_path)
 
         total_frames = sum(getattr(e, "frames_written", 0) for e in encoders)
         total_dropped = sum(getattr(e, "frames_dropped", 0) for e in encoders)
@@ -575,7 +631,7 @@ class LocalRecorder:
 
     # ----- Cross-episode concat ------------------------------------------
 
-    def concat_all(self, final_output_dir: str | None = None) -> None:
+    def concat_all(self, final_output_dir: str | None = None, *, preserve_bags=False):
         """Finalize per-episode webms into the parent recording directory.
 
         For every camera:
@@ -586,6 +642,8 @@ class LocalRecorder:
         Per-episode bag directories are removed afterwards so the final layout
         matches the contract regardless of whether concat actually ran.
         """
+        if preserve_bags:
+            return self._concat_checkpoint_recordings()
         with self._lock:
             bag_paths = list(self._processed_bags)
 
@@ -671,6 +729,89 @@ class LocalRecorder:
 
         if final_output_dir:
             self._move_to_final(output_dir, final_output_dir)
+
+    @staticmethod
+    def _publish_artifact(temporary, destination, mode):
+        os.chmod(temporary, mode & 0o777)
+        with open(temporary, "rb") as stream:
+            os.fsync(stream.fileno())
+        os.replace(temporary, destination)
+        directory = os.open(Path(destination).parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+
+    @staticmethod
+    def _copy_artifact(source, destination):
+        destination = Path(destination)
+        if Path(source).resolve() == destination.resolve():
+            return
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(
+            prefix=f".{destination.stem}.", suffix=destination.suffix, dir=destination.parent
+        )
+        os.close(fd)
+        try:
+            shutil.copyfile(source, temporary)
+            LocalRecorder._publish_artifact(temporary, destination, Path(source).stat().st_mode)
+        finally:
+            Path(temporary).unlink(missing_ok=True)
+
+    @staticmethod
+    def publish_checkpoint_artifacts(artifacts, output_dir, final_output_dir):
+        """Export media without moving the result file or checkpoint directory."""
+        if final_output_dir:
+            target = Path(final_output_dir) / Path(output_dir).name
+            for path in artifacts:
+                LocalRecorder._copy_artifact(path, target / Path(path).name)
+
+    def _concat_checkpoint_recordings(self):
+        """Publish each final video atomically; keep sources until manifest commit."""
+        with self._lock:
+            bags = [Path(p) for p in self._processed_bags]
+        if not bags:
+            return []
+        output_dir = bags[0].parent
+        videos = {}
+        expected = None
+        for bag in bags:
+            camera_files = {p.stem: p for p in (bag / "video").glob("*.webm") if p.stat().st_size > 0}
+            if not camera_files or (expected is not None and camera_files.keys() != expected):
+                raise RuntimeError(f"Incomplete committed recording: {bag}")
+            expected = camera_files.keys()
+            for name, path in sorted(camera_files.items()):
+                videos.setdefault(name, []).append(path)
+        artifacts = []
+        for name, segments in videos.items():
+            destination = output_dir / f"{name}.webm"
+            if len(segments) == 1:
+                self._copy_artifact(segments[0], destination)
+            else:
+                fd, temporary = tempfile.mkstemp(prefix=f".{name}.", suffix=".webm", dir=output_dir)
+                os.close(fd)
+                listing = Path(temporary).with_suffix(".txt")
+                try:
+                    # ffconcat's single-quote escaping differs from JSON/shell quoting.
+                    listing.write_text("\n".join("file '" + str(p).replace("'", "'\\''") + "'" for p in segments))
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", temporary],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.PIPE,
+                    )
+                    self._publish_artifact(temporary, destination, segments[0].stat().st_mode)
+                finally:
+                    listing.unlink(missing_ok=True)
+                    Path(temporary).unlink(missing_ok=True)
+            artifacts.append(destination)
+        for bag in bags:
+            state = bag / "state.jsonl"
+            if state.is_file():
+                destination = output_dir / f"{bag.name}.state.jsonl"
+                self._copy_artifact(state, destination)
+                artifacts.append(destination)
+        return artifacts
 
     def _move_to_final(self, src_dir: Path, final_output_dir: str) -> None:
         try:

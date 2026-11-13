@@ -1,4 +1,4 @@
-"""Fold cloth V2 schema constants."""
+"""Fold cloth schema constants."""
 
 from __future__ import annotations
 

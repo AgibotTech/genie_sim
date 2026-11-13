@@ -862,6 +862,13 @@ TASK_MAPPING = {
         },
         "eval_dims": {"manip": "pick_place", "cognition": "semantic"},
     },
+    "put_the_plates_on_the_shelf_slot": {
+        "background": {
+            "G2_90d": "put_the_plates_on_the_shelf_g2_90d",
+            "G2_crsB_90d": "put_the_plates_on_the_shelf_g2_90d",
+        },
+        "eval_dims": {"manip": "pick_place", "cognition": "semantic"},
+    },
     "open_the_roller_shutter": {
         "background": {
             "G2_90d": "open_the_roller_shutter_g2_90d",

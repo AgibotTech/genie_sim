@@ -8,6 +8,10 @@ VALID_SUITES=(
     "instruction"
     "manipulation"
     "sim2real"
+    "cross_embodiment_transfer"
+    "dexterous_manipulation"
+    "precision_manipulation"
+    "whole_body_coordination"
 )
 
 show_help() {
@@ -29,6 +33,10 @@ show_help() {
     echo "  $0                                  # Download all task suites to ./data/"
     echo "  $0 instruction                      # Download instruction suite to ./data/"
     echo "  $0 sim2real /path/to/save           # Download sim2real suite to /path/to/save/"
+    echo "  $0 cross_embodiment_transfer /path/to/save"
+    echo "  $0 dexterous_manipulation /path/to/save"
+    echo "  $0 precision_manipulation /path/to/save"
+    echo "  $0 whole_body_coordination /path/to/save"
 }
 
 SUITE_NAME=""
@@ -69,7 +77,7 @@ download_suite() {
     mkdir -p "$target_dir"
 
     TEMP_DIR=$(mktemp -d)
-    trap 'rm -rf -- "$TEMP_DIR"' EXIT
+    trap "rm -rf $TEMP_DIR" EXIT
 
     echo "========================================="
     echo "Downloading task suite: $suite"
@@ -94,7 +102,7 @@ download_suite() {
         exit 1
     fi
 
-    rm -rf -- "$TEMP_DIR"
+    rm -rf "$TEMP_DIR"
     trap - EXIT
 }
 

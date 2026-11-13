@@ -1,13 +1,13 @@
 {
-  "scene_id": 454,
-  "seed": 2026101504,
+  "scene_id": 13,
+  "seed": 3840329033,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        -0.10313894793684657,
-        0.003907158584960875,
-        0.37032665140840526
+        -0.10358889380482927,
+        -0.0037710403941489667,
+        0.37153053624408056
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.30086406737938526,
-        -0.1957857225649059,
-        0.7409171519662985
+        -0.13393724626858922,
+        -0.037435109825712784,
+        0.7421210368019737
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9090057131621525,
-        0.41678365303664006
+        0.9290735149313721,
+        -0.3698951254789193
       ],
       "tags": [
         "root_scene",
@@ -85,15 +85,15 @@
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.19354289148747922,
-        0.21099168164189905,
-        0.7514073469844016
+        -0.08645969214383611,
+        -0.31389746227031096,
+        0.7526112318200769
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.1271784488665164,
-        0.991879852675669
+        -0.08736954785923698,
+        0.9961759694486073
       ],
       "tags": [
         "root_scene",
@@ -127,15 +127,15 @@
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.4844215582335649,
-        0.16252408590958145,
-        0.6350697492919644
+        -0.4848715041015476,
+        -0.1765171079938164,
+        0.6362736341276397
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        6.123234e-17
+        -6.123234e-17
       ],
       "tags": [
         "root_scene",
@@ -178,15 +178,15 @@
     "trash_apple_000": {
       "usd": "benchmark_trash_029",
       "xyz": [
-        -0.0483681626264006,
-        -0.016699230575468377,
-        0.7711762329041989
+        -0.2814377204936285,
+        0.16036737493005332,
+        0.772380117739874
       ],
       "xyzw": [
-        0.13710370212424328,
-        0.693687663767943,
-        -0.13710370212424328,
-        0.6936876637679431
+        -0.20714844618517386,
+        0.6760839602024796,
+        0.20714844618517383,
+        0.6760839602024799
       ],
       "tags": [
         "root_scene",
@@ -211,5 +211,45 @@
       ]
     }
   },
-  "relations": []
+  "relations": [],
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.17264147266483176,
+    "handle_outward_deg": 43.41790756502371,
+    "trash": [
+      "trash_bone_000",
+      "trash_apple_000"
+    ],
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 13,
+    "source_instance": 8,
+    "source_scene_sha256": "6b76921e22341404d37ad3eeee02ef26728ee70270ce1a135f68a368160505f9",
+    "seed": 3840329033,
+    "visual_pool_index": 63,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.1723427584341697,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

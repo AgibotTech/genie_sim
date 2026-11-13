@@ -1,5 +1,195 @@
 {
+  "scene_id": 27,
   "condition_id": "bearing-gearing-shaft-section-seat5mm-20261022",
+  "seed": 20265132,
+  "layout": {
+    "table_02148680": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/table/Aligned.usda",
+      "xyz": [
+        0.0,
+        0.0,
+        0.367
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "tags": [
+        "table_02148680"
+      ],
+      "keywords": [
+        "table"
+      ],
+      "description": {
+        "semantic_name": [
+          "table"
+        ]
+      }
+    },
+    "Aligned": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda",
+      "xyz": [
+        -0.03355122119482364,
+        -0.01966966747005543,
+        0.8180391994687565
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.9990482330322266,
+        0.04361938685178757
+      ],
+      "tags": [
+        "Aligned"
+      ],
+      "keywords": [
+        "gearbox central shaft and support disc"
+      ],
+      "description": {
+        "semantic_name": [
+          "gearbox central shaft and support disc"
+        ]
+      }
+    },
+    "Aligned_02": {
+      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda",
+      "xyz": [
+        0.23144877880517634,
+        0.23533033252994456,
+        0.7430340638288921
+      ],
+      "xyzw": [
+        0.0,
+        0.0,
+        0.5,
+        -0.8660253882408142
+      ],
+      "tags": [
+        "Aligned_02"
+      ],
+      "keywords": [
+        "loose gear"
+      ],
+      "description": {
+        "semantic_name": [
+          "loose gear"
+        ]
+      }
+    }
+  },
+  "source_package_layout": {
+    "scene_id": "scene_07",
+    "scene_file": "scene_07/scene.usda",
+    "scene_sha256": "c6ec5f26a013f5e0c38ee10c36ca1a0311e65591629e1b443ae60f0f4ade95b4",
+    "gear_direction_relative_to_fixture": "back-right",
+    "fixture_region": "center",
+    "fixture_depth": "front",
+    "gear": {
+      "prim": "/World/Objects/Aligned_02",
+      "yaw_world_deg": 300,
+      "translation_m": [
+        0.235,
+        0.255,
+        0.7430340638288921
+      ],
+      "quaternion_wxyz": [
+        -0.8660253882408142,
+        0.0,
+        0.0,
+        0.5
+      ]
+    },
+    "fixture": {
+      "prim": "/World/Objects/Aligned",
+      "yaw_world_deg": 175,
+      "translation_m": [
+        -0.03,
+        0.0,
+        0.8180391994687565
+      ],
+      "quaternion_wxyz": [
+        0.04361938685178757,
+        0.0,
+        0.0,
+        0.9990482330322266
+      ]
+    },
+    "z_adjustment_from_supplied_initial_m": {
+      "fixture": -0.013371652606824602,
+      "gear": -0.007932055626212353
+    },
+    "target": {
+      "shaft_prim": "/World/Objects/Aligned/entity/body/collider_002",
+      "support_prim": "/World/Objects/Aligned/entity/body/collider_004",
+      "shaft_bounds_m": [
+        [
+          -0.04571493788074819,
+          -0.011900814827041152,
+          0.7549678101311721
+        ],
+        [
+          -0.0143218100784667,
+          0.01949299213836074,
+          0.9044697621056598
+        ]
+      ],
+      "shaft_axis_xy_world_m": [
+        -0.030018373979607445,
+        0.0037960886556597942
+      ],
+      "shaft_top_world_z_m": 0.9044697621056598,
+      "support_top_world_z_m": 0.7549692513497885,
+      "axis_estimator": "XY center of exact transformed shaft-mesh AABB"
+    },
+    "static_validation": {
+      "passed": true,
+      "physics_and_api_schemas_unchanged": true,
+      "collision_bounds_m": {
+        "fixture": [
+          [
+            -0.17473542109762108,
+            -0.14473495954654703,
+            0.732418655679496
+          ],
+          [
+            0.11473568411392049,
+            0.14473632467324687,
+            0.9044697621056598
+          ]
+        ],
+        "gear": [
+          [
+            0.20439026254124626,
+            0.223666529931767,
+            0.732418655679496
+          ],
+          [
+            0.26598237562757276,
+            0.28547325527193623,
+            0.753649406687608
+          ]
+        ]
+      },
+      "table_edge_margin_m": {
+        "fixture": 0.12526462062563026,
+        "gear": 0.03401763629335619
+      },
+      "collision_bottom_gap_above_table_m": {
+        "fixture": 0.0004999999999999449,
+        "gear": 0.0004999999999999449
+      },
+      "gear_fixture_xy_aabb_clearance_m": 0.11944840197814964,
+      "not_preassembled": true,
+      "dependency_layer_count": 7,
+      "file_asset_dependency_count": 26,
+      "unresolved_file_dependencies": [],
+      "runtime_builtin_mdl_modules": [
+        "OmniPBR.mdl"
+      ]
+    }
+  },
   "robot_configuration": {
     "robot_base_pose": {
       "position": [
@@ -53,95 +243,12 @@
     "initial_state_source": "mount_part_90d-initial-state.json",
     "base_pose_source": "opposite-base-pose.json"
   },
-  "scene_id": "install_bearing_shaft_seat5mm_17",
-  "task_name": "install_bearing_shaft_seat5mm",
-  "seed": 2026103317,
-  "layout": {
-    "table_02148680": {
-      "usd": "/objects/benchmark/gearing_20261020/assets/table/Aligned.usda",
-      "xyz": [
-        0.0,
-        0.0,
-        0.367
-      ],
-      "xyzw": [
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "tags": [
-        "table_02148680"
-      ],
-      "keywords": [
-        "table"
-      ],
-      "description": {
-        "semantic_name": [
-          "table"
-        ]
-      },
-      "asset_path": "objects/benchmark/gearing_20261020/assets/table/Aligned.usda"
-    },
-    "Aligned": {
-      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda",
-      "xyz": [
-        -0.02597765421668234,
-        0.013805805469701917,
-        0.8180391994687565
-      ],
-      "xyzw": [
-        0.0,
-        0.0,
-        0.9990482330322266,
-        0.04361938685178757
-      ],
-      "tags": [
-        "Aligned"
-      ],
-      "keywords": [
-        "gearbox central shaft and support disc"
-      ],
-      "description": {
-        "semantic_name": [
-          "gearbox central shaft and support disc"
-        ]
-      },
-      "asset_path": "objects/benchmark/gearing_20261020/assets/gearing/gearbox/benchmark_gearbox_001/Aligned.usda"
-    },
-    "Aligned_02": {
-      "usd": "/objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda",
-      "xyz": [
-        0.23902234578331766,
-        0.2688058054697019,
-        0.7430340638288921
-      ],
-      "xyzw": [
-        0.0,
-        0.0,
-        0.5,
-        -0.8660253882408142
-      ],
-      "tags": [
-        "Aligned_02"
-      ],
-      "keywords": [
-        "loose gear"
-      ],
-      "description": {
-        "semantic_name": [
-          "loose gear"
-        ]
-      },
-      "asset_path": "objects/benchmark/gearing_20261020/assets/gearing/gear/benchmark_gear_004/Aligned.usda"
-    }
-  },
   "native_placement_target": {
     "active": "Aligned_02",
     "passive": "Aligned",
     "world_root_position_m": [
-      -0.025624755340051274,
-      0.017569390338464518,
+      -0.03319832231819258,
+      -0.01590608260129283,
       0.7655846594991846
     ],
     "world_root_quaternion_wxyz": [
@@ -162,57 +269,37 @@
       -0.052454539969571834
     ],
     "basis": "central shaft collision-AABB XY center; gear collision bottom on support-disc top",
+    "legacy_checker_thresholds_unchanged": false,
     "final_height_tolerance_m": 0.005,
     "height_boundary_inclusive": true
   },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 17,
+    "instance_id": 27,
     "source_instance": 7,
-    "source_scene_sha256": "ed673d61dfdf1f7cbe785bf3be36f6d9a20ce7df900bc0bc6f1a55ef22e592ab",
-    "source_scene_info_sha256": "5e3f4dca7d647dd4b8f1966da1afb0aa605471b0e1818357a653419124d3b91c",
-    "source_problem_sha256": "8a55f641a3ef288759e67a8910c5fe79d65917238ba5fee412531038c6dfa0a5",
-    "seed": 2026103317,
-    "world_xy_translation_m": [
-      0.004022345783317657,
-      0.013805805469701917
+    "source_hashes": {
+      "scene.usda": "ed673d61dfdf1f7cbe785bf3be36f6d9a20ce7df900bc0bc6f1a55ef22e592ab",
+      "instructions.json": "432f964b772ac5d5d1b77d38b532e3714c0ea21742ec9a6132319b5b70c97408",
+      "scene_info.json": "5e3f4dca7d647dd4b8f1966da1afb0aa605471b0e1818357a653419124d3b91c",
+      "problems.json": "8a55f641a3ef288759e67a8910c5fe79d65917238ba5fee412531038c6dfa0a5"
+    },
+    "requested_source_instance": 7,
+    "world_translation_m": [
+      -0.003551221194823645,
+      -0.01966966747005543,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "Aligned",
       "Aligned_02"
     ],
     "fixed_prims": [
       "table_02148680"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.019987670958796614,
+    "seed": 20265105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.01437983067590939,
-    "table_support": {
-      "table_prim": "table_02148680",
-      "baseline_xy_edge_margin_m": [
-        0.022729276271024612,
-        0.20339334711667362
-      ],
-      "minimum_xy_edge_margin_m": [
-        0.001,
-        0.001
-      ],
-      "generated_xy_edge_margin_m": [
-        0.018706930487706885,
-        0.18958754164697172
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

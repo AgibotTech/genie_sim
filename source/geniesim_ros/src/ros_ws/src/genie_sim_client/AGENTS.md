@@ -41,3 +41,9 @@ the existing Newton client or its arrival protocol. ROS imports remain lazy;
 the caller owns engine/render bringup and shutdown. IPC identity, action
 completion and immutable state/image packets follow [IPC_CLIENT.md](IPC_CLIENT.md).
 Keep backend SDK imports out of this package and preserve the existing tests.
+
+IPC recorded sequences use only preloaded YAML indices with explicit
+`begin_episode` / `finish_episode` / `reset(next_index)` completion. Unexpected
+epoch changes and uncertain sends still poison the client; reset never revives
+a failed session. See `tests/test_ipc_episode_sequence.py`. This does not alter
+the Newton arrival protocol or add an engine/backend import here.

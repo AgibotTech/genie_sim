@@ -16,7 +16,7 @@ _geniesim_completions() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
 
-    local cmds="ros deploy benchmark teleop post-train data-collection docker docker6.2 docker4.5 docker5.1 status doctor env bootstrap tool dataset version completion"
+    local cmds="assets ros deploy benchmark teleop post-train data-collection docker docker6.2 docker4.5 docker5.1 status doctor env bootstrap tool dataset version completion"
 
     case "${#words[@]}" in
         2)
@@ -25,6 +25,12 @@ _geniesim_completions() {
     esac
 
     case "${words[1]}" in
+        assets)
+            if [[ "${#words[@]}" -eq 3 ]]; then
+                COMPREPLY=($(compgen -W "list plan download verify" -- "${cur}"))
+            else
+                COMPREPLY=($(compgen -W "g2op_if manip spatial dexmanip finemanip wbc crsemb robust sandbox --source modelscope huggingface --dest --workers --index --output --overwrite --help" -- "${cur}"))
+            fi ;;
         bootstrap)
             COMPREPLY=($(compgen -W "--help --libuipc-only" -- "${cur}")) ;;
         ros)
@@ -117,6 +123,7 @@ _geniesim() {
     commands=(
         'ros:ROS 2 colcon build + rosdep doctor'
         'deploy:Build wheels into ./deploy'
+        'assets:Download selected benchmark asset dependencies'
         'benchmark:Run / list / batch benchmark tasks'
         'teleop:VR / Pico teleoperation (W.I.P.)'
         'post-train:Post-training simulation servers and Pico debugging'
@@ -153,6 +160,12 @@ _geniesim() {
     fi
 
     case "${words[2]}" in
+        assets)
+            if (( CURRENT == 3 )); then
+                _values 'action' list plan download verify
+            else
+                _values 'selector/option' g2op_if manip spatial dexmanip finemanip wbc crsemb robust sandbox --source modelscope huggingface --dest --workers --index --output --overwrite --help
+            fi ;;
         bootstrap)
             _values 'option' --help --libuipc-only ;;
         ros)

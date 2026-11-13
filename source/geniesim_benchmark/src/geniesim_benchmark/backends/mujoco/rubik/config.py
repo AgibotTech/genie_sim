@@ -31,6 +31,11 @@ class BenchmarkConfig:
     seed: int = 0
     output_dir: str = ""
     record: bool = False
+    record_state: bool = True
+    record_video_dir: str = ""
+    fps: int = 30
+    resume: bool = False
+    resume_id: str = ""
     preview: bool = False
 
 
@@ -38,6 +43,7 @@ class BenchmarkConfig:
 class RubikConfig:
     package_root: str = ""
     prompt: str = "Solve the Rubik's Cube"
+    segments: list[str] = field(default_factory=list)
     scramble: str = ""
     timeout_seconds: float = 60.0
     control_hz: float = 30.0
@@ -62,6 +68,7 @@ class RubikConfig:
     renderer: str = field(default_factory=lambda: os.environ.get("RUBIK_RENDERER", "mujoco"))
     isaac_python: str = ""
     scene_archive: str = field(default_factory=lambda: os.environ.get("RUBIK_SCENE_ARCHIVE", ""))
+    bundled_scene_archive: str = ""
     cameras: dict = field(default_factory=policy_cameras)
 
 
@@ -119,8 +126,14 @@ def load_config(path, overrides=()):
         raise ValueError("This backend supports Rubik scene tasks on g2_crsb_wuji")
     if not r.prompt.strip():
         raise ValueError("rubik.prompt must be nonempty")
+    if any(not isinstance(segment, str) or not segment.strip() for segment in r.segments):
+        raise ValueError("rubik.segments must contain nonempty strings")
+    if b.fps < 1:
+        raise ValueError("benchmark.fps must be positive")
     if b.num_episode < 1 or b.num_instances < 1 or b.seed < 0:
         raise ValueError("Require positive num_episode/num_instances and nonnegative seed")
+    if b.resume_id in (".", "..") or "/" in b.resume_id or "\\" in b.resume_id:
+        raise ValueError("benchmark.resume_id must be a local job/model identity")
     if b.policy not in ("websocket", "hold"):
         raise ValueError("policy must be websocket or hold (interface smoke test)")
     r.package_root = r.package_root or os.environ.get("RUBIK_PACKAGE_ROOT", "")
@@ -131,8 +144,15 @@ def load_config(path, overrides=()):
             r.package_root = str(assets_directory() / "mujoco" / "rubik_cube")
         except RuntimeError as error:
             raise ValueError(str(error)) from error
+    if r.bundled_scene_archive:
+        name = Path(r.bundled_scene_archive)
+        if name.name != r.bundled_scene_archive or name.suffix != ".zip":
+            raise ValueError("rubik.bundled_scene_archive must be a catalog ZIP filename")
+        if raw["rubik"].get("scene_archive"):
+            raise ValueError("Choose either rubik.scene_archive or rubik.bundled_scene_archive")
+        r.scene_archive = str(Path(__file__).parent / "scene_catalogs" / name)
     if not r.scene_archive and b.task_name == "rubik_cube_solve_2turn":
-        r.scene_archive = str(Path(__file__).parent / "scene_catalogs/rubik_2turn_10_xy_v1.zip")
+        r.scene_archive = str(Path(__file__).parent / "scene_catalogs/rubik_2turn_5_public.zip")
     if not r.scene_archive and r.renderer == "isaac":
         candidate = Path(r.package_root) / "rubik_scenes_only_10_20261012.zip"
         if candidate.is_file():

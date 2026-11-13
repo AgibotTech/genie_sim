@@ -200,7 +200,8 @@ fi
 # ---------------------------------------------------------------------------
 echo -e "${CYAN}📦 [entrypoint]${RST} installing tier-1 geniesim peers (editable)..."
 
-_pip_install() {
+_pip_install() (
+    set -o pipefail
     local py_cmd="$1"; shift
     local pip_break="$1"; shift
     local break_flag=""
@@ -216,8 +217,10 @@ _pip_install() {
         "$@" 2>&1 \
         | stdbuf -oL sed -u 's/\x1b\[[0-9;]*m//g' \
         | stdbuf -oL sed -u -E "s/^(Successfully.*)/${GREEN}\1${RST}/; s/^(ERROR.*)/${RED}\1${RST}/" \
-        | while IFS= read -r line; do [ -n "$line" ] && echo -e "   ${DIM}${line}${RST}"; done || true
-}
+        | while IFS= read -r line; do
+            if [ -n "$line" ]; then echo -e "   ${DIM}${line}${RST}"; fi
+        done
+)
 
 # Single source of truth for the tier-1 peer list: the umbrella's
 # ``source/geniesim/pyproject.toml``. ``docker/collect_deps.py --peers``
@@ -270,6 +273,23 @@ fi
 if [ -n "${EDITABLE_ARGS}" ]; then
     # Always install into system python3 (console scripts land in /usr/local/bin).
     _pip_install python3 "1" ${EDITABLE_ARGS}
+
+    # docker exec defaults to root; expose the runtime user's editable packages.
+    if [ "$(id -u)" = "0" ]; then
+        runtime_site=$(gosu "${TARGET_USER}" python3 -m site --user-site)
+        python3 - "${runtime_site}" <<'PY'
+import pathlib
+import sys
+import sysconfig
+
+runtime_site = sys.argv[1]
+path = pathlib.Path(sysconfig.get_path("purelib")) / "geniesim-runtime-user.pth"
+path.write_text(
+    f"import site; site.addsitedir({runtime_site!r}) "
+    f"if site.getusersitepackages() != {runtime_site!r} else None\n"
+)
+PY
+    fi
 
     # For omni_python variants, also install into the bundled interpreter so
     # simulation code can import geniesim packages directly.

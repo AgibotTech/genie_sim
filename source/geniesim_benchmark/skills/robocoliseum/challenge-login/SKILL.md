@@ -27,24 +27,19 @@ When echoing this command back to the user, **redact the password** (show `[REDA
 ```bash
 # Helper (define once per shell; or inline at the top of each Bash call)
 challenge_save_var() {
-  local f=~/.simubotix-challenge.env key="$1" val="$2" tmp
-  (umask 077; touch "$f") || return 1
-  chmod 600 "$f" || return 1
-  tmp=$(mktemp "$f.XXXXXX") || return 1
-  if ! awk -v k="$key" '$0 !~ "^" k "="' "$f" > "$tmp"; then
-    rm -f -- "$tmp"
-    return 1
+  local f=~/.simubotix-challenge.env key="$1" val="$2"
+  touch "$f" && chmod 600 "$f"
+  if [ -s "$f" ]; then
+    awk -v k="$key" '$0 !~ "^" k "="' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
   fi
-  printf '%s=%q\n' "$key" "$val" >> "$tmp"
-  mv -f -- "$tmp" "$f"
+  printf '%s=%q\n' "$key" "$val" >> "$f"
+  chmod 600 "$f"
   export "$key=$val"
 }
 
-LOGIN_BODY=$(jq -n --arg email "$EMAIL" --arg password "$PASSWORD" \
-  '{email: $email, password: $password}')
 LOGIN_RESP=$(curl -fsS -X POST "$BASE_URL/api/challenge/login" \
   -H "Content-Type: application/json" \
-  --data-binary "$LOGIN_BODY")
+  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
 
 STATUS=$(echo "$LOGIN_RESP" | jq -r '.status // "error"')
 TOKEN=$(echo  "$LOGIN_RESP" | jq -r '.token  // empty')
@@ -75,7 +70,7 @@ curl -fsS "$BASE_URL/api/challenge/current-user-info" \
 Read these fields back to the user:
 
 - `name` — what shows up on the leaderboard.
-- `max_concurrent_cases` (if exposed) — the per-user `parallelism` cap; remember this for `challenge-run-agent`.
+- `max_concurrent_cases` — the `parallelism` each of this user's jobs gets: the number of live agent connections one job accepts. Remember this for `challenge-run-agent`.
 
 > **If this returns HTTP 5xx (e.g. `curl: (22) ... error 500`)**, do NOT assume the platform is down. The most common cause is `$CHALLENGE_TOKEN` being unset / empty / not exported into the current shell — the server may surface that as a 500 instead of a clean 401. Drop `-f` to see the body, and confirm the state file is being sourced:
 >
@@ -132,9 +127,9 @@ rm -f ~/.simubotix-challenge.env
 challenge_reset_job() {
   local f=~/.simubotix-challenge.env
   [ -f "$f" ] || return 0
-  awk '$0 !~ /^(JOB_ID|JOB_UUID|JOB_TOKEN|PARALLELISM|TUNNEL_ENDPOINT)=/' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+  awk '$0 !~ /^(JOB_ID|JOB_UUID|JOB_TOKEN|PARALLELISM|TUNNEL_ENDPOINT|JOB_SEASON)=/' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
   chmod 600 "$f"
-  unset JOB_ID JOB_UUID JOB_TOKEN PARALLELISM TUNNEL_ENDPOINT
+  unset JOB_ID JOB_UUID JOB_TOKEN PARALLELISM TUNNEL_ENDPOINT JOB_SEASON
 }
 ```
 

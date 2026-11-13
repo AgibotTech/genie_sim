@@ -9,7 +9,7 @@ def Xform "World"
 {
     def Scope "Objects"
     {
-def "benchmark_table_019_00" (
+        def "benchmark_table_019_00" (
             prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
@@ -33,13 +33,14 @@ def "benchmark_table_019_00" (
                 }
             }
         }
-def "benchmark_tissue_000" (
+
+        def "benchmark_tissue_000" (
             prepend payload = @/geniesim_assets/objects/benchmark/tissue/benchmark_tissue_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.97169474, 0, 0, -0.236239988)
+            quatf xformOp:orient = (0.03227661, 0, 0, 0.999479)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.63540482455158931, 0.351401917141553, 0.77136594880096143)
+            double3 xformOp:translate = (0.6229005372241685, 0.3689313883856844, 0.7713659488009614)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity" (
@@ -66,13 +67,14 @@ def "benchmark_tissue_000" (
                 }
             }
         }
-def "benchmark_tissue_000_01" (
+
+        def "benchmark_tissue_000_01" (
             prepend payload = @/geniesim_assets/objects/benchmark/tissue/benchmark_tissue_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.97169474, 0, 0, -0.236239988)
+            quatf xformOp:orient = (0.03227661, 0, 0, 0.999479)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.70116308154081153, 0.47864567734881774, 0.77136594880096143)
+            double3 xformOp:translate = (0.6136593359870408, 0.2259988061182413, 0.7713659488009614)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity" (
@@ -99,7 +101,8 @@ def "benchmark_tissue_000_01" (
                 }
             }
         }
-def "benchmark_delivery_plate_000" (
+
+        def "benchmark_delivery_plate_000" (
             prepend apiSchemas = ["MaterialBindingAPI"]
             prepend payload = @/geniesim_assets/objects/benchmark/delivery_plate/benchmark_delivery_plate_000/Aligned.usda@
         )
@@ -107,9 +110,9 @@ def "benchmark_delivery_plate_000" (
             rel material:binding = None (
                 bindMaterialAs = "weakerThanDescendants"
             )
-            quatf xformOp:orient = (0.854138837, 0, 0, 0.520045043)
+            quatf xformOp:orient = (-0.6839154, 0, 0, 0.7295614)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.66906806523916729, 0.40999999999999998, 0.74342203864843226)
+            double3 xformOp:translate = (0.615547873531201, 0.3017533605425471, 0.7434220386484323)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity"

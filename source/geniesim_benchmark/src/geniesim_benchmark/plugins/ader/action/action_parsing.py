@@ -146,6 +146,11 @@ def do_parsing(env, task_definitions_path):
                 task_progress = []
                 objects = []
                 acts = parse_action(configured_scoring_action(problem), task_progress, env)
+                if sub_task_name == "pick_up_trash_wbc":
+                    from .wbc_trash_pickup import configure_wbc_trash_pickup
+
+                    for observer in configure_wbc_trash_pickup(acts):
+                        record_act_obj(observer, task_progress)
                 return problem_name, objects, acts, task_progress
         except Exception as e:
             if isinstance(e, PolicyBudgetError):
@@ -199,13 +204,13 @@ def parse_action(obj: dict, task_progress, env, stage_step_out=None) -> ActionBa
             from .policy_dispatch_budget import PolicyDispatchBudget
 
             try:
-                required = {"version", "step", "action"}
+                required = {"step", "action"}
                 if (
                     not isinstance(value, dict)
                     or not required <= set(value)
                     or set(value) - required - {"points", "step_out"}
                 ):
-                    raise ValueError("PolicyDispatchBudget requires version, step, action; optional points, step_out")
+                    raise ValueError("PolicyDispatchBudget requires step, action; optional points, step_out")
                 if "step_out" in value and (stage_step_out is None or value["step_out"] != stage_step_out):
                     raise ValueError("PolicyDispatchBudget.step_out must match the enclosing native StepOut")
                 stage = parse_action(value["action"], task_progress, env, stage_step_out)
@@ -213,7 +218,6 @@ def parse_action(obj: dict, task_progress, env, stage_step_out=None) -> ActionBa
                     env,
                     stage,
                     value["step"],
-                    value["version"],
                     points=value.get("points"),
                     step_out=value.get("step_out"),
                 )
@@ -224,6 +228,10 @@ def parse_action(obj: dict, task_progress, env, stage_step_out=None) -> ActionBa
                 return act
             except Exception as exc:
                 raise PolicyBudgetError(f"Invalid PolicyDispatchBudget: {exc}") from exc
+        if key == "OnTopCount":
+            act = custom.OnTopCount(env, **value)
+            record_act_obj(act, task_progress, value)
+            return act
         if key == "PointInVolume":
             from .custom.point_in_volume import PointInVolume
 

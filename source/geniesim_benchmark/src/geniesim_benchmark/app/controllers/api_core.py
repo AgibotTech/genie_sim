@@ -95,6 +95,7 @@ class APICore:
         # single episode, the inference server, or the sim's own render/
         # physics loop). app.py checks this after shutdown to make the
         # process exit non-zero instead of exit 0.
+        self.evaluation_app_config = {k: v for k, v in vars(config.app).items() if k not in {"headless", "livestream"}}
         self.fatal_error = None
         # Which EXIT_* bucket fatal_error falls into -- see the EXIT_*
         # constants and their docstrings in task_benchmark.py for the
@@ -205,7 +206,7 @@ class APICore:
         # In-process video recorder (replaces the ROS rosbag pipeline).
         self.local_recorder = LocalRecorder(
             fps=30,
-            record_state=bool(getattr(config.benchmark, "record_state", False)),
+            record_state=bool(getattr(config.benchmark, "record_state", True)),
             record_world_camera=bool(getattr(config.benchmark, "record_world_camera", False)),
         )
         self.playback_timerange = []
@@ -1306,7 +1307,7 @@ class APICore:
         )
 
     def stop_local_recording(self, episode_idx=None, discard=False):
-        self.run_on_render_loop(self._stop_local_recording, episode_idx, discard)
+        return self.run_on_render_loop(self._stop_local_recording, episode_idx, discard)
 
     def concat_recordings(self, final_output_dir=None):
         self.local_recorder.concat_all(final_output_dir=final_output_dir)
@@ -2123,6 +2124,9 @@ class APICore:
             self._reinitialize_workspace()
 
     def _reinitialize_workspace(self):
+        # world.play() can invoke physics callbacks before views are reinitialized.
+        # Keep caches unpublished if rebuilding fails; the caller must abort.
+        self._workspace_reinitializing = True
         # A timeline stop reverts every simulated prim to its authored USD
         # state, i.e. the whole articulation snaps back to its spawn joint
         # angles in one step. On a free base that snap tips the robot over,
@@ -2181,6 +2185,8 @@ class APICore:
 
         if release_after_reload:
             self._set_robot_base_anchored(False)
+
+        self._workspace_reinitializing = False
 
     def _add_background_reference(self, scene_usd_path):
         add_reference_to_stage(scene_usd_path, "/World")
@@ -2822,6 +2828,19 @@ class APICore:
         )
         light.initialize()
 
+    def set_hdr_background(self, directory, seed, identity):
+        """Replace the panorama and its lighting on the render thread."""
+        return self.run_on_render_loop(self._set_hdr_background, directory, seed, identity)
+
+    def _set_hdr_background(self, directory, seed, identity):
+        from geniesim_benchmark.hdr_background import apply_hdr, select_hdr
+
+        selection = select_hdr(system_utils.assets_path(), identity, seed, directory)
+        apply_hdr(self._stage, selection, world_root=self.env_root or "/World")
+        self.hdr_background_receipt = selection
+        logger.info("HDR_BACKGROUND " + json.dumps(selection))
+        return selection
+
     def randomize_hdr_textures(self):
         """Public API to randomize HDR textures for all DomeLights in the scene.
 
@@ -2911,6 +2930,16 @@ class APICore:
             disable_physics(self._physics_info)
             self._play()
 
+        if self.enable_ros:
+            self.object_prims = self.robot_interface.register_scene_objects(self._stage, extra_prim_paths)
+            self.record_topic_list = list(
+                dict.fromkeys(
+                    [
+                        *self.record_topic_list,
+                        *[f"/articulated/{name}" for name in self.object_prims["articulated_object_prims"]],
+                    ]
+                )
+            )
         self.record_rosbag()
         self.recording_started = True
 
@@ -2943,7 +2972,7 @@ class APICore:
         # Eval path: stop the in-process LocalRecorder.
         logger.info("Stop recording (local)")
         self.recording_started = False
-        self.local_recorder.stop(episode_idx=episode_idx, discard=discard)
+        return self.local_recorder.stop(episode_idx=episode_idx, discard=discard)
 
     def _graceful_stop_recording(self):
         """Synchronous stop used during shutdown — handles both paths."""
@@ -2974,6 +3003,7 @@ class APICore:
             "robot_name": self.robot_name,
             "frame_status": self.frame_status,
             "light_config": self.light_config,
+            "hdr_background": getattr(self, "hdr_background_receipt", None),
             "gripper_names": self.gripper_names,
             "with_img": self.record_images,
             "with_video": self.record_video,
@@ -3504,6 +3534,8 @@ class APICore:
             raise ValueError("Undefined robot")
 
     def on_ros_tick(self, step_size):
+        if getattr(self, "_workspace_reinitializing", False):
+            return
         # Sim-tick: refresh robot_interface caches every step, regardless of
         # whether ROS is enabled. The recorder reads _img_data_cache from here.
         current_time = self.ui_builder.my_world.current_time

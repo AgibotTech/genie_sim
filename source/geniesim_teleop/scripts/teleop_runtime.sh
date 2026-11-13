@@ -26,3 +26,7 @@ teleop_select_runtime() {
     TELEOP_DEFAULT_CONTAINER=geniesim4
     TELEOP_DEFAULT_SIM_PY=python3.12
 }
+
+teleop_ensure_app() {
+    python3 "$1/source/geniesim_teleop/src/geniesim_teleop/runtime.py"
+}

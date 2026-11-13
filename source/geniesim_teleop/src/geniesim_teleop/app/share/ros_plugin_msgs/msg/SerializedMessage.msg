@@ -1,2 +1,0 @@
-string scheme
-byte[] data

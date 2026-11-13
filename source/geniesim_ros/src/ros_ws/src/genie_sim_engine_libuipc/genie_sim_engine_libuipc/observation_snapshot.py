@@ -112,6 +112,7 @@ def capture_state(engine, request_id: str, source_id: str | None = None) -> dict
         raise ValueError("snapshot committed frame changed during capture")
     return {
         "version": 1,
+        "episode_index": getattr(engine, "_sequence_index", 0),
         "snapshot_id": str(uuid.uuid4()),
         "request_id": request_id,
         "source_id": identity[0],

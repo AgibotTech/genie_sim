@@ -154,7 +154,7 @@ class SceneLifecycleTests(unittest.TestCase):
                 self.assertEqual(methods(ast.parse(found[0])),expected,str(scene))
                 self.assertIn("if str(self.cap.GetPath()) in self._installed_caps:", found[0])
                 count += 1
-        self.assertEqual(count,80)
+        self.assertEqual(count,40)
 
     def test_inactive_stage_cannot_destroy_current_sdk_instances(self):
         other = Usd.Stage.CreateInMemory()

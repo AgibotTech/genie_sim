@@ -1,6 +1,6 @@
 {
-  "scene_id": "hang_cups_on_cup_tree_g2_op",
-  "seed": 3758376736,
+  "scene_id": 17,
+  "seed": 1066675731,
   "layout": {
     "table_af238e00": {
       "usd": "table_000",
@@ -61,15 +61,15 @@
     "benchmark_cup_holder_248e4f8b": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
-        0.159,
-        0.011,
-        0.907
+        0.15918598555873004,
+        0.038292082530824084,
+        0.9070824611567659
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.304079,
-        0.952647
+        0.9992251672015918,
+        -0.03935816600085547
       ],
       "tags": [
         "root_scene_a1a7c137",
@@ -87,17 +87,17 @@
       "description": {}
     },
     "benchmark_cup_6e48461e": {
-      "usd": "benchmark_cup_121",
+      "usd": "benchmark_cup_123",
       "xyz": [
-        -0.107,
-        -0.212,
-        0.775
+        -0.031592022005840215,
+        -0.12382566032648847,
+        0.7812770859870295
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.381716,
-        0.92428
+        0.4005594169177712,
+        0.9162707861317501
       ],
       "tags": [
         "root_scene_a1a7c137",
@@ -114,7 +114,18 @@
         "task_side_right",
         "POSITION_TAG_right"
       ],
-      "description": {}
+      "description": {
+        "semantic_name": [
+          "handled cup"
+        ],
+        "object_category": [
+          "cup",
+          "mug"
+        ],
+        "full_description": [
+          "A handled cup; appearance and dimensions are defined by the selected original-scale asset."
+        ]
+      }
     }
   },
   "relations": {
@@ -184,5 +195,40 @@
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "robot_specific_cup_asset_side_relative_layout",
+    "cup_asset": "benchmark_cup_123",
+    "side": "right",
+    "holder_xy_m": [
+      0.15918600045989123,
+      0.0382921123331465
+    ],
+    "holder_yaw_deg": -175.4887211750878,
+    "cup_yaw_deg": 47.22630997588462,
+    "footprint_separation_m": 0.1,
+    "proposal_holder": {
+      "xy_m": [
+        0.15918600045989123,
+        0.0382921123331465
+      ],
+      "yaw_deg": -175.4887211750878
+    },
+    "source_line_fraction": 0.42537287333721324,
+    "instance_id": 17,
+    "source_instance": 7,
+    "source_scene_sha256": "76eebecc0a94a9e2cfa044271e1bd11ae478542dedcb588cc6e6292dcfe49e71",
+    "seed": 1066675731,
+    "visual_pool_index": 1,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.655361299127162,
+    "source_slot": {
+      "cup_asset_index": 7,
+      "side": "right"
+    },
+    "distribution_adjustment": null,
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

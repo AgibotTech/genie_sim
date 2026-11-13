@@ -56,15 +56,15 @@
         1.0
       ]
     },
-    "benchmark_cup_131": {
+    "benchmark_cup_114": {
       "description": {
         "semantic_name": [
           "cup"
         ],
         "dimensions": [
-          0.07037122920155525,
-          0.07037222175097466,
-          0.08904169499874115
+          0.06474153324961662,
+          0.06474226875588798,
+          0.08191894969871649
         ],
         "unit": "m"
       },
@@ -75,19 +75,19 @@
       ],
       "tags": [
         "cover_cup_lid",
-        "benchmark_cup_131"
+        "benchmark_cup_114"
       ],
-      "usd": "benchmark_cup_131",
+      "usd": "benchmark_cup_114",
       "xyz": [
-        0.9440956393434561,
-        0.08457572676477955,
-        0.8101807001123604
+        0.9429778086083538,
+        0.15971638442831584,
+        0.8066190064852385
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.16670455975955242,
-        0.986006891332598
+        -0.20965145528316498,
+        0.9777761697769165
       ]
     },
     "benchmark_cup_115": {
@@ -113,20 +113,49 @@
       ],
       "usd": "benchmark_cup_115",
       "xyz": [
-        0.853381783873422,
-        -0.32964213544993193,
+        0.8600759316207092,
+        -0.0743316841664662,
         0.7791975710909407
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.7018371065167895,
-        0.712337473334192
+        0.7338533401489258,
+        0.6793079376220703
       ]
     }
   },
-  "scene_id": "table_with_cup_and_lid",
-  "seed": 10,
+  "scene_id": 20,
+  "seed": 20262125,
   "cup_side": "left",
-  "lid_side": "right"
+  "lid_side": "right",
+  "generalization": {
+    "instance_id": 20,
+    "source_instance": 0,
+    "source_hashes": {
+      "scene.usda": "eb338f5e9e4b795b55f68227cc29c837cc44e0f7fbfb7801e5c94fbf0e65e074",
+      "instructions.json": "f0bdc7609b4f421b205c73861dc502f541be284847b88a42a679801dc8b7b328",
+      "scene_info.json": "c2ab25676905b8b2297a6dc7c8a45b8eaf6a818b08c8607a62c8d1155de87789",
+      "problems.json": "197c3dd27350d7469dc3c76ac3e9478948f1d3d16e5ab62112586b2d7a5f9491"
+    },
+    "requested_source_instance": 0,
+    "world_translation_m": [
+      0.019964240704392976,
+      -0.017689904694308988,
+      0.0
+    ],
+    "moving_prims": [
+      "benchmark_cup_114",
+      "benchmark_cup_115"
+    ],
+    "fixed_prims": [
+      "table_7643d40d"
+    ],
+    "minimum_layout_distance_m": 0.0266740254741701,
+    "seed": 20262105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
+  },
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

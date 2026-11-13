@@ -1,8 +1,8 @@
 {
-  "scene_id": 12,
-  "seed": 276048832,
+  "scene_id": 22,
+  "seed": 431065089,
   "layout": {
-    "table_9ccade94": {
+    "table_610b1450": {
       "usd": "table_000",
       "xyz": [
         0.0,
@@ -16,9 +16,9 @@
         1.0
       ],
       "tags": [
-        "root_scene_aac09d2d",
-        "hang_cups_on_cup_tree_aloha_c6122dcd",
-        "table_9ccade94"
+        "root_scene_d5197170",
+        "hang_cups_on_cup_tree_aloha_2cc7e801",
+        "table_610b1450"
       ],
       "keywords": [
         "table",
@@ -58,11 +58,11 @@
         ]
       }
     },
-    "benchmark_cup_holder_dd256347": {
+    "benchmark_cup_holder_dc4ec7de": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
         -0.1000000149011612,
-        -0.02459266057868862,
+        -0.04526820252566659,
         0.9070824611567659
       ],
       "xyzw": [
@@ -72,36 +72,36 @@
         0.7740390869294733
       ],
       "tags": [
-        "root_scene_aac09d2d",
-        "hang_cups_on_cup_tree_aloha_c6122dcd",
-        "benchmark_cup_holder_dd256347"
+        "root_scene_d5197170",
+        "hang_cups_on_cup_tree_aloha_2cc7e801",
+        "benchmark_cup_holder_dc4ec7de"
       ],
       "keywords": [
         "cup_tree",
         "cup_holder",
         "target_placement",
         "unmovable",
-        "POSITION_TAG_center"
+        "POSITION_TAG_left"
       ],
       "description": {}
     },
-    "benchmark_cup_8c77bfe5": {
+    "benchmark_cup_dbffa501": {
       "usd": "benchmark_cup_118",
       "xyz": [
-        -0.0318488978290158,
-        0.11292331722826018,
+        -0.046382259803329134,
+        0.22367546260590065,
         0.7705085119142066
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.8112297103151432,
-        -0.5847275922188115
+        0.9981916177575201,
+        -0.060112346806832626
       ],
       "tags": [
-        "root_scene_aac09d2d",
-        "hang_cups_on_cup_tree_aloha_c6122dcd",
-        "benchmark_cup_8c77bfe5"
+        "root_scene_d5197170",
+        "hang_cups_on_cup_tree_aloha_2cc7e801",
+        "benchmark_cup_dbffa501"
       ],
       "keywords": [
         "cup_hang_0",
@@ -136,10 +136,10 @@
       },
       "nodes": [
         {
-          "id": "root_scene_aac09d2d"
+          "id": "root_scene_d5197170"
         },
         {
-          "id": "hang_cups_on_cup_tree_aloha_c6122dcd"
+          "id": "hang_cups_on_cup_tree_aloha_2cc7e801"
         },
         {
           "tags": [
@@ -148,7 +148,7 @@
             "workspace",
             "POSITION_TAG_center"
           ],
-          "id": "table_9ccade94"
+          "id": "table_610b1450"
         },
         {
           "tags": [
@@ -156,9 +156,9 @@
             "cup_holder",
             "target_placement",
             "unmovable",
-            "POSITION_TAG_center"
+            "POSITION_TAG_left"
           ],
-          "id": "benchmark_cup_holder_dd256347"
+          "id": "benchmark_cup_holder_dc4ec7de"
         },
         {
           "tags": [
@@ -171,55 +171,56 @@
             "task_side_left",
             "POSITION_TAG_left"
           ],
-          "id": "benchmark_cup_8c77bfe5"
+          "id": "benchmark_cup_dbffa501"
         }
       ],
       "edges": [
         {
-          "source": "root_scene_aac09d2d",
-          "target": "hang_cups_on_cup_tree_aloha_c6122dcd"
+          "source": "root_scene_d5197170",
+          "target": "hang_cups_on_cup_tree_aloha_2cc7e801"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
-          "target": "table_9ccade94"
+          "source": "hang_cups_on_cup_tree_aloha_2cc7e801",
+          "target": "table_610b1450"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
-          "target": "benchmark_cup_holder_dd256347"
+          "source": "hang_cups_on_cup_tree_aloha_2cc7e801",
+          "target": "benchmark_cup_holder_dc4ec7de"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
-          "target": "benchmark_cup_8c77bfe5"
+          "source": "hang_cups_on_cup_tree_aloha_2cc7e801",
+          "target": "benchmark_cup_dbffa501"
         }
       ]
     }
   },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "robot_specific_cup_asset_side_relative_layout",
     "cup_asset": "benchmark_cup_118",
     "side": "left",
     "holder_xy_m": [
       -0.1,
-      -0.024592630776366205
+      -0.04526817272334417
     ],
     "holder_yaw_deg": 78.56401214006463,
-    "cup_yaw_deg": -108.43250403516186,
+    "cup_yaw_deg": -173.10747718962133,
     "footprint_separation_m": 0.01,
     "proposal_holder": {
       "xy_m": [
-        0.13308512995814245,
-        -0.024592630776366205
+        0.16803614885772677,
+        -0.04526817272334417
       ],
-      "yaw_deg": -22.613730319118474
+      "yaw_deg": 76.47550607873421
     },
-    "source_line_fraction": 0.3879931489771975,
-    "instance_id": 12,
-    "source_instance": 9,
-    "source_scene_sha256": "dcf9da37b81c24e16c47335fdb7608f0c13ad930add41335506429a519107fba",
-    "seed": 276048832,
-    "visual_pool_index": 2,
+    "source_line_fraction": 0.2614245759388276,
+    "instance_id": 22,
+    "source_instance": 4,
+    "source_scene_sha256": "1664ecd52edce7dc0653ad192748e6ce8ca78311643713296d39193e0895cfc3",
+    "seed": 431065089,
+    "visual_pool_index": 4,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.9661943697692978,
+    "selection_feature_distance": 1.8035001251579943,
     "source_slot": {
       "cup_asset_index": 2,
       "side": "left"
@@ -227,6 +228,5 @@
     "distribution_adjustment": null,
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

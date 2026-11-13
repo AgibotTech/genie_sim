@@ -40,7 +40,14 @@ def load_episode_material_config(manifest_path, scene_loader):
         return None
     generalization = scene.get("generalization", {})
     material = generalization.get("material", {}) if isinstance(generalization, dict) else {}
-    return material if isinstance(material, dict) and "episode_plan" in material else None
+    if not isinstance(material, dict) or "episode_plan" not in material:
+        return None
+    sequence = scene.get("libuipc", {}).get("episode_sequence")
+    if sequence is not None:
+        if not isinstance(sequence, list) or not sequence:
+            raise ValueError("invalid configured material episode sequence")
+        material = dict(material, episode_sequence=[entry["material"] for entry in sequence])
+    return material
 
 
 def _write_json(path, data):
@@ -171,3 +178,24 @@ def record_material_capture(stage, plan, receipt_path, response, *, manifest_pat
     )
     _write_json(receipt_path, receipt)
     return receipt
+
+
+class MaterialEpisodes:
+    """Select only preloaded YAML plans at a correlated physical epoch boundary."""
+
+    def __init__(self, config):
+        self.entries = config.get("episode_sequence", [config])
+        self.index = 0
+
+    def select(self, snapshot):
+        index = snapshot.get("episode_index", 0)
+        if type(index) is not int or not 0 <= index < len(self.entries):
+            raise ValueError("snapshot episode_index is outside the configured material sequence")
+        if len(self.entries) > 1 and snapshot["epoch"] != index:
+            raise ValueError("material episode does not match physical reset epoch")
+        if index < self.index or index > self.index + 1:
+            raise ValueError("material sequence cannot skip or replay an episode")
+        changed = index != self.index
+        self.index = index
+        entry = self.entries[index]
+        return entry["episode_plan"], entry["receipt_path"], changed

@@ -2,17 +2,15 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Versioned stage efficiency scores; native scores and termination are untouched."""
+"""Stage efficiency scores; native scores and termination are untouched."""
 
 import math
 from copy import deepcopy
 from typing import Any, Mapping, Sequence
 
-from .weighted_scoring import WeightProfile, weighted_score_breakdown
+from .weighted_scoring import WeightProfile, native_stage_scores
 
-POLICY_BUDGET_LEGACY_VERSION = "policy-dispatch-budget-v1"
-POLICY_BUDGET_VERSION = "policy-dispatch-budget-v2"
-POLICY_BUDGET_VERSIONS = (POLICY_BUDGET_LEGACY_VERSION, POLICY_BUDGET_VERSION)
+POLICY_BUDGET_RULE = "policy-dispatch-budget"
 
 
 class PolicyBudgetError(ValueError):
@@ -61,11 +59,8 @@ def configured_scoring_action(problem: Mapping[str, Any]) -> dict[str, Any]:
         ):
             raise ValueError("ScoreCheckers requires one PolicyDispatchBudget configuration")
         config = checkers[0]["PolicyDispatchBudget"]
-        if not isinstance(config, dict) or "steps" not in config or set(config) - {"version", "steps"}:
-            raise ValueError("PolicyDispatchBudget configuration requires steps; version is optional")
-        version = config.get("version", POLICY_BUDGET_VERSION)
-        if version not in POLICY_BUDGET_VERSIONS:
-            raise ValueError("Unsupported PolicyDispatchBudget version")
+        if not isinstance(config, dict) or set(config) != {"steps"}:
+            raise ValueError("PolicyDispatchBudget configuration requires only steps")
         steps = config["steps"]
         if not isinstance(steps, list) or any(
             not isinstance(s, dict)
@@ -83,7 +78,6 @@ def configured_scoring_action(problem: Mapping[str, Any]) -> dict[str, Any]:
             if index >= len(steps) or steps[index]["checker"] != name:
                 raise ValueError("PolicyDispatchBudget checkers must cover native stages in order")
             spec = {
-                "version": version,
                 "step": index,
                 "points": steps[index]["points"],
                 "action": action,
@@ -102,7 +96,7 @@ def configured_scoring_action(problem: Mapping[str, Any]) -> dict[str, Any]:
                 if len(exits) > 1 or (not exits and budget is None):
                     raise ValueError("PolicyDispatchBudget needs exactly one native stage StepOut")
                 stage_budget = exits[0] if exits else budget
-                policy_budget_baseline(stage_budget, version)
+                policy_budget_baseline(stage_budget)
                 guards = {"StepOut", "Onfloor", "OnSurface", "TimeOut"}
                 leaves = [k for item in value for k in item if k not in guards]
                 # Either-hand alternatives are one native scoring checkpoint:
@@ -148,32 +142,76 @@ def configured_scoring_action(problem: Mapping[str, Any]) -> dict[str, Any]:
         raise PolicyBudgetError(f"Invalid ScoreCheckers: {exc}") from exc
 
 
-def policy_budget_baseline(step_out: int, version: str = POLICY_BUDGET_VERSION) -> int:
-    """v2: floor(StepOut / 30); explicit v1 preserves its old 1.1 multiplier."""
-    if version not in POLICY_BUDGET_VERSIONS:
-        raise ValueError("Unsupported PolicyDispatchBudget version")
+def policy_budget_baseline(step_out: int) -> int:
+    """Allocate 80% of one dispatch per 30 steps without reducing StepOut."""
     if type(step_out) is not int or step_out <= 0:
         raise ValueError("Policy budget requires a positive integer StepOut")
-    baseline = step_out // 30 if version == POLICY_BUDGET_VERSION else step_out * 11 // 300
+    baseline = step_out // 30
     if baseline == 0:
         raise ValueError("Policy budget baseline rounds to zero")
-    return baseline
+    return max(1, baseline * 4 // 5)
 
 
-def assess_policy_budget(step_out: int, count: int, version: str = POLICY_BUDGET_VERSION) -> dict[str, Any]:
-    baseline = policy_budget_baseline(step_out, version)
+def assess_policy_budget(step_out: int, count: int) -> dict[str, Any]:
+    baseline = policy_budget_baseline(step_out)
     if type(count) is not int or count < 0:
         raise ValueError("Policy dispatch count must be a nonnegative integer")
-    # Each FULL 10% excess is one deduction, always relative to the raw score.
-    tenths = min(10, max(0, (count - baseline) * 10 // baseline))
+    remaining = max(0, min(baseline, 3 * baseline - 2 * count))
+    factor = remaining / baseline
     return {
-        "version": version,
+        "version": POLICY_BUDGET_RULE,
         "step_out": step_out,
         "baseline": baseline,
         "count": count,
         "over_budget": count > baseline,
-        "penalty_tenths": tenths,
-        "factor": (10 - tenths) / 10,
+        "penalty_fraction": 1.0 - factor,
+        "factor": factor,
+    }
+
+
+def policy_budget_rule() -> dict[str, Any]:
+    """Record the numerical rule so comparisons do not depend on its label."""
+    return {
+        "version": POLICY_BUDGET_RULE,
+        "baseline_rounding": "floor_then_scale_floor_min_one",
+        "reference_steps_per_dispatch": 30,
+        "baseline_multiplier": "4/5",
+        "penalty_rule": "twice_proportional_excess_capped_at_one",
+    }
+
+
+def episode_policy_budget_breakdown(
+    rows: Sequence[Mapping[str, Any]], profile: WeightProfile, native_e2e: int,
+    step_out: int, count: int,
+) -> dict[str, Any]:
+    """Apply the DexHand 2 episode budget once to all native checkpoints."""
+    budget = assess_policy_budget(step_out, count)
+    raw_scores, complete = native_stage_scores(rows, profile, native_e2e)
+    factor = budget["factor"]
+    steps = []
+    for index, (name, raw, weight) in enumerate(zip(profile.steps, raw_scores, profile.weights, strict=True)):
+        points = weight * profile.process_points / 100
+        score = raw * factor
+        steps.append({
+            "step": index, "name": name, "raw_score": raw, "score": score, "factor": factor,
+            "points": points, "earned_points": score * points,
+        })
+    process = math.fsum(row["earned_points"] for row in steps) / profile.total_points
+    eligible = complete and not budget["over_budget"]
+    bonus = profile.completion_bonus_points / profile.total_points if eligible else 0.0
+    return {
+        "steps": steps,
+        "process": process,
+        "completion_bonus": bonus,
+        "total": process + bonus,
+        "bonus_eligible": eligible,
+        "scoring": {
+            "scope": "episode",
+            **policy_budget_rule(),
+            "step_out": step_out,
+            "baseline": budget["baseline"],
+        },
+        "budget": budget,
     }
 
 
@@ -182,32 +220,43 @@ def policy_budget_breakdown(
     rows: Sequence[Mapping[str, Any]],
     profile: WeightProfile | None,
 ) -> dict[str, Any] | None:
-    """Use explicitly registered stage monitors; never infer old missing counts."""
+    """Use recorded episode evidence or explicitly registered stage monitors."""
+    scoring = result.get("policy_budget_scoring")
+    if isinstance(scoring, Mapping) and scoring.get("scope") == "episode":
+        if profile is None or result.get("weighted_scoring") != profile.to_dict():
+            raise ValueError("Episode policy budget requires its recorded weight profile")
+        evidence = result["budget_evidence"]
+        breakdown = episode_policy_budget_breakdown(
+            rows, profile, result["scores"]["E2E"], scoring["step_out"], evidence["accepted_batches"]
+        )
+        if scoring != breakdown["scoring"] or evidence["episode_budget"] != breakdown["budget"]:
+            raise ValueError("Episode policy budget evidence disagrees with the recorded configuration")
+        scores = result["scores"]
+        total = breakdown["total"]
+        if scores.get("POLICY_BUDGET_WEIGHTED") != total or scores.get("WEIGHTED", total) != total:
+            raise ValueError("Episode policy budget total disagrees with its evidence")
+        return breakdown
     monitors = [r for r in result.get("progress", []) if r.get("class_name") == "PolicyDispatchBudget"]
     if not monitors:
         return None
     if profile is None:
         raise ValueError("PolicyDispatchBudget requires an explicit task weight profile")
-    native = weighted_score_breakdown(rows, profile, result.get("scores", {}).get("E2E"))
+    native_scores, native_complete = native_stage_scores(rows, profile, result.get("scores", {}).get("E2E"))
     specs = {}
     for monitor in monitors:
         progress = monitor.get("progress")
         spec = progress.get("POLICY_BUDGET") if isinstance(progress, dict) else None
-        if not isinstance(spec, dict) or spec.get("version") not in POLICY_BUDGET_VERSIONS:
+        if not isinstance(spec, dict) or spec.get("version") != POLICY_BUDGET_RULE:
             raise ValueError("Missing or unsupported policy budget evidence")
         index = spec.get("step")
         if type(index) is not int or not 0 <= index < len(profile.steps) or index in specs:
             raise ValueError("Duplicate or invalid policy budget step index")
         if index != len(specs):
             raise ValueError("Policy budget step indices must follow native stage order")
-        policy_budget_baseline(spec.get("step_out"), spec["version"])
+        policy_budget_baseline(spec.get("step_out"))
         specs[index] = spec
     if set(specs) != set(range(len(profile.steps))):
         raise ValueError("PolicyDispatchBudget must cover every configured stage")
-    versions = {spec["version"] for spec in specs.values()}
-    if len(versions) != 1:
-        raise ValueError("PolicyDispatchBudget stages must use one rule version")
-    version = versions.pop()
     configured_points = [specs[i].get("points") for i in range(len(profile.steps))]
     if any(p is not None for p in configured_points):
         configured_points = configured_policy_points(configured_points)
@@ -217,28 +266,27 @@ def policy_budget_breakdown(
     # saved monitor evidence and task configs need no numeric migration.
     authored_points = configured_points
     configured_points = [p * profile.process_points / 50 for p in authored_points]
-    raw_scores = {r["step"]: float(r["score"]) for r in rows}
     adjusted = []
     within_budget = True
     for index, name in enumerate(profile.steps):
         spec = specs[index]
-        raw = raw_scores.get(index, 0.0)
+        raw = native_scores[index]
         count = spec.get("count")
         if count is None:
             if raw != 0:
                 raise ValueError("Successful stage is missing policy budget evidence")
             # An unexecuted failed stage has no count, never an invented zero.
             assessment = {
-                "baseline": policy_budget_baseline(spec["step_out"], version),
+                "baseline": policy_budget_baseline(spec["step_out"]),
                 "count": None,
                 "over_budget": None,
-                "penalty_tenths": None,
                 "factor": None,
             }
+            assessment["penalty_fraction"] = None
             score = 0.0
             within_budget = False
         else:
-            assessment = assess_policy_budget(spec["step_out"], count, version)
+            assessment = assess_policy_budget(spec["step_out"], count)
             score = raw * assessment["factor"]
             within_budget = within_budget and not assessment["over_budget"]
         adjusted.append(
@@ -254,7 +302,7 @@ def policy_budget_breakdown(
             }
         )
     process = math.fsum(row["earned_points"] for row in adjusted) / profile.total_points
-    eligible = native.complete and within_budget
+    eligible = native_complete and within_budget
     bonus = profile.completion_bonus_points / profile.total_points if eligible else 0.0
     return {
         "steps": adjusted,
@@ -263,11 +311,7 @@ def policy_budget_breakdown(
         "total": process + bonus,
         "bonus_eligible": eligible,
         "scoring": {
-            "version": version,
-            "baseline_rounding": "floor",
-            "reference_steps_per_dispatch": 30,
-            "baseline_multiplier": "1" if version == POLICY_BUDGET_VERSION else "11/10",
-            "penalty_rule": "each_full_10_percent_excess_deducts_10_percent_of_raw_stage_score",
+            **policy_budget_rule(),
             "completion_rule": "all_steps_and_native_e2e_and_every_stage_count_at_most_baseline",
             "stage_step_outs": [specs[i]["step_out"] for i in range(len(profile.steps))],
             "stage_points": configured_points,
@@ -280,16 +324,30 @@ def policy_budget_breakdown(
 def add_policy_budget_scores(
     result: dict[str, Any], rows: Sequence[Mapping[str, Any]], profile: WeightProfile | None
 ) -> None:
-    breakdown = policy_budget_breakdown(result, rows, profile)
-    if breakdown is None:
-        return
-    result["scores"].update(
-        {
-            "POLICY_BUDGET_STEPS": breakdown["steps"],
-            "POLICY_BUDGET_PROCESS": breakdown["process"],
-            "POLICY_BUDGET_COMPLETION_BONUS": breakdown["completion_bonus"],
-            "POLICY_BUDGET_WEIGHTED": breakdown["total"],
-            "POLICY_BUDGET_BONUS_ELIGIBLE": int(breakdown["bonus_eligible"]),
-        }
+    """Publish canonical budget scores, leaving missing evidence unavailable."""
+    write_policy_budget_scores(result, profile, policy_budget_breakdown(result, rows, profile))
+
+
+def write_policy_budget_scores(
+    result: dict[str, Any], profile: WeightProfile | None, breakdown: dict[str, Any] | None,
+) -> None:
+    """Populate the shared score fields from a validated budget breakdown."""
+    scores = result.setdefault("scores", {})
+    scores["POLICY_BUDGET_STEPS"] = (
+        [{key: value for key, value in row.items() if key != "raw_score"} for row in breakdown["steps"]]
+        if breakdown is not None else None
     )
-    result["policy_budget_scoring"] = breakdown["scoring"]
+    for weighted_key, policy_key, source in (
+        ("WEIGHTED", "POLICY_BUDGET_WEIGHTED", "total"),
+        ("WEIGHTED_PROCESS", "POLICY_BUDGET_PROCESS", "process"),
+        ("WEIGHTED_COMPLETION_BONUS", "POLICY_BUDGET_COMPLETION_BONUS", "completion_bonus"),
+        ("WEIGHTED_COMPLETE", "POLICY_BUDGET_BONUS_ELIGIBLE", "bonus_eligible"),
+    ):
+        value = breakdown[source] if breakdown is not None else None
+        if source == "bonus_eligible" and value is not None:
+            value = int(value)
+        scores.pop(weighted_key, None)
+        scores[policy_key] = value
+    result["weighted_scoring_metric"] = "POLICY_BUDGET_WEIGHTED"
+    result["weighted_scoring"] = profile.to_dict() if profile is not None else None
+    result["policy_budget_scoring"] = breakdown["scoring"] if breakdown is not None else None

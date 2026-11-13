@@ -110,6 +110,7 @@ or invalid/late ACK has no held-state fallback; a post-send failure makes that
 transaction unusable. CPU-ACK/native failure requires native reset or a new owner.
 
 `engine._sim_time` is authoritative and continues across non-recording resets.
+Recorded sequence epochs each restart their tick/time at zero.
 Every CPU batch receives the previous completed engine time. CPU total counts
 belong to their worker owner and restart independently. The ratio must satisfy
 `cpu_mujoco.physics_hz = physics_hz * sync_substeps`.
@@ -130,12 +131,16 @@ have zero density. Concave colliders require explicit `cpu_collision.method:
 coacd` and positive `threshold` (default `0.01`); decomposition failure aborts,
 without a one-hull fallback. Rigid proxies reject `cpu_collision.margin`.
 
-Reset stops owned inputs, invokes SolverIPC.reset/native World recovery,
-restores joint targets and measurement freshness, then restarts active input.
+Reset detaches owned inputs, invokes SolverIPC.reset/native World recovery,
+restores joint targets and measurement freshness, then reattaches input. Recorded
+sequences reset the CPU barrier worker in place using acknowledged native
+`mj_resetData`, initial qpos/controls and `mj_forward`; contact/solver warm starts
+and command freshness are discarded. The existing non-recording path may restart
+its input owner.
 reset_epoch advances only after success. Native construction state is the reset
 reference; settled-state resnapshotting is not claimed.
 
-Only world 0 is supported. Instance switching, arbitrary native snapshots,
+Only world 0 is supported. Geometry instance switching, arbitrary native snapshots,
 runtime model mutation and nonzero wheel-velocity commands are unsupported.
 Scalar position commands and external measured input remain supported.
 
@@ -204,8 +209,25 @@ failure, cancels actions/snapshots and closes recording dirty before another
 transaction. ROS callbacks record transport faults as plain data; the physics
 owner performs terminalization without SDK work in the callback. An in-flight
 native solve cannot be preempted. Shutdown attempts all resources even after an
-earlier failure. A recording session owns one episode: reset is rejected before
-changing inputs/native state while an archive exists.
+earlier failure. An open physical archive owns one episode: reset is rejected before
+changing inputs/native state until that archive is sealed. A startup YAML
+`libuipc.episode_sequence` may preload successive `{state_recording, material}`
+entries. Each has a unique fresh output/receipt path; the initial entry matches
+`libuipc.state_recording` and `generalization.material`. No geometry or solver
+mutation is allowed. The backend-local episode channel accepts only begin,
+finish and the next configured reset index. It never changes the core ABI.
+
+Finish pauses the physical owner and verifies/closes all committed archive bytes.
+The legacy v1 `solver_shutdown_clean` field denotes this clean episode boundary
+alongside `recording_clean`; it does not imply the simulation process exited.
+During scoring and next-layout material capture the world remains paused. Reset
+restores native construction state and cached kinematic/joint aims, resets CPU
+integration, opens a fresh epoch archive at tick/time zero, and acknowledges only
+after all state writes and archive creation succeed. Begin resumes physical time;
+capture/inference within the running episode still do not pause physics. A failed
+or uncertain reset is terminal and is never retried automatically. Renderer
+material selection comes from its preloaded YAML table and the physical snapshot
+episode/epoch, with independent receipts for every episode.
 
 The action, barrier, capture and archive implementations are local adaptations;
 source attribution remains in their headers and the retained
@@ -228,3 +250,44 @@ diagnostics even with finite output and clean archive closure.
 The [libuipc roadmap](../../../../docs/GENIESIM4_LIBUIPC_MIGRATION_PLAN.md) tracks
 remaining integration work. The [evaluation guide](../../../../../geniesim_benchmark/README.md#deformable-evaluation)
 defines the explicit three-task scope.
+
+## Recorded reset acceptance
+
+CPU checks exercise acknowledged CPU worker reset in both thread and process
+mode, archive sealing/rotation, native-reset failure isolation, stale/duplicate
+requests and client epoch/phase validation. The explicit GPU probe uses real
+cloth-hanger, fold-cloth and drawstring-bag scenes with two material layouts each
+and a deterministic hold policy. It checks stable engine/CPU/render process IDs,
+separate epoch archives/material receipts and original ADER score records. This
+is a lifecycle diagnostic, not model performance or long-horizon task acceptance.
+
+On Isaac Sim 6.2 / RTX 5090 D v2, these three two-layout probes restored particle
+positions/velocities, body positions/velocities and joint positions/velocities
+exactly. Float32 FK and native affine-to-quaternion readback can choose opposite
+quaternion signs; normalized physical rotation error was below 4e-6 rad. The
+probe therefore compares q/-q-equivalent physical rotations at 1e-5 rad, while
+retaining raw archive bytes and raw differences. This is a diagnostic readback
+tolerance, not a policy action or joint-limit rule.
+
+The fold-cloth probe also completed all five material layouts (four consecutive
+resets) in one session and exited cleanly with five native score records. The
+engine, CPU worker and renderer PIDs remained unchanged across epochs 0–4.
+The ordinary CPU protocol/client/render test selection passed 130 checks on
+Python 3.10; the cluster Python 3.12 native probe includes its CPU reset/epoch
+checks. Source formatting and whitespace checks were clean.
+
+### Preloaded base-XY episode plans
+
+`robot_base_pose` is an optional field on every startup episode entry. The first
+pose must match the initial robot pose, all poses must be finite, and only x/y
+may differ. Benchmark sequence compilation removes only those two fields from
+its strict physical-equality comparison and persists their complete pose plans;
+it does not discard their generalization. A material-only reset still recovers
+the existing World at frame zero. A changed pose reconstructs native IPC state
+in the same owner process because recover(0) cannot change a welded root anchor.
+It preserves and validates body/particle/joint topology, reuses the CPU worker
+process with a newly compiled model, retains the particle publishers and then
+rotates archives/epochs. CPU model reload is a private owner channel, with no new
+client-supplied physics parameters. Live CPU viewers are explicitly unsupported
+for this operation. GPU acceptance must compare the requested robot translation,
+unchanged object/cloth initial states, fresh archive epochs and all process PIDs.

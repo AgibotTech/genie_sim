@@ -45,7 +45,12 @@ def identity_packet(engine, status):
         elif getattr(engine, "_execution_failure", None) is not None:
             status = "failed"
     actions = getattr(engine, "_actions", None)
+    import os
+
+    worker = getattr(getattr(engine, "_driver", None), "_cpu_worker", None)
     return dict(
+        engine_pid=os.getpid(),
+        cpu_worker_pid=getattr(getattr(worker, "_worker", None), "pid", None),
         version=1,
         source_id=engine._source_id,
         epoch=engine._epoch,

@@ -1,0 +1,66 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "PickUpOnGripper": "benchmark_carton_022_02,benchmark_carton_022_03,benchmark_carton_022_04|left_gripper"
+              },
+              {
+                "PickUpOnGripper": "benchmark_carton_022_02,benchmark_carton_022_03,benchmark_carton_022_04|right_gripper"
+              },
+              {
+                "StepOut": 900
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "RobotNearObject": "/World/objects/Aligned_01|1.4"
+              },
+              {
+                "StepOut": 1500
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "InBBox": "{@placeholder_str1}|-1.712385,1.340943,1.26|1.8,0.6,0.2"
+              },
+              {
+                "StepOut": 600
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "match_and_pick_from_conveyor",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 10
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 10
+            },
+            {
+              "checker": "InBBox",
+              "points": 30
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

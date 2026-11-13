@@ -59,6 +59,10 @@ class InferenceUnavailableError(RuntimeError):
     """
 
 
+class InferenceServiceError(RuntimeError):
+    """The service replied with an error or an incompatible response schema."""
+
+
 def is_transient_error(exc: BaseException) -> bool:
     return isinstance(exc, TRANSIENT_EXC_TYPES)
 

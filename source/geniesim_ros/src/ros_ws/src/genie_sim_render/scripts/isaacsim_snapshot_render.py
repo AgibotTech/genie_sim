@@ -55,10 +55,10 @@ class SnapshotRenderer:
         cameras = validate_cameras(message["cameras"], width, height)
         self.scene.apply(message["scene"])
         wanted = {camera["name"] for camera in cameras}
-        for name in set(self._products) - wanted:
-            self._drop_camera(name)
+        created = False
         for camera in cameras:
             name = camera["name"]
+            width, height = camera["width"], camera["height"]
             path = self.scene.camera(camera, width, height)
             if name in self._products and self._products[name]["size"] != (
                 width,
@@ -66,6 +66,7 @@ class SnapshotRenderer:
             ):
                 self._drop_camera(name)
             if name not in self._products:
+                created = True
                 product = self.rep.create.render_product(path, (width, height), force_new=True)
                 # Record ownership immediately, including annotator-attach failure.
                 owned = dict(product=product, annotator=None, size=(width, height))
@@ -73,12 +74,23 @@ class SnapshotRenderer:
                 annotator = self.rep.AnnotatorRegistry.get_annotator("rgb")
                 owned["annotator"] = annotator
                 annotator.attach(product)
+        # Isaac 6.2 can render a wrong view after repeated observer/sensor
+        # product destruction. Keep each camera's product for this worker;
+        # inactive views retain resources but do not request render updates.
+        for name, owned in self._products.items():
+            owned["product"].hydra_texture.set_updates_enabled(name in wanted)
+        if created and self.app is not None:
+            print("snapshot render products initializing", flush=True)
+            for _ in range(20):
+                self.app.update()
+            print("snapshot render products initialized", flush=True)
         # Isaac6 Replicator1.13.25: wait_for_render is the annotator readback
         # barrier; delta_time=0 never advances timeline/physics. A second RTX
         # subframe lets changed mesh/camera/material state settle at that time.
         self.rep.orchestrator.step(rt_subframes=2, pause_timeline=True, delta_time=0.0, wait_for_render=True)
         images: dict[str, np.ndarray] = {}
         for name in wanted:
+            width, height = self._products[name]["size"]
             data = self._products[name]["annotator"].get_data(device="cpu", do_array_copy=True)
             data = np.asarray(data)
             if (

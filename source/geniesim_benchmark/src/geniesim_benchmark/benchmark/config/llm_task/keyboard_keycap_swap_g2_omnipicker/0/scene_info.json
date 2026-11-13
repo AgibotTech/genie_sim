@@ -1,6 +1,6 @@
 {
-  "scene_id": "keyboard_keycap_swap_g2_op",
-  "seed": 2026131344,
+  "scene_id": 10,
+  "seed": 3489684527,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -30,15 +30,15 @@
     "keyboard_000": {
       "usd": "benchmark_keyboard_002",
       "xyz": [
-        -0.11581380445523676,
-        -0.13406193115220902,
+        -0.07607684902795861,
+        -0.16770847727947152,
         0.7443891222416303
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.7461089547496417,
-        -0.6658238713371556
+        -0.5424726188795661,
+        0.8400734835512575
       ],
       "tags": [
         "root_scene",
@@ -65,15 +65,15 @@
     "keycap_puller_000": {
       "usd": "benchmark_keycap_puller_003",
       "xyz": [
-        -0.10282431359981033,
-        0.1646065241363657,
+        -0.11549303312827217,
+        0.14778103871358741,
         0.7432891217007136
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.7543546802354085,
-        -0.6564670718375253
+        -0.6875511982653255,
+        0.726135903095223
       ],
       "tags": [
         "root_scene",
@@ -94,15 +94,15 @@
     "replacement_keycap_000": {
       "usd": "benchmark_keycap_002",
       "xyz": [
-        -0.18762365981097898,
-        -0.27343633127609046,
+        -0.2137047957505286,
+        -0.23600577116224555,
         0.7353891221634257
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.6890025532847003,
-        0.7247589127200601
+        0.7154986413457463,
+        -0.6986141239857602
       ],
       "tags": [
         "root_scene",
@@ -124,15 +124,15 @@
     "puller_holder_000": {
       "usd": "benchmark_keycap_swap_fixture_001",
       "xyz": [
-        -0.11589025022976472,
-        0.050329778821860696,
+        -0.10638404457468524,
+        0.03312102150085171,
         0.7323891221373175
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.7543546802354085,
-        -0.6564670718375253
+        -0.6875511982653255,
+        0.726135903095223
       ],
       "tags": [
         "root_scene",
@@ -197,5 +197,57 @@
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "source_manifest_independent_xy_yaw",
+    "source_parameter_seed": 3489684527,
+    "parameters": {
+      "keyboard_dx": 0.04948445364035134,
+      "keyboard_dy": -0.04398347194590307,
+      "keyboard_yaw_deg": 24.295761344765957,
+      "green_dx": -0.04869234441859671,
+      "green_dy": 0.035596410164648956,
+      "green_yaw_deg": -1.3681588447656594,
+      "toolset_dx": 0.00450696687172783,
+      "toolset_dy": -0.005429172880295596,
+      "toolset_yaw_deg": 3.1268482557228694
+    },
+    "base_parameters": {
+      "keyboard_dx": 0.009747498213073191,
+      "keyboard_dy": -0.01033692581864058,
+      "keyboard_yaw_deg": -6.508874771259792,
+      "green_dx": -0.02261120847904711,
+      "green_dy": -0.0018341499491959443,
+      "green_yaw_deg": 2.8975937780527623,
+      "toolset_dx": 0.01717568640018967,
+      "toolset_dy": 0.01139631254248269,
+      "toolset_yaw_deg": -7.93802815979896
+    },
+    "prior_source_ik_evidence": "New range-adapted proposal; no inherited IK acceptance claim",
+    "instance_id": 10,
+    "source_instance": 0,
+    "source_scene_sha256": "e0ba3f4355a2b9fa15059ebe6d3f8752b3556a67fe7b04d9e4655202095198e1",
+    "seed": 3489684527,
+    "visual_pool_index": 128,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.7552433882918896,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "g1": {
+        "xy_m": 0.045,
+        "yaw_deg": 18,
+        "tool_xy_m": 0,
+        "tool_yaw_deg": 0
+      },
+      "other": {
+        "xy_m": 0.05,
+        "yaw_deg": 25,
+        "tool_xy_m": 0.035,
+        "tool_yaw_deg": 18
+      }
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

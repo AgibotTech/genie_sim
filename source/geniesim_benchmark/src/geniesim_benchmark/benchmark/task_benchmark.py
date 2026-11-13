@@ -8,6 +8,7 @@ import glob
 import shutil
 import json
 import copy
+from contextlib import contextmanager
 import threading
 from pathlib import Path
 
@@ -22,7 +23,12 @@ logger = Logger()  # Create singleton instance
 
 from geniesim_benchmark.plugins.output_system import TaskEvaluation, EvaluationSummary
 from geniesim_benchmark.plugins.tgs import ObjectSampler, TaskGenerator
-from geniesim_benchmark.utils.comm.retry import InferenceUnavailableError
+from geniesim_benchmark.utils.comm.retry import InferenceUnavailableError, InferenceServiceError
+from geniesim_benchmark.plugins.output_system.checkpoint import (
+    EvaluationCheckpoint,
+    build_episode_plan,
+    file_digest,
+)
 from geniesim_benchmark.utils.data_courier import DataCourier
 import geniesim_benchmark.utils.system_utils as system_utils
 from geniesim_benchmark.utils.name_utils import robot_type_mapping
@@ -31,7 +37,7 @@ from geniesim_benchmark.benchmark.hooks.task import TaskHook
 from geniesim_benchmark.benchmark.hooks.pregrasp import PreGraspHook
 from geniesim_benchmark.benchmark.subscene_override import resolve_sub_usd_path
 from geniesim_benchmark.app.controllers.api_core import APICore
-from geniesim_benchmark.utils.generalization_utils import update_init_env
+from geniesim_benchmark.utils.generalization_utils import apply_hdr_texture_generalization, update_init_env
 
 system_utils.check_and_fix_env()
 
@@ -68,6 +74,7 @@ class TaskBenchmark(object):
         # Set per task in _evaluate_policy_impl(); retains every started attempt,
         # including interrupted attempts, when the worker aborts.
         self.evaluate_summary = None
+        self._checkpoint = None
 
         seed = getattr(args, "seed", 0)
         np.random.seed(seed)
@@ -135,7 +142,7 @@ class TaskBenchmark(object):
     def _cleanup_task_output(self):
         """Remove an empty task output without deleting recorded attempts."""
         summary = self.evaluate_summary
-        if summary is not None and summary.results:
+        if summary is not None and (summary.results or getattr(summary, "preserve_result", False)):
             return
         result_file = getattr(summary, "file_path", None) if summary is not None else None
         if not result_file:
@@ -162,30 +169,157 @@ class TaskBenchmark(object):
         for task in self.tasks:
             if self.data_courier.stop_requested():
                 break
-            # load task config
-            task_config_file = os.path.join(system_utils.benchmark_conf_path(), "eval_tasks", task + ".json")
-            self.task_config = system_utils.load_json(task_config_file)
-            self.task_config["specific_task_name"] = task
-            self.task_config["sub_task_name"] = self.args.sub_task_name
-            gen_instruction = self.task_config.get("generalization", {}).get("instruction", {})
-            self.task_config["language_perturbation"] = getattr(self.args, "language_perturbation", False) or bool(
-                gen_instruction.get("enable", False)
+            with self._checkpoint_session(task):
+                self._evaluate_task(task)
+
+    @contextmanager
+    def _checkpoint_session(self, task):
+        self.evaluate_summary = EvaluationSummary(system_utils.benchmark_output_path(), task, self.args.sub_task_name)
+        supported = (
+            self.args.model_arc == "corobot"
+            and bool(self.args.sub_task_name)
+            and not self.args.preview
+            and not self.args.interactive
+            and (getattr(self.args, "enable_vec", 0) or 0) <= 1
+        )
+        if not supported and getattr(self.args, "resume", False):
+            logger.warning(
+                "benchmark.resume requires a serial, non-interactive Corobot evaluation with a named subtask; ignoring resume"
             )
-            self.task_config["language_perturbation_config"] = getattr(self.args, "language_perturbation_config", "")
-            self.instruction = self.task_config.get("instruction", "")
-            logger.info(f"sub_task_name: {self.args.sub_task_name}")
+        # Before acquiring the lock, the generated result name may belong to
+        # another worker that has not published its first result yet.
+        self.evaluate_summary.preserve_result = True
+        with EvaluationCheckpoint(
+            self.evaluate_summary.out_dir, resume=supported and getattr(self.args, "resume", False)
+        ) as checkpoint:
+            self._checkpoint = checkpoint if supported else None
+            self.evaluate_summary.preserve_result = checkpoint.state is not None
+            self.evaluate_summary.file_path = str(checkpoint.result_path)
+            try:
+                yield
+            finally:
+                self._checkpoint = None
 
-            if hasattr(self.api_core, "sub_task_name"):
-                self.api_core.sub_task_name = self.args.sub_task_name
-                if hasattr(self.api_core, "benchmark_ros_node") and self.api_core.benchmark_ros_node is not None:
-                    if hasattr(self.api_core.benchmark_ros_node, "set_sub_task_name"):
-                        self.api_core.benchmark_ros_node.set_sub_task_name(self.args.sub_task_name)
-                        logger.info(f"Republished sub_task_name to ROS: {self.args.sub_task_name}")
+    def _checkpoint_identity(self, instance_ids):
+        excluded = {"resume", "infer_host", "record_video_dir", "output_dir"}
+        parameters = {k: v for k, v in vars(self.args).items() if k not in excluded}
+        root = Path(system_utils.benchmark_conf_path())
+        files = {}
+        for iid in instance_ids:
+            directory = root / "llm_task" / self.args.sub_task_name / str(iid)
+            if self.args.sub_task_name and directory.is_dir():
+                files.update(
+                    {str(p.relative_to(root)): file_digest(p) for p in sorted(directory.rglob("*")) if p.is_file()}
+                )
+            override = self.task_config.get("scene", {}).get("sub_usd_override_root")
+            if override:
+                directory = Path(override) / str(iid)
+                files.update(
+                    {
+                        f"override/{iid}/{p.relative_to(directory)}": file_digest(p)
+                        for p in sorted(directory.rglob("*"))
+                        if p.is_file()
+                    }
+                )
+        perturbation = getattr(self.args, "language_perturbation_config", "")
+        if not perturbation:
+            perturbation = root / "instruction_perturbation.json"
+        if Path(perturbation).is_file():
+            files["instruction_perturbation"] = file_digest(perturbation)
+        scoring_dir = Path(__file__).resolve().parent.parent / "plugins/output_system"
+        if self.args.sub_task_name.startswith("hang_cups_on_cup_tree"):
+            files["checker/hang.py"] = file_digest(scoring_dir.parent / "ader/action/custom/hang.py")
+        if self.args.sub_task_name.startswith("pick_up_trash_wbc"):
+            files["checker/wbc_trash_pickup.py"] = file_digest(scoring_dir.parent / "ader/action/wbc_trash_pickup.py")
+        files.update(
+            {f"scoring/{p.name}": file_digest(p) for p in sorted(scoring_dir.glob("*")) if p.suffix in (".py", ".json")}
+        )
+        return dict(
+            parameters=parameters,
+            task_config=copy.deepcopy(self.task_config),
+            instances=instance_ids,
+            inputs=files,
+            app=getattr(self.api_core, "evaluation_app_config", {}),
+        )
 
+    def _finish_checkpoint_recordings(self):
+        checkpoint = self._checkpoint
+        if not self.args.record or not checkpoint.finished:
+            return
+        recorder = self.api_core.local_recorder
+        if not checkpoint.recordings_ready:
+            recorder.restore_checkpoint(checkpoint.run_id, checkpoint.recording_paths())
+            artifacts = recorder.concat_all(preserve_bags=True)
+            checkpoint.finalize_recordings(artifacts)
+        recorder.publish_checkpoint_artifacts(
+            [checkpoint.out_dir / item["name"] for item in checkpoint.state["artifacts"]] + [checkpoint.result_path],
+            checkpoint.out_dir,
+            getattr(self.args, "record_video_dir", None) or None,
+        )
+        checkpoint.cleanup_recordings(committed=True)
+
+    def _evaluate_task(self, task):
+        # load task config
+        task_config_file = os.path.join(system_utils.benchmark_conf_path(), "eval_tasks", task + ".json")
+        self.task_config = system_utils.load_json(task_config_file)
+        self.task_config["specific_task_name"] = task
+        self.task_config["sub_task_name"] = self.args.sub_task_name
+        gen_instruction = self.task_config.get("generalization", {}).get("instruction", {})
+        self.task_config["language_perturbation"] = getattr(self.args, "language_perturbation", False) or bool(
+            gen_instruction.get("enable", False)
+        )
+        self.task_config["language_perturbation_config"] = getattr(self.args, "language_perturbation_config", "")
+        self.instruction = self.task_config.get("instruction", "")
+        logger.info(f"sub_task_name: {self.args.sub_task_name}")
+
+        if hasattr(self.api_core, "sub_task_name"):
+            self.api_core.sub_task_name = self.args.sub_task_name
+            if hasattr(self.api_core, "benchmark_ros_node") and self.api_core.benchmark_ros_node is not None:
+                if hasattr(self.api_core.benchmark_ros_node, "set_sub_task_name"):
+                    self.api_core.benchmark_ros_node.set_sub_task_name(self.args.sub_task_name)
+                    logger.info(f"Republished sub_task_name to ROS: {self.args.sub_task_name}")
+
+        episode_idx = 0
+        scene_instance_ids = [0]
+        sub_task_name = self.args.sub_task_name
+        if sub_task_name != "":
+            sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
+            scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
+
+        instance_ids_arg = (getattr(self.args, "instance_ids", "") or "").strip()
+        if instance_ids_arg:
+            # Explicit override, in caller order; takes priority over
+            # num_instances and preserves caller order.
+            scene_instance_ids = [int(x) for x in instance_ids_arg.split(",") if x.strip() != ""]
+            logger.info(f"Explicit --benchmark.instance_ids override: {scene_instance_ids}")
+        else:
+            num_instances = getattr(self.args, "num_instances", 0) or 0
+            if num_instances > 0 and num_instances < len(scene_instance_ids):
+                # Deterministic sub-sample based on the run's seed so the same
+                # config picks the same instances across machines / re-runs.
+                total = len(scene_instance_ids)
+                rng = np.random.RandomState(getattr(self.args, "seed", 0))
+                scene_instance_ids = sorted(rng.choice(scene_instance_ids, size=num_instances, replace=False).tolist())
+                logger.info(
+                    f"Sampled {num_instances} of {total} scene instances "
+                    f"(seed={getattr(self.args, 'seed', 0)}): {scene_instance_ids}"
+                )
+
+        checkpoint = self._checkpoint
+        identity = self._checkpoint_identity(scene_instance_ids) if checkpoint is not None else None
+        if checkpoint is not None and checkpoint.state is not None:
+            restored = checkpoint.restore(identity)
+            self.task_config = copy.deepcopy(checkpoint.state["task_config"])
+            task_folder = str(checkpoint.task_dir)
+            robot_cfg = self.task_config["robot"]["robot_cfg"]
+            self.data_courier.set_robot_cfg(self.task_config["robot_cfg"])
+            self.evaluate_summary.restore_results(restored)
+        else:
             task_generator = TaskGenerator(self.task_config)
-            task_folder = os.path.join(
-                system_utils.benchmark_root_path(),
-                "saved_task/%s" % (self.task_config["task"]),
+            task_folder = (
+                str(checkpoint.task_dir)
+                if checkpoint is not None
+                else os.path.join(system_utils.benchmark_root_path(), "saved_task/%s" % self.task_config["task"])
             )
 
             gen_config = self.task_config.get("generalization", {})
@@ -206,181 +340,53 @@ class TaskBenchmark(object):
 
             self.task_config["robot_cfg"] = robot_type_mapping(robot_cfg.split(".")[0])
             self.data_courier.set_robot_cfg(self.task_config["robot_cfg"])
-
-            episode_idx = 0
-            scene_instance_ids = [0]
-            sub_task_name = self.args.sub_task_name
-            if sub_task_name != "":
-                sub_task_path = os.path.join(system_utils.benchmark_conf_path(), "llm_task", sub_task_name)
-                scene_instance_ids = sorted([int(name) for name in os.listdir(sub_task_path) if name.isdigit()])
-
-            instance_ids_arg = (getattr(self.args, "instance_ids", "") or "").strip()
-            if instance_ids_arg:
-                # Explicit override, in caller order; takes priority over
-                # num_instances and preserves caller order.
-                scene_instance_ids = [int(x) for x in instance_ids_arg.split(",") if x.strip() != ""]
-                logger.info(f"Explicit --benchmark.instance_ids override: {scene_instance_ids}")
-            else:
-                num_instances = getattr(self.args, "num_instances", 0) or 0
-                if num_instances > 0 and num_instances < len(scene_instance_ids):
-                    # Deterministic sub-sample based on the run's seed so the same
-                    # config picks the same instances across machines / re-runs.
-                    total = len(scene_instance_ids)
-                    rng = np.random.RandomState(getattr(self.args, "seed", 0))
-                    scene_instance_ids = sorted(
-                        rng.choice(scene_instance_ids, size=num_instances, replace=False).tolist()
+            if checkpoint is not None:
+                files = sorted(Path(task_folder).glob("*.json"))
+                counts = {}
+                for iid in scene_instance_ids:
+                    path = (
+                        Path(system_utils.benchmark_conf_path())
+                        / "llm_task"
+                        / sub_task_name
+                        / str(iid)
+                        / "instructions.json"
                     )
-                    logger.info(
-                        f"Sampled {num_instances} of {total} scene instances "
-                        f"(seed={getattr(self.args, 'seed', 0)}): {scene_instance_ids}"
-                    )
-
-            self.evaluate_summary = EvaluationSummary(
-                os.path.join(system_utils.benchmark_output_path()),
-                task,
-                sub_task_name,
-            )
-
-            vec_batch_size = getattr(self.args, "enable_vec", 0) or 0
-            if vec_batch_size > 1 and self.args.model_arc == "corobot":
-                # Slice scene instances into batches of N cloned envs; clear the
-                # vectorized stage between batches so VRAM is reclaimed.
-                for batch_start in range(0, len(scene_instance_ids), vec_batch_size):
-                    batch_ids = scene_instance_ids[batch_start : batch_start + vec_batch_size]
-                    logger.info(
-                        f"VecEnv batch [{batch_start}:{batch_start + len(batch_ids)}] / "
-                        f"{len(scene_instance_ids)}: {batch_ids}"
-                    )
-                    self._evaluate_vectorized_sync(task, sub_task_name, robot_cfg, task_folder, batch_ids)
-                    if batch_start + len(batch_ids) < len(scene_instance_ids):
-                        logger.info("Clearing stage for next vectorized batch...")
-                        self.api_core.clear_vectorized_stage()
-                self.api_core.stop()
-                try:
-                    task_folder_abs = os.path.abspath(task_folder)
-                    if os.path.isdir(task_folder_abs):
-                        shutil.rmtree(task_folder_abs)
-                        logger.info("Removed task folder: %s" % task_folder_abs)
-                except Exception as e:
-                    logger.warning("Failed to remove task folder %s: %s" % (task_folder, e))
-                continue
-            elif vec_batch_size > 1:
-                logger.warning(
-                    "enable_vec=%d requested but model_arc=%r is not 'corobot'; "
-                    "running serially (vectorized eval supports corobot only).",
-                    vec_batch_size,
-                    self.args.model_arc,
-                )
-
-            for instance_id in scene_instance_ids:
-                # A signal-driven request_shutdown stops the run here instead
-                # of recording the remaining instances as 0-step failures.
-                if self.data_courier.stop_requested():
-                    break
-                # one instance
-                self.task_config["scene"]["scene_instance_id"] = instance_id
-                specific_task_files = sorted(glob.glob(task_folder + "/*.json"))
-
-                self.create_policy()
-                self.create_env(specific_task_files[0], instance_id)
-                if hasattr(self.policy, "_ikfk_solver") and hasattr(self.env, "ikfk_solver"):
-                    self.policy._ikfk_solver = self.env.ikfk_solver
-                time.sleep(0.5)
-                self.api_core.collect_init_physics()
-
-                seed = getattr(self.args, "seed", 0)
-                for file_idx, episode_file in enumerate(specific_task_files):
-                    if self.data_courier.stop_requested():
-                        break
-                    logger.info(f"EPISODE FILE: {episode_file}")
-                    self.episode_content = system_utils.load_json(episode_file)
-                    gen_seed = seed + instance_id * 1000 + file_idx
-                    np.random.seed(gen_seed)
-                    update_init_env(self.env, self.task_config, self.episode_content)
-                    self.env.apply_generalization(self.api_core, self.task_config)
-
-                    if self.args.record:
-                        self.api_core.local_recorder.set_sub_task_name(self.args.sub_task_name or "")
-
-                    episode_count = 1 if self.args.preview else len(self.env.task.instructions)
-                    episode_seed = seed + instance_id
-                    for episode_id in range(self.args.num_episode * episode_count):
-                        if self.data_courier.stop_requested():
-                            break
-                        np.random.seed(episode_seed)
-                        self.env.set_current_task(episode_id)
-                        if self.instruction != "":
-                            self.env.task.set_instruction(self.instruction)
-                        current_instruction = self.env.task.get_instruction()
-                        if self.args.preview:
-                            self.policy.preview_instructions = [
-                                it.get("instruction", "") if isinstance(it, dict) else str(it)
-                                for it in self.env.task.instructions
-                            ]
-                        if self.args.record:
-                            self.api_core.start_local_recording(
-                                sub_task_name=self.args.sub_task_name or "",
-                                episode_idx=episode_idx,
-                                fps=self.args.fps,
-                                output_root=os.path.dirname(self.evaluate_summary.out_dir),
-                            )
-                            if current_instruction:
-                                self.api_core.local_recorder.update_instruction(current_instruction[0])
-                        single_te = TaskEvaluation(
-                            task_name=self.task_name,
-                            sub_task_name=sub_task_name,
-                            score_layout_name=getattr(self.env.task, "score_layout_name", None),
-                        )
-                        single_te.update_from_dict(
-                            {
-                                "task_name": self.task_config["task"],
-                                "task_type": "benchmark",
-                                "robot_type": robot_cfg.split(".")[0],
-                                "start_time": system_utils.get_local_time(),
-                                "model_type": self.args.model_arc,
-                                "task_instruction": current_instruction[0],
-                            }
-                        )
-                        self.evaluate_summary.update_current(single_te)
-                        self.data_courier.pub_static_info_msg(
-                            self.evaluate_summary.to_static_msg_pub(
-                                episode_idx, self.args.num_episode, self.data_courier.sim_time()
-                            )
-                        )
-                        self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.to_dynamic_msg_pub())
-                        # one episode
-                        episode_error = None
+                    if sub_task_name:
                         try:
-                            self.evaluate_episode(robot_cfg, single_te)
-                        except (InferenceUnavailableError, KeyboardInterrupt, SystemExit) as ep_err:
-                            episode_error = ep_err
-                            # Exhausted inference retries and cancellation stop
-                            # the run after the finally block saves this attempt.
-                            raise
-                        except Exception as ep_err:
-                            episode_error = ep_err
-                            # Physics is likely unrecoverable (e.g. after extreme joint
-                            # positions corrupting PhysX transforms). Break the episode
-                            # loop so GenieSim can shut down cleanly instead of hanging.
-                            logger.error("Episode loop stopped due to fatal episode error: %s", ep_err)
-                            break
-                        finally:
-                            self._cache_episode_result(single_te, self.env, episode_error)
-                        if self.data_courier.stop_requested():
-                            # The interrupted attempt was saved by the finally block.
-                            if self.args.record:
-                                self.api_core.stop_local_recording(episode_idx=episode_idx)
-                            logger.info("Shutdown requested; stopping before the next episode")
-                            break
-                        self.policy.set_episode_idx(episode_idx)
-                        if self.args.record:
-                            self.api_core.stop_local_recording(episode_idx=episode_idx)
-
-                        episode_idx += 1
-
-                self.env.stop()
+                            with path.open() as stream:
+                                counts[iid] = len(json.load(stream)["instructions"])
+                        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+                            counts[iid] = 1
+                    else:
+                        counts[iid] = 1
+                plan = build_episode_plan(scene_instance_ids, files, counts, self.args.num_episode)
+                checkpoint.prepare(identity, plan, files, self.task_config)
+        if checkpoint is not None:
+            self.evaluate_summary.checkpoint_progress = checkpoint.progress
+            # Discard any diagnostic/uncommitted tail before recording another attempt.
+            self.evaluate_summary.dump_eval_result()
+            checkpoint.cleanup_recordings()
             if self.args.record:
-                self.api_core.concat_recordings(final_output_dir=getattr(self.args, "record_video_dir", None) or None)
+                self.api_core.local_recorder.restore_checkpoint(checkpoint.run_id, checkpoint.recording_paths())
+            if checkpoint.finished:
+                self._finish_checkpoint_recordings()
+                self.api_core.stop()
+                return
+
+        vec_batch_size = getattr(self.args, "enable_vec", 0) or 0
+        if vec_batch_size > 1 and self.args.model_arc == "corobot":
+            # Slice scene instances into batches of N cloned envs; clear the
+            # vectorized stage between batches so VRAM is reclaimed.
+            for batch_start in range(0, len(scene_instance_ids), vec_batch_size):
+                batch_ids = scene_instance_ids[batch_start : batch_start + vec_batch_size]
+                logger.info(
+                    f"VecEnv batch [{batch_start}:{batch_start + len(batch_ids)}] / "
+                    f"{len(scene_instance_ids)}: {batch_ids}"
+                )
+                self._evaluate_vectorized_sync(task, sub_task_name, robot_cfg, task_folder, batch_ids)
+                if batch_start + len(batch_ids) < len(scene_instance_ids):
+                    logger.info("Clearing stage for next vectorized batch...")
+                    self.api_core.clear_vectorized_stage()
             self.api_core.stop()
             try:
                 task_folder_abs = os.path.abspath(task_folder)
@@ -389,6 +395,167 @@ class TaskBenchmark(object):
                     logger.info("Removed task folder: %s" % task_folder_abs)
             except Exception as e:
                 logger.warning("Failed to remove task folder %s: %s" % (task_folder, e))
+            return
+        elif vec_batch_size > 1:
+            logger.warning(
+                "enable_vec=%d requested but model_arc=%r is not 'corobot'; "
+                "running serially (vectorized eval supports corobot only).",
+                vec_batch_size,
+                self.args.model_arc,
+            )
+
+        for instance_id in scene_instance_ids:
+            # A signal-driven request_shutdown stops the run here instead
+            # of recording the remaining instances as 0-step failures.
+            if self.data_courier.stop_requested():
+                break
+            if checkpoint is not None:
+                instance_plan = [e for e in checkpoint.state["plan"] if e["instance_id"] == instance_id]
+                if all(checkpoint.is_completed(e) or checkpoint.is_skipped(e) for e in instance_plan):
+                    continue
+            # one instance
+            self.task_config["scene"]["scene_instance_id"] = instance_id
+            specific_task_files = sorted(glob.glob(task_folder + "/*.json"))
+
+            self.create_policy()
+            self.create_env(specific_task_files[0], instance_id)
+            if hasattr(self.policy, "_ikfk_solver") and hasattr(self.env, "ikfk_solver"):
+                self.policy._ikfk_solver = self.env.ikfk_solver
+            time.sleep(0.5)
+            self.api_core.collect_init_physics()
+
+            seed = getattr(self.args, "seed", 0)
+            for file_idx, episode_file in enumerate(specific_task_files):
+                if self.data_courier.stop_requested():
+                    break
+                logger.info(f"EPISODE FILE: {episode_file}")
+                self.episode_content = system_utils.load_json(episode_file)
+                gen_seed = seed + instance_id * 1000 + file_idx
+                np.random.seed(gen_seed)
+                update_init_env(self.env, self.task_config, self.episode_content)
+                self.env.apply_generalization(self.api_core, self.task_config)
+
+                if self.args.record:
+                    self.api_core.local_recorder.set_sub_task_name(self.args.sub_task_name or "")
+
+                episode_count = 1 if self.args.preview else len(self.env.task.instructions)
+                episode_seed = seed + instance_id
+                if checkpoint is not None:
+                    planned_count = sum(
+                        e["instance_id"] == instance_id and e["file_idx"] == file_idx for e in checkpoint.state["plan"]
+                    )
+                    if self.args.num_episode * episode_count != planned_count:
+                        raise ValueError("Runtime instructions do not match the checkpoint plan")
+                for episode_id in range(self.args.num_episode * episode_count):
+                    if self.data_courier.stop_requested():
+                        break
+                    np.random.seed(episode_seed)
+                    coord = dict(instance_id=instance_id, file_idx=file_idx, episode_id=episode_id)
+                    if checkpoint is not None:
+                        episode_idx = checkpoint.episode_index(coord)
+                        if checkpoint.is_completed(coord) or checkpoint.is_skipped(coord):
+                            continue
+                    if self.task_config.get("generalization", {}).get("hdr_texture", {}).get("resample_per_episode"):
+                        apply_hdr_texture_generalization(
+                            self.api_core, self.task_config, seed=gen_seed, episode_id=episode_id, file_idx=file_idx
+                        )
+                    self.policy.set_episode_idx(episode_idx)
+                    self.env.set_current_task(episode_id)
+                    if self.instruction != "":
+                        self.env.task.set_instruction(self.instruction)
+                    current_instruction = self.env.task.get_instruction()
+                    if self.args.preview:
+                        self.policy.preview_instructions = [
+                            it.get("instruction", "") if isinstance(it, dict) else str(it)
+                            for it in self.env.task.instructions
+                        ]
+                    if self.args.record:
+                        self.api_core.start_local_recording(
+                            sub_task_name=self.args.sub_task_name or "",
+                            episode_idx=episode_idx,
+                            fps=self.args.fps,
+                            output_root=os.path.dirname(self.evaluate_summary.out_dir),
+                        )
+                        if current_instruction:
+                            self.api_core.local_recorder.update_instruction(current_instruction[0])
+                    single_te = TaskEvaluation(
+                        task_name=self.task_name,
+                        sub_task_name=sub_task_name,
+                        score_layout_name=getattr(self.env.task, "score_layout_name", None),
+                    )
+                    single_te.episode_coord = coord
+                    single_te.update_from_dict(
+                        {
+                            "task_name": self.task_config["task"],
+                            "task_type": "benchmark",
+                            "robot_type": robot_cfg.split(".")[0],
+                            "start_time": system_utils.get_local_time(),
+                            "model_type": self.args.model_arc,
+                            "task_instruction": current_instruction[0],
+                        }
+                    )
+                    self.evaluate_summary.update_current(single_te)
+                    self.data_courier.pub_static_info_msg(
+                        self.evaluate_summary.to_static_msg_pub(
+                            episode_idx, self.args.num_episode, self.data_courier.sim_time()
+                        )
+                    )
+                    self.data_courier.pub_dynamic_info_msg(self.evaluate_summary.to_dynamic_msg_pub())
+                    # one episode
+                    episode_error = None
+                    fatal_episode = False
+                    try:
+                        self.evaluate_episode(robot_cfg, single_te)
+                        if checkpoint is not None and not single_te.episode_finished:
+                            raise InferenceUnavailableError("Evaluation stopped before a terminal episode result")
+                    except (InferenceUnavailableError, KeyboardInterrupt, SystemExit) as ep_err:
+                        episode_error = ep_err
+                        raise
+                    except Exception as ep_err:
+                        episode_error = ep_err
+                        fatal_episode = True
+                        if checkpoint is not None and self.args.resume and isinstance(ep_err, InferenceServiceError):
+                            raise
+                        logger.error("Episode loop stopped due to fatal episode error: %s", ep_err)
+                    finally:
+                        # A failed terminal notification cannot invalidate a sealed checker result.
+                        sealed = checkpoint is not None and single_te.episode_finished
+                        if sealed and single_te.terminal_result is not None:
+                            single_te.result = copy.deepcopy(single_te.terminal_result)
+                        self._cache_episode_result(single_te, self.env, None if sealed else episode_error)
+                        bag = None
+                        if self.args.record:
+                            bag = self.api_core.stop_local_recording(episode_idx=episode_idx)
+                        retryable = isinstance(
+                            episode_error,
+                            (InferenceUnavailableError, InferenceServiceError, KeyboardInterrupt, SystemExit),
+                        )
+                        if checkpoint is not None and (sealed or (fatal_episode and not retryable)):
+                            if sealed or not self.data_courier.stop_requested():
+                                if self.args.record and bag is None:
+                                    raise RuntimeError("Cannot commit an episode without its requested recording")
+                                checkpoint.commit(
+                                    self.evaluate_summary.results[-1], bag, skip_remaining=fatal_episode and not sealed
+                                )
+                                self.evaluate_summary.checkpoint_progress = checkpoint.progress
+                                self.evaluate_summary.dump_eval_result()
+                    if self.data_courier.stop_requested() or fatal_episode:
+                        break
+                    episode_idx += 1
+
+            self.env.stop()
+        if checkpoint is not None:
+            self._finish_checkpoint_recordings()
+        elif self.args.record:
+            self.api_core.concat_recordings(final_output_dir=getattr(self.args, "record_video_dir", None) or None)
+        self.api_core.stop()
+        try:
+            task_folder_abs = os.path.abspath(task_folder)
+            if checkpoint is None and os.path.isdir(task_folder_abs):
+                shutil.rmtree(task_folder_abs)
+                logger.info("Removed task folder: %s" % task_folder_abs)
+        except Exception as e:
+            logger.warning("Failed to remove task folder %s: %s" % (task_folder, e))
 
     @staticmethod
     def _parse_infer_host(infer_host: str):
@@ -504,6 +671,29 @@ class TaskBenchmark(object):
         self.env.set_data_courier(self.data_courier)
         self.env.set_scene_info(scene_info)
 
+    def _finalize_no_action_episode(self, env, policy, evaluation):
+        """Score the last executed state without issuing or counting another action."""
+        termination = getattr(policy, "server_episode_termination", None)
+        if termination is None:
+            return False
+        # Use the existing checker tree at the current step, including progress
+        # since its last periodic update. Do not advance physics/action budgets,
+        # cancel unfinished checkpoints, or infer success from the server flag.
+        env.task.step(env)
+        env.action_update()
+        evaluation.update_policy_statistics(policy)
+        evaluation.update_progress(env.task.task_progress)
+        evaluation.result["termination"] = {
+            "source": "policy",
+            "native_step": env.current_step,
+            "policy": copy.deepcopy(termination),
+        }
+        evaluation.summarize_scores()
+        env.has_done = True
+        policy.update_task_status(True, env.task.task_progress)
+        logger.info("Policy terminated without an action; native scores finalized at step %s", env.current_step)
+        return True
+
     def evaluate_episode(self, robot_cfg, single_te: TaskEvaluation):
         # Reset policy options before the first sensor capture of every episode.
         policy = getattr(self, "policy", None)
@@ -595,6 +785,8 @@ class TaskBenchmark(object):
                     action = self.policy.act(observaion, step_num=self.env.current_step)
                 single_te.update_policy_statistics(self.policy)
                 self.env.policy_dispatch_count = getattr(self.policy, "policy_dispatch_count", None)
+                if not self.args.interactive and self._finalize_no_action_episode(self.env, self.policy, single_te):
+                    break
                 if should_pause:
                     self.api_core.resume_physics()
                 for callback in step_callbacks:  # during task
@@ -661,6 +853,8 @@ class TaskBenchmark(object):
                         single_te.update_progress(task_progress)
                         self.env.current_step = 0
                         single_te.summarize_scores()
+                        single_te.episode_finished = True
+                        single_te.terminal_result = copy.deepcopy(single_te.result)
                         _hold_render()
                         try:
                             # In preview the main-loop act() already saved the
@@ -841,6 +1035,12 @@ class TaskBenchmark(object):
                     for slot, instance_id in enumerate(scene_instance_ids):
                         episode_seed = seed + instance_id
                         np.random.seed(episode_seed)
+                        if task_configs[slot].get("generalization", {}).get("hdr_texture", {}).get("resample_per_episode"):
+                            apply_hdr_texture_generalization(
+                                envs[slot].api_core, task_configs[slot],
+                                seed=seed + instance_id * 1000 + file_idx,
+                                episode_id=episode_id, file_idx=file_idx,
+                            )
                         envs[slot].set_current_task(episode_id)
                         if self.instruction != "":
                             envs[slot].task.set_instruction(self.instruction)
@@ -935,6 +1135,7 @@ class TaskBenchmark(object):
                         "policy_dispatch_count",
                         None,
                     )
+                    self._finalize_no_action_episode(vec_env.get_env(i), vec_policy.get_policy(i), evaluation)
 
             need_infer = vec_policy.need_infer_list()
             vec_env.set_infer_status(need_infer)

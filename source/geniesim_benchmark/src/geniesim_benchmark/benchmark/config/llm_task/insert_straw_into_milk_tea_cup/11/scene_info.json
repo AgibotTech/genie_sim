@@ -1,20 +1,6 @@
 {
-  "experimental_condition": {
-    "version": "tabletop-thick-straw-rigid-v3.2",
-    "paper_cup_removed": true,
-    "diameter_m": 0.0125,
-    "original_length_m": 0.15054312348365784,
-    "long_axis_world_yaw_deg": -140.92728492214476,
-    "sample_seed": 30,
-    "checker_condition": "straw-tip-opening-continuous-v3.2",
-    "tip_marker": "benchmark_straw_001/entity/body/InsertionTip",
-    "point_tolerance_m": 1e-06,
-    "opening_tolerance_m": 1e-05,
-    "hold_seconds": 1.0
-  },
-  "scene_id": "insert_straw_into_milk_tea_cup_11",
-  "task_name": "insert_straw_into_milk_tea_cup",
-  "seed": 2026103211,
+  "scene_id": 21,
+  "seed": 20264126,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -33,8 +19,7 @@
         0.0,
         0.0,
         1.0
-      ],
-      "asset_path": "objects/edited/table_000/Aligned.usda"
+      ]
     },
     "benchmark_cup_132": {
       "usd": "benchmark_cup_132",
@@ -46,8 +31,8 @@
         "POSITION_TAG_center"
       ],
       "xyz": [
-        -0.07591431593922437,
-        0.008068594475109755,
+        -0.062303484146214026,
+        -0.017685041972889014,
         0.802
       ],
       "xyzw": [
@@ -55,8 +40,7 @@
         0.0,
         0.0,
         1.0
-      ],
-      "asset_path": "objects/benchmark/cup/benchmark_cup_132/Aligned.usda"
+      ]
     },
     "benchmark_straw_001": {
       "usd": "benchmark_straw_001",
@@ -67,8 +51,8 @@
         "left_hand"
       ],
       "xyz": [
-        -0.0772285901651673,
-        0.1362103686064337,
+        -0.06361775837215694,
+        0.11045673215843495,
         0.7245136496637545
       ],
       "xyzw": [
@@ -97,58 +81,74 @@
         1.3020833730697632,
         1,
         1.3020833730697632
-      ],
-      "asset_path": "objects/benchmark/straw/benchmark_straw_001/Aligned.usda"
+      ]
     }
   },
+  "source_data_alignment": {
+    "dataset_id": 127868,
+    "task_id": 109601,
+    "dataset_dir": "replay_2813346_insert_straw_into_milk_tea_cup_g2_90d",
+    "reference_episode_index": 1,
+    "reference_episode_id": 31485117,
+    "reference_video": "videos/observation.images.top_head/chunk-000/file-001.mp4",
+    "camera": "observation.images.top_head",
+    "frame_index": 0,
+    "layout_method": "Approximate top-head first-frame alignment using scene-scale offsets; the replay has no object poses. The original cup spacing is retained while each pair follows the measured forward/backward and lateral placement variation.",
+    "arm_assignment": "left straw",
+    "reference_table_appearance": "gray stone",
+    "source_cup_asset_status": "The cloud asset overlay identifies benchmark_cup_105_fixed as the paper cup copy made for this task; the replay metadata does not separately record asset IDs.",
+    "insertion_checker_status": "Sustained physical sharp-tip containment in the moving cup and current full-section passage through the actual lid opening; see checker_condition.",
+    "measured_cup_centers_px": {
+      "paper_cup": [
+        261.5,
+        256.5
+      ],
+      "milk_tea_cup": [
+        321.0,
+        254.0
+      ]
+    }
+  },
+  "experimental_condition": {
+    "version": "tabletop-thick-straw-rigid-v3.2",
+    "paper_cup_removed": true,
+    "diameter_m": 0.0125,
+    "original_length_m": 0.15054312348365784,
+    "long_axis_world_yaw_deg": -140.92728492214476,
+    "sample_seed": 30,
+    "checker_condition": "straw-tip-opening-continuous-v3.2",
+    "tip_marker": "benchmark_straw_001/entity/body/InsertionTip",
+    "point_tolerance_m": 1e-06,
+    "opening_tolerance_m": 1e-05,
+    "hold_seconds": 1.0
+  },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 11,
+    "instance_id": 21,
     "source_instance": 1,
-    "source_scene_sha256": "58021852d3c1e64ef15f71179e3f1053c1cf16f307ecbfbfef6969d6e78bb953",
-    "source_scene_info_sha256": "1fbd79c84f40ad134af66a63cc46909f36089de8df6c0e0bea89d944569ebafc",
-    "source_problem_sha256": "751704dd3e817c33f245c9d589628ec685c7f3c77252c1183d6375af26cf103a",
-    "seed": 2026103211,
-    "world_xy_translation_m": [
-      0.004085684060775622,
-      0.008068594475109755
+    "source_hashes": {
+      "scene.usda": "58021852d3c1e64ef15f71179e3f1053c1cf16f307ecbfbfef6969d6e78bb953",
+      "instructions.json": "51f2a13a17d3b2d650fde501fe8fc8085b3fac99f2798f01cbd80f12ec08a5d5",
+      "scene_info.json": "1fbd79c84f40ad134af66a63cc46909f36089de8df6c0e0bea89d944569ebafc",
+      "problems.json": "751704dd3e817c33f245c9d589628ec685c7f3c77252c1183d6375af26cf103a"
+    },
+    "requested_source_instance": 1,
+    "world_translation_m": [
+      0.017696515853785975,
+      -0.017685041972889014,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "benchmark_cup_132",
       "benchmark_straw_001"
     ],
     "fixed_prims": [
       "table_000"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.02501854078370968,
+    "seed": 20264105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.009044060539837605,
-    "table_support": {
-      "table_prim": "table_000",
-      "baseline_xy_edge_margin_m": [
-        0.1475245845789788,
-        0.3266943141813961
-      ],
-      "minimum_xy_edge_margin_m": [
-        0.001,
-        0.001
-      ],
-      "generated_xy_edge_margin_m": [
-        0.1516102686397544,
-        0.3186257197062864
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

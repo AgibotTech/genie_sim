@@ -316,6 +316,10 @@ def main():
         if task_manager.api_core.fatal_error is not None:
             exit_code = task_manager.api_core.fatal_exit_code or 1
         exit_code, _render_receipt = _require_render_drain(api_core, exit_code, shutdown_errors)
+        if cfg.benchmark.resume:
+            # Kit fast shutdown exits natively; publish the worker status before
+            # close() so a recoverable inference failure cannot look successful.
+            omni.kit.app.get_app().post_quit(exit_code)
         try:
             simulation_app.close()
         except SystemExit as error:

@@ -41,7 +41,7 @@ def Xform "World"
         {
             quatf xformOp:orient = (1, 0, 0, 0)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.11735004816792896, -0.0018083373235966167, 0.36537197300831425)
+            double3 xformOp:translate = (-0.10517153821085679, -0.006278218236453574, 0.3715388565919286)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
 
             over "entity" (
@@ -57,10 +57,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/scraper/benchmark_scraper_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.38618603, 0, 0, 0.9224209)
+            quatf xformOp:orient = (0.4836913, 0, -0, -0.87523866)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.29080236431583767, -0.20404865527991206, 0.7359624735662075)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.797853280875869, -0.6028516751205155, 0, 0), (0.6028516751205155, -0.797853280875869, 0, 0), (0, 0, 1, 0), (-0.09874920329846913, -0.24957958367025004, 0.7421293571498218, 1) )
+            double3 xformOp:translate = (-0.05104463735781611, -0.19985302055720242, 0.7421293571498219)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -88,10 +89,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.9396892, 0, 0, -0.34202954)
+            quatf xformOp:orient = (0.22472306, 0, 0, 0.9744227)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.0386440397258848, 0.2215595453698188, 0.7464526685850886)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.9423702064544198, 0.3345719563667198, 0, 0), (-0.3345719563667198, -0.9423702064544198, 0, 0), (0, 0, 1, 0), (-0.26186952700764116, 0.2467899985432278, 0.752619552167925, 1) )
+            double3 xformOp:translate = (-0.2761668140664697, 0.23571012540021913, 0.752619552168703)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
@@ -108,8 +110,9 @@ def Xform "World"
         {
             quatf xformOp:orient = (6.123234e-17, 0, 0, 1)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.4986326584646473, 0.14398421539878284, 0.6301150708918734)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-1, 1.2246467991473532e-16, 0, 0), (-1.2246467991473532e-16, -1, 0, 0), (0, 0, 1, 0), (-0.4864541485075751, -0.15827001762325416, 0.6362819544754877, 1) )
+            double3 xformOp:translate = (-0.4864541485075751, -0.1889144013783054, 0.6362819544754877)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
 
             over "entity" (
                 prepend apiSchemas = ["PhysicsRigidBodyAPI"]
@@ -309,4 +312,3 @@ over "OmniverseKit_Top" (
     double3 xformOp:translate = (0, 0, 5)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
 }
-

@@ -181,7 +181,10 @@ class FakeReplicator:
 
     def _product(self, path, size, **kwargs):
         self.events.append(("create", path, size))
-        return SimpleNamespace(destroy=lambda: self.events.append(("destroy", path)))
+        return SimpleNamespace(
+            destroy=lambda: self.events.append(("destroy", path)),
+            hydra_texture=SimpleNamespace(set_updates_enabled=lambda enabled: self.events.append(("enabled", enabled))),
+        )
 
     def _annotator(self, _):
         def attach(product):
@@ -994,3 +997,20 @@ def test_mesh_opacity_reaches_standalone_material():
     material, _ = UsdShade.MaterialBindingAPI(prim).ComputeBoundMaterial()
     shader = UsdShade.Shader(scene.stage.GetPrimAtPath(str(material.GetPath()) + "/Surface"))
     assert shader.GetInput("opacity").Get() == pytest.approx(0.45)
+
+
+def test_new_products_initialize_kit_before_the_first_blocking_capture():
+    rep = FakeReplicator()
+    app = SimpleNamespace(update=lambda: rep.events.append(("update",)))
+    renderer = worker.SnapshotRenderer(app, stage=Usd.Stage.CreateInMemory(), replicator=rep)
+    try:
+        renderer.render(_message())
+        events = [event[0] for event in rep.events]
+        assert "update" in events
+        assert max(i for i, event in enumerate(events) if event == "attach") < events.index("update")
+        assert max(i for i, event in enumerate(events) if event == "update") < events.index("step")
+        updates = events.count("update")
+        renderer.render(_message())
+        assert [event[0] for event in rep.events].count("update") == updates
+    finally:
+        renderer.close()

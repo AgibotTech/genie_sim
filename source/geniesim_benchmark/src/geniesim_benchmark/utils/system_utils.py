@@ -84,6 +84,9 @@ def teleop_root_path():
 
 
 def benchmark_output_path():
+    root = os.environ.get("GENIESIM_BENCHMARK_OUTPUT_ROOT") or os.environ.get("OUTPUT_DIR")
+    if root:
+        return str(Path(root).expanduser().resolve())
     return os.path.join(os.environ["SIM_REPO_ROOT"], "output/benchmark")
 
 

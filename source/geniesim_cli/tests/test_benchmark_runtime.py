@@ -133,7 +133,7 @@ class BenchmarkRuntimeTests(unittest.TestCase):
                 None,
             )
             self.assertTrue(cmd[1].endswith("scripts/run_mujoco.py"))
-            self.assertIsNone(env)
+            self.assertEqual(env["GENIESIM_PY_CMD"], cmd[0])
 
 
 if __name__ == "__main__":

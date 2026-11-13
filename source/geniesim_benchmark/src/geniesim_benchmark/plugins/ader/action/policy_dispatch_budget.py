@@ -6,7 +6,7 @@
 
 from .common_actions import ActionBase, ActionEvent, ActionSetWaitAny, StepOut
 from geniesim_benchmark.plugins.output_system.policy_budget import (
-    POLICY_BUDGET_VERSIONS,
+    POLICY_BUDGET_RULE,
     assess_policy_budget,
     policy_budget_baseline,
 )
@@ -18,13 +18,10 @@ class PolicyDispatchBudget(ActionBase):
         env,
         stage: ActionBase,
         step: int,
-        version: str,
         points: float | None = None,
         step_out: int | None = None,
     ):
         super().__init__(env)
-        if version not in POLICY_BUDGET_VERSIONS:
-            raise ValueError("Unsupported PolicyDispatchBudget version")
         if type(step) is not int or step < 0:
             raise ValueError("PolicyDispatchBudget.step must be a nonnegative integer")
         if step_out is None:
@@ -37,15 +34,14 @@ class PolicyDispatchBudget(ActionBase):
         if points is not None and (type(points) not in (int, float) or not 0 <= points <= 50):
             raise ValueError("PolicyDispatchBudget.points must be finite and between 0 and 50")
         self.stage = stage
-        self._version = version
         self._start_count = None
         self._skip_started_update = False
         self._step_out = step_out
         self.progress_info["POLICY_BUDGET"] = {
-            "version": version,
+            "version": POLICY_BUDGET_RULE,
             "step": step,
             "step_out": self._step_out,
-            "baseline": policy_budget_baseline(self._step_out, version),
+            "baseline": policy_budget_baseline(self._step_out),
             "count": None,
         }
         if points is not None:
@@ -74,7 +70,7 @@ class PolicyDispatchBudget(ActionBase):
         elif self.stage.is_running():
             remaining = self.stage.update(delta_time)
         count = self._count() - self._start_count
-        self.progress_info["POLICY_BUDGET"].update(assess_policy_budget(self._step_out, count, self._version))
+        self.progress_info["POLICY_BUDGET"].update(assess_policy_budget(self._step_out, count))
         return super().update(remaining)
 
     def _is_done(self) -> bool:

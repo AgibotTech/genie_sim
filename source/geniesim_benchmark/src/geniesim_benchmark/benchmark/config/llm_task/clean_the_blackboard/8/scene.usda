@@ -23,7 +23,7 @@ def Xform "World"
                 bool physics:rigidBodyEnabled = 0
 
                 def Xform "WritingSurface" (
-                    prepend references = @/geniesim_assets/objects/benchmark/handwriting/benchmark_text_008/Aligned.usd@
+                    prepend references = @/geniesim_assets/objects/benchmark/handwriting/benchmark_text_003/Aligned.usd@
                 )
                 {
                     matrix4d xformOp:transform:surface = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (0.0059, 0.46985, -0.00005, 1) )
@@ -35,7 +35,7 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/blackboard_eraser/benchmark_blackboard_eraser_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.675721205, 0, 0, 0.737157278)
+            quatf xformOp:orient = (0.788307741, 0, 0, 0.61528116)
             float3 xformOp:scale = (1, 1, 1)
             double3 xformOp:translate = (0.7165614022593191, 0, 0.7250491638188907)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
@@ -52,7 +52,7 @@ def Xform "World"
                 custom double eraser:measuredTiltDegrees = 0
                 custom double2 eraser:padHalfSize = (0.054, 0.023)
                 custom int eraser:physicsSteps = 0
-                custom int eraser:remainingCells = 66859
+                custom int eraser:remainingCells = 53718
                 custom bool eraser:touching = 0
                 custom asset[] omni:scripting:scripts = [@/geniesim_assets/objects/benchmark/blackboard_eraser/benchmark_blackboard_eraser_000/scripts/blackboard_eraser.py@]
             }

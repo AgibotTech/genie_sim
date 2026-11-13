@@ -1,7 +1,7 @@
 {
   "instructions": [
     {
-      "instruction": "Pick up the cup by its handle and hook it onto the cup rack",
+      "instruction": "Hang the cup on the cup rack",
       "gripper": {
         "1": {
           "handover": false,
@@ -9,22 +9,22 @@
         }
       },
       "target": {
-        "id1": "benchmark_cup_a26f738f",
-        "id2": "benchmark_cup_holder_f5398c8b"
+        "id1": "benchmark_cup_eb84d4cf",
+        "id2": "benchmark_cup_holder_10e316e4"
       }
     }
   ],
   "subtask_steps": [
     {
       "checker": {
-        "PickUpOnGripper": "benchmark_cup_a26f738f|any_gripper"
+        "PickUpOnGripper": "benchmark_cup_eb84d4cf|any_gripper"
       },
       "instruction": "left gripper picks up the cup by its handle",
       "step_out": 450
     },
     {
       "checker": {
-        "Hang": "benchmark_cup_a26f738f|0.825|8|0.01"
+        "Hang": "benchmark_cup_eb84d4cf|0.829|8|0.01"
       },
       "instruction": "hooks the cup's handle onto the rack, then opens the gripper so the cup hangs still",
       "step_out": 750

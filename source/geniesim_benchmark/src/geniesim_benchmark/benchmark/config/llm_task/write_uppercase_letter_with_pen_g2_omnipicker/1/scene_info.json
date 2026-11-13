@@ -18,23 +18,23 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        0.010163095224416302,
-        0.02374004593806402,
+        0.09195464264026434,
+        -0.0712948552636128,
         0.8325046575220938
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.051282871038071685,
-        0.9986841678619385
+        -0.13924388547857233,
+        0.9902581180464163
       ],
       "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
     },
     "pen_holder": {
       "usd": "benchmark_stationery_021",
       "xyz": [
-        0.010000000000000002,
-        -0.1896,
+        0.02,
+        -0.1996,
         0.8718060575671304
       ],
       "xyzw": [
@@ -48,8 +48,8 @@
     "pen": {
       "usd": "benchmark_pen_009",
       "xyz": [
-        0.010000000000000002,
-        -0.1896,
+        0.02,
+        -0.1996,
         0.9070046575220938
       ],
       "xyzw": [
@@ -208,9 +208,9 @@
     "actual_runtime_single_step_validation_pending": true
   },
   "copybook": {
-    "target_letter": "B",
+    "target_letter": "G",
     "guide_prim": "/World/Objects/paper/entity/writing_template",
-    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "target_sha256": "35c1d46a218f66fa5b121f3fb418be28f86794d278abe86855ad4e30475c1a91",
     "gray_geometry_authored_in_scene": true,
     "visual_only": true,
     "overlap_metrics": [
@@ -221,41 +221,72 @@
     ],
     "physical_validation": "pending new physical trial"
   },
-  "scene_id": "trace_copybook_b_g2_op_20261023_scene_000026",
-  "task_name": "trace_copybook_b_g2_op_20261023",
-  "target_letter": "B",
+  "scene_id": 11,
+  "task_name": "trace_copybook_g_g2_op_20261023",
+  "target_letter": "G",
   "physical_validation": {
     "passed": false,
     "status": "new layout; physical trial pending"
   },
-  "validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "generalization": {
     "batch": "writing_generalization_4000_20261023",
     "seed": 20261023,
     "robot": "G2_OP",
-    "anchor": "G2_OP/v05/B",
+    "anchor": "G2_OP/v04/B",
     "jitter_xy_m_yaw_deg": [
-      -0.004836904775583699,
-      0.00734004593806402,
-      2.879096990274756
+      0.0037494103934279134,
+      -0.006164498588917331,
+      -2.4940853265561205
     ],
     "anchor_variation": {
       "paper_xy_m": [
-        -0.025,
-        0.006
-      ],
-      "paper_yaw_deg": 3,
-      "holder_xy_m": [
         -0.01,
-        0.01
+        -0.018
+      ],
+      "paper_yaw_deg": -8,
+      "holder_xy_m": [
+        0,
+        0
       ]
     },
     "accepted_attempt": 0,
-    "source_scene_sha256": "fa9f464815e71c7b115c584321b8ec81d130923bd7de1bac36e1902b2e0f655a",
-    "target_sha256": "aab15b2d33aa6f9d697953db51b7dd8a796fefcf018faa961e06ffbe30b6395b",
+    "source_scene_sha256": "526dfb10dde2074715f953e371a0539489e34f925afa38414d2456f3e10254c3",
+    "target_sha256": "35c1d46a218f66fa5b121f3fb418be28f86794d278abe86855ad4e30475c1a91",
     "initial_robot_joints_unchanged": true,
     "paper_height_unchanged": true,
     "physical_success": false,
     "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
-  }
+  },
+  "seed": 3369907530,
+  "benchmark_generalization": {
+    "method": "bounded_paper_adapter",
+    "translation_m": [
+      0.058205232246836436,
+      -0.05753035667469547
+    ],
+    "yaw_delta_deg": -5.514137232463632,
+    "letter": "G",
+    "original_bulk_generator_available": false,
+    "pen_and_holder_fixed": true,
+    "instance_id": 11,
+    "source_instance": 2,
+    "source_scene_sha256": "b1cc5e57dcce29d351de4dd275ed4a2be2bb146baf6284f6b45f879476575cb6",
+    "seed": 3369907530,
+    "visual_pool_index": 114,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.8344742730872985,
+    "source_slot": {
+      "letter": "G"
+    },
+    "distribution_adjustment": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending"
 }

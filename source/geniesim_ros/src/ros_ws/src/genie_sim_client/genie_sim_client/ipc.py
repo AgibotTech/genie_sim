@@ -72,6 +72,7 @@ class IPCClientConfig:
     observation_topic: str
     physics_hz: float
     cpu_steps_per_ipc: int | None
+    episode_count: int = 0
 
     @classmethod
     def from_files(cls, scene_yaml, launcher_yaml):
@@ -100,7 +101,10 @@ class IPCClientConfig:
             ratio = cpu.get("sync_substeps")
             if not _integer(ratio, 1) or not math.isclose(cpu_hz / hz, ratio, abs_tol=1e-8, rel_tol=0):
                 raise ValueError("CPU barrier substeps must match the YAML CPU/IPC rates")
-        return cls(scene_path, launcher_path, *topics, hz, ratio)
+        sequence = settings.get("episode_sequence")
+        if sequence is not None and (not isinstance(sequence, list) or not sequence):
+            raise ValueError("episode_sequence must be a nonempty YAML list")
+        return cls(scene_path, launcher_path, *topics, hz, ratio, len(sequence) if sequence else 0)
 
 
 _IDENTITY_KEYS = ("source_id", "epoch", "request_id", "snapshot_id", "tick", "cloth_tick", "sim_time")
@@ -110,8 +114,9 @@ class IPCClient:
     """One serialized, fail-closed IPC session using engine-discovered names.
 
     ``step`` returns a correlated completion, never a claim that a target was
-    reached. An uncertain send/capture poisons this object; create a fresh client
-    and episode instead of replaying it. There is deliberately no reset method.
+    reached. An uncertain send/capture poisons this object; create a fresh caller-owned
+    session instead of replaying it. Configured episode sequences expose explicit,
+    acknowledged finish/reset/begin boundaries; failed clients cannot reset.
     """
 
     def __init__(self, config, *, ready_timeout_s=600.0, wait_timeout_s=120.0, transport=None, event=None):
@@ -125,6 +130,9 @@ class IPCClient:
         self._last_sim_time = 0.0
         self._last_cpu_total = 0
         self._clock_offset = None
+        self._expected_epoch = None
+        self._episode_index = 0
+        self._episode_phase = "ready"
         self._failure = None
         self._started = self._closed = False
         self._lock = threading.Lock()
@@ -167,9 +175,15 @@ class IPCClient:
         if packet["status"] != "ready":
             raise RuntimeError(f"IPC source is {packet['status']}")
         if self._identity is not None:
-            for key in ("source_id", "epoch", "joint_names", "reported_joint_names"):
+            for key in ("source_id", "joint_names", "reported_joint_names"):
                 if packet_dict(self._identity[key]) != packet[key]:
                     raise RuntimeError(f"IPC source identity changed: {key}; start a fresh session")
+        if self._identity is not None and packet["epoch"] != self._identity["epoch"]:
+            if packet["epoch"] != self._expected_epoch:
+                raise RuntimeError("IPC source epoch changed without an acknowledged reset")
+            self._last_tick = self._last_cpu_total = 0
+            self._last_sim_time = 0.0
+            self._clock_offset = None
         if self._clock_offset is None:
             self._clock_offset = packet["sim_time"] - packet["tick"] / self.config.physics_hz
         self._validate_clock(packet)
@@ -270,6 +284,8 @@ class IPCClient:
         try:
             self._healthy()
             self._drain()
+            if self.config.episode_count and self._episode_phase != "running":
+                raise RuntimeError("begin_episode is required before stepping a recorded sequence")
             names = self._identity["joint_names"]
             if (
                 not isinstance(positions, Mapping)
@@ -341,6 +357,64 @@ class IPCClient:
             raise
         finally:
             self._lock.release()
+
+    def _episode_command(self, operation, index):
+        self._enter()
+        sent = False
+        try:
+            self._healthy()
+            self._drain()
+            if not self.config.episode_count:
+                raise RuntimeError("scene YAML has no episode_sequence")
+            expected_phase = {"begin": "ready", "finish": "running", "reset": "finished"}[operation]
+            if self._episode_phase != expected_phase:
+                raise RuntimeError(f"episode {operation} requires {expected_phase} phase")
+            if (
+                type(index) is not int
+                or index < 0
+                or index >= self.config.episode_count
+                or index != self._episode_index + (operation == "reset")
+            ):
+                raise ValueError("episode operation requires the next configured index")
+            old_epoch = self._identity["epoch"]
+            request = dict(self._request(), version=1, operation=operation, index=index)
+            self._expected_epoch = old_epoch + 1 if operation == "reset" else None
+            sent = True
+            self._send("episode", request)
+            deadline = time.monotonic() + self.wait_timeout_s
+            while True:
+                kind, reply = self._next(deadline)
+                if kind != "episode" or not self._matches(
+                    reply, {k: request[k] for k in ("request_id", "source_id", "epoch", "operation", "index")}
+                ):
+                    continue
+                if reply.get("status") != "completed":
+                    raise RuntimeError(f"episode {operation} failed: {reply.get('error')}")
+                identity = reply.get("identity")
+                target_epoch = old_epoch + (operation == "reset")
+                if not isinstance(identity, dict) or identity.get("epoch") != target_epoch:
+                    raise ValueError("episode completion has no committed reset identity")
+                self._identity_message(identity)
+                self._episode_index = index
+                self._episode_phase = {"begin": "running", "finish": "finished", "reset": "ready"}[operation]
+                return _freeze(reply)
+        except BaseException as exc:
+            if sent:
+                self._failure = exc
+            raise
+        finally:
+            self._expected_epoch = None
+            self._lock.release()
+
+    def begin_episode(self):
+        return self._episode_command("begin", self._episode_index)
+
+    def finish_episode(self):
+        return self._episode_command("finish", self._episode_index)
+
+    def reset(self, index):
+        """Recover the same world into the next YAML entry; never retry a failed send."""
+        return self._episode_command("reset", index)
 
     def _validate_snapshot(self, packet):
         if (

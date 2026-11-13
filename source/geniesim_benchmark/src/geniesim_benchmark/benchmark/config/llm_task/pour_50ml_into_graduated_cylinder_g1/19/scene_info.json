@@ -1,6 +1,6 @@
 {
   "task_name": "pour_50ml_g1_generalized",
-  "scene_id": 19,
+  "scene_id": 29,
   "robot": {
     "init_arm_pose": {
       "idx01_body_joint1": 0.42,
@@ -48,15 +48,15 @@
       "usd": "benchmark_measuring_jug_001",
       "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
       "xyz": [
-        -0.07706303774047665,
-        0.30546597579532075,
+        -0.049956504904142565,
+        -0.23900872137201418,
         0.72991943359375
       ],
       "xyzw": [
-        3.008249354681741e-06,
-        4.996284197514813e-06,
-        -0.5196624848005957,
-        0.8543716415336233
+        -2.6991501369950717e-06,
+        5.169817066419162e-06,
+        0.4667963893954744,
+        0.8843648177157073
       ],
       "prim_path": "/World/Objects/jug"
     },
@@ -64,15 +64,15 @@
       "usd": "benchmark_graduated_cylinder_001",
       "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
       "xyz": [
-        0.16722905153589535,
-        0.16468352154289684,
+        0.12761764125295355,
+        -0.22779666870908577,
         0.7299213409423828
       ],
       "xyzw": [
-        9.705349221829369e-08,
-        -1.5662233319781687e-07,
-        -0.6334258041816802,
-        0.7738034314971458
+        -1.5523096906666103e-07,
+        9.92636985545052e-08,
+        0.8003522746726092,
+        -0.5995300129487651
       ],
       "prim_path": "/World/Objects/cylinder"
     },
@@ -110,18 +110,18 @@
       "initial_world_frame_baked": true
     }
   },
-  "active_arm": "left",
-  "layout_type": "wide_diagonal",
+  "active_arm": "right",
+  "layout_type": "reference_band",
   "layout_sample": {
-    "arm": "left",
-    "layout_type": "wide_diagonal",
+    "arm": "right",
+    "layout_type": "reference_band",
     "offsets": [
-      -0.046328852309892185,
-      -0.056833141786520776,
-      0.07153632187044973,
-      0.04414560850219178
+      -0.012445686264474627,
+      0.026238426242612398,
+      0.022022059016772497,
+      -0.03474582545554438
     ],
-    "yaw_deg": 2.6194392855551385,
+    "yaw_deg": -4.346702712865794,
     "applied_offset_scale": 0.8
   },
   "physics_hz": 240,
@@ -136,15 +136,15 @@
     "usd": "shared",
     "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
     "xyz": [
-      -0.14870157453505378,
-      0.007458105222507144,
-      2.307218682773282e-08
+      0.19513735215743058,
+      -0.2172005427644589,
+      1.1102230246251565e-16
     ],
     "xyzw": [
-      2.5246853793112945e-08,
-      4.595911076517661e-08,
-      0.876464438604962,
-      0.4814666009817148
+      -2.4757711798863194e-22,
+      -4.951542359772639e-22,
+      0.8553223275799601,
+      -0.518096241969771
     ],
     "prim_path": "/World/Objects/liquid"
   },
@@ -155,43 +155,44 @@
     "physical_parameters_unchanged": true,
     "particle_world_positions_preserved": true
   },
-  "seed": 1136181608,
+  "seed": 544186375,
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "opposite_arm_missing_layout",
-    "active_arm": "left",
-    "layout": "wide_diagonal",
+    "active_arm": "right",
+    "layout": "reference_band",
     "sample": {
-      "arm": "left",
-      "layout_type": "wide_diagonal",
+      "arm": "right",
+      "layout_type": "reference_band",
       "offsets": [
-        -0.046328852309892185,
-        -0.056833141786520776,
-        0.07153632187044973,
-        0.04414560850219178
+        -0.012445686264474627,
+        0.026238426242612398,
+        0.022022059016772497,
+        -0.03474582545554438
       ],
-      "yaw_deg": 2.6194392855551385,
+      "yaw_deg": -4.346702712865794,
       "applied_offset_scale": 0.8
     },
     "baked_particle_count": 22500,
     "baked_surface_point_count": 9218,
     "fluid_world_transform": [
       [
-        0.9961081848856406,
-        0.08813900387362308,
-        -1.140632577830398e-21,
-        -0.05366479701897972
+        0.9930561883937047,
+        0.11764100770125578,
+        0.0,
+        0.050903801767277185
       ],
       [
-        -0.0881390038736232,
-        0.9961081848856406,
-        1.226174584909367e-21,
-        0.04611649166836462
+        -0.11764100770125592,
+        0.9930561883937046,
+        1.6940658945086007e-21,
+        0.0034902816971155715
       ],
       [
-        -1.3783348586978428e-22,
-        1.0710073112188409e-21,
+        8.470329472543003e-22,
+        -1.6940658945086007e-21,
         1.0,
-        1.1102230246251565e-16
+        0.0
       ],
       [
         0.0,
@@ -214,21 +215,21 @@
     },
     "preview_safety_cylinder_correction_m": [
       0.0,
-      -0.0,
+      0.0,
       0.0
     ],
     "convex_footprints_separated_5mm": true,
     "note": "The source generator does not gate mutual 2D vessel footprints; actual hollow geometry requires preview/physical review.",
-    "instance_id": 19,
-    "source_instance": 0,
-    "source_scene_sha256": "e58b02de10520e37297174831b284dba87b8638bc46b585f676d805c1180370a",
-    "seed": 1136181608,
-    "visual_pool_index": 89,
+    "instance_id": 29,
+    "source_instance": 1,
+    "source_scene_sha256": "7b524e6a6282ee4a0efa03182a3a6d4ee6548fb01c8d752c937771295d0e668f",
+    "seed": 544186375,
+    "visual_pool_index": 208,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.836112662415251,
+    "selection_feature_distance": 1.0368250324688943,
     "source_slot": {
-      "arm": "left",
-      "layout": "wide_diagonal"
+      "arm": "right",
+      "layout": "reference_band"
     },
     "distribution_adjustment": {
       "layout_center_multiplier": 1.5,
@@ -239,6 +240,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

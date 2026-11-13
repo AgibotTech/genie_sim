@@ -79,15 +79,15 @@
       ],
       "usd": "benchmark_cup_114",
       "xyz": [
-        0.9232501457218067,
-        0.14104791783483853,
+        0.8952205732728723,
+        0.22118880375459055,
         0.8066190064852385
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.572213448296379,
-        0.8201047308659835
+        -0.9985002279281616,
+        0.05474745109677315
       ]
     },
     "benchmark_cup_115": {
@@ -113,20 +113,49 @@
       ],
       "usd": "benchmark_cup_115",
       "xyz": [
-        0.8671136885587754,
-        -0.29628206717110894,
+        0.8603202590794187,
+        -0.1615332650420296,
         0.7791975710909407
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.9990643704667578,
-        0.043247932480766735
+        0.04976089671254158,
+        0.9987611770629883
       ]
     }
   },
-  "scene_id": "table_with_cup_and_lid",
-  "seed": 17,
+  "scene_id": 27,
+  "seed": 20262132,
   "cup_side": "left",
-  "lid_side": "right"
+  "lid_side": "right",
+  "generalization": {
+    "instance_id": 27,
+    "source_instance": 7,
+    "source_hashes": {
+      "scene.usda": "dfdbd2dd343124b5d17258c61c132e6366cf405da1b38070c93b0c6f31616625",
+      "instructions.json": "8709c6f0f66d801153c0d7826d4de2f7fad04a4ebc90fe9ec2bc8942f72c8a36",
+      "scene_info.json": "e34899d68c8b7f26ebac4efe744de5bab30f0a5a4845768f345dff2233d929b0",
+      "problems.json": "197c3dd27350d7469dc3c76ac3e9478948f1d3d16e5ab62112586b2d7a5f9491"
+    },
+    "requested_source_instance": 7,
+    "world_translation_m": [
+      -0.018637670829247388,
+      -0.019281590892658997,
+      0.0
+    ],
+    "moving_prims": [
+      "benchmark_cup_114",
+      "benchmark_cup_115"
+    ],
+    "fixed_prims": [
+      "table_7643d40d"
+    ],
+    "minimum_layout_distance_m": 0.026816832797540595,
+    "seed": 20262105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
+  },
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

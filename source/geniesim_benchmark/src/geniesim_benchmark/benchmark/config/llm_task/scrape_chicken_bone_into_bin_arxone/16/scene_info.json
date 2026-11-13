@@ -1,13 +1,13 @@
 {
-  "scene_id": 16,
-  "seed": 4174525326,
+  "scene_id": 26,
+  "seed": 3453328768,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        -0.0002521510049294049,
-        0.0010615822163315318,
-        0.3689268489705172
+        -0.012827458814829384,
+        -0.00626838750356346,
+        0.36448686651203327
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.17678730312056556,
-        -0.06274344263957697,
-        0.7395173495284104
+        -0.1535839816666508,
+        0.14887418677090875,
+        0.7350773670699264
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.943141912986716,
-        -0.3323903307374599
+        0.9548824898238907,
+        0.2969838895087192
       ],
       "tags": [
         "root_scene",
@@ -77,23 +77,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        0.9042955431347308,
-        0.42690698128124166
+        0.9225871280480661,
+        0.38578879086881385
       ],
-      "usd_quatf_rotation_quantization_rad": 1.804209059930173e-08
+      "usd_quatf_rotation_quantization_rad": 1.617928613306674e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.07081109694627691,
-        -0.3375942130553716,
-        0.7500075445465136
+        -0.14610620360368323,
+        -0.19262091086055724,
+        0.7455675620880297
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.07132250329719554,
-        0.9974533074402137
+        0.8529792410241233,
+        0.521944838447427
       ],
       "tags": [
         "root_scene",
@@ -102,8 +102,7 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table",
-        "garbage"
+        "on_table"
       ],
       "description": {},
       "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
@@ -119,23 +118,23 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        -0.19547318981835718,
-        0.9807090455697024
+        0.8636519176128117,
+        0.5040886481599374
       ],
-      "usd_quatf_rotation_quantization_rad": 2.992390086831176e-07
+      "usd_quatf_rotation_quantization_rad": 1.8403073065442754e-08
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.38153476130164776,
-        -0.1781885475615514,
-        0.6336699468540763
+        -0.3941100691115477,
+        0.17019018276095177,
+        0.6292299643955924
       ],
       "xyzw": [
         0.0,
         0.0,
         1.0,
-        -6.123234e-17
+        6.123233995736766e-17
       ],
       "tags": [
         "root_scene",
@@ -174,64 +173,70 @@
         6.123234e-17
       ],
       "usd_quatf_rotation_quantization_rad": 8.526467189029855e-26
-    },
-    "trash_apple_000": {
-      "usd": "benchmark_trash_029",
-      "xyz": [
-        -0.1919401596968524,
-        0.14870360676225214,
-        0.7697764304663108
+    }
+  },
+  "relations": {
+    "graph": {
+      "directed": true,
+      "multigraph": false,
+      "graph": {},
+      "nodes": [
+        {
+          "id": "root_scene"
+        },
+        {
+          "id": "table_000"
+        },
+        {
+          "id": "scraper_000"
+        },
+        {
+          "id": "trash_bone_000"
+        },
+        {
+          "id": "trash_can_000"
+        }
       ],
-      "xyzw": [
-        -0.26072026917271796,
-        0.6572860421783695,
-        0.26072026917271796,
-        0.6572860421783696
-      ],
-      "tags": [
-        "root_scene",
-        "trash_apple_000"
-      ],
-      "keywords": [
-        "trash",
-        "garbage",
-        "apple_core",
-        "on_table"
-      ],
-      "description": {},
-      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
-      "physics": {
-        "kinematic": false,
-        "mass_kg": 0.01
-      },
-      "scale": [
-        1.0,
-        1.0,
-        1.0
+      "links": [
+        {
+          "source": "root_scene",
+          "target": "table_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "scraper_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_bone_000"
+        },
+        {
+          "source": "root_scene",
+          "target": "trash_can_000"
+        }
       ]
     }
   },
-  "relations": [],
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "template_neighborhood_independent_yaw_and_trash_xy",
-    "bin_abs_table_y_m": 0.1791455348430473,
-    "handle_outward_deg": 38.82745489507515,
+    "bin_abs_table_y_m": 0.17656316519935136,
+    "handle_outward_deg": 34.55346807371272,
     "trash": [
-      "trash_bone_000",
-      "trash_apple_000"
+      "trash_bone_000"
     ],
     "tool_xy_jitter_bound_m": 0.055,
     "trash_xy_jitter_bound_m": [
       0.035,
       0.025
     ],
-    "instance_id": 16,
-    "source_instance": 5,
-    "source_scene_sha256": "dbc16bf4c4aea62b40f2da54cab2789a3667fe671463e434d63427957284c2bd",
-    "seed": 4174525326,
-    "visual_pool_index": 96,
+    "instance_id": 26,
+    "source_instance": 1,
+    "source_scene_sha256": "aadfdee644f5478f2b8e53712be1232aec9623ef898f26422d7ced32021cfaaf",
+    "seed": 3453328768,
+    "visual_pool_index": 82,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 2.2289973799026703,
+    "selection_feature_distance": 1.9276436776046906,
     "source_slot": {},
     "distribution_adjustment": {
       "tool_xy_jitter_m": 0.055,
@@ -250,6 +255,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

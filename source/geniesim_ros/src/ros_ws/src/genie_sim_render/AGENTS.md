@@ -305,3 +305,17 @@ capture. Receipts associate snapshot/render identity and image hashes with the
 plan. Physics-purpose bindings and original asset files are preserved.
 See [the sync protocol](docs/SYNC_CAPTURE.md) for source/epoch/retry ownership,
 world-point application, camera selection, completion metadata and failure cleanup.
+
+For recorded libuipc sequences, the startup scene preloads each episode material
+plan/receipt under `libuipc.episode_sequence`. A new correlated physical snapshot
+selects its matching episode_index/reset epoch on the same render stage, applies
+the plan before capturing RGB, and writes an independent receipt. Geometry and
+physics-purpose bindings remain unchanged; stale/skipped episodes are rejected.
+
+### Render-product readiness
+
+New snapshot/synchronous camera products receive Kit update ticks before the
+first blocking Replicator capture. On Isaac 6.2, requesting the synchronous
+readback immediately after product creation can stall without a first image.
+This initialization occurs only in the separate physics-free render stage;
+Newton/IPC physics is paused independently and is never stepped by these ticks.

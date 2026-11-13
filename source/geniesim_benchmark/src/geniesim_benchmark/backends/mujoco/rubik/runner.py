@@ -7,15 +7,31 @@
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
 import time
+import uuid
 
 import msgpack
 import mujoco
 import numpy as np
 from PIL import Image
+
+from geniesim_benchmark.plugins.output_system.dexhand2 import (
+    EVALUATION_FILENAME,
+    RUBIK_STAGES,
+    RUBIK_TASK,
+    make_evaluation,
+    write_summary,
+)
+from geniesim_benchmark.plugins.output_system.checkpoint import (
+    CHECKPOINT_REJECTED_EXIT_CODE,
+    CheckpointRejected,
+    atomic_write_json,
+    digest,
+)
 
 from .config import load_config, config_dict
 from .cameras import calibration
@@ -25,13 +41,14 @@ from .kinematics import NativeIKFKSolver
 from .scoring import RubikScorer, summarize
 from .viewer import ViewerClosed
 from .scenes import episode_scenes
+from .checkpoint import RubikCheckpoint
 
 
 def write_json(path, value):
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
+    atomic_write_json(path, value)
 
 
-def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
+def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, evaluations=None):
     directory.mkdir()
     started = time.monotonic()
     initial, last_scored_sample = None, None
@@ -44,6 +61,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
     status, reason, error = "task_failure", "timeout", None
     samples, action_log = [], []
     projection_count, maximum_projection = 0, 0.0
+    arm_projection_count, arm_maximum_projection = 0, 0.0
     raw_times = []
     raw = {key: [] for key in ("qpos", "qvel", "ctrl", "qfrc_applied", "actuator_force")}
 
@@ -53,15 +71,50 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
             for key in raw:
                 raw[key].append(getattr(env.data, key).copy())
 
+    recording = None
+    bag = None
+    if cfg.benchmark.record and cfg.rubik.render:
+        from geniesim_benchmark.plugins.output_system.observations import ObservationRecording
+
+        recording = ObservationRecording(
+            cfg.benchmark.output_dir,
+            index,
+            cfg.rubik.prompt,
+            fps=cfg.benchmark.fps,
+            record_state=cfg.benchmark.record_state,
+        )
+
+    def capture(images):
+        if recording is not None:
+            base = env.model.body("base_link").id
+            quat = env.data.xquat[base]
+            state = {
+                "joints": {
+                    "name": [env.model.joint(j).name for j in env.motor_joints],
+                    "position": env.data.qpos[env.motor_q].tolist(),
+                },
+                "base_pose": {
+                    "position": env.data.xpos[base].tolist(),
+                    "orientation_xyzw": [*map(float, quat[1:]), float(quat[0])],
+                },
+            }
+            recording.capture(images, env.steps, state, sim_time=float(env.data.time))
+
     max_steps = int(np.ceil(cfg.rubik.timeout_seconds / env.model.opt.timestep))
     try:
+        env.hdr_seed = cfg.benchmark.seed
+        env.hdr_episode = index
         initial = env.reset(scramble, scene)
+        if env.graphics is not None:
+            env.graphics.sync()
         scorer.initial_height = env.initial_height
         if scorer.update(initial):
             status, reason = "success", "cube_solved"
         last_scored_sample = initial
         samples.append(initial)
         record_raw()
+        if recording is not None:
+            capture(env.images())
         if not cfg.app.headless:
             env.open_viewer()
         policy.reset()
@@ -70,7 +123,8 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
             if env.viewer is not None:
                 env.viewer.sync()
             images = env.images() if cfg.rubik.render else {}
-            payload = payload_for(env, index, images, cfg.rubik.prompt)
+            capture(images)
+            payload = payload_for(env, index, images, cfg.rubik.prompt, cfg.rubik.segments)
             if inference_count == 0:
                 (directory / "initial_observation.msgpack").write_bytes(msgpack.packb(payload, use_bin_type=True))
                 for name, image in images.items():
@@ -108,6 +162,8 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
             )
             if env.viewer is not None:
                 print(f"Policy replied in {reply_seconds:.2f}s; executing {len(actions)} actions", flush=True)
+            arm_projection_count += projection.get("arm_changed_values", 0)
+            arm_maximum_projection = max(arm_maximum_projection, projection.get("arm_maximum_projection_radians", 0.0))
             projection_count += projection.get("changed_values", 0)
             maximum_projection = max(maximum_projection, projection.get("maximum_projection_radians", 0.0))
             for reply_row, action in enumerate(actions):
@@ -139,6 +195,8 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
                         status, reason = "success", "solved_and_held" if cfg.rubik.hold_seconds else "cube_solved"
                         break
                 samples.append(sample if env.steps else initial)
+                if recording is not None:
+                    capture(env.images())
                 if env.viewer is not None:
                     env.viewer.pace(action_started, (env.steps - action_start_step) * env.model.opt.timestep)
                 if scorer.success or env.steps >= max_steps:
@@ -160,6 +218,9 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
         status, reason, error = "invalid_policy", "policy_error", str(exc)
     except Exception as exc:
         status, reason, error = "invalid_runtime", "runtime_error", f"{type(exc).__name__}: {exc}"
+    finally:
+        if recording is not None:
+            bag = recording.close()
     valid = status in ("success", "task_failure")
     scores = scorer.scores()
     result = {
@@ -172,6 +233,13 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
         "backend": "mujoco",
         "policy": cfg.benchmark.policy,
         "episode_index": index,
+        "runtime_identity": {
+            "pid": os.getpid(),
+            "environment_id": id(env),
+            "model_id": id(env.model),
+            "renderer_pid": getattr(getattr(env.graphics, "process", None), "pid", None),
+        },
+        "render_background": getattr(env.graphics, "hdr_background", None),
         "scramble": scramble if scene is None else None,
         "scene": scene.receipt() if scene is not None else None,
         "status": status,
@@ -196,6 +264,9 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
         "actuation": env.controller.diagnostics() if hasattr(env.controller, "diagnostics") else None,
         "maximum_hold_seconds": scorer.maximum_hold_seconds,
         "action_projection": {
+            "arm_target_limit_policy": "clip_to_joint_limits",
+            "arm_changed_values_in_received_chunks": arm_projection_count,
+            "arm_maximum_projection_radians": arm_maximum_projection,
             "hand_target_tolerance": cfg.rubik.hand_target_tolerance,
             "changed_values_in_received_chunks": projection_count,
             "maximum_projection_radians": maximum_projection,
@@ -204,6 +275,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
         "initial": initial,
         "last_scored_sample": last_scored_sample,
         "recorded_raw": cfg.benchmark.record,
+        "recording": bag,
     }
     write_json(directory / "result.json", result)
     write_json(directory / "samples.json", samples)
@@ -215,19 +287,42 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None):
             time=np.asarray(raw_times),
             **{k: np.asarray(v) for k, v in raw.items()},
         )
+    if result["task_name"] == RUBIK_TASK:
+        evaluation = make_evaluation(
+            RUBIK_TASK,
+            cfg.rubik.prompt,
+            result,
+            stages=RUBIK_STAGES,
+            stage_scores=scores,
+            e2e=int(scores["E2E"]),
+            count=len({action["reply_index"] for action in action_log}),
+            step_out=int(np.floor(cfg.rubik.timeout_seconds * cfg.rubik.control_hz)),
+            steps=env.steps,
+            duration=result["wall_seconds"],
+            valid=valid,
+        )
+        if evaluations is None:
+            write_summary(directory, [evaluation])
+        else:
+            evaluations.append(evaluation)
     return result
 
 
 def create_output_directory(cfg):
     """Create an isolated result directory and record its resolved path."""
+    resume = cfg.benchmark.resume and not cfg.benchmark.preview
     if cfg.benchmark.output_dir:
         out = Path(cfg.benchmark.output_dir).expanduser().resolve()
-        out.mkdir(parents=True, exist_ok=False)
+        out.mkdir(parents=True, exist_ok=resume)
     else:
         parent = Path("output") / cfg.benchmark.task_name
         parent.mkdir(parents=True, exist_ok=True)
-        prefix = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
-        out = Path(tempfile.mkdtemp(prefix=prefix, dir=parent)).resolve()
+        if resume:
+            out = (parent / cfg.benchmark.resume_id if cfg.benchmark.resume_id else parent).resolve()
+            out.mkdir(parents=True, exist_ok=True)
+        else:
+            prefix = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
+            out = Path(tempfile.mkdtemp(prefix=prefix, dir=parent)).resolve()
     cfg.benchmark.output_dir = str(out)
     return out
 
@@ -238,20 +333,84 @@ def run(cfg):
     except OSError as error:
         print(f"Cannot create fresh output directory: {error}", file=sys.stderr)
         return 1
-    write_json(out / "config.json", config_dict(cfg))
     episodes, env, policy = [], None, None
+    evaluations = []
+    checkpoint = None
+    restored = False
+    dexhand2 = cfg.benchmark.task_name == RUBIK_TASK
+    report_path = out / (EVALUATION_FILENAME if dexhand2 else "evaluate_ret_rubik.json")
+
+    def finalize():
+        if cfg.benchmark.record and cfg.rubik.render and checkpoint.finished:
+            from geniesim_benchmark.plugins.output_system.observations import finalize_recordings
+
+            artifacts = finalize_recordings(
+                out, checkpoint.recording_paths(), cfg.benchmark.record_video_dir, reports=[report_path]
+            )
+            checkpoint.finalize_recordings(artifacts)
+
+    def publish():
+        episodes.sort(key=lambda row: row["episode_index"])
+        evaluations.sort(key=lambda row: row["native_result"]["episode_index"])
+        statistics = summarize(episodes)
+        if episodes and all(episode.get("scene") for episode in episodes):
+            statistics["by_turns"] = {
+                f"{turns}turn": summarize([episode for episode in episodes if episode["scene"]["turns"] == turns])
+                for turns in sorted({episode["scene"]["turns"] for episode in episodes})
+            }
+        details = evaluations if dexhand2 else episodes
+        if dexhand2 and evaluations:
+            write_summary(out, evaluations)
+            if digest(json.loads(report_path.read_text())["details"]) != digest(details):
+                raise RuntimeError("Rubik evaluation summary was not published completely")
+        else:
+            write_json(report_path, {"details": details, "statistics": statistics})
+        write_json(out / "summary.json", statistics)
+
     try:
+        if not cfg.benchmark.preview:
+            checkpoint = RubikCheckpoint(out, cfg)
+            checkpoint.__enter__()
+            rows = checkpoint.initialize()
+            episodes = [row["native_result"] for row in rows] if dexhand2 else rows
+            evaluations = rows if dexhand2 else []
+            restored = True
+            publish()  # Remove uncommitted result tails before any restart.
+            if checkpoint.finished:
+                finalize()
+                print(f"All Rubik episodes already completed. Results: {report_path}", flush=True)
+                return 0
+        write_json(out / "config.json", config_dict(cfg))
+        runtime_dir = out
+        if checkpoint is not None:
+            runtime_dir = out / "_attempts" / uuid.uuid4().hex
+            runtime_dir.mkdir(parents=True)
         env = NativeEnvironment(cfg.rubik)
         env.task_name = cfg.benchmark.task_name
-        scenes = episode_scenes(
-            env.scene_catalog,
-            cfg.benchmark.task_name,
-            cfg.benchmark.seed,
-            cfg.benchmark.num_instances,
-            cfg.benchmark.num_episode,
+        env.hdr_seed = cfg.benchmark.seed
+        env.hdr_episode = 0
+        scenes = (
+            checkpoint.scenes
+            if checkpoint is not None
+            else episode_scenes(
+                env.scene_catalog,
+                cfg.benchmark.task_name,
+                cfg.benchmark.seed,
+                cfg.benchmark.num_instances,
+                cfg.benchmark.num_episode,
+            )
         )
-        env.reset(cfg.rubik.scramble or "R'", scenes[0] if scenes else None)
-        env.configure_renderer(cfg.app.headless, out)
+        first_index = (
+            next((entry["episode_idx"] for entry in checkpoint.plan if not checkpoint.is_completed(entry)), 0)
+            if checkpoint
+            else 0
+        )
+        env.hdr_episode = first_index
+        env.reset(
+            checkpoint.scramble(first_index) if checkpoint else cfg.rubik.scramble or "R'",
+            scenes[first_index] if scenes else None,
+        )
+        env.configure_renderer(cfg.app.headless, runtime_dir)
         metadata = {
             "backend": "mujoco",
             "live_visualization": not cfg.app.headless,
@@ -290,7 +449,7 @@ def run(cfg):
             images = env.images()
             for name, image in images.items():
                 Image.fromarray(image).save(out / (name + ".png"))
-            payload = payload_for(env, 0, images, cfg.rubik.prompt)
+            payload = payload_for(env, 0, images, cfg.rubik.prompt, cfg.rubik.segments)
             (out / "observation.msgpack").write_bytes(msgpack.packb(payload, use_bin_type=True))
             write_json(out / "summary.json", {"status": "preview", "scored": False, "score": None})
             print(f"Camera preview: {out}", flush=True)
@@ -304,24 +463,31 @@ def run(cfg):
         )
         tokens = np.random.default_rng(cfg.benchmark.seed).permutation([f + s for f in "URFDLB" for s in ("", "'")])
         for index in range(cfg.benchmark.num_instances * cfg.benchmark.num_episode):
+            entry = checkpoint.plan[index]
+            if checkpoint.is_completed(entry):
+                continue
             scramble = cfg.rubik.scramble or str(tokens[index % len(tokens)])
             scene = scenes[index] if scenes else None
-            result = run_episode(env, cfg, policy, index, scramble, out / f"episode-{index:04d}", scene)
+            episode_dir = runtime_dir / f"episode-{index:04d}"
+            result = run_episode(env, cfg, policy, index, scramble, episode_dir, scene, evaluations=evaluations)
             result.update(
                 instance_id=index // cfg.benchmark.num_episode, attempt_index=index % cfg.benchmark.num_episode
             )
-            write_json(out / f"episode-{index:04d}" / "result.json", result)
+            write_json(episode_dir / "result.json", result)
             episodes.append(result)
-            statistics = summarize(episodes)
-            if scenes:
-                statistics["by_turns"] = {
-                    f"{turns}turn": summarize([episode for episode in episodes if episode["scene"]["turns"] == turns])
-                    for turns in sorted({episode["scene"]["turns"] for episode in episodes})
-                }
-            write_json(out / "evaluate_ret_rubik.json", {"details": episodes, "statistics": statistics})
-            write_json(out / "summary.json", statistics)
+            detail = evaluations[-1] if dexhand2 else result
+            detail["episode_coord"] = {key: entry[key] for key in ("instance_id", "file_idx", "episode_id")}
+            detail["episode_artifacts"] = checkpoint.artifacts(episode_dir)
+            publish()
+            if result["valid"]:
+                if cfg.benchmark.record and cfg.rubik.render and not result.get("recording"):
+                    raise RuntimeError("Rubik episode finished without a camera recording")
+                checkpoint.commit(detail, bag=result.get("recording"))
             print(f"Episode {index}: {result['status']} ({result['reason']}), score={result['score']}", flush=True)
-        print(f"Results: {out / 'evaluate_ret_rubik.json'}", flush=True)
+            if cfg.benchmark.resume and not result["valid"]:
+                break  # Inference/runtime interruptions remain retryable.
+        finalize()
+        print(f"Results: {report_path}", flush=True)
         if env.viewer is not None:
             if env.viewer.is_running():
                 env.viewer.sync()
@@ -329,15 +495,23 @@ def run(cfg):
             env.viewer.wait_until_closed()
         return 1 if any(not e["valid"] for e in episodes) else 0
     except Exception as error:
-        write_json(out / "error.json", {"status": "invalid_setup", "error": f"{type(error).__name__}: {error}"})
-        write_json(out / "summary.json", {**summarize(episodes), "status": "invalid_setup"})
+        # Rejected checkpoints must never overwrite the previously committed report.
+        if checkpoint is None or restored:
+            write_json(out / "error.json", {"status": "invalid_setup", "error": f"{type(error).__name__}: {error}"})
+            write_json(out / "summary.json", {**summarize(episodes), "status": "invalid_setup"})
         print(f"MuJoCo benchmark setup failed: {type(error).__name__}: {error}", file=sys.stderr)
-        return 1
+        return CHECKPOINT_REJECTED_EXIT_CODE if isinstance(error, CheckpointRejected) else 1
     finally:
-        if policy is not None:
-            policy.close()
-        if env is not None:
-            env.close()
+        try:
+            if policy is not None:
+                policy.close()
+        finally:
+            try:
+                if env is not None:
+                    env.close()
+            finally:
+                if checkpoint is not None:
+                    checkpoint.close()
 
 
 def main(argv=None):

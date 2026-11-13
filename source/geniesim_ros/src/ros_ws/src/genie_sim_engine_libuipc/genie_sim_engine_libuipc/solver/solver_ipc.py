@@ -1029,6 +1029,7 @@ class SolverIPC(SolverBase):
         # writes into it each frame and the ``_animate_eac_delta_theta`` animator
         # picks it up. Empty when ``use_external_articulation`` is False.
         self._eac_delta_theta_tilde: list[float] = []
+        self._joint_aim_values: list[float] = []
 
         self._convert_to_uipc(model)
 
@@ -1037,6 +1038,9 @@ class SolverIPC(SolverBase):
         self._world = uipc.core.World(self._engine)
         self._world.init(self._scene)
         self._world.dump()
+        self._reset_kinematic_targets = {key: value.copy() for key, value in self._kinematic_targets.items()}
+        self._reset_joint_aim_values = self._joint_aim_values.copy()
+        self._reset_eac_delta_theta = self._eac_delta_theta_tilde.copy()
 
         self._abd_state_feature = self._world.features().find(uipc.core.AffineBodyStateAccessorFeature)
         if model.body_count > 0:
@@ -2336,7 +2340,11 @@ class SolverIPC(SolverBase):
 
     def reset(self, state: State, world_mask: wp.array | None = None, flags: Any | None = None) -> None:
         """Restore the ``libuipc`` world to its initial (construction-time) state."""
-        self._world.recover(0)
+        if self._world.recover(0) is False:
+            raise RuntimeError("native libuipc World.recover(0) failed")
+        self._kinematic_targets = {key: value.copy() for key, value in self._reset_kinematic_targets.items()}
+        self._joint_aim_values[:] = self._reset_joint_aim_values
+        self._eac_delta_theta_tilde[:] = self._reset_eac_delta_theta
         self._world.retrieve()
         self._write_state_from_uipc(state)
 

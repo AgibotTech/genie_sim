@@ -29,6 +29,9 @@ class MountedView:
     look_at: tuple[float, float, float]
     up: tuple[float, float, float]
     fov_degrees: float
+    width: int | None = None
+    height: int | None = None
+    calibration: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -78,7 +81,22 @@ class GlObservationConfig:
             fov = float(row["fov_degrees"])
             if not np.isfinite(fov) or not 1 < fov < 179:
                 raise ValueError("RGB fov_degrees must be between 1 and 179")
-            views.append(MountedView(row["name"], row["topic"], row["body"], *vectors, fov))
+            width, height = row.get("width"), row.get("height")
+            if (width is None) != (height is None) or any(
+                value is not None and (type(value) is not int or value <= 0) for value in (width, height)
+            ):
+                raise ValueError("RGB view dimensions must be paired positive integers")
+            calibration = row.get("calibration")
+            if calibration is not None:
+                if not isinstance(calibration, dict) or calibration.get("model") not in (
+                    "opencvPinhole",
+                    "opencvFisheye",
+                ):
+                    raise ValueError("RGB view calibration requires a supported OpenCV model")
+                values = [float(calibration[key]) for key in ("fx", "fy", "cx", "cy")]
+                if not np.isfinite(values).all() or min(values[:2]) <= 0:
+                    raise ValueError("RGB view calibration requires finite positive focal lengths")
+            views.append(MountedView(row["name"], row["topic"], row["body"], *vectors, fov, width, height, calibration))
         for key in ("name", "topic"):
             values = [getattr(view, key) for view in views]
             if len(set(values)) != len(values):
@@ -165,6 +183,8 @@ def capture_views(
     No pixels are returned on partial capture, and the UI camera is restored on
     any failure. The caller must not step physics during this function.
     """
+    if any(view.calibration is not None or view.width is not None for view in config.views):
+        raise ValueError("calibrated per-camera RGB views require the Isaac Sim snapshot renderer")
     original_camera = viewer.camera
     original_ui = viewer.show_ui
     original_gui = viewer.gui
@@ -246,7 +266,10 @@ class GlObservationPublisher:
         stamp = self._node.get_clock().now().to_msg()
         messages = []
         for view, image in zip(self.config.views, images, strict=True):
-            if image.shape != (self.config.height, self.config.width, 3) or image.dtype != np.uint8:
+            if (
+                image.shape != (view.height or self.config.height, view.width or self.config.width, 3)
+                or image.dtype != np.uint8
+            ):
                 raise ValueError("RGB capture has an invalid shape or dtype")
             message = self._message()
             message.header.stamp = stamp
@@ -254,7 +277,7 @@ class GlObservationPublisher:
             message.height, message.width = image.shape[:2]
             message.encoding = "rgb8"
             message.is_bigendian = False
-            message.step = self.config.width * 3
+            message.step = message.width * 3
             message.data = image.tobytes()
             messages.append(message)
         for publisher, message in zip(self._publishers, messages, strict=True):

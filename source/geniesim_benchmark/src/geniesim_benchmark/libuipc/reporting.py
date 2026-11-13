@@ -8,14 +8,15 @@ from __future__ import annotations
 import copy
 
 
-def common_result(task, execution, score, *, instruction="", endpoint=""):
+def common_result(task, execution, score, *, instruction="", endpoint="", step_out=None):
+    from geniesim_benchmark.plugins.output_system.dexhand2 import attach_episode_budget
     from geniesim_benchmark.plugins.output_system.eval_utils import TaskEvaluation
 
     evaluation = TaskEvaluation(task_name=task, sub_task_name=task, score_layout_name=task)
     evaluation.robot_type = "G2_crsB_wuji"
     evaluation.model_type = endpoint
     evaluation.task_instruction = instruction
-    evaluation.policy_dispatch_count = execution.get("policy_dispatch_count", 0)
+    evaluation.policy_dispatch_count = execution.get("policy_dispatch_count")
     clean = execution.get("execution_status") == "completed"
     evaluation.task_success = score.get("success") is True and clean
     evaluation.task_tree_finished = score.get("task_tree_finished") is True
@@ -27,8 +28,15 @@ def common_result(task, execution, score, *, instruction="", endpoint=""):
         ]
     )
     evaluation.summarize_scores()
+    valid = clean and execution.get("scoring_status") == "scored"
+    if step_out is not None:
+        attach_episode_budget(
+            evaluation.result, task, count=evaluation.policy_dispatch_count if valid else None,
+            step_out=step_out, source="native_runner", strict=False,
+        )
     result = evaluation.to_dir()
     result.update(
+        valid=valid,
         execution_status=execution.get("execution_status"),
         inference_requests=execution.get("inference_requests", 0),
         task_success=evaluation.task_success,

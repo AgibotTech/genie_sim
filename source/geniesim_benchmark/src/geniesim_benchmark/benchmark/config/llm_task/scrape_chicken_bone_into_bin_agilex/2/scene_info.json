@@ -1,13 +1,13 @@
 {
-  "scene_id": 358,
-  "seed": 2026101759,
+  "scene_id": 12,
+  "seed": 1788218767,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        -0.11735004816792896,
-        -0.0018083373235966167,
-        0.36537197300831425
+        -0.10517153821085679,
+        -0.006278218236453574,
+        0.3715388565919286
       ],
       "xyzw": [
         0.0,
@@ -45,15 +45,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.29080236431583767,
-        -0.20404865527991206,
-        0.7359624735662075
+        -0.09874920329846913,
+        -0.24957958367025004,
+        0.7421293571498218
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9224209166857236,
-        0.3861860334873199
+        0.9481174191195595,
+        -0.31792036669906104
       ],
       "tags": [
         "root_scene",
@@ -76,24 +76,24 @@
       ],
       "authored_requested_xyzw": [
         0.0,
-        0.0,
-        0.9224209134210597,
-        0.3861860412851013
+        -0.0,
+        -0.8752386627748822,
+        0.48369130980826613
       ],
-      "usd_quatf_rotation_quantization_rad": 1.6907208522098927e-08
+      "usd_quatf_rotation_quantization_rad": 1.116532544198634e-08
     },
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        -0.0386440397258848,
-        0.2215595453698188,
-        0.7464526685850886
+        -0.26186952700764116,
+        0.2467899985432278,
+        0.752619552167925
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.3420294895166392,
-        0.9396892189979553
+        0.9854872415344654,
+        0.169749511848459
       ],
       "tags": [
         "root_scene",
@@ -118,17 +118,17 @@
       "authored_requested_xyzw": [
         0.0,
         0.0,
-        -0.34202953070913344,
-        0.9396892040046485
+        0.9744226725602879,
+        0.22472306334790362
       ],
-      "usd_quatf_rotation_quantization_rad": 8.767259163100509e-08
+      "usd_quatf_rotation_quantization_rad": 1.516622322172978e-08
     },
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.4986326584646473,
-        0.14398421539878284,
-        0.6301150708918734
+        -0.4864541485075751,
+        -0.15827001762325416,
+        0.6362819544754877
       ],
       "xyzw": [
         0.0,
@@ -216,5 +216,44 @@
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "template_neighborhood_independent_yaw_and_trash_xy",
+    "bin_abs_table_y_m": 0.15188720445196402,
+    "handle_outward_deg": 37.07401647768404,
+    "trash": [
+      "trash_bone_000"
+    ],
+    "tool_xy_jitter_bound_m": 0.055,
+    "trash_xy_jitter_bound_m": [
+      0.035,
+      0.025
+    ],
+    "instance_id": 12,
+    "source_instance": 7,
+    "source_scene_sha256": "5d2bc7663a43aa425fd1b76afee0b430b00f4bacfeccb0d6c58f87f97da82d4f",
+    "seed": 1788218767,
+    "visual_pool_index": 77,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.9615667727217687,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "tool_xy_jitter_m": 0.055,
+      "trash_xy_jitter_m": [
+        0.035,
+        0.025
+      ],
+      "bin_abs_table_y_m": [
+        0.12,
+        0.18
+      ],
+      "handle_outward_deg": [
+        30,
+        60
+      ]
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

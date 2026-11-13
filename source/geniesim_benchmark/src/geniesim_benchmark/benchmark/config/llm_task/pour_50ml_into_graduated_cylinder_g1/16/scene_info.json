@@ -1,6 +1,6 @@
 {
   "task_name": "pour_50ml_g1_generalized",
-  "scene_id": 16,
+  "scene_id": 26,
   "robot": {
     "init_arm_pose": {
       "idx01_body_joint1": 0.42,
@@ -48,15 +48,15 @@
       "usd": "benchmark_measuring_jug_001",
       "asset_path": "objects/benchmark/measuring_jug/benchmark_measuring_jug_001/Aligned.usda",
       "xyz": [
-        0.010945303477440979,
-        -0.21736250987447403,
+        -0.04548251315016629,
+        0.3298629243839028,
         0.72991943359375
       ],
       "xyzw": [
-        -2.3044574303395027e-06,
-        5.357415040299977e-06,
-        0.39926480251512686,
-        0.916835654541502
+        2.2609520041514965e-06,
+        5.375920014025756e-06,
+        -0.39181938582036546,
+        0.9200421560240266
       ],
       "prim_path": "/World/Objects/jug"
     },
@@ -64,15 +64,15 @@
       "usd": "benchmark_graduated_cylinder_001",
       "asset_path": "objects/benchmark/graduated_cylinder/benchmark_graduated_cylinder_001/Aligned.usda",
       "xyz": [
-        0.12955805758747546,
-        -0.2426964058434054,
+        0.085919136475344,
+        0.2165729796314658,
         0.7299213409423828
       ],
       "xyzw": [
-        -1.542201888503827e-07,
-        1.0082692576413624e-07,
-        0.8063684592318778,
-        -0.5914134830691412
+        1.037998437876695e-07,
+        -1.522351077700205e-07,
+        -0.5990335121642506,
+        0.80072395449626
       ],
       "prim_path": "/World/Objects/cylinder"
     },
@@ -110,18 +110,18 @@
       "initial_world_frame_baked": true
     }
   },
-  "active_arm": "right",
-  "layout_type": "short_diagonal",
+  "active_arm": "left",
+  "layout_type": "outer_pair",
   "layout_sample": {
-    "arm": "right",
-    "layout_type": "short_diagonal",
+    "arm": "left",
+    "layout_type": "outer_pair",
     "offsets": [
-      0.0636815742125048,
-      0.05329619061453756,
-      -0.011002839971903142,
-      -0.045798821769479796
+      -0.006853196572004224,
+      -0.08732932752224837,
+      -0.030101071955239464,
+      -0.020716214108519412
     ],
-    "yaw_deg": -12.935337898821274,
+    "yaw_deg": -13.864280727150916,
     "applied_offset_scale": 0.8
   },
   "physics_hz": 240,
@@ -136,15 +136,15 @@
     "usd": "shared",
     "asset_path": "scenes/liquid_pour_50ml_20261023/shared/fluid.usdc",
     "xyz": [
-      0.19513735215743058,
-      -0.2172005427644589,
-      1.1102230246251565e-16
+      -0.14870157453505378,
+      0.007458105222507144,
+      2.307218682773282e-08
     ],
     "xyzw": [
-      -2.4757711798863194e-22,
-      -4.951542359772639e-22,
-      0.8553223275799601,
-      -0.518096241969771
+      2.5246853793112945e-08,
+      4.595911076517661e-08,
+      0.876464438604962,
+      0.4814666009817148
     ],
     "prim_path": "/World/Objects/liquid"
   },
@@ -155,41 +155,42 @@
     "physical_parameters_unchanged": true,
     "particle_world_positions_preserved": true
   },
-  "seed": 1279958302,
+  "seed": 368629773,
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "opposite_arm_missing_layout",
-    "active_arm": "right",
-    "layout": "short_diagonal",
+    "active_arm": "left",
+    "layout": "outer_pair",
     "sample": {
-      "arm": "right",
-      "layout_type": "short_diagonal",
+      "arm": "left",
+      "layout_type": "outer_pair",
       "offsets": [
-        0.0636815742125048,
-        0.05329619061453756,
-        -0.011002839971903142,
-        -0.045798821769479796
+        -0.006853196572004224,
+        -0.08732932752224837,
+        -0.030101071955239464,
+        -0.020716214108519412
       ],
-      "yaw_deg": -12.935337898821274,
+      "yaw_deg": -13.864280727150916,
       "applied_offset_scale": 0.8
     },
     "baked_particle_count": 22500,
     "baked_surface_point_count": 9218,
     "fluid_world_transform": [
       [
-        0.9643516625732692,
-        0.2646240179805522,
-        -8.18532752987399e-22,
-        0.1468891762453634
+        0.9801773491548548,
+        -0.19812209418376767,
+        -1.6940658945086007e-21,
+        0.05054264253618485
       ],
       [
-        -0.2646240179805521,
-        0.9643516625732693,
-        9.180755433748647e-22,
-        0.007354715562815445
+        0.1981220941837676,
+        0.9801773491548548,
+        -1.6940658945086007e-21,
+        0.087811685880169
       ],
       [
-        6.710447944232488e-22,
-        -1.5990357584610738e-21,
+        0.0,
+        1.6940658945086007e-21,
         1.0,
         1.1102230246251565e-16
       ],
@@ -213,22 +214,22 @@
       ]
     },
     "preview_safety_cylinder_correction_m": [
-      0.028360335525462424,
-      -0.006057340083171308,
+      0.0,
+      -0.0,
       0.0
     ],
     "convex_footprints_separated_5mm": true,
     "note": "The source generator does not gate mutual 2D vessel footprints; actual hollow geometry requires preview/physical review.",
-    "instance_id": 16,
-    "source_instance": 1,
-    "source_scene_sha256": "7b524e6a6282ee4a0efa03182a3a6d4ee6548fb01c8d752c937771295d0e668f",
-    "seed": 1279958302,
-    "visual_pool_index": 100,
+    "instance_id": 26,
+    "source_instance": 0,
+    "source_scene_sha256": "e58b02de10520e37297174831b284dba87b8638bc46b585f676d805c1180370a",
+    "seed": 368629773,
+    "visual_pool_index": 63,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.6955643540305005,
+    "selection_feature_distance": 1.5302431464008481,
     "source_slot": {
-      "arm": "right",
-      "layout": "short_diagonal"
+      "arm": "left",
+      "layout": "outer_pair"
     },
     "distribution_adjustment": {
       "layout_center_multiplier": 1.5,
@@ -239,6 +240,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

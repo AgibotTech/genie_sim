@@ -14,6 +14,7 @@ import yaml
 from .layout_batch import load_plans
 from .shared_layouts import run_shared_batch
 from .layouts import generate_layouts
+from .checkpoint import CheckpointRejected, run_checkpointed, stable_config
 from ..rt_engine.session import resolve_assets, resolve_bringup_file
 
 
@@ -24,8 +25,13 @@ def prepare_instances(config_path, config, output, assets, infer_host):
     if type(count) is not int or not 1 <= count <= 1000:
         raise ValueError("benchmark.num_instances must be in [1, 1000]")
     output = Path(output)
-    output.mkdir(parents=True, exist_ok=False)
+    resume = benchmark.get("resume", False)
+    output.mkdir(parents=True, exist_ok=resume)
     effective = output / "config.yaml"
+    if resume and (output / "bundle/layouts.json").is_file():
+        if stable_config(yaml.safe_load(effective.read_text())) != stable_config(config):
+            raise CheckpointRejected("Chef checkpoint configuration changed")
+        return load_plans(output / "bundle", assets, output / "instances", infer_host, python_cmd=sys.executable)
     effective.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False))
     bundle = output / "bundle"
     generate_layouts(
@@ -65,5 +71,11 @@ def run_instances(options, config_path, config):
             )
         return 0
     plans = prepare_instances(config_path, config, options.output_dir, assets, options.infer_host)
-    summary = run_shared_batch(plans, startup_timeout_s=config["ready_timeout_s"])
-    return int(any(row["status"] != "evaluated" for row in summary["layouts"]))
+    return run_checkpointed(
+        plans,
+        options.output_dir,
+        config,
+        options.infer_host,
+        run_shared_batch,
+        startup_timeout_s=config["ready_timeout_s"],
+    )

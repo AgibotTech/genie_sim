@@ -155,6 +155,8 @@ def test_attached_evaluation_reuses_paused_client_across_layouts_and_native_resu
         epochs.extend(r["evaluation"]["reset_epoch"] for r in result)
         import json
 
+        native = json.loads((output / "evaluate_ret_00.json").read_text())
+        assert len(native["details"]) == 2
         native = json.loads((output / "results.json").read_text())
         assert len(native) == 2
         assert [row["score"] for row in native] == [0, 0]
@@ -162,3 +164,12 @@ def test_attached_evaluation_reuses_paused_client_across_layouts_and_native_resu
     assert client.instances == [5, 5, 6, 6]
     assert epochs == [1, 2, 3, 4]
     assert len(resets) == 4
+
+
+def test_repeated_episodes_declare_each_physical_layout_once(tmp_path):
+    source = plans(tmp_path)
+    repeated = [source[0], source[0], source[1]]
+    scene = shared_scene(repeated)
+    assert scene["instance_switch"]["group_instances"] == [5, 6]
+    assert set(scene["instance_switch"]["instance_body_poses"]) == {"5", "6"}
+    assert scene["instance_switch"]["robot_base_xy"]["6"] == pytest.approx([0.0732, -0.0331])

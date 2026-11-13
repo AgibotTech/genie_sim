@@ -6,6 +6,7 @@
 
 All subcommand logic lives in ``geniesim_cli.commands.*``.
 This module is the console-script entry point only.
+Asset downloads: geniesim assets list|plan|download|verify.
 """
 
 from __future__ import annotations
@@ -89,6 +90,7 @@ _BOOTSTRAP_SKIP_VERBS: frozenset[str] = frozenset(
         "tool",
         "deploy",
         "data-collection",
+        "assets",
     }
 )
 
@@ -182,6 +184,7 @@ def _print_usage() -> None:
     print(f"  {CYAN}ros graph{RST}                           📊 colcon graph text, then PNG (graphviz)")
     print(f"  {CYAN}deploy{RST} <MODULE|all> [--reuse-cache]   🚀 Build pure-Python wheel(s) into ./deploy")
     print(f"  {CYAN}deploy list{RST}                         📋 List deploy candidates")
+    print(f"  {CYAN}assets{RST} <list|plan|download|verify>   📥 Selective version-pinned ModelScope assets{RST}")
     print(f"  {CYAN}benchmark run{RST} <CONFIG> [...]        🧪 Run a benchmark task (wraps app/app.py)")
     print(f"  {CYAN}benchmark list{RST} [--robot/--category] 📋 List task configs by robot / category")
     print(f"  {CYAN}benchmark batch{RST} --category=C [...]  🧬 Run every task in a category sequentially")
@@ -362,6 +365,12 @@ def main(argv: list[str] | None = None) -> None:
 
     if cmd == "deploy":
         from geniesim_cli.commands import deploy as _m
+
+        _m.run(sub_args)
+        sys.exit(0)
+
+    if cmd == "assets":
+        from geniesim_cli.commands import assets as _m
 
         _m.run(sub_args)
         sys.exit(0)

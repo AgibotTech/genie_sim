@@ -9,8 +9,12 @@ benchmark:
   output_dir: ""
   record: true
 rubik:
+  bundled_scene_archive: rubik_2turn_10_ranked.zip
   package_root: ""  # Defaults to <assets-root>/mujoco/rubik_cube.
   prompt: "Solve the Rubik's Cube"
+  segments:
+    - "The left hand grasps the Rubik's Cube"
+    - "Both hands coordinate to solve the Rubik's Cube"
   timeout_seconds: 60.0
   control_hz: 30.0
   action_time_scale: 2.0

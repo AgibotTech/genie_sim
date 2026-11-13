@@ -1,3 +1,7 @@
+# Copyright (c) 2023-2026, AgiBot Inc. All Rights Reserved.
+# Author: Genie Sim Team
+# License: Mozilla Public License Version 2.0
+
 """A synchronized camera response is produced only by a completed Replicator batch."""
 
 from __future__ import annotations
@@ -132,6 +136,11 @@ class ReplicatorCapture:
         from omni.kit.app import get_app
 
         deadline = time.monotonic() + 300.0
+        print("Initializing synchronous render products", flush=True)
+        for _ in range(20):
+            if time.monotonic() >= deadline:
+                raise RuntimeError("render-product initialization exceeded the warmup budget")
+            get_app().update()
         target = None
         attempt = 0
 

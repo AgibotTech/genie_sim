@@ -18,15 +18,15 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        0.10683486623154201,
-        -0.06473855155638168,
+        0.10851812949966178,
+        0.07415782919291962,
         1.055
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.17417200821736986,
-        0.9847152438921256
+        -0.051647076766200804,
+        0.99866539915104
       ],
       "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
     },
@@ -160,16 +160,16 @@
     "pregrasp_extra_height_m": 0.064,
     "paper_root_world": [
       [
-        0.939328223107057,
-        0.34301966310189735,
+        0.9946651589230123,
+        0.10315629706740469,
         0.0,
-        0.5021543661035255
+        0.5187985223229727
       ],
       [
-        -0.3430196631018973,
-        0.9393282231070568,
+        -0.10315629706740467,
+        0.9946651589230124,
         0.0,
-        -0.19102193534445144
+        0.011747899976891782
       ],
       [
         0.0,
@@ -240,7 +240,7 @@
     "physical_validation": "pending new physical trial",
     "policy_variant": "arx_upright_v1"
   },
-  "scene_id": 13,
+  "scene_id": 23,
   "task_name": "trace_copybook_o_arx_upright_20261024",
   "target_letter": "O",
   "writing_robot": "arx",
@@ -256,9 +256,9 @@
     "robot": "ARX",
     "anchor": "coap/runs/arx_upright_B_20261024/cases/ARX/support_r15p60h16a64/O",
     "jitter_xy_m_yaw_deg": [
-      -0.005791478814563756,
-      0.004997886988130553,
-      -2.345024479931881
+      0.005182226666287478,
+      0.005352792824417315,
+      2.7284303689221394
     ],
     "accepted_attempt": 0,
     "source_scene_sha256": "1d0311bc07b5676f470740649e21e8dccf0d0c5c072486ec440496d3ce79a81d",
@@ -455,24 +455,25 @@
     "physical_substeps_per_control_step": 4,
     "geometry_guard_observation_hz": 60
   },
-  "seed": 3961883913,
+  "seed": 3997083468,
+  "source_template_validation_level": "Strict nominal glyph IK/source geometry, original initial FOV and full-paper tabletop support passed; physical success pending",
   "benchmark_generalization": {
     "method": "bounded_paper_adapter",
     "translation_m": [
-      0.06762634504610573,
-      -0.06973643854451224
+      0.058335902833374254,
+      0.0688050363685023
     ],
-    "yaw_delta_deg": -17.715893416981125,
+    "yaw_delta_deg": -8.649260059958337,
     "letter": "O",
     "original_bulk_generator_available": false,
     "pen_and_holder_fixed": true,
-    "instance_id": 13,
-    "source_instance": 4,
-    "source_scene_sha256": "c308f7e3dcd7772ee1da248be4145b2a1590c3c1b72bebd6e2ae9174ba87ebe7",
-    "seed": 3961883913,
-    "visual_pool_index": 54,
+    "instance_id": 23,
+    "source_instance": 8,
+    "source_scene_sha256": "6daa89711d34ebf54fda89199d0da62494b1c3dda4f071196aea1868e4423a7a",
+    "seed": 3997083468,
+    "visual_pool_index": 89,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.9465249026352658,
+    "selection_feature_distance": 1.130912045361929,
     "source_slot": {
       "letter": "O"
     },
@@ -484,6 +485,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "source_template_validation_level": "Strict nominal glyph IK/source geometry, original initial FOV and full-paper tabletop support passed; physical success pending"
+  }
 }

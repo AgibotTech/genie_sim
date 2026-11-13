@@ -1,6 +1,6 @@
 {
-  "scene_id": "keyboard_keycap_swap_g1_op",
-  "seed": 2026121326,
+  "scene_id": 10,
+  "seed": 78572253,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -30,15 +30,15 @@
     "keyboard_000": {
       "usd": "benchmark_keyboard_002",
       "xyz": [
-        -0.12369509172453963,
-        -0.12134658683537343,
+        -0.08240283776817478,
+        -0.16414154723071533,
         0.7443891222416303
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.6921128162788723,
-        0.7217893387564878
+        0.7973927749355961,
+        -0.6034606552879066
       ],
       "tags": [
         "root_scene",
@@ -94,15 +94,15 @@
     "replacement_keycap_000": {
       "usd": "benchmark_keycap_002",
       "xyz": [
-        -0.16593755172944452,
-        -0.2885032150641053,
+        -0.1968962059002413,
+        -0.2671309328707276,
         0.7353891221634257
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.6834934251320117,
-        0.7299566684408815
+        0.7744675751496207,
+        -0.6326136064311821
       ],
       "tags": [
         "root_scene",
@@ -197,5 +197,57 @@
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "source_manifest_independent_xy_yaw",
+    "source_parameter_seed": 78572253,
+    "parameters": {
+      "keyboard_dx": 0.04315846490013518,
+      "keyboard_dy": -0.04041654189714691,
+      "keyboard_yaw_deg": -15.763695619846946,
+      "green_dx": -0.0318837545683094,
+      "green_dy": 0.0044712484561669555,
+      "green_yaw_deg": -11.513573087407678,
+      "toolset_dx": 0.0,
+      "toolset_dy": 0.0,
+      "toolset_yaw_deg": 0.0
+    },
+    "base_parameters": {
+      "keyboard_dx": 0.0018662109437703259,
+      "keyboard_dy": 0.0023784184981950063,
+      "keyboard_yaw_deg": 2.4048216415021733,
+      "green_dx": -0.0009251003975126355,
+      "green_dy": -0.01690103373721078,
+      "green_yaw_deg": 3.7655250411273453,
+      "toolset_dx": 0.0,
+      "toolset_dy": 0.0,
+      "toolset_yaw_deg": 0.0
+    },
+    "prior_source_ik_evidence": "New range-adapted proposal; no inherited IK acceptance claim",
+    "instance_id": 10,
+    "source_instance": 0,
+    "source_scene_sha256": "d228e57f0a66a8abf2fb65c7e07516d0f6d4c0d9c7f7054b30f49754083c2a80",
+    "seed": 78572253,
+    "visual_pool_index": 157,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.5013583670162032,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "g1": {
+        "xy_m": 0.045,
+        "yaw_deg": 18,
+        "tool_xy_m": 0,
+        "tool_yaw_deg": 0
+      },
+      "other": {
+        "xy_m": 0.05,
+        "yaw_deg": 25,
+        "tool_xy_m": 0.035,
+        "tool_yaw_deg": 18
+      }
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

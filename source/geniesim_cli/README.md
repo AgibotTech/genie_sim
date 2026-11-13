@@ -223,3 +223,10 @@ CPU tests live in `docker/tests/test_libuipc_download.py`,
 `docker/tests/test_install_libuipc.py` and `tests/test_libuipc_bootstrap.py`.
 Real archive QA additionally uses a hydrated `GENIESIM_ASSETS_SRC`; CPU tests do
 not establish an image build, native load or GPU solve.
+
+## Selective benchmark assets
+
+Use `geniesim assets list`, `plan`, `download` and `verify` to download a
+version-pinned task dependency subset from ModelScope. No simulator or asset
+SDK is needed for downloading. For examples, supported task selectors, fixed
+release scope and known source issues, see [the asset download guide](docs/assets-download.md).

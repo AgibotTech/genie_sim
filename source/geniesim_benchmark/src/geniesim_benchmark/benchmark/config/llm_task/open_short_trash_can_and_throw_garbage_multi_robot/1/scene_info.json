@@ -1,6 +1,6 @@
 {
-  "scene_id": "benchmark_trash",
-  "seed": 915001,
+  "scene_id": 11,
+  "seed": 3691024977,
   "layout": {
     "table_47e352a8": {
       "usd": "table_000",
@@ -58,15 +58,15 @@
     "benchmark_trash_can__short_ecea09ff": {
       "usd": "benchmark_trash_can_015_short",
       "xyz": [
-        0.05,
-        0.074,
+        -0.011,
+        -0.096,
         0.8505559511848587
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.998503,
-        -0.054696
+        0.9999145447620094,
+        -0.01307299404816784
       ],
       "tags": [
         "root_scene_2b55c898",
@@ -89,15 +89,15 @@
     "benchmark_trash_889fbac1": {
       "usd": "benchmark_trash_021",
       "xyz": [
-        -0.13675815797540267,
-        -0.1729887635554935,
+        -0.17530457457983142,
+        -0.26774482692016677,
         0.7671608088266788
       ],
       "xyzw": [
-        0,
-        0,
-        0.011875203886159065,
-        0.9999294872803093
+        0.0,
+        0.0,
+        -0.0015660922411702412,
+        0.999998773676794
       ],
       "tags": [
         "root_scene_2b55c898",
@@ -193,5 +193,32 @@
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "catalog_bin_independent_paper",
+    "source_catalog_scene": "scene_317",
+    "movable_bin_preserved": true,
+    "instance_id": 11,
+    "source_instance": 3,
+    "source_scene_sha256": "46dff06b93ed4aad3288beb9f3f23a02734610a6e1c0310e214f056528a41f4d",
+    "seed": 3691024977,
+    "visual_pool_index": 27,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 2.580171282981855,
+    "source_slot": {},
+    "distribution_adjustment": {
+      "paper_x_m": [
+        -0.19,
+        -0.06
+      ],
+      "paper_y_m": [
+        -0.28,
+        -0.11
+      ],
+      "minimum_bin_paper_origin_distance_m": 0.16
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

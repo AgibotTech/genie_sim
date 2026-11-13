@@ -1,4 +1,4 @@
-"""Stage1/2/3 prompts for fold towel V2. No bread/doll prompt imports."""
+"""Stage1/2/3 prompts for fold towel. No bread/doll prompt imports."""
 
 from __future__ import annotations
 
@@ -360,7 +360,7 @@ def build_verify_content(
 ) -> List[Dict[str, Any]]:
     if len(mid_triplets) < 3:
         raise ValueError(
-            f"need 3 mid triplets for fold_towel v2, got {len(mid_triplets)}"
+            f"need 3 mid triplets for fold_towel, got {len(mid_triplets)}"
         )
     mid1, mid2, mid3 = mid_triplets[0], mid_triplets[1], mid_triplets[2]
     prompt = _STAGE3.format(

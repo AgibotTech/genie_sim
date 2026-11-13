@@ -1,7 +1,6 @@
 {
-  "scene_id": "plug_charging_cable_into_phone_18",
-  "task_name": "plug_charging_cable_into_phone",
-  "seed": 2026103518,
+  "scene_id": 28,
+  "seed": 20267133,
   "layout": {
     "table_92d1e254": {
       "xyz": [
@@ -15,13 +14,12 @@
         0.0,
         1.0
       ],
-      "usd": "table_000",
-      "asset_path": "objects/edited/table_000/Aligned.usda"
+      "usd": "table_000"
     },
     "benchmark_phone_holder_3cc48882": {
       "xyz": [
-        0.042368208801617666,
-        0.12523965079619245,
+        0.029448948129782535,
+        0.1361557038938939,
         0.788
       ],
       "xyzw": [
@@ -30,13 +28,12 @@
         -0.04573899880051613,
         0.9989529848098755
       ],
-      "usd": "benchmark_phone_holder_000",
-      "asset_path": "objects/benchmark/phone_holder/benchmark_phone_holder_000/Aligned.usda"
+      "usd": "benchmark_phone_holder_000"
     },
     "benchmark_phone_7403be8d": {
       "xyz": [
-        0.028368208801617667,
-        0.13023965079619243,
+        0.015448948129782536,
+        0.14115570389389387,
         0.817
       ],
       "xyzw": [
@@ -45,13 +42,12 @@
         0.665116012096405,
         -0.5978209972381592
       ],
-      "usd": "benchmark_phone_001",
-      "asset_path": "objects/benchmark/phone/benchmark_phone_001/Aligned.usda"
+      "usd": "benchmark_phone_001"
     },
     "benchmark_plug_01dea4d4": {
       "xyz": [
-        0.24136820880161766,
-        -0.29176034920380756,
+        0.22844894812978253,
+        -0.2808442961061061,
         0.741
       ],
       "xyzw": [
@@ -60,13 +56,12 @@
         -0.14793899655342102,
         0.6768360137939453
       ],
-      "usd": "benchmark_plug_017",
-      "asset_path": "objects/benchmark/plug/benchmark_plug_017/Aligned.usda"
+      "usd": "benchmark_plug_017"
     },
     "benchmark_power_strip_storage_box_be0b8b8a": {
       "xyz": [
-        0.12836820880161767,
-        -0.21976034920380758,
+        0.11544894812978254,
+        -0.20884429610610614,
         0.8
       ],
       "xyzw": [
@@ -75,23 +70,25 @@
         0.5889739990234375,
         0.8081520199775696
       ],
-      "usd": "benchmark_power_strip_storage_box_000",
-      "asset_path": "objects/benchmark/power_strip_storage_box/benchmark_power_strip_storage_box_000/Aligned.usda"
+      "usd": "benchmark_power_strip_storage_box_000"
     }
   },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 18,
+    "instance_id": 28,
     "source_instance": 8,
-    "source_scene_sha256": "0bc0e48b2cc29215febb0cfba6e54e8c465e8c12f67b3dd4242f286266c7b50f",
-    "source_scene_info_sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
-    "source_problem_sha256": "ab92a7198ac9b693bf3e44f3eb4136301b41e8c866f2a47e5870d550ad20d3f1",
-    "seed": 2026103518,
-    "world_xy_translation_m": [
-      -0.006631791198382338,
-      0.008239650796192441
+    "source_hashes": {
+      "scene.usda": "0bc0e48b2cc29215febb0cfba6e54e8c465e8c12f67b3dd4242f286266c7b50f",
+      "instructions.json": "bebaf7a18072fecaa25762a138bb34febbf6c2f4af8cb134fbc4166d9ae9c1a6",
+      "scene_info.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "problems.json": "ab92a7198ac9b693bf3e44f3eb4136301b41e8c866f2a47e5870d550ad20d3f1"
+    },
+    "requested_source_instance": 8,
+    "world_translation_m": [
+      -0.019551051870217467,
+      0.01915570389389388,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "benchmark_phone_holder_3cc48882",
       "benchmark_phone_7403be8d",
       "benchmark_plug_01dea4d4",
@@ -100,35 +97,11 @@
     "fixed_prims": [
       "table_92d1e254"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.016913530427993533,
+    "seed": 20267105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.010576979707938187,
-    "table_support": {
-      "table_prim": "table_92d1e254",
-      "baseline_xy_edge_margin_m": [
-        -0.4032622911923456,
-        -0.013283777736577074
-      ],
-      "minimum_xy_edge_margin_m": [
-        -0.4032622911923456,
-        -0.013283777736577074
-      ],
-      "generated_xy_edge_margin_m": [
-        -0.39663049999396327,
-        -0.005044126940384586
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

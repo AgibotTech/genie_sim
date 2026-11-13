@@ -149,6 +149,8 @@ class CameraConfig:
     p1: float = 0.0
     p2: float = 0.0
     k3: float = 0.0
+    k4: float = 0.0
+    model: str = ""
     min_range: float = 0.01
     max_range: float = 10000.0
     is_free_cam: bool = False
@@ -237,6 +239,8 @@ class Manifest:
                     p1=cm.p1,
                     p2=cm.p2,
                     k3=cm.k3,
+                    k4=cm.k4,
+                    model=cm.model,
                     min_range=cm.min_range,
                     max_range=cm.max_range,
                     is_free_cam=cm.is_free_cam,
@@ -259,7 +263,7 @@ class Manifest:
 
 def _set_camera_intrinsics(prim, cam: CameraConfig, focal_length: float = 1.0) -> None:
     """Author the calibrated RTX lens and a consistent USD fallback frustum."""
-    from genie_sim_engine_core.common.render_layer import author_opencv_pinhole
+    from genie_sim_engine_core.common.render_layer import author_opencv_fisheye, author_opencv_pinhole
 
     horizontal_aperture = cam.width * focal_length / cam.fx
     vertical_aperture = cam.height * focal_length / cam.fy
@@ -268,9 +272,13 @@ def _set_camera_intrinsics(prim, cam: CameraConfig, focal_length: float = 1.0) -
     prim.GetAttribute("verticalAperture").Set(vertical_aperture)
     prim.GetAttribute("horizontalApertureOffset").Set((cam.cx - cam.width / 2) * focal_length / cam.fx)
     prim.GetAttribute("verticalApertureOffset").Set((cam.cy - cam.height / 2) * focal_length / cam.fy)
-    author_opencv_pinhole(
+    author = author_opencv_fisheye if getattr(cam, "model", "").lower() == "opencvfisheye" else author_opencv_pinhole
+    author(
         prim,
-        {key: getattr(cam, key) for key in ("fx", "fy", "cx", "cy", "k1", "k2", "p1", "p2", "k3")},
+        {
+            **{key: getattr(cam, key) for key in ("fx", "fy", "cx", "cy", "k1", "k2", "p1", "p2", "k3")},
+            "k4": getattr(cam, "k4", 0.0) if getattr(cam, "model", "").lower() == "opencvfisheye" else 0.0,
+        },
         cam.width,
         cam.height,
     )
@@ -369,12 +377,18 @@ def _build_camera_omnigraph(
         for key, value in {
             "width": int(cam.width),
             "height": int(cam.height),
-            "projectionType": "plumb_bob",
+            "projectionType": "equidistant" if getattr(cam, "model", "").lower() == "opencvfisheye" else "plumb_bob",
             "k": [cam.fx, 0.0, cam.cx, 0.0, cam.fy, cam.cy, 0.0, 0.0, 1.0],
             "r": [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
             "p": [cam.fx, 0.0, cam.cx, 0.0, 0.0, cam.fy, cam.cy, 0.0, 0.0, 0.0, 1.0, 0.0],
-            "physicalDistortionModel": "plumb_bob",
-            "physicalDistortionCoefficients": [cam.k1, cam.k2, cam.p1, cam.p2, cam.k3],
+            "physicalDistortionModel": (
+                "equidistant" if getattr(cam, "model", "").lower() == "opencvfisheye" else "plumb_bob"
+            ),
+            "physicalDistortionCoefficients": (
+                [cam.k1, cam.k2, cam.k3, cam.k4]
+                if getattr(cam, "model", "").lower() == "opencvfisheye"
+                else [cam.k1, cam.k2, cam.p1, cam.p2, cam.k3]
+            ),
         }.items():
             og.Controller.set(f"{graph_path}/CamInfo{i}.inputs:{key}", value)
         if cam.depth_topic:
@@ -597,9 +611,10 @@ class IsaacSimRenderNode(Node):
         if self._sync_topic:
             self._world.pause()
 
-        from _material_generalization import apply_material_plan, load_episode_material_config
+        from _material_generalization import MaterialEpisodes, apply_material_plan, load_episode_material_config
 
         material_cfg = load_episode_material_config(self._manifest_path, load_scene_config)
+        self._material_episodes = MaterialEpisodes(material_cfg) if material_cfg is not None else None
         if material_cfg is not None:
 
             plan, receipt = material_cfg["episode_plan"], material_cfg["receipt_path"]
@@ -746,6 +761,13 @@ class IsaacSimRenderNode(Node):
                     Vt.Vec3fArray([Gf.Vec3f(*map(float, local.min(axis=0))), Gf.Vec3f(*map(float, local.max(axis=0)))]),
                 )
             )
+        if self._material_episodes is not None:
+            from _material_generalization import apply_material_plan
+
+            plan, receipt, changed = self._material_episodes.select(snapshot)
+            if changed:
+                apply_material_plan(self._stage, plan, receipt, manifest_path=self._manifest_path)
+                self._material_application = (plan, receipt)
         # No validation below this boundary. A bad final mesh never leaves a
         # partially reposed robot in the render stage.
         for prim, translation, rotation in poses:

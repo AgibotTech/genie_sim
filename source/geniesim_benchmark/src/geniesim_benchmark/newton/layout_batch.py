@@ -25,6 +25,8 @@ from typing import Callable
 
 import yaml
 
+from geniesim_benchmark.plugins.output_system.dexhand2 import read_summary_details, write_summary
+
 
 @dataclass(frozen=True)
 class LayoutRun:
@@ -473,6 +475,11 @@ def run_batch(
         print(f"layout {plan.layout_id:02d}: {row['status']} score={row['score']}", flush=True)
         if interrupted or cleanup_failed:
             break
+    evaluations = []
+    for plan, row in zip(plans, rows, strict=True):
+        if row["status"] == "evaluated":
+            evaluations.extend(read_summary_details(plan.run_dir))
+    write_summary(output, evaluations)
     return summary
 
 
@@ -495,6 +502,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--startup-timeout-s", type=float, default=600)
     parser.add_argument("--shutdown-timeout-s", type=float, default=60)
+    from geniesim_benchmark.execution import boolean
+
+    for key in ("record", "record_state", "resume"):
+        parser.add_argument(f"--benchmark.{key}", dest=key, type=boolean)
+    parser.add_argument("--app.headless", dest="headless", type=boolean)
+    parser.add_argument("--benchmark.seed", dest="seed", type=int)
+    parser.add_argument("--benchmark.fps", dest="fps", type=int)
+    parser.add_argument("--benchmark.resume_id", dest="resume_id")
+    parser.add_argument("--benchmark.record_video_dir", dest="record_video_dir")
+    parser.add_argument("--benchmark.num_episode", dest="benchmark_episodes", type=int)
     options = parser.parse_args(argv)
     if options.assets_root is None:
         parser.error("provide --assets-root or GENIESIM_ASSETS_PATH")
@@ -528,12 +545,28 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         from .shared_layouts import run_shared_batch
 
-        result = run_shared_batch(
-            plans, startup_timeout_s=options.startup_timeout_s, shutdown_timeout_s=options.shutdown_timeout_s
+        from .checkpoint import run_checkpointed
+
+        config = yaml.safe_load(plans[0].evaluation.read_text())
+        for key in ("record", "record_state", "resume", "resume_id", "seed", "record_video_dir", "fps"):
+            value = getattr(options, key)
+            if value is not None:
+                config.setdefault("benchmark", {})[key] = value
+        if options.headless is not None:
+            config["headless"] = options.headless
+        if options.benchmark_episodes is not None:
+            if options.benchmark_episodes < 1:
+                raise ValueError("num_episode must be positive")
+            config["episodes"] = options.benchmark_episodes
+        return run_checkpointed(
+            plans,
+            options.output_dir,
+            config,
+            options.infer_host,
+            run_shared_batch,
+            startup_timeout_s=options.startup_timeout_s,
+            shutdown_timeout_s=options.shutdown_timeout_s,
         )
-        if any(row["status"] == "interrupted" for row in result["layouts"]):
-            return 130
-        return int(any(row["status"] != "evaluated" for row in result["layouts"]))
     except (ValueError, OSError, KeyError) as error:
         print(f"run-layouts: {error}", file=sys.stderr)
         return 2

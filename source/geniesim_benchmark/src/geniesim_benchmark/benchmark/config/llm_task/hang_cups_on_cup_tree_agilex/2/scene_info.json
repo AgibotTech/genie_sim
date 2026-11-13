@@ -1,8 +1,8 @@
 {
-  "scene_id": "hang_cups_on_cup_tree_aloha",
-  "seed": 473796045,
+  "scene_id": 12,
+  "seed": 276048832,
   "layout": {
-    "table_b8d96053": {
+    "table_9ccade94": {
       "usd": "table_000",
       "xyz": [
         0.0,
@@ -16,9 +16,9 @@
         1.0
       ],
       "tags": [
-        "root_scene_e293c1bd",
-        "hang_cups_on_cup_tree_aloha_def58668",
-        "table_b8d96053"
+        "root_scene_aac09d2d",
+        "hang_cups_on_cup_tree_aloha_c6122dcd",
+        "table_9ccade94"
       ],
       "keywords": [
         "table",
@@ -58,23 +58,23 @@
         ]
       }
     },
-    "benchmark_cup_holder_7b48d06c": {
+    "benchmark_cup_holder_dd256347": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
-        -0.1,
-        -0.012,
-        0.907
+        -0.1000000149011612,
+        -0.02459266057868862,
+        0.9070824611567659
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.583796,
-        0.8119
+        0.6331378143069541,
+        0.7740390869294733
       ],
       "tags": [
-        "root_scene_e293c1bd",
-        "hang_cups_on_cup_tree_aloha_def58668",
-        "benchmark_cup_holder_7b48d06c"
+        "root_scene_aac09d2d",
+        "hang_cups_on_cup_tree_aloha_c6122dcd",
+        "benchmark_cup_holder_dd256347"
       ],
       "keywords": [
         "cup_tree",
@@ -85,23 +85,23 @@
       ],
       "description": {}
     },
-    "benchmark_cup_367cd67f": {
-      "usd": "benchmark_cup_122",
+    "benchmark_cup_8c77bfe5": {
+      "usd": "benchmark_cup_118",
       "xyz": [
-        -0.043,
-        -0.19,
-        0.77
+        -0.0318488978290158,
+        0.11292331722826018,
+        0.7705085119142066
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.067219,
-        0.997738
+        0.8112297103151432,
+        -0.5847275922188115
       ],
       "tags": [
-        "root_scene_e293c1bd",
-        "hang_cups_on_cup_tree_aloha_def58668",
-        "benchmark_cup_367cd67f"
+        "root_scene_aac09d2d",
+        "hang_cups_on_cup_tree_aloha_c6122dcd",
+        "benchmark_cup_8c77bfe5"
       ],
       "keywords": [
         "cup_hang_0",
@@ -110,10 +110,21 @@
         "handled",
         "graspable",
         "front",
-        "task_side_right",
-        "POSITION_TAG_right"
+        "task_side_left",
+        "POSITION_TAG_left"
       ],
-      "description": {}
+      "description": {
+        "semantic_name": [
+          "handled cup"
+        ],
+        "object_category": [
+          "cup",
+          "mug"
+        ],
+        "full_description": [
+          "A handled cup; appearance and dimensions are defined by the selected original-scale asset."
+        ]
+      }
     }
   },
   "relations": {
@@ -125,10 +136,10 @@
       },
       "nodes": [
         {
-          "id": "root_scene_e293c1bd"
+          "id": "root_scene_aac09d2d"
         },
         {
-          "id": "hang_cups_on_cup_tree_aloha_def58668"
+          "id": "hang_cups_on_cup_tree_aloha_c6122dcd"
         },
         {
           "tags": [
@@ -137,7 +148,7 @@
             "workspace",
             "POSITION_TAG_center"
           ],
-          "id": "table_b8d96053"
+          "id": "table_9ccade94"
         },
         {
           "tags": [
@@ -147,7 +158,7 @@
             "unmovable",
             "POSITION_TAG_center"
           ],
-          "id": "benchmark_cup_holder_7b48d06c"
+          "id": "benchmark_cup_holder_dd256347"
         },
         {
           "tags": [
@@ -157,30 +168,65 @@
             "handled",
             "graspable",
             "front",
-            "task_side_right",
-            "POSITION_TAG_right"
+            "task_side_left",
+            "POSITION_TAG_left"
           ],
-          "id": "benchmark_cup_367cd67f"
+          "id": "benchmark_cup_8c77bfe5"
         }
       ],
       "edges": [
         {
-          "source": "root_scene_e293c1bd",
-          "target": "hang_cups_on_cup_tree_aloha_def58668"
+          "source": "root_scene_aac09d2d",
+          "target": "hang_cups_on_cup_tree_aloha_c6122dcd"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_def58668",
-          "target": "table_b8d96053"
+          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
+          "target": "table_9ccade94"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_def58668",
-          "target": "benchmark_cup_holder_7b48d06c"
+          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
+          "target": "benchmark_cup_holder_dd256347"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_def58668",
-          "target": "benchmark_cup_367cd67f"
+          "source": "hang_cups_on_cup_tree_aloha_c6122dcd",
+          "target": "benchmark_cup_8c77bfe5"
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "robot_specific_cup_asset_side_relative_layout",
+    "cup_asset": "benchmark_cup_118",
+    "side": "left",
+    "holder_xy_m": [
+      -0.1,
+      -0.024592630776366205
+    ],
+    "holder_yaw_deg": 78.56401214006463,
+    "cup_yaw_deg": -108.43250403516186,
+    "footprint_separation_m": 0.01,
+    "proposal_holder": {
+      "xy_m": [
+        0.13308512995814245,
+        -0.024592630776366205
+      ],
+      "yaw_deg": -22.613730319118474
+    },
+    "source_line_fraction": 0.3879931489771975,
+    "instance_id": 12,
+    "source_instance": 9,
+    "source_scene_sha256": "dcf9da37b81c24e16c47335fdb7608f0c13ad930add41335506429a519107fba",
+    "seed": 276048832,
+    "visual_pool_index": 2,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.9661943697692978,
+    "source_slot": {
+      "cup_asset_index": 2,
+      "side": "left"
+    },
+    "distribution_adjustment": null,
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

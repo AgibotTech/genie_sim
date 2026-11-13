@@ -176,6 +176,7 @@ class NativeEnvironment:
         return {
             "version": 1,
             "kind": "JOINT_ABS",
+            "arm_target_limit_policy": "clip_to_joint_limits",
             "units": "radians",
             "dimension": 54,
             "order": ["left_arm[7]", "right_arm[7]", "left_effector[20]", "right_effector[20]"],
@@ -208,9 +209,10 @@ class NativeEnvironment:
         }
 
     def set_action(self, action, minimum_steps=None):
-        action = np.asarray(action, dtype=float)
+        action = np.array(action, dtype=float, copy=True)
         if action.shape != (54,) or not np.isfinite(action).all():
             raise ValueError("Expected 54 finite absolute joint targets")
+        action[:14] = np.clip(action[:14], self.action_bounds[:14, 0], self.action_bounds[:14, 1])
         if np.any(action < self.action_bounds[:, 0] - 1e-6) or np.any(action > self.action_bounds[:, 1] + 1e-6):
             raise ValueError("Policy joint target is outside the declared bounds")
         self.target[self.action_q] = action

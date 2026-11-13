@@ -275,7 +275,7 @@ class IPCDriver:
             f"timeout_s={self._feedback_config.timeout_s:g} stale_policy={self._feedback_config.stale_policy}"
         )
 
-    def stop_feedback(self) -> None:
+    def stop_feedback(self, *, close_worker=True) -> None:
         """Detach only the owned subscription, preserving the shared ROS context."""
         try:
             if self._feedback_node is not None and self._feedback_subscription is not None:
@@ -283,17 +283,21 @@ class IPCDriver:
         finally:
             self._feedback_subscription = None
             self._feedback_node = None
-            if self._cpu_worker is not None:
+            if close_worker and self._cpu_worker is not None:
                 self._cpu_worker.close()
                 self._cpu_started = False
                 self._cpu_needs_restart = True
 
-    def reset_inputs(self) -> None:
+    def reset_inputs(self, *, model_bytes=None) -> None:
         """Discard pre-reset targets and measurements after native state recovery."""
         self._target_buffer.assign(self._initial_q)
         if self._feedback is not None:
             self._feedback.reset(self._initial_q)
         if self._cpu_config is not None:
+            if self._cpu_started:
+                self._cpu_worker.reset_sync(**({"model_bytes": model_bytes} if model_bytes is not None else {}))
+            elif model_bytes is not None:
+                self._cpu_worker._model_bytes = model_bytes
             self._cpu_selected_q = self._initial_q.copy()
             self._cpu_selected_qd.fill(0)
             self._cpu_selected_body_q = None

@@ -61,6 +61,13 @@ def main():
         import omni.replicator.core as rep
         from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux, UsdShade, UsdPhysics, Vt
         from isaacsim.core.utils.viewports import set_camera_view
+        # Isaac uses its own interpreter: load only the pure helper, without
+        # adding the native-physics environment's site-packages to sys.path.
+        from importlib.util import module_from_spec, spec_from_file_location
+        hdr_spec = spec_from_file_location("rubik_hdr_background", Path(__file__).parents[3] / "hdr_background.py")
+        hdr_module = module_from_spec(hdr_spec)
+        hdr_spec.loader.exec_module(hdr_module)
+        apply_hdr = hdr_module.apply_hdr
 
         settings = carb.settings.get_settings()
         settings.set("/rtx/dataWindow/fitOutputToDataWindow", True)
@@ -77,8 +84,6 @@ def main():
         stage.SetEditTarget(stage.GetSessionLayer())
         robot = UsdGeom.Xform.Define(stage, "/genie")
         robot.GetPrim().GetReferences().AddReference(scene["robot_usd"])
-        background = UsdGeom.Xform.Define(stage, "/World/Background")
-        background.GetPrim().GetReferences().AddReference(scene["environment_usd"])
         robot_joints = []
         for prim in stage.Traverse():
             if not str(prim.GetPath()).startswith("/genie/") or not prim.IsA(UsdPhysics.Joint):
@@ -207,7 +212,15 @@ def main():
                 annotator.attach(product)
                 annotators[name] = annotator
 
+        current_background = None
+
         def apply_state(value):
+            nonlocal current_background
+            selection = value["hdr_background"]
+            if selection != current_background:
+                apply_hdr(stage, selection)
+                current_background = selection
+                print("HDR_BACKGROUND " + json.dumps(selection), flush=True)
             positions = np.frombuffer(value["geom_positions"], dtype=np.float64).reshape(-1, 3)
             rotations = np.frombuffer(value["geom_rotations"], dtype=np.float64).reshape(-1, 3, 3)
             poses = robot_tree.evaluate(value["robot_joint_positions"], value["robot_anchors"]["/genie/base_link"])
@@ -296,10 +309,9 @@ def main():
             "camera_distortion": {name: camera.get("distortion", {}) for name, camera in scene["cameras"].items()},
             "robot_usd": scene["robot_usd"],
             "robot_usd_sha256": scene["robot_usd_sha256"],
-            "environment_usd": scene["environment_usd"],
-            "environment_usd_sha256": scene["environment_usd_sha256"],
+            "hdr_background": current_background,
             "hdr_texture_sha256": scene["hdr_texture_sha256"],
-            "environment_alignment": "industrial HDR asset visually matched to sampled collection frames; exposure not pixel-certified",
+            "environment_alignment": "deterministic per-layout HDR panorama and environment light from background/common/HDR",
             "renderer": "isaac",
             "isaac_version": Path(os.environ["ISAAC_PATH"]).joinpath("VERSION").read_text().strip(),
             "render_mode": "RaytracedLighting",

@@ -517,6 +517,9 @@ def run(params: dict) -> int:
                                 "target": target.tolist(),
                                 "up": up.tolist(),
                                 "fov_degrees": view.fov_degrees,
+                                "width": view.width or rgb_config.width,
+                                "height": view.height or rgb_config.height,
+                                "calibration": view.calibration,
                             }
                         )
                 scene = isaac_scene.capture(sim_time)

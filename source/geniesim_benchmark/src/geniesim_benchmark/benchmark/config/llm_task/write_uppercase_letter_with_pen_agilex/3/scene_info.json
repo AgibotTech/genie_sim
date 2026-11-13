@@ -18,15 +18,15 @@
     "paper": {
       "usd": "benchmark_paper_000",
       "xyz": [
-        -0.23343691090565438,
-        0.013365165210946859,
+        -0.1594230734585486,
+        -0.029870276644731585,
         0.985
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.019572990517768677,
-        0.9998084306716919
+        0.06647666169176498,
+        0.9977879802093823
       ],
       "asset_path": "objects/benchmark/paper/benchmark_paper_000/Aligned.usda"
     },
@@ -362,9 +362,9 @@
     "actual_runtime_single_step_validation_pending": true
   },
   "copybook": {
-    "target_letter": "I",
+    "target_letter": "O",
     "guide_prim": "/World/Objects/paper/entity/writing_template",
-    "target_sha256": "98d63abe7fa0156cc3792c8b9808234a3039491242cd8a80870853fb74d6d4f9",
+    "target_sha256": "262f01871571032ecc011d9ecd2b8d00e9729b30bf243bad440167ebdade4af8",
     "gray_geometry_authored_in_scene": true,
     "visual_only": true,
     "overlap_metrics": [
@@ -375,23 +375,23 @@
     ],
     "physical_validation": "pending new physical trial"
   },
-  "scene_id": "trace_copybook_i_aloha_20261023_scene_000009",
-  "task_name": "trace_copybook_i_aloha_20261023",
-  "target_letter": "I",
+  "scene_id": 13,
+  "task_name": "trace_copybook_o_aloha_20261023",
+  "target_letter": "O",
   "physical_validation": {
     "passed": false,
     "status": "new layout; physical trial pending"
   },
-  "validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending",
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "generalization": {
     "batch": "writing_generalization_4000_20261023",
     "seed": 20261023,
     "robot": "ALOHA",
     "anchor": "ALOHA/v09/B",
     "jitter_xy_m_yaw_deg": [
-      0.0005630890943455757,
-      -0.0006348347890531409,
-      1.7570242097888795
+      0.004931266416475275,
+      0.004834763980107972,
+      -0.28152849067857844
     ],
     "anchor_variation": {
       "paper_xy_m": [
@@ -405,11 +405,42 @@
       ]
     },
     "accepted_attempt": 0,
-    "source_scene_sha256": "59c574c3c098b84da7d3be8c9c2635df887ca1aea5b89d874c0896cae3f78751",
-    "target_sha256": "98d63abe7fa0156cc3792c8b9808234a3039491242cd8a80870853fb74d6d4f9",
+    "source_scene_sha256": "ee50e89e41d361d7040b45b33ce363b2e0cf756f1c702c02b9eeef62853af278",
+    "target_sha256": "262f01871571032ecc011d9ecd2b8d00e9729b30bf243bad440167ebdade4af8",
     "initial_robot_joints_unchanged": true,
     "paper_height_unchanged": true,
     "physical_success": false,
     "asset_snapshot": "snapshots/writing_generalization_4000_20261023/assets"
-  }
+  },
+  "seed": 1183796616,
+  "benchmark_generalization": {
+    "method": "bounded_paper_adapter",
+    "translation_m": [
+      0.06964566012497611,
+      -0.04870504062483956
+    ],
+    "yaw_delta_deg": 11.904755464697587,
+    "letter": "O",
+    "original_bulk_generator_available": false,
+    "pen_and_holder_fixed": true,
+    "instance_id": 13,
+    "source_instance": 4,
+    "source_scene_sha256": "f8772092f7982149b686c0e6e0c4e160ba2c899f49bec0e8a2e91dca679cebb2",
+    "seed": 1183796616,
+    "visual_pool_index": 69,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.753200741295609,
+    "source_slot": {
+      "letter": "O"
+    },
+    "distribution_adjustment": {
+      "paper_xy_m": 0.07,
+      "paper_yaw_delta_deg": 25,
+      "pen_and_holder_fixed": true,
+      "complete_source_generator_available": false
+    },
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "source_template_validation_level": "Strict nominal full-glyph IK/source geometry and initial FOV passed; physical success pending"
 }

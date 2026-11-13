@@ -4,11 +4,22 @@ app:
 benchmark:
   task_name: cloth_hanger
   model_arc: corobot
-  num_instances: 6
+  num_instances: 10
   num_episode: 1
   seed: 1
 libuipc:
   task: cloth_hanger
+  instance_base_xy_offsets:
+    - [0.03, -0.024]
+    - [0.03, -0.012]
+    - [0.03, 0.0]
+    - [0.03, 0.012]
+    - [0.03, 0.024]
+    - [0.045, -0.024]
+    - [0.045, -0.012]
+    - [0.045, 0.0]
+    - [0.045, 0.012]
+    - [0.045, 0.024]
   scoring_framework: ader
   scoring_execution: streaming
   scoring_drain_timeout_s: 900.0
@@ -16,7 +27,12 @@ libuipc:
   cameras: ../benchmark/config/llm_task/wuji_ipc/cameras.yaml
   evaluation_scene: scene_flat_g2_wuji_ipc_cloth_hanger_eval.yaml
   launcher: launcher_libuipc_wuji_eval.yaml
-  instruction: Hang the clothes on the rack.
+  instruction: Hang the clothes on the table onto the clothes rack
+  segments:
+    - "After the left arm picks up the clothes, both arms coordinate to unfold the collar, then the left hand grasps and holds the collar open"
+    - "The right arm picks up the hanger on the table and inserts one side of the hanger into the left sleeve"
+    - "The left arm grasps and secures the left sleeve of the clothes, then the right arm pulls the collar to widen the opening, making the other side of the hanger pass through the collar and enter the right sleeve of the clothes"
+    - "The right arm grasps the hanger in the right sleeve, lifts the hanger along with the clothes, and hangs them on the clothes rod"
   max_steps: 2400
   action_chunk_steps: 0
   fps: 30.0

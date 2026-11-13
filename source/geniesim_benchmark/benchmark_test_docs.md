@@ -120,6 +120,49 @@ These checks cover FK/IK, frames, joint limits, effector preservation and
 available USD/native models. Missing USD assets are reported as skips;
 they do not count as verified models or full task evaluations.
 
+Rubik clips finite absolute arm joint targets to the declared joint limits before
+execution. Arm limit saturation alone does not invalidate the episode.
+
+### Resume an interrupted evaluation
+
+Use the same command and output directory on every attempt:
+
+```bash
+geniesim benchmark run g2op_if_pick_block_color --infer-host="$INFER_HOST" \
+  --benchmark.resume=true --benchmark.resume_id=job-123
+```
+
+`resume_id` is optional; when supplied, keep the same job/model identifier from
+its first attempt. The inference address may change, but the evaluated model,
+task inputs, seed, episode count and scoring configuration must stay the same.
+
+Serial Corobot evaluations with a named subtask write `checkpoint_manifest.json` beside their result
+under `output/benchmark/<task_name>/<sub_task_name>/`. Resume skips committed
+episodes, retries the interrupted episode and updates the same result file;
+`checkpoint.result_file` identifies that file. Successes, task failures and
+timeouts remain in the score. Temporary inference errors are retried on restart.
+A fatal simulator error remains a scored invalid attempt; its skipped instruction
+range is retained and reported separately in the manifest.
+
+With `--benchmark.record=true`, recordings also save per-episode `state.jsonl`
+files containing measured joint names, positions and velocities, base pose and
+velocity, simulation time and frame indices. State is sampled on the same ticks
+as video; after finalization, files are named `recording_<episode>_*.state.jsonl`
+alongside the videos, including under `record_video_dir` when configured.
+Use `--benchmark.record_state=false` to explicitly disable state recording.
+
+With `--benchmark.record=true`, committed recordings are reused. A retry after
+all episodes finish only rebuilds/publishes artifacts; it does not evaluate again.
+`record_video_dir` receives media and the final score file, while the canonical
+score and checkpoint stay in the task output directory. Keep that directory,
+including `_checkpoint_tasks`, until the job has been submitted successfully.
+
+Without `resume`, a new evaluation starts. Missing manifests start a new run;
+pre-checkpoint results cannot be resumed. Vectorized, preview, interactive and
+non-Corobot modes and unnamed subtasks ignore resume with a warning. One worker may write a task
+output directory at a time. Resuming preserves committed scores, rather than
+promising identical physics or model randomness across process restarts.
+
 ## 4. Test every added task
 
 Define this helper once. Each command below runs one task with the same parameters
@@ -176,7 +219,7 @@ smoke g2crsb90d_wbc_open_the_door
 smoke g2crsb90d_wbc_open_the_roller_shutter
 smoke g2crsb90d_wbc_pick_up_trash
 smoke g2crsb90d_wbc_put_the_plates_on_the_shelf
-smoke g2crsb90d_wbc_sending_food
+smoke g2crsb90d_wbc_deliver_tissues
 smoke g2crsb90d_wbc_transport_cartons_to_table
 ```
 
@@ -262,3 +305,10 @@ Image qualification limits: [runtime acceptance](../geniesim_ros/docs/ISAACSIM_A
 Keep published `g2op_if_*`, `g2op_manip_*`, `g2op_robust_*`, `g2op_spatial_*`
 inputs and behavior unchanged; new instructions/scenes/scoring require an
 independent foreground and registration. Physics settings belong in scene/launcher YAML.
+
+### Tissue delivery task name
+
+The tissue-delivery entry is `g2crsb90d_wbc_deliver_tissues` (送纸巾). The CLI accepts
+`g2crsb90d_wbc_sending_food` as a legacy alias, without listing a duplicate task.
+The underlying `sending_food` scene, scorer and checkpoint keys remain unchanged
+for compatibility; the instruction is `Deliver tissues`.

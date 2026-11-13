@@ -11,7 +11,7 @@ from typing import Dict
 
 from .base import BasePolicy
 from geniesim_benchmark.plugins.logger import Logger
-from geniesim_benchmark.utils.comm.retry import run_with_inference_retry
+from geniesim_benchmark.utils.comm.retry import run_with_inference_retry, is_transient_error, InferenceServiceError
 from geniesim_benchmark.utils.generalization_utils import apply_camera_image_augmentation
 from collections import deque
 import numpy as np
@@ -102,7 +102,7 @@ class CoRobotPolicy(BasePolicy):
         self._robot_config = ROBOT_CONFIGS.get(robot_cfg, DEFAULT_ROBOT_CONFIG)
         # Embodiment tag the server branches on; falls back to the raw cfg key.
         self._robot_type = self._robot_config.get("robot_type", robot_cfg)
-        self._eef_type = self._robot_config.get("eef_type", "")
+        self._ee_type = self._robot_config.get("ee_type", "")
         # realprobe evals target the real robot, so drop the "_sim" suffix
         # (e.g. g2a_sim -> g2a).
         if realprobe and self._robot_type.endswith("_sim"):
@@ -130,6 +130,7 @@ class CoRobotPolicy(BasePolicy):
         # Latches True once the server signals episode_done (e.g. mock server
         # exhausted its recording). Sticky for the rest of the episode.
         self.server_episode_done = False
+        self.server_episode_termination = None
 
     def _ensure_connection(self):
         """Make a single connect attempt if currently disconnected.
@@ -173,6 +174,14 @@ class CoRobotPolicy(BasePolicy):
     def update_task_status(self, done, task_progress):
         self._episode_done = done
         self._task_progress = task_progress
+        # On episode end, drain the queued chunk so the terminal act() in
+        # task_benchmark (which fires one more act() when done=True) hits an
+        # empty buffer and actually sends the episode_done=True payload. Without
+        # this the checker-driven done almost always lands mid-chunk, the extra
+        # act() just replays a leftover waypoint, and the server is never told
+        # the episode ended.
+        if done:
+            self.action_buffer.clear()
 
     def _task_evaluation(self):
         """Build a local diagnostic snapshot of the live checker tree and budgets.
@@ -485,6 +494,7 @@ class CoRobotPolicy(BasePolicy):
                 },
                 "prompt": task_instruction,
                 "robot_type": self._robot_type,
+                "ee_type": self._ee_type,
                 "task_name": self.sub_task_name,
                 "episode_idx": self._current_episode_idx,
                 "episode_done": self._episode_done,
@@ -561,6 +571,35 @@ class CoRobotPolicy(BasePolicy):
         self._history_buffer = []
         self._since_infer = 0
         self.server_episode_done = False
+        self.server_episode_termination = None
+
+    def _accept_no_action_termination(self, result_dict):
+        """Accept the explicit exhausted/no-hold protocol, never missing actions alone."""
+        metadata = result_dict.get("agent2act")
+        if not isinstance(metadata, dict) or metadata.get("action_issued") is not False:
+            return False
+        if (
+            result_dict.get("episode_done") is not True
+            or metadata.get("episode_terminal") is not True
+            or type(metadata.get("protocol_version")) is not int
+            or metadata["protocol_version"] != 1
+            or metadata.get("status") != "planning_exhausted"
+            or metadata.get("termination_reason") != "no_valid_hold"
+            or not isinstance(metadata.get("error"), str)
+            or not metadata["error"].strip()
+        ):
+            raise ValueError("Invalid no-action episode termination")
+        if any(
+            key in result_dict
+            for key in ("left_arm", "right_arm", "left_effector", "right_effector", "waist", "head", "wheels")
+        ):
+            raise ValueError("No-action episode termination contains action fields")
+        self.server_episode_termination = deepcopy(metadata)
+        self.server_episode_done = True
+        self.action_buffer.clear()
+        self.chunk_len = 0
+        self.chunk_started_this_step = False
+        return True
 
     def _update_server_episode_done(self, result_dict):
         """Latch server_episode_done=True if the inference reply signals it."""
@@ -779,7 +818,7 @@ class CoRobotPolicy(BasePolicy):
             data = msgpack.packb(payload)
             logger.info(
                 f"Sending payload to server, size={len(data)} bytes, "
-                f"robot_type={self._robot_type}, ee_type={self._eef_type}"
+                f"robot_type={self._robot_type}, ee_type={self._ee_type}"
             )
             self._ws.send(data)
             response = self._ws.recv()
@@ -789,6 +828,8 @@ class CoRobotPolicy(BasePolicy):
             if result.get("error"):
                 raise RuntimeError(f"Server returned error: {result['error']}")
             inner = result["result"]
+            if self._accept_no_action_termination(inner):
+                return True
             self._update_server_episode_done(inner)
             actions = self._parse_result(inner)
             # Match main's history protocol; omitted history disables capture.
@@ -805,9 +846,13 @@ class CoRobotPolicy(BasePolicy):
         except Exception as e:
             logger.warning(f"Model inference failed: {type(e).__name__}: {str(e)}")
             self._drop_connection()
+            if not is_transient_error(e):
+                raise InferenceServiceError(str(e)) from e
             raise
 
     def act(self, observation, **kwargs):
+        if self.server_episode_termination is not None:
+            return None
         if len(self.action_buffer) == 0:
             logger.info("CoRobotPolicy: calling model infer")
             task_instruction = kwargs.get("task_instruction", "")
@@ -828,6 +873,8 @@ class CoRobotPolicy(BasePolicy):
             )
             self.infer_cnt += 1
             self._since_infer = 0
+            if self.server_episode_termination is not None:
+                return None
             self.chunk_started_this_step = True
         else:
             self.chunk_started_this_step = False

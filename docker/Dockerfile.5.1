@@ -208,6 +208,15 @@ RUN omni_python -m pip install --force-reinstall --no-cache-dir "numpy==1.26.4" 
 COPY ./3rdparty/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl /tmp/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl
 RUN omni_python -m pip install /tmp/ik_solver-0.4.3-cp311-cp311-linux_x86_64.whl
 
+# Benchmarks use the IK-SDK in the system Python 3.12 / Isaac 6.2 runtime.
+# Keep NumPy and the remaining SDK dependencies unchanged.
+COPY 3rdparty/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl /tmp/
+RUN python3 -m pip install --no-cache-dir --no-deps \
+        -c /opt/geniesim/docker/isaac-constraints.txt \
+        /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl && \
+    python3 -c "import ik_solver" && \
+    rm /tmp/ik_solver-0.4.3-cp312-cp312-linux_x86_64.whl
+
 COPY docker/entrypoint.sh /usr/local/bin/geniesim-entrypoint
 RUN chmod +x /usr/local/bin/geniesim-entrypoint
 

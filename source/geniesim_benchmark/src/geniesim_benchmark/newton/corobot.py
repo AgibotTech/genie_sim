@@ -99,6 +99,7 @@ def build_payload(
     *,
     groups: JointGroups = WUJI_GROUPS,
     task_name: str = "",
+    task_segments: Sequence[str] = (),
     episode_idx: int = 0,
     episode_done: bool = False,
     task_progress: Sequence[Mapping[str, Any]] = (),
@@ -106,9 +107,10 @@ def build_payload(
     history_interval: int = 0,
     history_frames: Sequence[Mapping[str, Any]] = (),
     robot_type: str = "g2a_sim",
+    ee_type: str = "wuji",
     timestamp_ns: int | None = None,
 ) -> dict[str, Any]:
-    """Build the existing CoRobot infer envelope without adding wire fields.
+    """Build the CoRobot infer envelope with explicit embodiment routing.
 
     ``joint_positions`` includes scene-initial holds for fixed/absent joints.
     ``task_progress`` is accepted for caller compatibility but stays local.
@@ -144,10 +146,13 @@ def build_payload(
         },
         "prompt": prompt,
         "robot_type": robot_type,
+        "ee_type": ee_type,
         "task_name": task_name,
         "episode_idx": episode_idx,
         "episode_done": episode_done,
     }
+    if task_segments:
+        params["segments"] = list(task_segments)
     interval = _history_interval(history_interval)
     if interval:
         params["history"] = {"interval": interval, "images": list(history_frames)}

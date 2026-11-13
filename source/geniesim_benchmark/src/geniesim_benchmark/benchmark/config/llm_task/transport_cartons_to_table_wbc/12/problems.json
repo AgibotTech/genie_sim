@@ -1,0 +1,123 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionList": [
+          {
+            "ActionSetWaitAny": [
+              {
+                "OnTopCount": {
+                  "objects": [
+                    "benchmark_carton_061_00",
+                    "benchmark_carton_062_00",
+                    "benchmark_carton_063_00",
+                    "benchmark_carton_064_00"
+                  ],
+                  "surface": "benchmark_luggage_cart_002/entity/body/collider_body_008",
+                  "minimum": 2,
+                  "threshold": 0.5
+                }
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "OnTopCount": {
+                  "objects": [
+                    "benchmark_carton_061_00",
+                    "benchmark_carton_062_00",
+                    "benchmark_carton_063_00",
+                    "benchmark_carton_064_00"
+                  ],
+                  "surface": "benchmark_luggage_cart_002/entity/body/collider_body_008",
+                  "minimum": 4,
+                  "threshold": 0.5
+                }
+              },
+              {
+                "StepOut": 3000
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "InBBox": "benchmark_luggage_cart_002|-0.343,2.75,0.50|5.10,1.50,1.60"
+              },
+              {
+                "StepOut": 3600
+              }
+            ]
+          },
+          {
+            "ActionSetWaitAny": [
+              {
+                "ActionSetWaitAll": [
+                  {
+                    "InBBox": "benchmark_carton_061_00|-1.7846,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_062_00|-1.7846,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_063_00|1.0985,3.5568,0.93|2.09,0.82,0.20"
+                  },
+                  {
+                    "InBBox": "benchmark_carton_064_00|1.0985,3.5568,0.93|2.09,0.82,0.20"
+                  }
+                ]
+              },
+              {
+                "StepOut": 6000
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "transport_cartons_to_table_wbc",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "OnTopCount",
+              "points": 5
+            },
+            {
+              "checker": "OnTopCount",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 20
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            },
+            {
+              "checker": "InBBox",
+              "points": 5
+            }
+          ]
+        }
+      }
+    ],
+    "ScoreLayout": "transport_cartons_to_table_wbc_milestones"
+  }
+}

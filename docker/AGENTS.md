@@ -374,6 +374,11 @@ a specific cache; it must not recurse into source assets or unrelated scenes.
   `docker/entrypoint.sh` over `/usr/local/bin/geniesim-entrypoint` so changes
   to the entrypoint take effect without rebuilding the image.
 
+- **Editable packages are visible to both container users.** System-Python
+  installs run as the mapped runtime user. A system site `.pth` loads that
+  user's site directory for root `docker exec` processes, including editable
+  import hooks. Pip failures stop startup before `GENIESIM_READY`.
+
 - **Shader caches use named Docker volumes.** In-package kit/cache and
   ovrtx/bin/cache are mounted as named volumes (seeded from image on first
   create, persisted across `docker down/up`). Bind-mounting an empty host dir

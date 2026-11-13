@@ -28,7 +28,6 @@ robot:
     z: 0.0
     theta: 0.0
   # Supplied task pose: radians converted to degrees for the engine contract.
-  # Body/head remain welded at these angles; hand joint defaults are retained.
   init_joint_pos:
     idx01_body_joint1: -46.00278137105379
     idx02_body_joint2: 86.21868901128627
@@ -52,46 +51,46 @@ robot:
     idx65_arm_r_joint5: -16.040125362025936
     idx66_arm_r_joint6: -52.893057223738055
     idx67_arm_r_joint7: 48.43641960587197
-    hand_l_thumb_joint1: 0.0
-    hand_l_thumb_joint2: 0.0
-    hand_l_thumb_joint3: 0.0
-    hand_l_thumb_joint4: 0.0
-    hand_l_index_joint1: 0.0
-    hand_l_index_joint2: 0.0
-    hand_l_index_joint3: 0.0
-    hand_l_index_joint4: 0.0
-    hand_l_middle_joint1: 0.0
-    hand_l_middle_joint2: 0.0
-    hand_l_middle_joint3: 0.0
-    hand_l_middle_joint4: 0.0
-    hand_l_ring_joint1: 0.0
-    hand_l_ring_joint2: 0.0
-    hand_l_ring_joint3: 0.0
-    hand_l_ring_joint4: 0.0
-    hand_l_pinky_joint1: 0.0
-    hand_l_pinky_joint2: 0.0
-    hand_l_pinky_joint3: 0.0
-    hand_l_pinky_joint4: 0.0
-    hand_r_thumb_joint1: 0.0
-    hand_r_thumb_joint2: 0.0
-    hand_r_thumb_joint3: 0.0
-    hand_r_thumb_joint4: 0.0
-    hand_r_index_joint1: 0.0
-    hand_r_index_joint2: 0.0
-    hand_r_index_joint3: 0.0
-    hand_r_index_joint4: 0.0
-    hand_r_middle_joint1: 0.0
-    hand_r_middle_joint2: 0.0
-    hand_r_middle_joint3: 0.0
-    hand_r_middle_joint4: 0.0
-    hand_r_ring_joint1: 0.0
-    hand_r_ring_joint2: 0.0
-    hand_r_ring_joint3: 0.0
-    hand_r_ring_joint4: 0.0
-    hand_r_pinky_joint1: 0.0
-    hand_r_pinky_joint2: 0.0
-    hand_r_pinky_joint3: 0.0
-    hand_r_pinky_joint4: 0.0
+    hand_l_thumb_joint1: 3.0600203708140925
+    hand_l_thumb_joint2: -1.222494685127268
+    hand_l_thumb_joint3: 0.7737634229318894
+    hand_l_thumb_joint4: 0.1778810444734486
+    hand_l_index_joint1: 3.1662456072202465
+    hand_l_index_joint2: -1.8134752022370346
+    hand_l_index_joint3: 0.8498074407779321
+    hand_l_index_joint4: 0.12570707035314593
+    hand_l_middle_joint1: 3.521391751842226
+    hand_l_middle_joint2: -1.1656803178374557
+    hand_l_middle_joint3: 0.9487038842046623
+    hand_l_middle_joint4: 0.13917268158012028
+    hand_l_ring_joint1: 3.5762302734712006
+    hand_l_ring_joint2: -1.008280529405216
+    hand_l_ring_joint3: 0.9645779908877125
+    hand_l_ring_joint4: 0.14119300351184244
+    hand_l_pinky_joint1: 3.675875903272517
+    hand_l_pinky_joint2: -0.6226078681440693
+    hand_l_pinky_joint3: 0.9922206202324003
+    hand_l_pinky_joint4: 0.1449872803174903
+    hand_r_thumb_joint1: 3.060264763520332
+    hand_r_thumb_joint2: -1.2223400453755906
+    hand_r_thumb_joint3: 0.773751896987665
+    hand_r_thumb_joint4: 0.1778652229805665
+    hand_r_index_joint1: 3.168519846770449
+    hand_r_index_joint2: 1.8146207530268927
+    hand_r_index_joint3: 0.852073249313378
+    hand_r_index_joint4: 0.12728840588834933
+    hand_r_middle_joint1: 3.5221767967099544
+    hand_r_middle_joint2: 1.1658067830588068
+    hand_r_middle_joint3: 0.9494745216421102
+    hand_r_middle_joint4: 0.13917310846694342
+    hand_r_ring_joint1: 3.578838338517088
+    hand_r_ring_joint2: 1.0089678171904484
+    hand_r_ring_joint3: 0.9671639645405028
+    hand_r_ring_joint4: 0.14299666704061506
+    hand_r_pinky_joint1: 3.6785558987481006
+    hand_r_pinky_joint2: 0.6230303260164052
+    hand_r_pinky_joint3: 0.994877670541241
+    hand_r_pinky_joint4: 0.1468396222843125
 viewer_camera:
   pos:
   - 2.2
@@ -108,90 +107,96 @@ cameras:
     rgb: /genie_sim/head_camera_rgb
   sensor:
     width: 640
-    height: 480
+    height: 400
     freq: 10.0
     min_range: 0.01
     max_range: 10000
   intrinsic:
-    cx: 320.0
-    cy: 240.0
-    fx: 317.05
-    fy: 377.66
-    k1: 0
-    k2: 0
-    p1: 0
-    p2: 0
-    k3: 0
+    fx: 306.69110107421875
+    fy: 306.5507507324219
+    cx: 319.90093994140625
+    cy: 201.29141235351562
+    k1: 0.0
+    k2: 0.0
+    k3: 0.0
+    k4: 0.0
+    p1: 0.0
+    p2: 3.2653999824105995e-06
   extrinsic:
     xyz:
     - 0.10237
     - 0.02375
     - 0.10256
     wxyz:
-    - -0.59451
-    - -0.386832
-    - 0.378729
-    - 0.594544
+    - -0.5945104121873722
+    - -0.38683164617055127
+    - 0.37872914728340196
+    - 0.5945442627086477
+  model: opencvPinhole
 - prim_path: hand_l_base_link/Left_Camera
   frame_id: hand_l_base_link
   topic:
     rgb: /genie_sim/hand_left_camera_rgb
   sensor:
-    width: 640
-    height: 480
+    width: 960
+    height: 768
     freq: 10.0
     min_range: 0.01
     max_range: 10000
   intrinsic:
-    cx: 320.0
-    cy: 240.0
-    fx: 317.05
-    fy: 377.66
-    k1: 0
-    k2: 0
-    p1: 0
-    p2: 0
-    k3: 0
+    fx: 363.1182861328125
+    fy: 363.16827392578125
+    cx: 482.89935302734375
+    cy: 372.7657470703125
+    k1: -0.002479762304574251
+    k2: -6.387999746948481e-07
+    k3: -0.0013551259180530906
+    k4: 0.00023899998632259667
+    p1: 0.0
+    p2: 0.0
   extrinsic:
     xyz:
-    - 0.045919
-    - 0.022
-    - -0.004108
+    - 0.04591868482678052
+    - 0.02199999934282286
+    - -0.004108434975343633
     wxyz:
-    - -0.076393
-    - 0.962922
-    - 0.253427
-    - -0.052161
+    - -0.07639307439234352
+    - 0.9629216387230114
+    - 0.25342710597005064
+    - -0.05216050060650271
+  model: opencvFisheye
 - prim_path: hand_r_base_link/Right_Camera
   frame_id: hand_r_base_link
   topic:
     rgb: /genie_sim/hand_right_camera_rgb
   sensor:
-    width: 640
-    height: 480
+    width: 960
+    height: 768
     freq: 10.0
     min_range: 0.01
     max_range: 10000
   intrinsic:
-    cx: 320.0
-    cy: 240.0
-    fx: 317.05
-    fy: 377.66
-    k1: 0
-    k2: 0
-    p1: 0
-    p2: 0
-    k3: 0
+    fx: 363.1182861328125
+    fy: 363.16827392578125
+    cx: 482.89935302734375
+    cy: 372.7657470703125
+    k1: -0.002479762304574251
+    k2: -6.387999746948481e-07
+    k3: -0.0013551259180530906
+    k4: 0.00023899998632259667
+    p1: 0.0
+    p2: 0.0
   extrinsic:
     xyz:
-    - 0.047337
-    - -0.021999
-    - -0.004276
+    - 0.04733658977677768
+    - -0.021999354329208146
+    - -0.0042763585815623895
     wxyz:
-    - -0.03077
-    - 0.24764
-    - 0.960974
-    - -0.119403
+    - -0.030769918893014166
+    - 0.24764049345269007
+    - 0.9609736010786597
+    - -0.11940325005517463
+  model: opencvFisheye
 lidars: []
 scene: background/cloth_hanger/background.usda
 libuipc:

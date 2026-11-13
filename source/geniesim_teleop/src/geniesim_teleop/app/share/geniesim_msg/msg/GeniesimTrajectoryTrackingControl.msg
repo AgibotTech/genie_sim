@@ -1,3 +1,0 @@
-std_msgs/Header header
-float64 trajectory_reference_time
-GeniesimRetargetInfoArray[] retarget_groups_trajectory

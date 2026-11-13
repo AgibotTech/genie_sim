@@ -190,6 +190,8 @@ AGILEX_GRIPPER_JOINT_NAMES = [
 
 ROBOT_CONFIGS = {
     "G1_omnipicker": {
+        "robot_type": "a2d_sim",
+        "ee_type": "zhiyuan_gripper_omnipicker",
         "arm_joints": G1_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G1_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": G1_RIGHT_ARM_JOINT_NAMES,
@@ -225,6 +227,8 @@ ROBOT_CONFIGS = {
         "init_gripper_open": [1.0, 1.0],
     },
     "G2_omnipicker": {
+        "robot_type": "g2a_sim",
+        "ee_type": "zhiyuan_gripper_omnipicker",
         "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
@@ -268,6 +272,8 @@ ROBOT_CONFIGS = {
         "init_gripper_open": [1.0, 1.0],
     },
     "G2_crsB_omnipicker": {
+        "robot_type": "g2a_sim",
+        "ee_type": "zhiyuan_gripper_omnipicker",
         "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
@@ -286,7 +292,7 @@ ROBOT_CONFIGS = {
         "robot_type": "g2a_sim",
         # Every G2 sends robot_type "g2a_sim", so ee_type is what tells the policy
         # server this is a five-finger hand (40 DOF) and not a 2-DOF gripper.
-        "eef_type": "wuji",
+        "ee_type": "wuji",
         "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
@@ -303,7 +309,7 @@ ROBOT_CONFIGS = {
     },
     "G2_crsB_90d": {
         "robot_type": "g2a_sim",
-        "eef_type": "zhiyuan_gripper_ctek90d",
+        "ee_type": "zhiyuan_gripper_ctek90d",
         "arm_joints": G2_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": G2_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": G2_RIGHT_ARM_JOINT_NAMES,
@@ -319,6 +325,7 @@ ROBOT_CONFIGS = {
     },
     "arx": {
         "robot_type": "arx_sim",
+        "ee_type": "arx_gripper",
         "arm_joints": ARX_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": ARX_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": ARX_RIGHT_ARM_JOINT_NAMES,
@@ -337,6 +344,7 @@ ROBOT_CONFIGS = {
     },
     "agilex": {
         "robot_type": "agilex_sim",
+        "ee_type": "agilex_gripper",
         "arm_joints": AGILEX_DUAL_ARM_JOINT_NAMES,
         "left_arm_joints": AGILEX_LEFT_ARM_JOINT_NAMES,
         "right_arm_joints": AGILEX_RIGHT_ARM_JOINT_NAMES,
@@ -353,6 +361,9 @@ ROBOT_CONFIGS = {
         "init_gripper_open": [0.04, 0.04],
     },
 }
+
+# WBC shares the canonical G2 embodiment and 90-degree gripper routing.
+ROBOT_CONFIGS["G2_crsB_90d_wbc"] = dict(ROBOT_CONFIGS["G2_crsB_90d"])
 
 DEFAULT_ROBOT_CONFIG = {
     "gripper_offset": 0.0,

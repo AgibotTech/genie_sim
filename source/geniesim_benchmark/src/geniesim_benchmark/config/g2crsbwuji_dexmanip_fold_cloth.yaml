@@ -4,11 +4,22 @@ app:
 benchmark:
   task_name: fold_cloth
   model_arc: corobot
-  num_instances: 6
+  num_instances: 10
   num_episode: 1
   seed: 1
 libuipc:
   task: fold_cloth
+  instance_base_xy_offsets:
+    - [0.03, -0.024]
+    - [0.03, -0.012]
+    - [0.03, 0.0]
+    - [0.03, 0.012]
+    - [0.03, 0.024]
+    - [0.045, -0.024]
+    - [0.045, -0.012]
+    - [0.045, 0.0]
+    - [0.045, 0.012]
+    - [0.045, 0.024]
   scoring_framework: ader
   scoring_execution: streaming
   scoring_drain_timeout_s: 900.0
@@ -16,7 +27,14 @@ libuipc:
   cameras: ../benchmark/config/llm_task/wuji_ipc/cameras.yaml
   evaluation_scene: scene_flat_g2_wuji_ipc_fold_cloth_eval.yaml
   launcher: launcher_libuipc_wuji_eval.yaml
-  instruction: Fold the clothes.
+  instruction: Fold the clothes on the table neatly
+  segments:
+    - "Both arms work together to pick up a corner of the hem and the sleeve of the clothes in the middle of the table"
+    - "Both arms work together to fold the held clothes upward"
+    - "Both arms work together to pick up a corner of the hem and the sleeve of the clothes in the middle of the table"
+    - "Both arms work together to fold the held clothes downward"
+    - "The left arm picks up the hem of the clothes in the middle of the table"
+    - "The left arm folds the held clothes in half to the right"
   max_steps: 2400
   action_chunk_steps: 0
   fps: 30.0

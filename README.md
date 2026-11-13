@@ -129,7 +129,7 @@ The Genie Sim Benchmark is the engine behind [**RoboColiseum**](https://robocoli
 
 - **🏆 It's a competition.** RoboColiseum ranks embodied-AI policies on four boards (`instruction` / `robust` / `manip` / `spatial`).
 - **🧪 Debug locally → submit remotely.** Run the benchmark tasks on your own machine to debug your policy against your own inference server, then launch a model evaluation on the official leaderboard with the _same_ server — no blind submissions.
-- **🤖 Agent-friendly one-click SKILLs.** The whole competition pipeline — download datasets, fetch the π<sub>0.5</sub> baseline weights, run an example leaderboard service, submit & track results — ships under [`source/geniesim_benchmark/skills/robocoliseum/`](source/geniesim_benchmark/skills/robocoliseum/); just ask an AI agent (Claude Code, Cursor, …) to drive them.
+- **🤖 Agent-friendly evaluation submission skills.** RoboColiseum provides [ready-to-use skills](source/geniesim_benchmark/skills/robocoliseum/) for login, asset and dataset downloads, baseline setup, connecting existing inference services, submitting evaluation jobs and tracking results. AI agents such as Claude Code and Cursor can follow the [skills guide](source/geniesim_benchmark/skills/robocoliseum/README.md) to run the workflow.
 
 **Run it locally** — `cat source/geniesim_benchmark/USAGE.md` for how to run a benchmark task on your own machine against your inference server (CLI verbs, common commands, and overrides).
 

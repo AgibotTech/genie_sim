@@ -9,7 +9,7 @@ def "World"
 {
     def "Objects"
     {
-        def Xform "table_9818126b" (
+        def Xform "table_124a6ca8" (
             prepend payload = @/geniesim_assets/objects/edited/table_000/Aligned.usda@
         )
         {
@@ -19,25 +19,26 @@ def "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_cup_holder_0ed2b190" (
+        def Xform "benchmark_cup_holder_f5398c8b" (
             prepend payload = @/geniesim_assets/objects/benchmark/cup_holder/benchmark_cup_holder_000/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.667235, 0, 0, 0.744848)
+            quatf xformOp:orient = (0.58465, 0, 0, 0.811286)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.122, -0.01, 0.907)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (-0.5058732132493322, 0.8626078437603009, 0, 0), (-0.8626078437603009, -0.5058732132493322, 0, 0), (0, 0, 1, 0), (0.1583878001900385, -0.0513590379797838, 0.9070824611567659, 1) )
+            double3 xformOp:translate = (0.144, -0.047, 0.907)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
         }
 
-        def Xform "benchmark_cup_3a2feb57" (
-            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_122/Aligned.usda@
+        def Xform "benchmark_cup_a26f738f" (
+            prepend payload = @/geniesim_assets/objects/benchmark/cup/benchmark_cup_116/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.925463, 0, 0, -0.378838)
+            quatf xformOp:orient = (0.910918, 0, 0, -0.412588)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (-0.1, 0.169, 0.77)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            matrix4d xformOp:transform = ( (0.6550303555584766, -0.7556025630560923, -0, 0), (0.7556025630560923, 0.6550303555584766, 0, 0), (0, -0, 1, 0), (-0.01460278225009691, 0.1221918195233274, 0.7709504555397538, 1) )
+            double3 xformOp:translate = (-0.073, 0.223, 0.775)
+            uniform token[] xformOpOrder = ["xformOp:transform"]
         }
     }
 }
-

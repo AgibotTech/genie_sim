@@ -107,7 +107,7 @@ class RubikScorer:
 
     def contract(self):
         return {
-            "name": "rubik_stages_v1",
+            "name": "rubik_stages",
             "stage_points": dict(STAGE_POINTS),
             "maximum_score": 100.0,
             "pickup_clearance_meters": self.pickup_clearance,

@@ -45,14 +45,7 @@ BENCHMARK_PKG="${REPO_IN_CONTAINER}/source/geniesim_benchmark/src/geniesim_bench
 TELEOP_YAML="${GENIESIM_TELEOP_CONFIG:-${BENCHMARK_PKG}/config/teleop.yaml}"
 
 HOST_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-HOST_TELEOP_APP="${HOST_REPO}/source/geniesim_teleop/src/geniesim_teleop/app"
-PINOCCHIO_LIB="${HOST_TELEOP_APP}/vendors/lib/libpinocchio_casadi.so.3.7.0"
-PINOCCHIO_TAR="${HOST_TELEOP_APP}/vendors/lib/libpinocchio.tar.gz"
-
-if [ ! -f "$PINOCCHIO_LIB" ] && [ -f "$PINOCCHIO_TAR" ]; then
-    echo "Extracting libpinocchio.tar.gz to vendors/lib ..."
-    tar -xzvf "$PINOCCHIO_TAR" -C "${HOST_TELEOP_APP}/vendors/lib"
-fi
+teleop_ensure_app "$HOST_REPO" || exit $?
 
 if ! docker inspect --format='{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q "true"; then
     echo "Error: Container '$CONTAINER_NAME' is not running."

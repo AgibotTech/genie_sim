@@ -29,13 +29,7 @@ elif [[ " $* " != *" --check "* ]]; then
     exit 2
 fi
 
-HOST_TELEOP_APP="${HOST_REPO}/source/geniesim_teleop/src/geniesim_teleop/app"
-PINOCCHIO_LIB="${HOST_TELEOP_APP}/vendors/lib/libpinocchio_casadi.so.3.7.0"
-PINOCCHIO_TAR="${HOST_TELEOP_APP}/vendors/lib/libpinocchio.tar.gz"
-if [ ! -f "$PINOCCHIO_LIB" ] && [ -f "$PINOCCHIO_TAR" ]; then
-    echo "Extracting libpinocchio.tar.gz to vendors/lib ..."
-    tar -xzvf "$PINOCCHIO_TAR" -C "${HOST_TELEOP_APP}/vendors/lib"
-fi
+teleop_ensure_app "$HOST_REPO" || exit $?
 
 exec docker exec "${TTY_ARGS[@]}" \
     -e "SIM_REPO_ROOT=$WORKSPACE" \

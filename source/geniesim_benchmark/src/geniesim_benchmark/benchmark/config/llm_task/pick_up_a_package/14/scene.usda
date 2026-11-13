@@ -13,6 +13,11 @@ def Xform "World"
             prepend payload = @/geniesim_assets/objects/benchmark/table/benchmark_table_019/Aligned.usda@
         )
         {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
             over "entity"
             {
                 bool physics:kinematicEnabled = 1
@@ -33,19 +38,15 @@ def Xform "World"
                     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
                 }
             }
-            quatf xformOp:orient = (1, 0, 0, 0)
-            float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (1.0181548312269688, 0.0038612399588082713, 0.42551706551483837)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
 
-        def Xform "benchmark_carton_004" (
-            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_004/Aligned.usda@
+        def Xform "benchmark_carton_032" (
+            prepend payload = @/geniesim_assets/objects/benchmark/carton/benchmark_carton_032/Aligned.usda@
         )
         {
-            quatf xformOp:orient = (0.8534587170173735, 0.0, 0.0, 0.5211604535525108)
+            quatf xformOp:orient = (0.3514468, 0, 0, 0.93620783)
             float3 xformOp:scale = (1, 1, 1)
-            double3 xformOp:translate = (0.9581263198956865, 0.052650952679654084, 0.8361625628284882)
+            double3 xformOp:translate = (1.0484175663625415, 0.023362193285076025, 0.8903312034136829)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
         }
     }

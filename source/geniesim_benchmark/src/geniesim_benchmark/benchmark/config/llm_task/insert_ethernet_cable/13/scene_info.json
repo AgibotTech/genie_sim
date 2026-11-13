@@ -1,7 +1,6 @@
 {
-  "scene_id": "insert_ethernet_cable_13",
-  "task_name": "insert_ethernet_cable",
-  "seed": 2026103113,
+  "scene_id": 23,
+  "seed": 20263128,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -20,8 +19,7 @@
         0.0,
         0.0,
         1.0
-      ],
-      "asset_path": "objects/edited/table_000/Aligned.usda"
+      ]
     },
     "benchmark_network_device_000": {
       "usd": "benchmark_network_device_000",
@@ -31,17 +29,16 @@
         "kinematic"
       ],
       "xyz": [
-        0.13855527616076202,
-        -0.05866228454263614,
+        0.13776428810268518,
+        0.07506916925180752,
         0.7626195690004007
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.4073594808578491,
-        0.9132679104804993
-      ],
-      "asset_path": "objects/benchmark/network_device/benchmark_network_device_000/Aligned.usda"
+        0.41531363129615784,
+        0.9096782803535461
+      ]
     },
     "benchmark_network_device_001": {
       "usd": "benchmark_network_device_001",
@@ -49,81 +46,81 @@
         "ethernet_plug",
         "network_cable",
         "dynamic",
-        "POSITION_TAG_left",
-        "left_hand"
+        "POSITION_TAG_right",
+        "right_hand"
       ],
       "xyz": [
-        -0.13414237123779585,
-        0.12295227730712714,
+        -0.1317222149750019,
+        -0.11127696199740682,
         0.7435275175948746
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.2561400830745697,
-        0.9666396975517273
-      ],
-      "asset_path": "objects/benchmark/network_device/benchmark_network_device_001/Aligned.usda"
+        0.26456573605537415,
+        0.9643676280975342
+      ]
     }
   },
   "ethernet_sample": {
-    "router_x": 0.13855526620503889,
-    "router_y": -0.05866227345533789,
-    "router_yaw_offset_deg": -48.07813837353875,
-    "router_yaw_noise_deg": -3.0781383735387458,
-    "plug_x": -0.13517949378940572,
-    "plug_y": 0.12354341528519329,
-    "plug_yaw_deg": -29.682300176532408,
-    "plug_yaw_noise_deg": 15.317699823467585
+    "router_x": 0.1377642783419784,
+    "router_y": 0.0750691579924466,
+    "router_yaw_offset_deg": 49.07813837353875,
+    "router_yaw_noise_deg": 4.078138373538746,
+    "plug_x": -0.13274886278757006,
+    "plug_y": -0.11188611022659163,
+    "plug_yaw_deg": 30.682300176532408,
+    "plug_yaw_noise_deg": -14.317699823467585
+  },
+  "data_alignment": {
+    "dataset_id": 111119,
+    "task_id": 89814,
+    "dataset_dir": "plug_ethernet_cable_into_network_device",
+    "reference_episode_index": 340,
+    "reference_episode_id": 27450998,
+    "reference_raw_data_path": "agibot-raw://aidea-sim/episodes/7bc302bc-af4a-4343-87e1-e5cd36f60651",
+    "reference_video": "videos/observation.images.top_head/chunk-000/file-340.mp4",
+    "camera": "observation.images.top_head",
+    "frame_index": 0,
+    "layout_method": "Task/arm/object category checked in this replay; initial object cluster is a bounded XY/yaw perturbation of the accepted same-arm local instance, not a frame-accurate 3D reconstruction",
+    "arm_assignment": "right target object"
+  },
+  "instance_variation": {
+    "base_instance": 1,
+    "world_yaw_delta_deg": -6.0,
+    "world_xy_shift_m": [
+      0.016,
+      0.008
+    ],
+    "object_group": "all task objects; table remains fixed"
   },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 13,
-    "source_instance": 3,
-    "source_scene_sha256": "6e128866e6ee2a38477df59030ba47af238a2d42818ee8ec8529e4e84afadc84",
-    "source_scene_info_sha256": "59299c31a10f221122177184eaa96b01330bbdc948aa7d023fab4d970bb631ca",
-    "source_problem_sha256": "d730fdcae424cb9cad2ab8a42a73cd20682f2470c8f7f667083fc27c7c20d79b",
-    "seed": 2026103113,
-    "world_xy_translation_m": [
-      0.0,
-      -0.0035250179030799
+    "instance_id": 23,
+    "source_instance": 7,
+    "source_hashes": {
+      "scene.usda": "a53941c427e1fdd319ad3237e8da5b66b3c49abbd53f506046e20a9f747422d6",
+      "instructions.json": "5284d2d9199aa0b2edda6ca0e2dca61ea3f836c3a0600315a001cb72db637310",
+      "scene_info.json": "82a6404444bf1168c1aaa4251ba57945dda9b2d5e5ff78535e7501a5d54be765",
+      "problems.json": "af1659167347e31110a75c8708993450f3a02bd010293c25958c3b84308cfb7b"
+    },
+    "requested_source_instance": 3,
+    "world_translation_m": [
+      0.0020151270172666103,
+      0.019834797558871173,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "benchmark_network_device_000",
       "benchmark_network_device_001"
     ],
     "fixed_prims": [
       "table_000"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.007908791284031531,
+    "seed": 20263105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.0035250179030799,
-    "table_support": {
-      "table_prim": "table_000",
-      "baseline_xy_edge_margin_m": [
-        -0.7249900567293561,
-        -0.14049227949147058
-      ],
-      "minimum_xy_edge_margin_m": [
-        -0.7249900567293561,
-        -0.14049227949147058
-      ],
-      "generated_xy_edge_margin_m": [
-        -0.7249900567293559,
-        -0.13696726158839068
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

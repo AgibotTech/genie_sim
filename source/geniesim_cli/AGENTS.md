@@ -115,6 +115,7 @@ and the dispatcher in `main()` in sync.
 
 | Command | Purpose | Heavy deps required? |
 |---|---|---|
+| `geniesim assets <list\|plan\|download\|verify>` | Host-only, version-pinned selective asset downloads | No |
 | `geniesim version` | Print distribution versions + Python | No |
 | `geniesim status` | Per-distribution health probe + console-script + env | No |
 | `geniesim bootstrap` | Install / reinitialize required local peers, umbrella last (interactive `pip install`) | No (but invokes `pip`) |
@@ -502,21 +503,23 @@ example USD references can be bound with the module’s auto-discovery helper.
 `devel_log` trees alongside build/install/external, so stale colcon package.xml
 symlinks cannot shadow source packages or break the generator.
 
-## Newton benchmark dispatch
+## Managed benchmark dispatch
 
-`benchmark run` reads the task YAML `runtime` before selecting an interpreter:
-omitted/isaac uses system Python 3.12 with Isaac Sim 6.2; newton and libuipc use
-the same interpreter with their managed runners. Use `geniesim docker` /
-`docker6.2` for this runtime. Generic container `GENIESIM_PY_CMD` defaults,
-including `omni_python`, do not override task selection; a custom prepared
-Python path is retained. Newton loads its built ROS overlay automatically;
-IPC uses the caller's sourced overlay. `--manifest` and task-runner options
-are forwarded. `benchmark generate-layouts` and `run-layouts` dispatch to the
-benchmark-owned Newton modules; the CLI imports no ROS, physics or rendering
-runtime. The `sandbox` category contains unscored scenarios. Native MuJoCo
-entries select `benchmark.python` (or the CLI interpreter) and bypass unrelated
-Isaac/ROS bootstrap. Rubik rendering chooses its Isaac interpreter separately.
-See the benchmark runtime guides.
+`benchmark run` reads the task YAML `runtime` before selecting an interpreter.
+Isaac, Newton and libuipc use Python 3.12 with Isaac Sim 6.2. Newton and libuipc
+automatically load the built ROS overlay before starting their runner, so the
+calling terminal need not source it. An overlay-owned `rt_python` is used when
+available, unless a custom prepared interpreter was explicitly selected. Missing
+ROS builds report `geniesim ros build dev`; dry runs require no prepared overlay.
+Use `geniesim docker` / `docker6.2` for this runtime. Generic container
+`GENIESIM_PY_CMD` defaults do not override task selection; custom prepared
+Python paths are retained.
+`--manifest` and task-runner options are forwarded. `benchmark generate-layouts`
+and `run-layouts` dispatch to the benchmark-owned Newton modules; the CLI imports
+no ROS, physics or rendering runtime. The `sandbox` category contains unscored
+scenarios. Native MuJoCo entries select `benchmark.python` (or the CLI interpreter)
+and bypass unrelated Isaac/ROS bootstrap. Rubik rendering selects its Isaac
+interpreter separately. See the benchmark runtime guides.
 
 ### Benchmark task categories
 
@@ -565,3 +568,58 @@ CPU tests live in `docker/tests/test_libuipc_download.py`,
 `docker/tests/test_install_libuipc.py` and `tests/test_libuipc_bootstrap.py`.
 Real archive QA additionally uses a hydrated `GENIESIM_ASSETS_SRC`; CPU tests do
 not establish an image build, native load or GPU solve.
+
+## Selective benchmark asset downloads
+
+`assets` is a host-only bootstrap-exempt verb. `commands/assets.py` uses only
+standard-library HTTP, hashing and filesystem operations; no ModelScope, USD,
+ROS or simulator import is required. The bundled `_asset_index.json.gz` records
+150 audited task closures at a fixed asset revision and benchmark baseline.
+Selections accept exact task names, underscore-delimited prefixes and categories.
+Keep all 73 published HDR/EXR maps in every closure for runtime generalization.
+Unknown/unindexed tasks fail instead of downloading the full repository.
+
+`list` and `plan` are offline. `download --dest DIR` uses bounded concurrent
+HTTP transfers, validated range resume, atomic hash-checked writes, an exclusive
+destination lock and local hardlink deduplication. Existing mismatched files
+require `--overwrite`; different release destinations and symlinked paths are
+rejected. `verify --dest DIR` checks bytes without network access and does not
+claim runtime or semantic validity. Do not silently remove known source issues
+or synthesize missing assets; MuJoCo's missing README package requirement is
+disclosed in the release index.
+
+The index may carry a `sources` table for identical-content hosting mirrors
+(ModelScope and HuggingFace). `--source` picks one; each mirror pins its own
+commit because the repositories have separate histories, and the shared SHA256
+file table guarantees the bytes are identical regardless of source. Switching
+source reuses already-verified files in the same destination; the receipt is
+keyed by a content-derived `release_id`, not a source revision.
+
+Maintainers compile the index with `scripts/build_asset_index.py` from pinned
+dependency-audit manifests and matching benchmark code (PyYAML only for this
+maintainer step). Each per-task closure follows audited edges and the group
+union must exactly reproduce the audited file set. New releases/tasks need
+audits and regenerated indexes; the command does not scan moving master.
+Package `_asset_index.json.gz` in wheels and keep help, shell completions, tests
+and [the download guide](docs/assets-download.md) synchronized. Linux `fcntl`
+locks protect downloads.
+
+### Renamed benchmark entries
+
+`benchmark run` resolves the legacy `g2crsb90d_wbc_sending_food[.yaml]` name
+to `g2crsb90d_wbc_deliver_tissues`. Only the canonical configuration is listed,
+so full task inventories count it once. Internal scene/scoring keys remain
+compatible with historical results.
+
+### Benchmark launch artifacts
+
+`benchmark run` uses one output root for every runtime: explicit
+`--benchmark.output_dir` (also `--output-dir`), then
+`GENIESIM_BENCHMARK_OUTPUT_ROOT`, then `OUTPUT_DIR`, then the checkout's
+`output/benchmark`. Reports live at `ROOT/task_name/sub_task_name/evaluate_ret_00.json`;
+native tasks without a sub-task name repeat the task name. The CLI translates
+this root to the native runner's internal artifact directory. Common flags are
+`--app.headless`, `--benchmark.record`, `--benchmark.record_state`,
+`--benchmark.resume`, `--benchmark.resume_id` and `--benchmark.record_video_dir`.
+Newton retains sealed episodes and creates fresh runtime attempts for pending
+episodes. Keep the output tree across retries.

@@ -2,19 +2,46 @@
   "problem1": {
     "Acts": [
       {
-        "ActionList": [
+        "ActionSetWaitAny": [
           {
-            "ActionSetWaitAny": [
+            "ActionList": [
               {
-                "Erased": "benchmark_blackboard_eraser_000/entity|1.0"
+                "ActionSetWaitAny": [
+                  {
+                    "PickUpOnGripper": "benchmark_blackboard_eraser_000|right_gripper"
+                  },
+                  {
+                    "StepOut": 900
+                  }
+                ]
               },
               {
-                "Onfloor": "benchmark_blackboard_eraser_000/entity/body|0"
+                "ActionSetWaitAny": [
+                  {
+                    "RobotNearObject": "benchmark_whiteboard_000|1.0"
+                  },
+                  {
+                    "StepOut": 1200
+                  }
+                ]
               },
               {
-                "StepOut": 6000
+                "ActionSetWaitAny": [
+                  {
+                    "Erased": "benchmark_blackboard_eraser_000/entity|1.0"
+                  },
+                  {
+                    "StepOut": 4800
+                  }
+                ]
               }
             ]
+          },
+          {
+            "Onfloor": "benchmark_blackboard_eraser_000/entity/body|0"
+          },
+          {
+            "StepOut": 6000
           }
         ]
       }
@@ -27,8 +54,16 @@
         "PolicyDispatchBudget": {
           "steps": [
             {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
               "checker": "Erased",
-              "points": 50
+              "points": 40
             }
           ]
         }

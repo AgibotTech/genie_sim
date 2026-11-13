@@ -1,2 +1,0 @@
-string left_end_model
-string right_end_model

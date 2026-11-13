@@ -9,11 +9,18 @@
 # For throughput, use the frame timings your own agent logs — see SKILL.md Step 3.
 #
 # usage: probe_gateway.sh [gateway_host] [count]
-#   gateway_host  default: 120.92.88.78
+#   gateway_host  default: host part of $TUNNEL_ENDPOINT (the job response's tunnel_endpoint)
 #   count         default: 20 (samples per probe)
 set -u
 
-HOST="${1:-120.92.88.78}"
+HOST="${1:-}"
+if [ -z "$HOST" ] && [ -n "${TUNNEL_ENDPOINT:-}" ]; then
+  HOST="${TUNNEL_ENDPOINT#*://}"; HOST="${HOST%%/*}"; HOST="${HOST%%:*}"
+fi
+if [ -z "$HOST" ]; then
+  echo "usage: $0 [gateway_host] [count]  (or export TUNNEL_ENDPOINT from the job response)" >&2
+  exit 2
+fi
 COUNT="${2:-20}"
 
 echo "== probe $HOST ($(date '+%F %T'))"

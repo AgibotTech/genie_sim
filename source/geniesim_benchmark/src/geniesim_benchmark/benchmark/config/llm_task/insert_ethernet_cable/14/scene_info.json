@@ -1,7 +1,7 @@
 {
-  "scene_id": "insert_ethernet_cable_14",
+  "scene_id": 24,
   "task_name": "insert_ethernet_cable",
-  "seed": 2026103114,
+  "seed": 20263129,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -31,15 +31,15 @@
         "kinematic"
       ],
       "xyz": [
-        0.10633173665805504,
-        0.038669726436432565,
+        0.11748791558571318,
+        0.07838460817138904,
         0.7626195690004007
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.3833133280277252,
-        0.9236183762550354
+        0.3993743062019348,
+        0.9167879819869995
       ],
       "asset_path": "objects/benchmark/network_device/benchmark_network_device_000/Aligned.usda"
     },
@@ -53,77 +53,56 @@
         "right_hand"
       ],
       "xyz": [
-        -0.17549715985428424,
-        -0.1284240468264477,
+        -0.1583378097886364,
+        -0.09844306272404402,
         0.7435275175948746
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.23074862360954285,
-        0.9730134010314941
+        0.24769489467144012,
+        0.968838095664978
       ],
       "asset_path": "objects/benchmark/network_device/benchmark_network_device_001/Aligned.usda"
     }
   },
   "ethernet_sample": {
-    "router_x": 0.10633172613571153,
-    "router_y": 0.03866971588537136,
-    "router_yaw_offset_deg": 45.07813837353875,
-    "router_yaw_noise_deg": 0.07813837353874575,
-    "plug_x": -0.1765637988368355,
-    "plug_y": -0.12896009586998,
-    "plug_yaw_deg": 26.682300176532408,
-    "plug_yaw_noise_deg": -18.317699823467585
+    "router_x": 0.11748790543800633,
+    "router_y": 0.07838459725953076,
+    "router_yaw_offset_deg": 47.07813837353875,
+    "router_yaw_noise_deg": 2.0781383735387458,
+    "plug_x": -0.159385091161712,
+    "plug_y": -0.0990160103846369,
+    "plug_yaw_deg": 28.682300176532408,
+    "plug_yaw_noise_deg": -16.317699823467585
   },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 14,
-    "source_instance": 5,
-    "source_scene_sha256": "d06854bdf20f2253f1b80183e9779d271092ba2bbe07d840f3a19c46f0143edc",
-    "source_scene_info_sha256": "095aa2e5a9508560f660aafde1ad19b0fe92c136b7fcc75003ea6b6f4ef93b91",
-    "source_problem_sha256": "af1659167347e31110a75c8708993450f3a02bd010293c25958c3b84308cfb7b",
-    "seed": 2026103114,
-    "world_xy_translation_m": [
-      0.0005793753016501814,
-      0.009903694510085019
+    "instance_id": 24,
+    "source_instance": 12,
+    "source_hashes": {
+      "scene.usda": "1e1a0b0121cbe967080ca22b6003ee938ad02327f8ce8f26c553a5e55def5afb",
+      "instructions.json": "5284d2d9199aa0b2edda6ca0e2dca61ea3f836c3a0600315a001cb72db637310",
+      "scene_info.json": "9a6282a1712e8707aa73bb0e322c031a2e47904334096874aad9e9a33cb9bc81",
+      "problems.json": "af1659167347e31110a75c8708993450f3a02bd010293c25958c3b84308cfb7b"
+    },
+    "requested_source_instance": 4,
+    "world_translation_m": [
+      2.9566618045302475e-05,
+      0.019913761265227134,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "benchmark_network_device_000",
       "benchmark_network_device_001"
     ],
     "fixed_prims": [
       "table_000"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.0128861824661155,
+    "seed": 20263105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.009920627031052542,
-    "table_support": {
-      "table_prim": "table_000",
-      "baseline_xy_edge_margin_m": [
-        -0.7916358487279962,
-        -0.1055672429569624
-      ],
-      "minimum_xy_edge_margin_m": [
-        -0.7916358487279962,
-        -0.1055672429569624
-      ],
-      "generated_xy_edge_margin_m": [
-        -0.7910564734263461,
-        -0.09566354844687741
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

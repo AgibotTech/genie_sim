@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def "benchmark_plate_019_00" (
+            prepend payload = @/geniesim_assets/objects/benchmark/plate/benchmark_plate_019/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.36067861709970883, 0.0, 0.0, -0.9326901835971189)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.42915020902172535, 1.4079322376775214,1.05625)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+        def "benchmark_plate_012_01" (
+            prepend payload = @/geniesim_assets/objects/benchmark/plate/benchmark_plate_012/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.9194950628308133, 0.0, 0.0, -0.39310160625612345)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-0.40307263955864203, 1.2389137633375873, 1.0637117107520737)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+            }
+        }
+        def "benchmark_dish_rack_001" (
+            prepend payload = @/geniesim_assets/objects/benchmark/dish_rack/benchmark_dish_rack_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.9919975873966836, 0.0, 0.0, 0.12625668950973995)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-2.306880381699655, 1.8887017932470738, 0.9016553190142982)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                bool physics:rigidBodyEnabled = 0
+
+                over "Looks"
+                {
+                    over "ml_body"
+                    {
+                        over "ml_body"
+                        {
+                            color3f inputs:diffuse_color_constant = (0.035, 0.045, 0.055)
+                            asset inputs:diffuse_texture = @@
+                            float inputs:metallic_constant = 0
+                            float inputs:metallic_texture_influence = 0
+                            float inputs:reflection_roughness_constant = 0.48
+                            float inputs:reflection_roughness_texture_influence = 0
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

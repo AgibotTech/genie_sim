@@ -1,0 +1,140 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "World"
+{
+    def Scope "Objects"
+    {
+        def "benchmark_roller_shutter_000_01" (
+            prepend payload = @/geniesim_assets/objects/benchmark/roller_shutter/benchmark_roller_shutter_000/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.525997105339463, 5.112150312024992, 1.93)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    def PhysicsFixedJoint "FixedJoint"
+                    {
+                        rel physics:body1 = </World/Objects/benchmark_roller_shutter_000_01/entity/body>
+                        float physics:breakForce = 3.4028235e38
+                        float physics:breakTorque = 3.4028235e38
+                        point3f physics:localPos0 = (-1.5259972, 5.11215, 1.93)
+                        point3f physics:localPos1 = (0, 0, 0)
+                        quatf physics:localRot0 = (0.70711, 0.70710355, 0, 0)
+                        quatf physics:localRot1 = (1, 0, 0, 0)
+                    }
+                }
+
+                over "part_00"
+                {
+                }
+
+                over "part_01"
+                {
+                }
+
+                over "part_02"
+                {
+                    bool physxRigidBody:disableGravity = 1
+
+                    over "Cube" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        rel material:binding:physics = </World/benchmark_roller_shutter_000_00/entity/PhysicsMaterial> (
+                            bindMaterialAs = "weakerThanDescendants"
+                        )
+                        token visibility = "inherited"
+                        quatd xformOp:orient = (1, 0, 0, 0)
+                        double3 xformOp:scale = (0.04370556188081228, 0.09055758625821225, 0.4661416932215237)
+                        double3 xformOp:translate = (-3.4846319876831715, -0.5595899943773921, -1.6688782380197793)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    over "RevoluteJoint"
+                    {
+                        float drive:angular:physics:damping = 0.1
+                        float physics:lowerLimit = 0
+                        float physics:upperLimit = 90
+                    }
+
+                    over "visual"
+                    {
+                        quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (2.1510571102112408e-16, -2.220446049250313e-16, -8.881784197001252e-16)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+
+                    over "visual_01"
+                    {
+                        quatf xformOp:orient = (0.70710677, 0, 0.70710677, 0)
+                        float3 xformOp:scale = (1, 1, 1)
+                        double3 xformOp:translate = (2.1510571102112408e-16, -2.220446049250313e-16, -8.881784197001252e-16)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+                    }
+                }
+            }
+        }
+
+        def "benchmark_roller_shutter_000_02" (
+            prepend payload = @/geniesim_assets/objects/benchmark/roller_shutter/benchmark_roller_shutter_000/WbcKeyLocked.usda@
+        )
+        {
+            custom rel keyLock:keyBody = </World/Objects/benchmark_key_001/entity>
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.525997105339463, -0.8375441986501835, 1.9300000000000002)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        def "benchmark_key_001" (
+            prepend payload = @/geniesim_assets/objects/benchmark/key/benchmark_key_001/Aligned.usda@
+        )
+        {
+            quatf xformOp:orient = (0.4008453, -0.5825144, 0.4008453, 0.5825144)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (-1.4786730490020892, -1.1636606544819648, 0.0104849389)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            over "entity"
+            {
+                over "body"
+                {
+                    over "collider_00" (
+                        prepend apiSchemas = ["PhysxConvexHullCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "convexHull"
+                        custom float physxCollision:contactOffset = 0.0001
+                        custom float physxCollision:restOffset = 0
+                    }
+
+                    over "collider_001" (
+                        prepend apiSchemas = ["PhysxConvexHullCollisionAPI"]
+                    )
+                    {
+                        uniform token physics:approximation = "convexHull"
+                        custom float physxCollision:contactOffset = 0.0001
+                        custom float physxCollision:restOffset = 0
+                    }
+                }
+
+                over "PhysicsMaterial"
+                {
+                    float physics:dynamicFriction = 0.3
+                    float physics:staticFriction = 0.3
+                }
+            }
+        }
+    }
+}

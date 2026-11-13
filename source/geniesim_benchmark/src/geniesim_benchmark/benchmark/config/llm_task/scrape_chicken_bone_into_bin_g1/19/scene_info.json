@@ -1,13 +1,13 @@
 {
-  "scene_id": 19,
-  "seed": 1488730468,
+  "scene_id": 29,
+  "seed": 3318451450,
   "layout": {
     "table_000": {
       "usd": "table_000",
       "xyz": [
-        0.12571242596671522,
-        0.0018224080184870083,
-        0.41752820652500705
+        0.06161096193008035,
+        0.051198769973501125,
+        0.5012739611059119
       ],
       "xyzw": [
         0.0,
@@ -24,7 +24,7 @@
         "workspace_table"
       ],
       "description": {},
-      "asset": "../../../assets/objects/edited/table_000/Aligned.usda",
+      "asset": "/sim_assets/objects/edited/table_000/Aligned.usda",
       "physics": {
         "kinematic": true,
         "mass_kg": 200.0
@@ -38,15 +38,15 @@
     "scraper_000": {
       "usd": "benchmark_scraper_000",
       "xyz": [
-        -0.02558637543853779,
-        -0.15739515180248168,
-        0.7873380894530196
+        -0.13306839628799907,
+        -0.24604967715844278,
+        0.8710838440821403
       ],
       "xyzw": [
-        -0.004341748856507696,
-        0.0024115927219875524,
-        0.8746427582401507,
-        0.4847425903461254
+        -0.00462672003265479,
+        0.0018055525638591963,
+        0.9319059877338739,
+        0.36266591164242523
       ],
       "tags": [
         "root_scene",
@@ -57,7 +57,7 @@
         "on_table"
       ],
       "description": {},
-      "asset": "../../../assets/objects/benchmark/scraper/benchmark_scraper_000/Aligned.usda",
+      "asset": "/sim_assets/objects/benchmark/scraper/benchmark_scraper_000/Aligned.usda",
       "physics": {
         "kinematic": false,
         "mass_kg": 0.05
@@ -71,15 +71,15 @@
     "trash_bone_000": {
       "usd": "benchmark_trash_014",
       "xyz": [
-        0.13716169768392011,
-        0.19497828125811142,
-        0.7966745257651074
+        -0.03396846575338586,
+        0.2895174287127935,
+        0.8767591223826816
       ],
       "xyzw": [
-        0.09561821982667457,
-        0.015289906975863687,
-        0.9869735540371184,
-        0.12847792967349106
+        0.1604024261317577,
+        0.9821871248253518,
+        -0.02039832230018178,
+        -0.09572576437768884
       ],
       "tags": [
         "root_scene",
@@ -88,10 +88,11 @@
       "keywords": [
         "trash",
         "chicken_bone",
-        "on_table"
+        "on_table",
+        "garbage"
       ],
       "description": {},
-      "asset": "../../../assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
+      "asset": "/sim_assets/objects/benchmark/trash/benchmark_trash_014/Aligned.usda",
       "physics": {
         "kinematic": false,
         "mass_kg": 0.01
@@ -105,15 +106,15 @@
     "trash_can_000": {
       "usd": "benchmark_trash_can_017",
       "xyz": [
-        -0.2555701858332848,
-        0.17046795301071044,
-        0.6822713069045031
+        -0.30385368328126483,
+        0.22646166988159094,
+        0.7388004266742709
       ],
       "xyzw": [
-        7.2441173060155556e-09,
-        -1.0139737582903707e-07,
+        7.244117306015548e-09,
+        -1.0139737588862061e-07,
         0.9999999999999944,
-        2.831737872538785e-08
+        2.8317378602923163e-08
       ],
       "tags": [
         "root_scene",
@@ -126,19 +127,45 @@
         "kinematic"
       ],
       "description": {},
-      "asset": "../../../assets/objects/benchmark/trash_can/benchmark_trash_can_017/Aligned.usda",
+      "asset": "/sim_assets/objects/benchmark/trash_can/benchmark_trash_can_017/Aligned.usda",
       "physics": {
         "kinematic": true,
         "mass_kg": null
       },
-      "placement_contract": {
-        "allowed_translation_axes": [
-          "y"
-        ],
-        "preserve_x_z_orientation_scale": true,
-        "kinematic": true,
-        "full_outer_mesh_within_table_lateral_bounds": true,
-        "minimum_side_margin_m": 0.01
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "trash_apple_000": {
+      "usd": "benchmark_trash_029",
+      "xyz": [
+        0.09775268730427446,
+        0.1041781904567455,
+        0.8980392129528617
+      ],
+      "xyzw": [
+        0.4482650686196026,
+        0.5629139303526113,
+        -0.14973188122037145,
+        0.6780609847326765
+      ],
+      "tags": [
+        "root_scene",
+        "trash_apple_000"
+      ],
+      "keywords": [
+        "trash",
+        "garbage",
+        "apple_core",
+        "on_table"
+      ],
+      "description": {},
+      "asset": "/sim_assets/objects/benchmark/trash/benchmark_trash_029/Aligned.usda",
+      "physics": {
+        "kinematic": false,
+        "mass_kg": 0.01
       },
       "scale": [
         1.0,
@@ -147,67 +174,28 @@
       ]
     }
   },
-  "relations": {
-    "graph": {
-      "directed": true,
-      "multigraph": false,
-      "graph": {},
-      "nodes": [
-        {
-          "id": "root_scene"
-        },
-        {
-          "id": "table_000"
-        },
-        {
-          "id": "scraper_000"
-        },
-        {
-          "id": "trash_bone_000"
-        },
-        {
-          "id": "trash_can_000"
-        }
-      ],
-      "links": [
-        {
-          "source": "root_scene",
-          "target": "table_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "scraper_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_bone_000"
-        },
-        {
-          "source": "root_scene",
-          "target": "trash_can_000"
-        }
-      ]
-    }
-  },
+  "relations": [],
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately",
   "benchmark_generalization": {
     "method": "template_neighborhood_independent_yaw_and_trash_xy",
-    "bin_abs_table_y_m": 0.16875014063222596,
-    "handle_outward_deg": 57.992497563749836,
+    "bin_abs_table_y_m": 0.1753674955480917,
+    "handle_outward_deg": 42.52906493738256,
     "trash": [
-      "trash_bone_000"
+      "trash_bone_000",
+      "trash_apple_000"
     ],
     "tool_xy_jitter_bound_m": 0.055,
     "trash_xy_jitter_bound_m": [
       0.035,
       0.025
     ],
-    "instance_id": 19,
-    "source_instance": 8,
-    "source_scene_sha256": "10cbdc13e50105b05ef95c698f950917b0b23e19846aa33e917deb48bc2bc36e",
-    "seed": 1488730468,
-    "visual_pool_index": 24,
+    "instance_id": 29,
+    "source_instance": 6,
+    "source_scene_sha256": "f6a78bb6ecd420c902eeee3a60316c27fd3640d5d4e418eb76bf28ecd31d1958",
+    "seed": 3318451450,
+    "visual_pool_index": 175,
     "selection": "maximin_against_all_old_and_selected_new",
-    "selection_feature_distance": 1.9515395273901601,
+    "selection_feature_distance": 1.6808918779735629,
     "source_slot": {},
     "distribution_adjustment": {
       "tool_xy_jitter_m": 0.055,
@@ -226,6 +214,5 @@
     },
     "native_preview_acceptance": "pending; feature distance is not visual acceptance",
     "validation_level": "authored_geometry; native IK and physical success unverified"
-  },
-  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
+  }
 }

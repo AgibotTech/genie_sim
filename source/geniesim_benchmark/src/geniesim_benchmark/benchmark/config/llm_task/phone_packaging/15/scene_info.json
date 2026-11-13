@@ -1,12 +1,11 @@
 {
-  "scene_id": "phone_packaging_15",
-  "task_name": "phone_packaging",
-  "seed": 2026103415,
+  "scene_id": 25,
+  "seed": 20266130,
   "layout": {
     "benchmark_phone_000": {
       "xyz": [
-        0.8978842811730711,
-        -0.07764901401162223,
+        0.9103234394586758,
+        -0.07804694314588281,
         0.7651106508
       ],
       "xyzw": [
@@ -15,13 +14,12 @@
         0.9966130256652832,
         -0.08223426342010498
       ],
-      "usd": "benchmark_phone_000",
-      "asset_path": "objects/benchmark/phone/benchmark_phone_000/Aligned.usda"
+      "usd": "benchmark_phone_000"
     },
     "benchmark_packaging_box_000": {
       "xyz": [
-        1.073856092173071,
-        -0.12248551351162222,
+        1.0862952504586758,
+        -0.1228834426458828,
         0.7696090169
       ],
       "xyzw": [
@@ -30,13 +28,12 @@
         0.02701064944267273,
         0.9996351599693298
       ],
-      "usd": "benchmark_packaging_box_000",
-      "asset_path": "objects/benchmark/packaging_box/benchmark_packaging_box_000/Aligned.usda"
+      "usd": "benchmark_packaging_box_000"
     },
     "benchmark_packaging_box_001": {
       "xyz": [
-        0.8884293352730711,
-        0.14111758758837775,
+        0.9008684935586758,
+        0.14071965845411719,
         0.7868968122
       ],
       "xyzw": [
@@ -45,13 +42,12 @@
         0.9996823072433472,
         -0.02520517259836197
       ],
-      "usd": "benchmark_packaging_box_001",
-      "asset_path": "objects/benchmark/packaging_box/benchmark_packaging_box_001/Aligned.usda"
+      "usd": "benchmark_packaging_box_001"
     },
     "benchmark_packaging_box_002": {
       "xyz": [
-        1.060292037173071,
-        0.11866176498837777,
+        1.0727311954586758,
+        0.11826383585411719,
         0.7922351308
       ],
       "xyzw": [
@@ -60,44 +56,36 @@
         -0.05486404523253441,
         0.9984938502311707
       ],
-      "usd": "benchmark_packaging_box_002",
-      "asset_path": "objects/benchmark/packaging_box/benchmark_packaging_box_002/Aligned.usda"
+      "usd": "benchmark_packaging_box_002"
     }
   },
   "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 15,
+    "instance_id": 25,
     "source_instance": 5,
-    "source_scene_sha256": "7e26e87a96e30b957a85870309eb88c839f806500f6cb2f1cc8eba3f4fcf8951",
-    "source_scene_info_sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
-    "source_problem_sha256": "7ae6406a9eb3770a7343dde131675a38ccc6da9d01f5558a253097f5f9e90d61",
-    "seed": 2026103415,
-    "world_xy_translation_m": [
-      0.006124524173071126,
-      -0.00032895321162223264
+    "source_hashes": {
+      "scene.usda": "7e26e87a96e30b957a85870309eb88c839f806500f6cb2f1cc8eba3f4fcf8951",
+      "instructions.json": "6360352bfc4cc871c65d620a44f79ed985522fde8164ae5f62f34936a43bb25e",
+      "scene_info.json": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "problems.json": "7ae6406a9eb3770a7343dde131675a38ccc6da9d01f5558a253097f5f9e90d61"
+    },
+    "requested_source_instance": 5,
+    "world_translation_m": [
+      0.018563682458675814,
+      -0.0007268823458828032,
+      0.0
     ],
-    "group_prims": [
+    "moving_prims": [
       "benchmark_phone_000",
       "benchmark_packaging_box_000",
       "benchmark_packaging_box_001",
       "benchmark_packaging_box_002"
     ],
     "fixed_prims": [],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.012445521541913048,
+    "seed": 20266105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.006133351984190141,
-    "table_support": null,
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

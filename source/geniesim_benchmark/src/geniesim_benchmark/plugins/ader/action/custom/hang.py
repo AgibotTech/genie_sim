@@ -45,7 +45,7 @@ class Hang(EvaluateAction):
         min_height,
         stable_checks=5,
         tolerance=0.01,
-        open_ratio=0.5,
+        open_ratio=0.9,
         near_dist=0.2,
     ):
         super().__init__(env)

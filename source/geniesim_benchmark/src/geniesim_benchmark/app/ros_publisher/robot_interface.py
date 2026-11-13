@@ -9,13 +9,12 @@ logger = Logger()  # Create singleton instance
 from omni.usd import get_world_transform_matrix
 import omni.replicator.core as rep
 from isaacsim.core.prims import SingleArticulation
-from isaacsim.core.utils.prims import get_prim_object_type
 from geniesim_benchmark.utils.usd_utils import *
 
 import numpy as np
 import time
 
-from pxr import UsdPhysics, Usd
+from pxr import UsdPhysics, Usd, UsdGeom
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import JointState, Image
@@ -118,8 +117,6 @@ class RobotInterface:
         self._camera_sample_state = {}
         self.parameters = {}
 
-        self.articulated_objs = []
-
         self._articulation_dof_names = []
         self._articulation_pos = None
         self._articulation_vel = None
@@ -140,7 +137,6 @@ class RobotInterface:
         self.all_joints = []
         self._static_tf_tree = []
         self._dynamic_tf_tree = []
-        self.articulat_objects = {}
 
         # --- ROS TF / joint_states publishing (teleop) ---
         self._sec = 0
@@ -153,6 +149,10 @@ class RobotInterface:
         self._dynamic_tfs_prebuilt = []  # list[TransformStamped]
         self.static_broadcaster = None
         self.dynamic_broadcaster = None
+        self._object_tf_tree = []
+        self._object_tfs = []
+        self._object_joint_publishers = {}
+        self._object_articulations = {}
 
         # --- ROS RGB camera publishing (teleop) ---
         # Image msgs are pre-built in register_camera() and published as-is in
@@ -218,10 +218,6 @@ class RobotInterface:
         else:
             self.joint_indices_ee = np.array([])
 
-    def register_articulated_obj(self, articulated_objs):
-        for _prim_path, articulation in articulated_objs.items():
-            self.articulated_objs.append(articulation)
-
     def register_robot_tf(self, stage, robot_ns):
         robot_ns = robot_ns.replace("/", "")
         if not self._articulation:
@@ -235,7 +231,6 @@ class RobotInterface:
 
         self._static_tf_tree = []
         self._dynamic_tf_tree = []
-        self.articulat_objects = {}
         self.build_tf_tree(stage, stage.GetPrimAtPath(f"/{robot_ns}/base_link"), None, None)
 
         def _build_tf_list(tf_tree):
@@ -272,22 +267,6 @@ class RobotInterface:
             if _cam_prim.IsValid():
                 self._dynamic_tf_tree.append((_cam_prim, None))
 
-        for prim in stage.Traverse():
-            prim_path = str(prim.GetPrimPath())
-            prim_type = get_prim_object_type(prim_path)
-            if prim_type == "articulation" and prim_path.startswith("/World/Objects"):
-                self.articulat_objects[prim_path] = SingleArticulation(prim_path)
-                logger.info(f"register articulated prim DOF={self.articulat_objects[prim_path].num_dof}")
-                for child in Usd.PrimRange(prim):
-                    if child.HasAPI(UsdPhysics.RigidBodyAPI):
-                        child_path = str(child.GetPath())
-                        already = any(str(p.GetPath()) == child_path for p, _ in self._dynamic_tf_tree if p)
-                        if not already:
-                            self._dynamic_tf_tree.append((child, None))
-        logger.info(f"record {len(self.articulat_objects)} articulated prim(s) TF")
-
-        self.register_articulated_obj(self.articulat_objects)
-
         # Build prebuilt TF messages and broadcast the static tree once.
         self._static_tfs_prebuilt = _build_tf_list(self._static_tf_tree)
         self._dynamic_tfs_prebuilt = _build_tf_list(self._dynamic_tf_tree)
@@ -302,8 +281,59 @@ class RobotInterface:
             self.static_broadcaster.sendTransform(self._static_tfs_prebuilt)
             self._enable_ros_pub = True
 
-    def register_obj_tf(self, object_prim):
-        self._dynamic_tf_tree.append((object_prim, None))
+    def register_obj_tf(self, object_prim, name):
+        tf = TransformStamped()
+        tf.header.frame_id = "world"
+        tf.child_frame_id = name
+        self._object_tf_tree.append((object_prim, None))
+        self._object_tfs.append(tf)
+
+    def register_scene_objects(self, stage, extra_prim_paths=()):
+        for publisher in self._object_joint_publishers.values():
+            self._node.destroy_publisher(publisher)
+        self._object_tf_tree = []
+        self._object_tfs = []
+        self._object_joint_publishers = {}
+        self._object_articulations = {}
+        names = {"object_prims": [], "articulated_object_prims": []}
+        if not self._ros_pub_allowed:
+            return names
+
+        roots = {}
+        for path in ("/World/objects", "/World/Objects"):
+            container = stage.GetPrimAtPath(path)
+            if container:
+                roots.update((str(prim.GetPath()), prim) for prim in container.GetChildren())
+        for path in extra_prim_paths:
+            prim = stage.GetPrimAtPath(path)
+            if prim:
+                roots[str(prim.GetPath())] = prim
+
+        frame_names = set()
+        for path, root in roots.items():
+            if not root.IsA(UsdGeom.Xformable):
+                continue
+            name = root.GetName()
+            if name in frame_names:
+                raise ValueError(f"Duplicate scene object frame: {name}")
+            frame_names.add(name)
+            entity = root.GetChild("entity") or root
+            self.register_obj_tf(entity, name)
+            names["object_prims"].append(path)
+            articulated = [prim for prim in Usd.PrimRange(root) if prim.HasAPI(UsdPhysics.ArticulationRootAPI)]
+            for prim in articulated:
+                object_name = name
+                if len(articulated) > 1:
+                    relative = str(prim.GetPath().MakeRelativePath(root.GetPath())).replace("/", "__")
+                    object_name = f"{name}__{relative}"
+                articulation = SingleArticulation(str(prim.GetPath()))
+                articulation.initialize()
+                self._object_articulations[object_name] = articulation
+                self._object_joint_publishers[object_name] = self._ensure_node().create_publisher(
+                    JointState, f"/articulated/{object_name}", 1
+                )
+                names["articulated_object_prims"].append(object_name)
+        return names
 
     def register_perception(self, stage, robot_ns):
         # No-op stub: perception sensors used to be wired through ROS topics.
@@ -417,7 +447,9 @@ class RobotInterface:
             np.copyto(self._dof_eff_cache, _as_np_f64(self._articulation_eff))
 
         # dynamic TF poses (teleop only — list is empty unless register_robot_tf ran)
-        for tf, (prim, parent) in zip(self._dynamic_tfs_prebuilt, self._dynamic_tf_tree):
+        for tf, (prim, parent) in zip(
+            self._dynamic_tfs_prebuilt + self._object_tfs, self._dynamic_tf_tree + self._object_tf_tree
+        ):
             if not prim:
                 continue
             tf.header.stamp = self._header.stamp
@@ -453,9 +485,9 @@ class RobotInterface:
                 np.copyto(buf, img)
 
     def pub_tf(self):
-        if not self._dynamic_tfs_prebuilt or self.dynamic_broadcaster is None:
+        if self.dynamic_broadcaster is None:
             return
-        self.dynamic_broadcaster.sendTransform(self._dynamic_tfs_prebuilt)
+        self.dynamic_broadcaster.sendTransform(self._dynamic_tfs_prebuilt + self._object_tfs)
 
     def pub_joint_state(self):
         if self.pub_js is None or self._dof_pos_cache is None:
@@ -466,6 +498,14 @@ class RobotInterface:
         msg.velocity = self._dof_vel_cache.tolist()
         msg.effort = self._dof_eff_cache.tolist()
         self.pub_js.publish(msg)
+        for name, articulation in self._object_articulations.items():
+            state = JointState()
+            state.header.stamp = self._header.stamp
+            state.name = list(articulation.dof_names)
+            state.position = _as_np_f64(articulation.get_joint_positions()).tolist()
+            state.velocity = _as_np_f64(articulation.get_joint_velocities()).tolist()
+            state.effort = _as_np_f64(articulation.get_measured_joint_efforts()).tolist()
+            self._object_joint_publishers[name].publish(state)
 
     def pub_camera(self, camera_id):
         # Publish the cached RGBA frame as a sensor_msgs/Image. _img_data_cache

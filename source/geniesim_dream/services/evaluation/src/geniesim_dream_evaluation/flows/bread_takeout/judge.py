@@ -1,6 +1,6 @@
 """Judge one WM video with dream_bread_takeout_release.
 
-Stage1 -> Stage2 -> Stage3 -> bread resolver. Stage4 disabled in V2.
+Stage1 -> Stage2 -> Stage3 -> bread resolver. Stage4 is disabled.
 """
 
 from __future__ import annotations

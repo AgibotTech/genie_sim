@@ -17,6 +17,8 @@ import time
 
 import numpy as np
 
+from geniesim_benchmark.hdr_background import select_hdr
+
 from .render_protocol import send_message, receive_message
 from .viewer import ViewerClosed
 from .robot_render import native_to_usd_joint
@@ -39,6 +41,15 @@ def assets_directory():
     if not root.is_dir():
         raise RuntimeError("Public asset directory is missing: " + str(root))
     return root
+
+
+def scene_background(env, assets_root=None):
+    """Sample reproducibly for this benchmark seed, layout and episode."""
+    scene = env.current_scene
+    episode = getattr(env, "hdr_episode", 0)
+    seed = getattr(env, "hdr_seed", 0)
+    identity = f"rubik:{scene.identifier}:{scene.sha256}:episode:{episode}"
+    return select_hdr(assets_root or assets_directory(), identity, seed=seed)
 
 
 def export_render_model(env, directory):
@@ -75,17 +86,11 @@ def export_render_model(env, directory):
     robot_usd = assets_root / robot_config["robot"]["robot_usd"]
     if not robot_usd.is_file():
         raise RuntimeError("Standard G2_crsB_wuji USD asset is missing: " + str(robot_usd))
-    environment_usd = (
-        assets_root / "background/sphere_hdr_backgrounds/sphere_hdr_shucaichang/background.usda"
-    )
-    hdr_texture = assets_root / "background/common/HDR/shucaichang.hdr"
-    if not environment_usd.is_file() or not hdr_texture.is_file():
-        raise RuntimeError("Collection-matched shucaichang HDR background assets are missing")
+    background = scene_background(env, assets_root)
     scene = {
-        "environment_usd": str(environment_usd),
-        "environment_usd_sha256": hashlib.sha256(environment_usd.read_bytes()).hexdigest(),
-        "hdr_texture": str(hdr_texture),
-        "hdr_texture_sha256": hashlib.sha256(hdr_texture.read_bytes()).hexdigest(),
+        "hdr_background": background,
+        "hdr_texture": background["texture_file"],
+        "hdr_texture_sha256": background["sha256"],
         "robot_usd": str(robot_usd),
         "robot_usd_sha256": hashlib.sha256(robot_usd.read_bytes()).hexdigest(),
         "required_robot_joints": [native_to_usd_joint(name) for name in env.action_contract()["joint_names"]],
@@ -157,6 +162,13 @@ class IsaacRenderer:
 
     def snapshot(self, capture=False):
         data = self.env.data
+        scene = self.env.current_scene
+        identity = (scene.identifier, scene.sha256, getattr(self.env, "hdr_seed", 0),
+                    getattr(self.env, "hdr_episode", 0))
+        if getattr(self, "_background_scene", None) != identity:
+            self.hdr_background = scene_background(self.env)
+            self._background_scene = identity
+            (self.directory / "current-background.json").write_text(json.dumps(self.hdr_background, indent=2))
         joint_positions = {
             key: float(np.deg2rad(value)) for key, value in self.env.initial_joints["init_joint_pos"].items()
         }
@@ -187,6 +199,7 @@ class IsaacRenderer:
             "method": "state",
             "capture": capture,
             "simulation_time": float(data.time),
+            "hdr_background": self.hdr_background,
             "geom_positions": np.asarray(data.geom_xpos[self.ids], dtype=np.float64).tobytes(),
             "geom_rotations": np.asarray(data.geom_xmat[self.ids], dtype=np.float64).tobytes(),
             "cube_positions": np.asarray(data.xpos[self.cube_bodies], dtype=np.float64).tobytes(),

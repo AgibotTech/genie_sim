@@ -86,9 +86,12 @@ def create_material_plan(config, scene, assets_root, *, episode_index, episode_i
             info[target] = candidates
         selection = dict(material)
         if material.get("selection") == "enumerate":
-            if episode_index >= len(plan["allowed_materials"]):
+            material_index = episode_index
+            if config.get("libuipc", {}).get("instance_base_xy_offsets") is not None:
+                material_index %= len(plan["allowed_materials"])
+            if material_index >= len(plan["allowed_materials"]):
                 raise ValueError("material instance index exceeds allowed_materials")
-            selection["allowed_materials"] = [plan["allowed_materials"][episode_index]]
+            selection["allowed_materials"] = [plan["allowed_materials"][material_index]]
         plan["bindings"] = select_materials(info, selection, rng=np.random.RandomState(derived))
     plan["plan_sha256"] = hashlib.sha256(json.dumps(plan, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest()
     return plan

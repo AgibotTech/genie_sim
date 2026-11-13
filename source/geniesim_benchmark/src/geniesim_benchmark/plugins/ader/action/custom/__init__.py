@@ -12,6 +12,7 @@ _MODULES = {
     "InBBox": "inbbox",
     "PickUpOnGripper": "pickup_on_gripper",
     "Ontop": "ontop",
+    "OnTopCount": "ontop_count",
     "FluidInside": "fluid_inside",
     "Onfloor": "onfloor",
     "Cover": "cover",

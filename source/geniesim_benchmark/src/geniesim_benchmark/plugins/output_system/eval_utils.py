@@ -2,6 +2,8 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
+from geniesim_benchmark.plugins.output_system.checkpoint import atomic_write_json
+
 from enum import Enum
 import uuid
 import re
@@ -21,10 +23,8 @@ from geniesim_benchmark.plugins.output_system.score_groups import (
 )
 from geniesim_benchmark.plugins.output_system.weighted_scoring import (
     WeightProfile,
-    add_weighted_score,
     canonical_score_layout,
     get_weight_profile,
-    weighted_score_breakdown,
 )
 from geniesim_benchmark.plugins.output_system.policy_budget import (
     add_policy_budget_scores,
@@ -197,14 +197,10 @@ TASK_STEPS = {
     "open_the_door": ["ChassisAtTarget", "PushPull", "ChassisAtTarget", "PushPull"],
     "match_and_pick_from_conveyor": ["PickUpOnGripper", "RobotNearObject", "InBBox"],
     "put_the_plates_on_the_shelf": ["PickUpOnGripper", "PickUpOnGripper", "RobotNearObject", "InBBox", "InBBox"],
+    "put_the_plates_on_the_shelf_slot": ["PickUpOnGripper", "PickUpOnGripper", "RobotNearObject", "MixedRules"],
     "open_the_roller_shutter": ["RobotNearObject", "PickUpOnGripper", "PushPull", "PushPull", "ChassisAtTarget"],
-    # ONLY the wipe is scored. Picking the eraser up and walking to the board
-    # are prerequisites, not deliverables: their checkers still run and still
-    # gate the episode (and the Onfloor guard still aborts it), but they are
-    # deliberately absent from this layout, so score_layout_steps skips their
-    # rows and the episode score is exactly the erased fraction, 0..1.
-    # E2E therefore requires a complete wipe (scores[-1] == 1.0).
-    "clean_the_blackboard": ["Erased"],
+    # Pickup, approach and erasure share the task-wide floor/timeout guards.
+    "clean_the_blackboard": ["PickUpOnGripper", "RobotNearObject", "Erased"],
     # Load all four parcels onto the cart (gate 1: any two on; gate 2: all four),
     # push the cart to the sorting tables, then unload the two yellow parcels onto
     # either left table and the two white ones onto either right table. The two
@@ -227,6 +223,10 @@ TASK_STEPS = {
         "InBBox",  # (4) yellow parcels on a left table
         "InBBox",
         "InBBox",  #     white parcels on a right table
+    ],
+    "transport_cartons_to_table_wbc_milestones": [
+        "OnTopCount", "OnTopCount", "InBBox",
+        "InBBox", "InBBox", "InBBox", "InBBox",
     ],
     # New instructions and geometry use separate foreground identities.
     "stack_bowls_wuji": ["Stack"],
@@ -344,6 +344,9 @@ class TaskEvaluation:
         self.model_type = ""
         self.task_instruction = ""
         self.duration = 0.0
+        self.episode_finished = False
+        self.terminal_result = None
+        self.episode_coord = None
         self.instruction_mode = instruction_mode
         self.score_layout_name = (
             canonical_score_layout(score_layout_name) if isinstance(score_layout_name, str) else score_layout_name
@@ -406,7 +409,7 @@ class TaskEvaluation:
             for key in ("subtask_step_idx", "subtask_role"):
                 if key in item:
                     progress[key] = item[key]
-            for key in ("GOAL_COMPLETE", "CARRY_DISTANCE", "POLICY_BUDGET"):
+            for key in ("GOAL_COMPLETE", "CARRY_DISTANCE", "POLICY_BUDGET", "ONTOP_COUNT"):
                 if key in (item.get("progress") or {}):
                     progress["progress"][key] = deepcopy(item["progress"][key])
             all_progress.append(progress)
@@ -446,7 +449,6 @@ class TaskEvaluation:
             self.result["scores"] = {"STEPS": scores, "E2E": int(complete)}
         else:
             logger.warning(f"No substeps defined for task {self.task_name}")
-        add_weighted_score(self.result, self.result.get("scores", {}).get("STEPS", []), self.weight_profile)
         add_policy_budget_scores(self.result, self.result.get("scores", {}).get("STEPS", []), self.weight_profile)
 
     def assemble_result(self, info):
@@ -469,6 +471,8 @@ class TaskEvaluation:
             "model_type": self.model_type,
             "task_instruction": self.task_instruction,
         }
+        if self.episode_coord is not None:
+            dir["episode_coord"] = dict(self.episode_coord)
         dir["sub_task_name"] = self.sub_task_name
         dir["instruction_mode"] = self.instruction_mode
         if self.score_layout_name is not None:
@@ -518,11 +522,8 @@ def get_statistics(evaluate_results, steps, weight_profile: WeightProfile | None
     task_step_scores = {}
     # Stores the number of executions for each task
     task_counts = {}
-    weighted_totals = {}
-    weighted_process_total = 0.0
-    weighted_bonus_total = 0.0
-    weighted_complete_count = 0
     policy_budget_results = []
+    policy_by_instruction = {}
 
     # Collect all scores
     for item in evaluate_results:
@@ -541,16 +542,7 @@ def get_statistics(evaluate_results, steps, weight_profile: WeightProfile | None
         policy_budget = policy_budget_breakdown(item["result"], scores, weight_profile)
         if policy_budget is not None:
             policy_budget_results.append(policy_budget)
-        if weight_profile is not None:
-            breakdown = weighted_score_breakdown(
-                scores,
-                weight_profile,
-                item["result"].get("scores", {}).get("E2E"),
-            )
-            weighted_totals[task_key] = weighted_totals.get(task_key, 0.0) + breakdown.total
-            weighted_process_total += breakdown.process
-            weighted_bonus_total += breakdown.completion_bonus
-            weighted_complete_count += int(breakdown.complete)
+            policy_by_instruction.setdefault(task_key, []).append(policy_budget)
         for score_item in scores:
             step_idx = score_item["step"]
             score_value = score_item["score"]
@@ -608,20 +600,6 @@ def get_statistics(evaluate_results, steps, weight_profile: WeightProfile | None
         statistics["policy_dispatch_count"] = sum(dispatch_counts)
         statistics["average_policy_dispatch_count"] = round(sum(dispatch_counts) / len(dispatch_counts), 4)
         statistics["policy_dispatch_episodes"] = len(dispatch_counts)
-    # Compute from unrounded episode scores, rather than rounded per-step means.
-    if weight_profile is not None:
-        statistics["weighted"] = round(sum(weighted_totals.values()) / total_episodes, 4) if total_episodes else 0.0
-        statistics["weighted_by_instruction"] = {
-            key: round(total / task_counts[key], 4) for key, total in weighted_totals.items()
-        }
-        statistics["weighted_scoring"] = weight_profile.to_dict()
-        for key, total in (
-            ("weighted_process", weighted_process_total),
-            ("weighted_completion_bonus", weighted_bonus_total),
-            ("weighted_completion_rate", weighted_complete_count),
-        ):
-            statistics[key] = round(total / total_episodes, 4) if total_episodes else 0.0
-
     statistics["episode_counts"] = episode_counts(evaluate_results)
     statistics["run_complete"] = statistics["episode_counts"]["invalid"] == 0
     statistics["timecost"] = time_cost
@@ -629,15 +607,23 @@ def get_statistics(evaluate_results, steps, weight_profile: WeightProfile | None
     if policy_budget_results:
         if any(b["scoring"] != policy_budget_results[0]["scoring"] for b in policy_budget_results[1:]):
             raise ValueError("Cannot aggregate different policy budget configurations")
-        count = len(policy_budget_results)
-        statistics["policy_budget_episodes"] = count
-        for key, source in (
-            ("policy_budget_weighted", "total"),
-            ("policy_budget_process", "process"),
-            ("policy_budget_completion_bonus", "completion_bonus"),
-        ):
-            statistics[key] = round(sum(b[source] for b in policy_budget_results) / count, 4)
-        statistics["policy_budget_scoring"] = policy_budget_results[0]["scoring"]
+    count = len(policy_budget_results)
+    statistics["policy_budget_episodes"] = count
+    for key, source in (
+        ("policy_budget_weighted", "total"),
+        ("policy_budget_process", "process"),
+        ("policy_budget_completion_bonus", "completion_bonus"),
+        ("policy_budget_completion_rate", "bonus_eligible"),
+    ):
+        statistics[key] = round(sum(b[source] for b in policy_budget_results) / count, 4) if count else None
+    statistics["policy_budget_by_instruction"] = {
+        key: round(sum(b["total"] for b in policy_by_instruction[key]) / len(policy_by_instruction[key]), 4)
+        if key in policy_by_instruction else None
+        for key in task_counts
+    }
+    statistics["weighted_scoring_metric"] = "POLICY_BUDGET_WEIGHTED"
+    statistics["weighted_scoring"] = weight_profile.to_dict() if weight_profile is not None else None
+    statistics["policy_budget_scoring"] = policy_budget_results[0]["scoring"] if count else None
 
     return statistics
 
@@ -650,6 +636,7 @@ class EvaluationSummary:
         self.out_dir = out_dir
         self.file_path = generate_eval_file_path(self.out_dir, "evaluate_ret")
         self.results = []
+        self.checkpoint_progress = None
         self.current_eval: TaskEvaluation = None
         self.task_name = task_name
         self.sub_task_name = sub_task_name
@@ -671,6 +658,19 @@ class EvaluationSummary:
         self.score_layout_name = eval.score_layout_name
         self.weight_profile = eval.weight_profile
         self.current_eval = eval
+
+    def restore_results(self, results):
+        """Restore scoring context before combining committed and new episodes."""
+        self.results = []
+        for row in results:
+            evaluation = TaskEvaluation(
+                sub_task_name=row["sub_task_name"],
+                instruction_mode=row.get("instruction_mode", "full"),
+                score_layout_name=row.get("score_layout_name"),
+            )
+            self.update_current(evaluation)
+            self.results.append(deepcopy(row))
+        self.current_eval = None
 
     def make_temp_statistic(self):
         temp_results = list(self.results) + [self.current_eval.to_dir()]
@@ -708,8 +708,15 @@ class EvaluationSummary:
     def dump_eval_result(self):
         os.makedirs(self.out_dir, exist_ok=True)
         logger.info(f"Evaluation result file generated at {self.file_path}")
-        with open(self.file_path, "w+") as f:
-            general_results = {}
-            general_results["details"] = self.results
-            general_results["statistics"] = get_statistics(self.results, self.sub_steps, self.weight_profile)
-            json.dump(general_results, f, indent=4)
+        general_results = {
+            "details": self.results,
+            "statistics": get_statistics(self.results, self.sub_steps, self.weight_profile),
+        }
+        if self.checkpoint_progress is not None:
+            general_results["checkpoint"] = dict(self.checkpoint_progress)
+            general_results["statistics"]["run_complete"] = (
+                general_results["statistics"]["run_complete"]
+                and self.checkpoint_progress["finished"]
+                and self.checkpoint_progress["skipped"] == 0
+            )
+        atomic_write_json(self.file_path, general_results)

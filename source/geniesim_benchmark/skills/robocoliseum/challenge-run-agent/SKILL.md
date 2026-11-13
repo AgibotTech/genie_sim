@@ -1,6 +1,6 @@
 ---
 name: challenge-run-agent
-description: Use when the contestant wants to launch the inference Agent that connects to the Simulation gateway via WebSocket. Wraps the inference repo's ./scripts/tunnel.sh and scales to PARALLELISM processes. This is side-effecting (consumes GPUs and a parallelism slot) — confirm before launching.
+description: Use when the contestant wants to launch the inference Agent that connects to the Simulation gateway via WebSocket. Wraps the inference repo's ./scripts/tunnel.sh and scales to PARALLELISM processes. This is side-effecting (consumes GPUs and the job's parallelism slots) — confirm before launching.
 ---
 
 # challenge-run-agent — Launch the inference Agent
@@ -13,10 +13,12 @@ The Agent is the contestant's long-running process that:
 
 ## Which client to run
 
+If the user already has a running inference service that works with the simulator and wants to reuse it via one or more tunnel routes, use [challenge-route-inference](../challenge-route-inference/SKILL.md).
+That relay workflow does not load a model per route and supports several routes sharing an existing service; the GPU-per-model-process rules below apply to the model-loading `tunnel.sh` path.
+
 **There is no official published Simulation SDK package.** Do not tell the user to `pip install`
 one, and do not point them at any client inside the platform's own repository — the platform repo
-ships only internal test clients, which are not supported for contest use and can change without
-notice.
+ships only internal test clients, which are not supported for contest use.
 
 Exactly two supported paths:
 
@@ -33,11 +35,11 @@ command changes.
 
 | Variable | Source |
 |----------|--------|
-| `JOB_TOKEN` | `challenge-submit-job` (job response `.job_token`); preferred credential for the tunnel dial — scoped to `JOB_UUID`, never expires. If unset (older platform builds), falls back to `CHALLENGE_TOKEN` |
+| `JOB_TOKEN` | `challenge-submit-job` (job response `.job_token`); preferred credential for the tunnel dial — scoped to `JOB_UUID`, never expires. If it is not in the state file, the dial uses `CHALLENGE_TOKEN` |
 | `CHALLENGE_TOKEN` | `challenge-login`; used as the tunnel-dial fallback when `JOB_TOKEN` is unset, and still required for all normal HTTP API calls (submit/poll/result/etc.) |
 | `JOB_UUID` | `challenge-submit-job` (job response `.uuid`) — the tunnel dial takes the **UUID**, never the numeric `JOB_ID` |
 | `PARALLELISM` | `challenge-submit-job` |
-| `TUNNEL_ENDPOINT` | `challenge-submit-job` (job response), else fixed default `ws://120.92.88.78/api/challenge/tunnel` |
+| `TUNNEL_ENDPOINT` | `challenge-submit-job` (job response `.tunnel_endpoint`). If empty, `GET /api/challenge/tunnel/endpoint`; never hard-code an address |
 | inference repo cloned | user-side; `./scripts/tunnel.sh` must exist (→ `challenge-baseline-model`), unless they run their own client |
 
 If any are missing, jump back to the producing skill instead of guessing.
@@ -55,9 +57,9 @@ Every Bash call in this skill should start with:
 
 ## Concurrency rules (read these before launching)
 
-- The platform enforces **at most `$PARALLELISM` concurrent agent processes** per user. Excess connections are closed immediately after the WS upgrade.
+- The platform enforces **at most `$PARALLELISM` live agent connections per job**. Excess connections are closed immediately after the WS upgrade. Each job of the user has its own `$PARALLELISM`.
 - Each tunnel carries **at most one active session at a time** (1:1 contract). To run cases in parallel, run multiple agent processes — that's the whole point of `parallelism`.
-- Each process must use a **different GPU index** if launched on the same host. If the user's box has only `N` GPUs, `min(N, PARALLELISM)` is the real cap.
+- By default each process gets its **own GPU index** on a host, so with `N` GPUs `min(N, PARALLELISM)` processes run. Several processes can share one GPU only when the model's memory allows it (see `challenge-baseline-model`, *VRAM footprint*).
 - Each process must use a **different `agent_id`**. `tunnel.sh` derives it from the job and GPU index and persists it, so one process per GPU needs nothing extra. If you start **more than one process on the same GPU**, give each a distinct `AGENT_SLOT=0,1,2…` in its environment; otherwise they share an `agent_id` and the gateway rejects all but the first.
 
 ## Step 1 — Confirm the launch plan with the user
@@ -79,8 +81,7 @@ The reference `tunnel.sh` takes no token argument — it reads the credential fr
 `$CHALLENGE_TOKEN` in its environment. The inline `CHALLENGE_TOKEN=...` prefix therefore makes it
 dial with the non-expiring `job_token` for **this tunnel process only**; it does not overwrite the
 shell's own `CHALLENGE_TOKEN`, so other HTTP API calls (submit/poll/result) in the same session
-keep using the login token. Falls back to the login token if `JOB_TOKEN` is unset (older
-platforms). If the user's fork reads a differently-named variable, check the top of their
+keep using the login token. If `JOB_TOKEN` is unset, the prefix passes the login token. If the user's fork reads a differently-named variable, check the top of their
 `tunnel.sh` and adjust the prefix.
 
 Argument order:
@@ -89,7 +90,7 @@ Argument order:
 |----------|-------|-------|
 | `$1` | GPU index | e.g. `0`. Must exist on the host. |
 | `$2` | `$JOB_UUID` | The `uuid` from `POST /api/challenge/job`, not the numeric `id`. |
-| `$3` | `$TUNNEL_ENDPOINT` | Full WS URL. Defaults to the fixed `ws://120.92.88.78/api/challenge/tunnel`; prefer the job response's `tunnel_endpoint` if it carries one. |
+| `$3` | `$TUNNEL_ENDPOINT` | Full WS URL, exactly as returned in the job response's `tunnel_endpoint`. |
 
 The baseline repo also needs a board selector env var so the loaded checkpoint matches the job's
 `config.board` — see `challenge-baseline-model` Step 4 for the exact variable it expects.
@@ -107,7 +108,7 @@ K=$(( NUM_GPUS < PARALLELISM ? NUM_GPUS : PARALLELISM ))
 echo "launching K=$K processes (parallelism=$PARALLELISM, gpus=$NUM_GPUS)"
 ```
 
-If `K < PARALLELISM`, tell the user explicitly — they can either accept reduced concurrency or add more GPUs. Do **not** double-pin a GPU.
+If `K < PARALLELISM`, tell the user explicitly — they can accept reduced concurrency, add GPUs, or share GPUs where memory allows (distinct `AGENT_SLOT` per process on the same GPU). This loop pins one process per GPU.
 
 Map GPU `i` to agent process `i`:
 
@@ -179,7 +180,9 @@ For more, jump to `challenge-troubleshoot`.
 
 Everything needed to write your own agent. The wire format is two WebSocket message types and six
 JSON control frames. No Protobuf, no gRPC. For what goes *inside* the binary payload
-(observation / action schema), see `challenge-inference-protocol`.
+(observation / action schema), see the
+[inference protocol](../challenge-route-inference/references/protocol.md), bundled with
+`challenge-route-inference`.
 
 ### A.1 Dial
 
@@ -193,7 +196,7 @@ Sec-WebSocket-Version: 13
 
 - `agent_id` — a UUIDv4 you generate (≤ 64 bytes UTF-8). **Every process must use its own.**
 - Prefer `JOB_TOKEN`: scoped to that one job, no expiry, unaffected by password changes.
-  `CHALLENGE_TOKEN` is accepted for back-compat but expires in 12h.
+  `CHALLENGE_TOKEN` is also accepted; it expires 12 h after it was issued.
 - `101` = handshake OK. `401` = bad/missing token, job not found or not owned by you, job in a
   terminal state, or the `?job=` doesn't match the token's job. `500` = backend lookup failed,
   retry with backoff.
@@ -222,7 +225,7 @@ After upgrade the connection sits in `QUEUED`, waiting for the server's first co
 
 - `session_id` is required on `session_open` / `session_close`; ignored on the rest.
 - Unknown `type` values are logged and ignored by the gateway, not fatal — **do the same** so
-  future server-side frames don't break your client.
+  an unrecognised server frame doesn't break your client.
 - Wrong-direction frames are tolerated but have no effect: an agent sending `warmup` or
   `session_open` is silently ignored. Session lifecycle is server-driven.
 - Do **not** invent a `{"type":"ping"}` — there is no application-level heartbeat (see A.6).
@@ -246,7 +249,7 @@ timeout. You leave the state on `session_open` or `drain`.
   **must tolerate it** (short-circuit and return a no-op action). This is the single most common
   contest bug.
 - The gateway is payload-agnostic: bytes in, same bytes out on the simulator side.
-- No framing checksum; WebSocket's per-message CRC is the integrity guarantee.
+- The tunnel wrapper has no checksum field; validate framing and application payloads explicitly.
 - A frame shorter than 4 bytes, or whose `sidLen` overruns the frame, **drops the connection**.
   A frame for an unregistered `session_id` is silently dropped.
 
@@ -320,5 +323,5 @@ async def run_agent(tunnel_url: str, token: str, job_uuid: str, agent_id: str | 
                 await ws.send(struct.pack(">I", sid_len) + sid.encode("utf-8") + action)
 ```
 
-Run `parallelism` of these as separate OS processes (each with its own `agent_id` and GPU), not as
-asyncio tasks in one process — one process per GPU is the supported topology.
+Run up to `parallelism` of these as separate OS processes (each with its own `agent_id`), not as
+asyncio tasks in one process.

@@ -89,15 +89,15 @@
       ],
       "usd": "benchmark_building_blocks_006",
       "xyz": [
-        1.0195216895672925,
-        0.08821958078916306,
+        0.9067377963599952,
+        0.05633937153998048,
         0.7801891554310714
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9123604318033162,
-        0.4093878875585676
+        0.0,
+        1.0
       ]
     },
     "benchmark_building_blocks_006_01": {
@@ -133,26 +133,26 @@
       ],
       "usd": "benchmark_building_blocks_006",
       "xyz": [
-        1.151173349054831,
-        0.20538189912404445,
+        0.9067377963599952,
+        -0.11417121965150057,
         0.7801891554310714
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9123604318033162,
-        0.4093878875585676
+        0.0,
+        1.0
       ]
     },
-    "benchmark_scissors_004": {
+    "benchmark_scissors_006": {
       "description": {
         "semantic_name": [
           "scissors"
         ],
         "dimensions": [
-          0.282,
-          0.0127,
-          0.13
+          0.34905804693698883,
+          0.012688315473496914,
+          0.1295364499092102
         ],
         "unit": "m"
       },
@@ -163,23 +163,53 @@
       ],
       "tags": [
         "take_the_scissors",
-        "benchmark_scissors_004"
+        "benchmark_scissors_006"
       ],
-      "usd": "benchmark_scissors_004",
+      "usd": "benchmark_scissors_006",
       "xyz": [
-        1.1050124522499993,
-        0.16557310828100785,
-        0.8081893097321095
+        0.9046049387838423,
+        -0.01980767315358676,
+        0.8077334674688579
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.9346171996427105,
-        -0.3556552967861125
+        0.7071067690849304,
+        0.7071067690849304
       ]
     }
   },
-  "scene_id": "take_the_scissors/workspace_00",
-  "selected_scissors_id": "benchmark_scissors_004",
-  "seed": 1
+  "scene_id": 20,
+  "selected_scissors_id": "benchmark_scissors_006",
+  "seed": 20269125,
+  "generalization": {
+    "instance_id": 20,
+    "source_instance": 0,
+    "source_hashes": {
+      "scene.usda": "f89b87654109cae8e81d48651a087ee4d868abbf5726aec5714284616fbf0443",
+      "instructions.json": "96eaadb2a42261c1287de19a10562219ba873da8988f79e1b0b70ab5d875c2fe",
+      "scene_info.json": "c7d716120e64cf8500076afe4a235b1ac217bf20d924d4753ad5837ec4add529",
+      "problems.json": "63789e0caa87713184d62a4baa53a3771386ea0a3b07e350c80fb1511874a92a"
+    },
+    "requested_source_instance": 0,
+    "world_translation_m": [
+      0.019417901338193294,
+      -0.01980767315358676,
+      0.0
+    ],
+    "moving_prims": [
+      "benchmark_building_blocks_006_00",
+      "benchmark_building_blocks_006_01",
+      "benchmark_scissors_006"
+    ],
+    "fixed_prims": [
+      "table_7643d40d"
+    ],
+    "minimum_layout_distance_m": 0.027738039010339787,
+    "seed": 20269105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
+  },
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

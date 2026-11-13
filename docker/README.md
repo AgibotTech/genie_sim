@@ -502,6 +502,10 @@ GENIESIM_CACHE_ROOT=/fast/disk/isaac-cache geniesim docker up
 4. installing tier-1 GenieSim packages from `/workspace/source/*` in editable mode;
 5. dropping privileges from root to the remapped `isaac-sim` user before running the command.
 
+System-Python editable packages are also visible to root `docker exec` commands.
+Source packages do not need a second manual installation for teleoperation.
+An editable-install failure stops startup before the ready marker is printed.
+
 Warp kernels use `/tmp/geniesim-newton-warp-<uid>` rather than the shared host cache.
 This prevents another container running as the image's original UID 1234 from
 making the Newton process's JIT cache unwritable after host UID remapping.

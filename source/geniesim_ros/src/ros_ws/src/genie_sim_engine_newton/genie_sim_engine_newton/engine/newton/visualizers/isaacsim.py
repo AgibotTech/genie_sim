@@ -162,6 +162,13 @@ class IsaacSimRenderer:
             if not math.isfinite(fov) or not 0 < fov < 180:
                 raise ValueError("camera fov_degrees must be between 0 and 180")
             row["fov_degrees"] = fov
+            if "width" in camera or "height" in camera:
+                for key in ("width", "height"):
+                    if type(camera.get(key)) is not int or camera[key] <= 0:
+                        raise ValueError("camera dimensions must be paired positive integers")
+                    row[key] = camera[key]
+            if camera.get("calibration") is not None:
+                row["calibration"] = dict(camera["calibration"])
             result.append(row)
         if not result:
             raise ValueError("at least one camera is required")
@@ -209,11 +216,13 @@ class IsaacSimRenderer:
                 if not isinstance(images, dict) or set(images) != {camera["name"] for camera in rows}:
                     raise RuntimeError("Isaac Sim renderer returned an incomplete camera batch")
                 result = {}
+                by_name = {camera["name"]: camera for camera in rows}
                 for name, pixels in images.items():
+                    camera = by_name[name]
                     if (
                         not isinstance(pixels, np.ndarray)
                         or pixels.dtype != np.uint8
-                        or pixels.shape != (height, width, 3)
+                        or pixels.shape != (camera.get("height", height), camera.get("width", width), 3)
                     ):
                         raise RuntimeError(f"Isaac Sim renderer returned invalid RGB image: {name}")
                     result[name] = np.array(pixels, copy=True, order="C")

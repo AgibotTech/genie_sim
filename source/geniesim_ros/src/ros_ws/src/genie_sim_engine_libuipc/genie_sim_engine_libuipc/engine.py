@@ -92,6 +92,14 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         self._failure_version = 0
         self._actions = self._action_source = None
         self._identity_source = None
+        self._episode_source = None
+        self._sequence_index = 0
+        self._sequence_finished = False
+        from .episode_sequence import sequence_entries
+
+        self._sequence_entries = sequence_entries(self._scene_cfg)
+        if self._sequence_entries is not None:
+            self._paused = True
         self._snapshot_requests = self._snapshots = self._state_recorder = None
         self._lifecycle = RosResetCoordinator(self, logger)
         try:
@@ -263,6 +271,8 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         if self._snapshot_topic is not None:
             self._snapshot_requests = SnapshotRequests(self)
         config = PhysicalStateRecordingConfig.from_scene(self._scene_cfg)
+        if self._sequence_entries is not None and (self._actions is None or self._snapshot_requests is None):
+            raise ValueError("episode_sequence requires action_sequence and observation_snapshot")
         if config is not None:
             self._state_recorder = PhysicalStateRecorder(config, metadata=self._physical_metadata())
             # on_model_ready precedes initial joint seeding/FK/native construction.
@@ -384,6 +394,10 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
                 from .action_sequence import StateIdentitySource
 
                 self._identity_source = StateIdentitySource(self, self._lifecycle._node, prefixes)
+            if self._sequence_entries is not None:
+                from .episode_sequence import EpisodeSource
+
+                self._episode_source = EpisodeSource(self, self._lifecycle._node, self._action_topic)
             self._started = True
             self._publish_identity("ready")
         except BaseException:
@@ -397,6 +411,9 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
             raise RuntimeError("libuipc engine is closed")
         self._raise_if_execution_failed()
         if self._paused:
+            snapshots = getattr(self, "_snapshots", None) or getattr(self, "_snapshot_requests", None)
+            if snapshots is not None:
+                snapshots.on_tick()
             return 0.0
         start = time.monotonic()
         try:
@@ -518,6 +535,12 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
     def apply_commands(self, cmd_positions, cmd_4ws_steer_pos, cmd_4ws_drive_vel, cmd_4ws_stamp):
         from genie_sim_engine_core.engine._mimic import expand_targets
 
+        if self._episode_source is not None:
+            try:
+                self._episode_source.drain()
+            except BaseException as exc:
+                self._latch_execution_failure(exc)
+                raise
         self._lifecycle.drain_resets()
         if cmd_4ws_drive_vel and any(float(v) != 0 for v in cmd_4ws_drive_vel.values()):
             raise NotImplementedError("libuipc's kinematic command path accepts scalar position targets only")
@@ -567,16 +590,74 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         twist = np.concatenate((rotation.T @ spatial[:3], rotation.T @ spatial[3:]))
         return pose, twist
 
+    def _rebuild_preloaded_base_pose(self, pose):
+        """Construct the next native World in this owner, retaining CPU/ROS identity.
+
+        A native recover(0) restores the previous world's welded base. Rebuilding
+        only the prevalidated base-XY variant gives IPC its true new frame zero;
+        the CPU worker reloads that same model without a process restart.
+        """
+        import copy
+
+        old = self._driver
+        old_scene = self._scene
+        worker = old._cpu_worker
+        if old._cpu_config is None or worker is None:
+            raise RuntimeError("base-pose sequence switching requires the owned CPU MuJoCo worker")
+        names, bodies = tuple(old._cpu_names), tuple(old._cpu_body_names)
+        topology = (tuple(self._body_paths), self._model.body_count, self._model.particle_count)
+        indices = old._cpu_q_indices.copy()
+        initial = self._initial_q.copy()
+        self._scene_cfg["robot"]["init_base_pose"] = copy.deepcopy(pose)
+        try:
+            self._build()
+            driver = self._driver
+            if (
+                (tuple(self._body_paths), self._model.body_count, self._model.particle_count) != topology
+                or tuple(driver._cpu_names) != names
+                or tuple(driver._cpu_body_names) != bodies
+                or driver._cpu_config != old._cpu_config
+                or not np.array_equal(driver._cpu_q_indices, indices)
+                or not np.array_equal(self._initial_q, initial)
+            ):
+                raise RuntimeError("preloaded base switch changed native/CPU topology or joint contracts")
+            if (
+                self._scene._ranges != old_scene._ranges
+                or self._scene._deformable_publish_cfg != old_scene._deformable_publish_cfg
+            ):
+                raise RuntimeError("preloaded base switch changed deformable transport topology")
+            self._scene._deformable_publisher = old_scene._deformable_publisher
+            self._scene._deformable_tick = old_scene._deformable_tick
+            if self._scene._deformable_publisher is not None:
+                self._scene._deformable_publisher._last_publish_sim_time = None
+            # _build constructs a dormant CPU worker. Keep the already running
+            # owner instead, after validating its complete shared-memory schema.
+            driver._cpu_worker.close()
+            driver._cpu_worker = worker
+            driver._cpu_started = old._cpu_started
+            driver._cpu_needs_restart = False
+            driver.reset_inputs(model_bytes=driver._cpu_payload)
+        except BaseException:
+            worker.close()
+            raise
+
     def episode_reset(self, env_ids=None, seeds=None, instances=None):
         if getattr(self, "_state_recorder", None) is not None:
-            raise RuntimeError("physical archive owns one episode; create a fresh session before reset")
+            raise RuntimeError("finish the recorded episode before resetting the native world")
         ids = [0] if env_ids is None else list(env_ids)
         if not ids:
             return
         if any(w != 0 for w in ids):
             raise ValueError("libuipc has only world 0")
-        if instances and any(v not in (-1, 0) for v in instances.values()):
-            raise NotImplementedError("libuipc instance switching requires rebuilding the native world")
+        from .episode_sequence import InvalidEpisodeOperation
+
+        sequence = getattr(self, "_sequence_entries", None)
+        index = (instances or {}).get(0, 0)
+        if sequence is not None:
+            if not self._sequence_finished or index != self._sequence_index + 1 or index >= len(sequence):
+                raise InvalidEpisodeOperation("recorded reset requires the next configured sequence entry after finish")
+        elif instances and any(v not in (-1, 0) for v in instances.values()):
+            raise NotImplementedError("libuipc geometry instance switching requires rebuilding the native world")
         # Discard worker input, restore native state and only then certify completion.
         try:
             with self._failure_guard():
@@ -588,17 +669,21 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
             snapshots = getattr(self, "_snapshots", None) or getattr(self, "_snapshot_requests", None)
             if snapshots is not None:
                 snapshots.cancel("episode reset")
-            self._driver.stop_feedback()
-            self._driver._solver.reset(self._state_0)
-            for field in ("body_q", "body_qd", "particle_q", "particle_qd"):
-                src, dst = getattr(self._state_0, field, None), getattr(self._state_1, field, None)
-                if src is not None and dst is not None:
-                    dst.assign(src)
-            self._model.joint_q.assign(self._initial_q)
-            for state in (self._state_0, self._state_1):
-                state.joint_q.assign(self._initial_q)
-                state.joint_qd.zero_()
-            self._driver.reset_inputs()
+            self._driver.stop_feedback(close_worker=sequence is None)
+            next_pose = sequence[index].get("robot_base_pose") if sequence is not None else None
+            if next_pose is not None and next_pose != self._scene_cfg.get("robot", {}).get("init_base_pose"):
+                self._rebuild_preloaded_base_pose(next_pose)
+            else:
+                self._driver._solver.reset(self._state_0)
+                for field in ("body_q", "body_qd", "particle_q", "particle_qd"):
+                    src, dst = getattr(self._state_0, field, None), getattr(self._state_1, field, None)
+                    if src is not None and dst is not None:
+                        dst.assign(src)
+                self._model.joint_q.assign(self._initial_q)
+                for state in (self._state_0, self._state_1):
+                    state.joint_q.assign(self._initial_q)
+                    state.joint_qd.zero_()
+                self._driver.reset_inputs()
             if node is not None:
                 self._driver.start_feedback(node)
             elif was_started:
@@ -606,7 +691,21 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
             with self._failure_guard():
                 if getattr(self, "_failure_version", 0) != reset_failure_version:
                     raise RuntimeError("transport failed during native reset")
+            if sequence is not None:
+                from .physical_state_recording import PhysicalStateRecorder, PhysicalStateRecordingConfig
+
+                self._tick = 0
+                self._sim_time = 0.0
+                self._sequence_index = index
+                self._sequence_finished = False
+                self._paused = True
+                self._scene_cfg["libuipc"]["state_recording"] = sequence[index]["state_recording"]
+                self._scene_cfg["generalization"] = {"material": sequence[index]["material"]}
             self._epoch += 1
+            if sequence is not None:
+                recording = PhysicalStateRecordingConfig.from_scene(self._scene_cfg)
+                self._state_recorder = PhysicalStateRecorder(recording, metadata=self._physical_metadata())
+                self._state_recorder.record(self._state_0, tick=0, sim_time=0.0, dt=0.0, initial=True)
             if actions is not None:
                 self._publish_action(
                     actions.reset(epoch=self._epoch, hold=self._initial_q[self._driver._cpu_q_indices])
@@ -623,6 +722,33 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         except BaseException as exc:
             self._latch_execution_failure(exc)
             raise
+
+    def sequence_operation(self, operation, index):
+        """Only the owner thread may seal an archive or recover the native world."""
+        from .action_sequence import identity_packet
+        from .episode_sequence import InvalidEpisodeOperation
+
+        self._raise_if_execution_failed()
+        if self._sequence_entries is None:
+            raise InvalidEpisodeOperation("episode_sequence is not configured")
+        if operation == "reset":
+            self.episode_reset(instances={0: index})
+        elif index != self._sequence_index:
+            raise InvalidEpisodeOperation("episode index differs from active configured entry")
+        elif operation == "finish":
+            if self._sequence_finished or self._paused:
+                raise InvalidEpisodeOperation("episode is not running")
+            self.pause()
+            self._state_recorder.close(clean=True)
+            self._state_recorder = None
+            self._sequence_finished = True
+        elif operation == "begin":
+            if self._sequence_finished or not self._paused:
+                raise InvalidEpisodeOperation("episode is finished or already running")
+            self.resume()
+        else:
+            raise InvalidEpisodeOperation("unknown episode operation")
+        return identity_packet(self, "ready")
 
     def pause(self):
         self._paused = True
@@ -672,6 +798,9 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         identity = getattr(self, "_identity_source", None)
         if identity is not None:
             clean = self._cleanup_attempt("close state identity", identity.close) and clean
+        episode_source = getattr(self, "_episode_source", None)
+        if episode_source is not None:
+            self._cleanup_attempt("close episodes", episode_source.close)
         recorder = getattr(self, "_state_recorder", None)
         if recorder is not None:
             # Transport close serializes with in-flight callbacks; sample the

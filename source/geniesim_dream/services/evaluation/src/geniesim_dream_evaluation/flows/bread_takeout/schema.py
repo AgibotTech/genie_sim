@@ -1,4 +1,4 @@
-"""Bread take-out V2 constants (independent from doll schema)."""
+"""Bread take-out constants (independent from doll schema)."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ ENDPOINT_EVIDENCE_SOURCES = frozenset(
     }
 )
 
-# Stage2 destination endpoint (V2)
+# Stage2 destination endpoint
 DESTINATION_ENDPOINT_STATUSES = frozenset(
     {"supported", "contradicted", "uncertain"}
 )

@@ -1,7 +1,6 @@
 {
-  "scene_id": "insert_ethernet_cable_18",
-  "task_name": "insert_ethernet_cable",
-  "seed": 2026103118,
+  "scene_id": 28,
+  "seed": 20263133,
   "layout": {
     "table_000": {
       "usd": "table_000",
@@ -20,8 +19,7 @@
         0.0,
         0.0,
         1.0
-      ],
-      "asset_path": "objects/edited/table_000/Aligned.usda"
+      ]
     },
     "benchmark_network_device_000": {
       "usd": "benchmark_network_device_000",
@@ -31,8 +29,8 @@
         "kinematic"
       ],
       "xyz": [
-        0.13690565077691222,
-        -0.05903990109711286,
+        0.13838541965598128,
+        -0.0490522832077347,
         0.7626195690004007
       ],
       "xyzw": [
@@ -40,8 +38,7 @@
         0.0,
         -0.36713558435440063,
         0.9301674365997314
-      ],
-      "asset_path": "objects/benchmark/network_device/benchmark_network_device_000/Aligned.usda"
+      ]
     },
     "benchmark_network_device_001": {
       "usd": "benchmark_network_device_001",
@@ -53,8 +50,8 @@
         "left_hand"
       ],
       "xyz": [
-        -0.15058305177543005,
-        0.09811639650931644,
+        -0.149103282896361,
+        0.10810401439869462,
         0.7435275175948746
       ],
       "xyzw": [
@@ -62,68 +59,68 @@
         0.0,
         -0.213732048869133,
         0.976892352104187
-      ],
-      "asset_path": "objects/benchmark/network_device/benchmark_network_device_001/Aligned.usda"
+      ]
     }
   },
   "ethernet_sample": {
-    "router_x": 0.1369056398927519,
-    "router_y": -0.05903989091970357,
+    "router_x": 0.13838540877182096,
+    "router_y": -0.04905227303032541,
     "router_yaw_offset_deg": -43.07813837353875,
     "router_yaw_noise_deg": 1.9218616264612542,
-    "plug_x": -0.15166774883215992,
-    "plug_y": 0.09861489384260069,
+    "plug_x": -0.15018797995309086,
+    "plug_y": 0.10860251173197885,
     "plug_yaw_deg": -24.682300176532408,
     "plug_yaw_noise_deg": 20.317699823467585
   },
-  "generalization": {
-    "version": "fine_xy_translation_v1",
-    "instance_id": 18,
-    "source_instance": 8,
-    "source_scene_sha256": "cdc21f4c746ab22d924e3b436f8de412a04e67f49ca6e12ed3681d80bb3f4aa9",
-    "source_scene_info_sha256": "033c9db841fc76f7bb709155dc36257d87cf2a26b1856a48403eb58ddc2d6f56",
-    "source_problem_sha256": "d730fdcae424cb9cad2ab8a42a73cd20682f2470c8f7f667083fc27c7c20d79b",
-    "seed": 2026103118,
-    "world_xy_translation_m": [
-      0.00787515183900524,
-      -0.012581480020373771
+  "data_alignment": {
+    "dataset_id": 111119,
+    "task_id": 89814,
+    "dataset_dir": "plug_ethernet_cable_into_network_device",
+    "reference_episode_index": 397,
+    "reference_episode_id": 27450976,
+    "reference_raw_data_path": "agibot-raw://aidea-sim/episodes/9fd4da7a-ca9c-49e9-b6bb-c1cc06218dbb",
+    "reference_video": "videos/observation.images.top_head/chunk-000/file-397.mp4",
+    "camera": "observation.images.top_head",
+    "frame_index": 0,
+    "layout_method": "Task/arm/object category checked in this replay; initial object cluster is a bounded XY/yaw perturbation of the accepted same-arm local instance, not a frame-accurate 3D reconstruction",
+    "arm_assignment": "left target object"
+  },
+  "instance_variation": {
+    "base_instance": 0,
+    "world_yaw_delta_deg": 12.0,
+    "world_xy_shift_m": [
+      0.005,
+      -0.012
     ],
-    "group_prims": [
+    "object_group": "all task objects; table remains fixed"
+  },
+  "generalization": {
+    "instance_id": 28,
+    "source_instance": 8,
+    "source_hashes": {
+      "scene.usda": "cdc21f4c746ab22d924e3b436f8de412a04e67f49ca6e12ed3681d80bb3f4aa9",
+      "instructions.json": "1f65d2a1b46e4e896e5be4926df18f325b04c984064de41171ce4cf131ebdb7e",
+      "scene_info.json": "033c9db841fc76f7bb709155dc36257d87cf2a26b1856a48403eb58ddc2d6f56",
+      "problems.json": "d730fdcae424cb9cad2ab8a42a73cd20682f2470c8f7f667083fc27c7c20d79b"
+    },
+    "requested_source_instance": 8,
+    "world_translation_m": [
+      0.0093549207180743,
+      -0.002593862130995611,
+      0.0
+    ],
+    "moving_prims": [
       "benchmark_network_device_000",
       "benchmark_network_device_001"
     ],
     "fixed_prims": [
       "table_000"
     ],
-    "orientation_and_height": "source instance unchanged",
-    "robot_initialization": "shared task configuration unchanged"
+    "minimum_layout_distance_m": 0.009707866006289386,
+    "seed": 20263105,
+    "method": "bounded_rigid_group_translation",
+    "world_targets": "InBBox centres translated with group",
+    "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
   },
-  "validation_level": "static_geometry",
-  "static_geometry": {
-    "world_xy_within_source_task_origin_envelope": true,
-    "world_xy_within_source_semantic_role_envelopes": true,
-    "all_object_relative_transforms_preserved": true,
-    "fixed_support_transforms_preserved": true,
-    "all_mesh_vertical_bounds_preserved": true,
-    "nonzero_translation_m": 0.014842899177399676,
-    "table_support": {
-      "table_prim": "table_000",
-      "baseline_xy_edge_margin_m": [
-        -0.7891018330158639,
-        -0.046033953110643955
-      ],
-      "minimum_xy_edge_margin_m": [
-        -0.7891018330158639,
-        -0.046033953110643955
-      ],
-      "generated_xy_edge_margin_m": [
-        -0.7812266811768585,
-        -0.03345247309027011
-      ]
-    },
-    "workspace_check": "source task XY origin envelope; source Z/orientations and pickup arm unchanged",
-    "ik_execution": "not_run",
-    "physics_execution": "not_run",
-    "unresolved_file_dependencies": []
-  }
+  "validation_level": "static geometry only; native preview, IK and physical acceptance pending"
 }

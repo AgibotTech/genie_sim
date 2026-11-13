@@ -78,7 +78,27 @@ def validate_cameras(cameras: Any, width: Any, height: Any) -> list[dict[str, An
         fov = float(camera["fov_degrees"])
         if not math.isfinite(fov) or not 0 < fov < 179:
             raise ValueError(f"camera {name}.fov_degrees must be between 0 and 179")
-        result.append(dict(name=name, eye=eye, target=target, up=up, fov_degrees=fov))
+        row = dict(name=name, eye=eye, target=target, up=up, fov_degrees=fov)
+        for key, default in (("width", width), ("height", height)):
+            value = camera.get(key, default)
+            if type(value) is not int or value <= 0:
+                raise ValueError(f"camera {name}.{key} must be a positive integer")
+            row[key] = value
+        calibration = camera.get("calibration")
+        if calibration is not None:
+            if not isinstance(calibration, dict) or calibration.get("model") not in ("opencvPinhole", "opencvFisheye"):
+                raise ValueError(f"camera {name} has an unsupported calibration model")
+            calibration = dict(calibration)
+            for key in ("fx", "fy", "cx", "cy", "k1", "k2", "k3", "k4", "p1", "p2"):
+                calibration[key] = (
+                    float(calibration[key]) if key in ("fx", "fy", "cx", "cy") else float(calibration.get(key, 0))
+                )
+                if not math.isfinite(calibration[key]):
+                    raise ValueError(f"camera {name} has nonfinite calibration")
+            if min(calibration["fx"], calibration["fy"]) <= 0:
+                raise ValueError(f"camera {name} has invalid focal lengths")
+            row["calibration"] = calibration
+        result.append(row)
     return result
 
 
@@ -732,5 +752,16 @@ class SnapshotScene:
         cam.CreateFocalLengthAttr(1.0)
         cam.CreateVerticalApertureAttr(vertical)
         cam.CreateHorizontalApertureAttr(vertical * width / height)
+        calibration = camera.get("calibration")
+        if calibration is not None:
+            from genie_sim_engine_core.common.render_layer import author_opencv_fisheye, author_opencv_pinhole
+
+            fx, fy, cx, cy = (calibration[key] for key in ("fx", "fy", "cx", "cy"))
+            cam.CreateHorizontalApertureAttr(width / fx)
+            cam.CreateVerticalApertureAttr(height / fy)
+            cam.CreateHorizontalApertureOffsetAttr((cx - width / 2) / fx)
+            cam.CreateVerticalApertureOffsetAttr((cy - height / 2) / fy)
+            author = author_opencv_fisheye if calibration["model"] == "opencvFisheye" else author_opencv_pinhole
+            author(cam.GetPrim(), calibration, width, height)
         cam.CreateClippingRangeAttr(Gf.Vec2f(0.01, 1000.0))
         return path

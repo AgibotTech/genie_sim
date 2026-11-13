@@ -6,6 +6,11 @@ import threading
 import time
 import traceback
 
+from geniesim_benchmark.plugins.output_system.checkpoint import (
+    CHECKPOINT_REJECTED_EXIT_CODE,
+    CheckpointRejected,
+)
+
 
 class TaskManager:
     def __init__(self, api_core, benchmark_config, benchmark_factory=None):
@@ -96,7 +101,11 @@ class TaskManager:
     def _record_worker_failure(self, error):
         if self.api_core.fatal_error is None:
             self.api_core.fatal_error = error
-            self.api_core.fatal_exit_code = 1
+            self.api_core.fatal_exit_code = (
+                CHECKPOINT_REJECTED_EXIT_CODE
+                if isinstance(error, CheckpointRejected)
+                else 1
+            )
 
     def worker(self):
         try:

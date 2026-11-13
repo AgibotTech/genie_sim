@@ -3,7 +3,6 @@
 # License: Mozilla Public License Version 2.0
 
 """One Newton/RTX session for topology-identical chef layouts, using causal resets."""
-
 from __future__ import annotations
 
 from contextlib import ExitStack
@@ -21,6 +20,7 @@ import time
 
 import yaml
 
+from geniesim_benchmark.plugins.output_system.dexhand2 import read_summary_details, write_summary
 from .layout_batch import OwnedProcessTree, _assert_engine_idle, _prepare, _wait_for_manifest
 
 
@@ -50,7 +50,8 @@ def shared_scene(plans):
         launchers.append(launch)
         evaluation = yaml.safe_load(plan.evaluation.read_text())
         evaluation.pop("launcher", None)
-        evaluation.get("benchmark", {}).pop("instance_id", None)
+        for key in ("instance_id", "episode_offset"):
+            evaluation.get("benchmark", {}).pop(key, None)
         evaluations.append(evaluation)
     if any(x != launchers[0] for x in launchers[1:]) or any(x != evaluations[0] for x in evaluations[1:]):
         raise ValueError("shared layouts require identical launch, scoring and episode contracts")
@@ -60,7 +61,7 @@ def shared_scene(plans):
     scene["instance_switch"] = {
         "body_pose_version": 1,
         "build_instance": plans[0].layout_id,
-        "group_instances": [p.layout_id for p in plans],
+        "group_instances": list(dict.fromkeys(p.layout_id for p in plans)),
         # The chef plugin owns its free wok and particles. They restore from
         # the engine's complete initial joint/particle snapshot on every reset.
         # No /World/Objects bodies exist in the supported chef scene.
@@ -73,7 +74,7 @@ def shared_scene(plans):
     return scene
 
 
-def run_shared_batch(plans, *, startup_timeout_s=600, shutdown_timeout_s=60):
+def run_shared_batch(plans, *, startup_timeout_s=600, shutdown_timeout_s=60, completed=None):
     """Keep engine, RTX and client alive; reset(instances=...) selects each layout."""
     if not plans:
         raise ValueError("at least one layout is required")
@@ -228,6 +229,8 @@ def run_shared_batch(plans, *, startup_timeout_s=600, shutdown_timeout_s=60):
                         reset_epoch=previous_epoch,
                         issued_steps=result["issued_steps"],
                     )
+                    if completed is not None:
+                        completed(plan, row)
                 except KeyboardInterrupt:
                     row.update(status="interrupted", error="interrupted by user")
                     raise
@@ -241,6 +244,10 @@ def run_shared_batch(plans, *, startup_timeout_s=600, shutdown_timeout_s=60):
     finally:
         if tree is not None:
             summary["cleanup"] = tree.close(shutdown_timeout_s + 10)
+        evaluations = [
+            e for p, r in zip(plans, rows) if r["status"] == "evaluated" for e in read_summary_details(p.run_dir)
+        ]
+        write_summary(output, evaluations)
         if summary.get("cleanup", {}).get("forced"):
             raise RuntimeError("shared engine required forced shutdown; video finalization unconfirmed")
         frames_path = shared / "observer.frames.jsonl"

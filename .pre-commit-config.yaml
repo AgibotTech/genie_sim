@@ -21,8 +21,8 @@ repos:
     hooks:
       - id: insert-license
         files: ^.*\.py$
-        # Dream retains module-level MPL/Apache attribution; do not prepend MPL to policy adapters.
-        exclude: ^source/(geniesim_dream/|geniesim_benchmark/src/geniesim_benchmark/app/controllers/parallel_gripper\.py$|scene_reconstruction/third_party/)
+        # Dream and vendored IPC solver sources retain their original license attribution.
+        exclude: ^source/(geniesim_dream/|geniesim_ros/src/ros_ws/src/genie_sim_engine_libuipc/genie_sim_engine_libuipc/solver/|geniesim_benchmark/src/geniesim_benchmark/app/controllers/parallel_gripper\.py$|scene_reconstruction/third_party/)
         args:
           - --license-filepath
           - .github/LICENSE_HEADER.txt

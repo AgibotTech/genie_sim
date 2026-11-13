@@ -1,8 +1,8 @@
 {
-  "scene_id": "hang_cups_on_cup_tree_aloha",
-  "seed": 2506392209,
+  "scene_id": 17,
+  "seed": 2551691572,
   "layout": {
-    "table_7eed6361": {
+    "table_96713c86": {
       "usd": "table_000",
       "xyz": [
         0.0,
@@ -16,9 +16,9 @@
         1.0
       ],
       "tags": [
-        "root_scene_8de895b8",
-        "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-        "table_7eed6361"
+        "root_scene_53a7aebe",
+        "hang_cups_on_cup_tree_aloha_5741d200",
+        "table_96713c86"
       ],
       "keywords": [
         "table",
@@ -58,23 +58,23 @@
         ]
       }
     },
-    "benchmark_cup_holder_c236ff66": {
+    "benchmark_cup_holder_0234e9d6": {
       "usd": "benchmark_cup_holder_000",
       "xyz": [
-        -0.1,
-        -0.011,
-        0.907
+        -0.1000000149011612,
+        -0.05807343461410895,
+        0.9070824611567659
       ],
       "xyzw": [
         0.0,
         0.0,
-        0.633138,
-        0.774039
+        -0.5837962201051645,
+        0.8119002237904127
       ],
       "tags": [
-        "root_scene_8de895b8",
-        "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-        "benchmark_cup_holder_c236ff66"
+        "root_scene_53a7aebe",
+        "hang_cups_on_cup_tree_aloha_5741d200",
+        "benchmark_cup_holder_0234e9d6"
       ],
       "keywords": [
         "cup_tree",
@@ -85,23 +85,23 @@
       ],
       "description": {}
     },
-    "benchmark_cup_8475f35a": {
-      "usd": "benchmark_cup_117",
+    "benchmark_cup_7fd7e988": {
+      "usd": "benchmark_cup_123",
       "xyz": [
-        -0.094,
-        0.227,
-        0.779
+        -0.058015298702782145,
+        -0.17787076112961397,
+        0.7812770859870295
       ],
       "xyzw": [
         0.0,
         0.0,
-        -0.292627,
-        0.956227
+        0.9895612540322783,
+        0.14411288810534814
       ],
       "tags": [
-        "root_scene_8de895b8",
-        "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-        "benchmark_cup_8475f35a"
+        "root_scene_53a7aebe",
+        "hang_cups_on_cup_tree_aloha_5741d200",
+        "benchmark_cup_7fd7e988"
       ],
       "keywords": [
         "cup_hang_0",
@@ -110,10 +110,21 @@
         "handled",
         "graspable",
         "front",
-        "task_side_left",
-        "POSITION_TAG_left"
+        "task_side_right",
+        "POSITION_TAG_right"
       ],
-      "description": {}
+      "description": {
+        "semantic_name": [
+          "handled cup"
+        ],
+        "object_category": [
+          "cup",
+          "mug"
+        ],
+        "full_description": [
+          "A handled cup; appearance and dimensions are defined by the selected original-scale asset."
+        ]
+      }
     }
   },
   "relations": {
@@ -125,10 +136,10 @@
       },
       "nodes": [
         {
-          "id": "root_scene_8de895b8"
+          "id": "root_scene_53a7aebe"
         },
         {
-          "id": "hang_cups_on_cup_tree_aloha_6a1a5b9f"
+          "id": "hang_cups_on_cup_tree_aloha_5741d200"
         },
         {
           "tags": [
@@ -137,7 +148,7 @@
             "workspace",
             "POSITION_TAG_center"
           ],
-          "id": "table_7eed6361"
+          "id": "table_96713c86"
         },
         {
           "tags": [
@@ -147,7 +158,7 @@
             "unmovable",
             "POSITION_TAG_center"
           ],
-          "id": "benchmark_cup_holder_c236ff66"
+          "id": "benchmark_cup_holder_0234e9d6"
         },
         {
           "tags": [
@@ -157,30 +168,65 @@
             "handled",
             "graspable",
             "front",
-            "task_side_left",
-            "POSITION_TAG_left"
+            "task_side_right",
+            "POSITION_TAG_right"
           ],
-          "id": "benchmark_cup_8475f35a"
+          "id": "benchmark_cup_7fd7e988"
         }
       ],
       "edges": [
         {
-          "source": "root_scene_8de895b8",
-          "target": "hang_cups_on_cup_tree_aloha_6a1a5b9f"
+          "source": "root_scene_53a7aebe",
+          "target": "hang_cups_on_cup_tree_aloha_5741d200"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-          "target": "table_7eed6361"
+          "source": "hang_cups_on_cup_tree_aloha_5741d200",
+          "target": "table_96713c86"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-          "target": "benchmark_cup_holder_c236ff66"
+          "source": "hang_cups_on_cup_tree_aloha_5741d200",
+          "target": "benchmark_cup_holder_0234e9d6"
         },
         {
-          "source": "hang_cups_on_cup_tree_aloha_6a1a5b9f",
-          "target": "benchmark_cup_8475f35a"
+          "source": "hang_cups_on_cup_tree_aloha_5741d200",
+          "target": "benchmark_cup_7fd7e988"
         }
       ]
     }
-  }
+  },
+  "benchmark_generalization": {
+    "method": "robot_specific_cup_asset_side_relative_layout",
+    "cup_asset": "benchmark_cup_123",
+    "side": "right",
+    "holder_xy_m": [
+      -0.1,
+      -0.058073404811786536
+    ],
+    "holder_yaw_deg": -71.43598785993537,
+    "cup_yaw_deg": 163.42817622802147,
+    "footprint_separation_m": 0.01,
+    "proposal_holder": {
+      "xy_m": [
+        0.16693738747555242,
+        -0.058073404811786536
+      ],
+      "yaw_deg": -112.23188131194414
+    },
+    "source_line_fraction": 0.2921241127929246,
+    "instance_id": 17,
+    "source_instance": 1,
+    "source_scene_sha256": "7ae9b1fa1dc08ea6826b2b7550e6098cf82426aa4088b07b836123ee15e9a699",
+    "seed": 2551691572,
+    "visual_pool_index": 22,
+    "selection": "maximin_against_all_old_and_selected_new",
+    "selection_feature_distance": 1.7428639977270914,
+    "source_slot": {
+      "cup_asset_index": 7,
+      "side": "right"
+    },
+    "distribution_adjustment": null,
+    "native_preview_acceptance": "pending; feature distance is not visual acceptance",
+    "validation_level": "authored_geometry; native IK and physical success unverified"
+  },
+  "validation_level": "New static layout; IK and full physical success unverified; native preview evidence stored separately"
 }

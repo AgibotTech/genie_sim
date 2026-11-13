@@ -1,4 +1,4 @@
-"""Fold cloth instruction routing and VLM JSON normalizers (V2)."""
+"""Fold cloth instruction routing and VLM JSON normalizers."""
 
 from __future__ import annotations
 

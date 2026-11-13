@@ -121,8 +121,14 @@ benchmark's `ParameterServer`. Common ones:
 | `--app.headless=true` | No GUI (required on remote / batch hosts) |
 | `--benchmark.num_episode=N` | Override episode count |
 | `--benchmark.seed=N` | RNG / instance-sampling seed |
-| `--benchmark.record=true` | Persist episode logs to `output_dir` |
+| `--benchmark.record=true` | Save episode recordings beside the task's score file |
+| `--benchmark.resume=true` | Continue committed serial Corobot episodes in the same task output directory |
+| `--benchmark.resume_id=JOB_ID` | Optional stable job/model identity, set from the first attempt |
 | `--benchmark.policy_class=…` | Use a different policy class |
+
+For resume, keep the same model, task inputs, seed and episode count. The inference
+host may change. Read [resume usage](../../benchmark_test_docs.md#resume-an-interrupted-evaluation)
+for checkpoint retention, recorded videos and unsupported modes.
 
 Full schema: `source/geniesim_benchmark/src/geniesim_benchmark/config/params.py`.
 

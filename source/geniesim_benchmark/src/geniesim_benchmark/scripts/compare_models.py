@@ -41,7 +41,8 @@ Consequence: a true model gap near the run-to-run floor (~0.04) may read as
 independent units.
 
 Metric: step_mean (default, == leaderboard `statistics.average`), e2e, or weighted.
-For weighted, inputs must use the same recorded weight profile per task group.
+For weighted, inputs must use the same recorded weight profile and policy budget
+rule per task group. Unmeasured budget scores remain excluded.
 
 Usage
 -----
@@ -319,7 +320,16 @@ def _rollout_scalar(detail, metric):
         v = scores.get("E2E")
         return float(v) if isinstance(v, (int, float)) else None
     if metric == "weighted":
-        v = scores.get("WEIGHTED")
+        result = detail.get("result", {})
+        if result.get("weighted_scoring_metric") != "POLICY_BUDGET_WEIGHTED":
+            raise ValueError("WEIGHTED requires policy budget scores; reweight the input file first")
+        v = scores.get("POLICY_BUDGET_WEIGHTED")
+        if "POLICY_BUDGET_WEIGHTED" not in scores:
+            raise ValueError("Missing POLICY_BUDGET_WEIGHTED")
+        if "WEIGHTED" in scores and scores["WEIGHTED"] != v:
+            raise ValueError("WEIGHTED must equal POLICY_BUDGET_WEIGHTED when present")
+        if v is None:
+            return None
         if not isinstance(v, (int, float)) or isinstance(v, bool) or not np.isfinite(v) or not 0 <= v <= 1:
             raise ValueError("Missing/invalid WEIGHTED score; reweight the input evaluation file first")
         return float(v)
@@ -332,23 +342,38 @@ def _rollout_scalar(detail, metric):
 
 def _weighted_profile(detail):
     from geniesim_benchmark.plugins.output_system.weighted_scoring import (
-        canonical_score_layout, canonical_weight_version,
+        canonical_score_layout,
     )
 
     config = detail.get("result", {}).get("weighted_scoring")
-    required = ("version", "task", "instruction_mode", "steps", "weights")
+    required = (
+        "task", "instruction_mode", "steps", "weights",
+        "process_points", "completion_bonus_points", "completion_rule",
+    )
     if not isinstance(config, dict) or any(key not in config for key in required):
         raise ValueError("WEIGHTED requires its recorded weight profile; reweight the input file first")
     profile = {key: config[key] for key in required}
     profile["task"] = canonical_score_layout(profile["task"])
-    profile["version"] = canonical_weight_version(profile["version"])
-    for key in ("process_points", "completion_bonus_points", "completion_rule"):
-        profile[key] = config.get(key)
+    budget = detail.get("result", {}).get("policy_budget_scoring")
+    if not isinstance(budget, dict) or not budget:
+        raise ValueError("WEIGHTED requires its recorded policy budget rule; reweight the input file first")
+    rule_fields = (
+        "baseline_rounding", "reference_steps_per_dispatch", "baseline_multiplier", "penalty_rule",
+    )
+    if any(key not in budget for key in rule_fields):
+        raise ValueError("WEIGHTED requires its recorded numerical policy budget rule")
+    budget = {key: value for key, value in budget.items() if key != "version"}
+    if isinstance(budget.get("weight_profile"), dict):
+        budget["weight_profile"] = {
+            key: value for key, value in budget["weight_profile"].items()
+            if key not in ("version", "rationale")
+        }
+    profile["policy_budget_scoring"] = budget
     return profile
 
 
 def validate_weighted_compatibility(reference_info, model_info):
-    """Do not compare different weight versions/layouts as model improvements."""
+    """Do not compare different numeric rules/layouts as model improvements."""
     reference = reference_info["weighted_profiles"]
     model = model_info["weighted_profiles"]
     for group in reference.keys() & model.keys():
@@ -385,12 +410,33 @@ def load_task_scores(root, metric):
     file_subname = {}  # file relpath -> sub_task_name from content (or None)
     weighted_profiles = {}
     n_rollouts = 0
+    legacy_summary_dirs = {
+        os.path.dirname(path) for path in files if os.path.basename(path) == "evaluation_summary.json"
+    }
+    canonical_summary_dirs = {
+        os.path.dirname(path) for path in files if os.path.basename(path) == "evaluate_ret_00.json"
+    }
+    summary_dirs = legacy_summary_dirs | canonical_summary_dirs
     for fp in files:
+        directory, filename = os.path.split(fp)
+        parent = os.path.dirname(directory)
+        if filename == "evaluate_ret_rubik.json" and directory in summary_dirs:
+            continue
+        if filename == "evaluation_summary.json" and directory in canonical_summary_dirs:
+            continue
+        if (
+            filename in ("evaluation_summary.json", "evaluate_ret_00.json")
+            and parent in summary_dirs
+            and os.path.isfile(os.path.join(parent, "batch_summary.json"))
+        ):
+            continue
         try:
             with open(fp, "r", encoding="utf-8") as f:
                 payload = json.load(f)
         except (json.JSONDecodeError, OSError) as e:
             print(f"  [warn] skipping unreadable {fp}: {e}")
+            continue
+        if not isinstance(payload, dict):
             continue
         rel = os.path.relpath(fp, root)
         rows = []  # (instruction, scalar) in file order
@@ -407,7 +453,7 @@ def load_task_scores(root, metric):
             task_name = task_name or detail.get("task_name")
             sub_name = sub_name or detail.get("sub_task_name")
             v = _rollout_scalar(detail, metric)
-            if metric == "weighted":
+            if metric == "weighted" and v is not None:
                 profile = _weighted_profile(detail)
                 if file_profile is not None and profile != file_profile:
                     raise ValueError(f"Mixed weighted profiles in {fp}")

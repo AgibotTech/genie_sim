@@ -21,7 +21,7 @@ class InferenceError(RuntimeError):
     pass
 
 
-def payload_for(env, episode, images, prompt="Solve the Rubik's Cube"):
+def payload_for(env, episode, images, prompt="Solve the Rubik's Cube", task_segments=()):
     now = time.time_ns()
     encoded = {}
     for name, image in images.items():
@@ -33,7 +33,7 @@ def payload_for(env, episode, images, prompt="Solve the Rubik's Cube"):
             "height": image.shape[0],
             "width": image.shape[1],
         }
-    return {
+    payload = {
         "method": "infer",
         "params": {
             "timestamps": {"head": now, "states": now},
@@ -51,6 +51,9 @@ def payload_for(env, episode, images, prompt="Solve the Rubik's Cube"):
             "action_contract": env.action_contract(),
         },
     }
+    if task_segments:
+        payload["params"]["segments"] = list(task_segments)
+    return payload
 
 
 def joint_array(value):
@@ -70,7 +73,7 @@ def parse_actions(
     measured_state=None,
     ik_solver=None,
 ):
-    """Reject unsupported kinds, shapes, limits and ambiguous action encodings."""
+    """Validate action chunks and saturate finite arm targets at joint limits."""
     if not np.isfinite(hand_target_tolerance) or not 0 <= hand_target_tolerance <= 0.05:
         raise PolicyError("Hand target tolerance must be in [0,0.05] radians")
     if not isinstance(reply, dict) or reply.get("error"):
@@ -132,8 +135,14 @@ def parse_actions(
         if not np.isfinite(actions).all():
             raise ValueError("Joint targets must be finite")
         violation = np.maximum(np.maximum(bounds[:, 0] - actions, actions - bounds[:, 1]), 0)
-        if np.any(violation[:, :14] > 1e-6):
-            raise ValueError("Arm targets violate action_contract bounds")
+        projected_arms = np.clip(actions[:, :14], bounds[:14, 0], bounds[:14, 1])
+        if projection_log is not None:
+            difference = np.abs(actions[:, :14] - projected_arms)
+            projection_log.update(
+                arm_changed_values=int(np.count_nonzero(difference)),
+                arm_maximum_projection_radians=float(difference.max()),
+            )
+        actions[:, :14] = projected_arms
         if np.any(violation[:, 14:] > hand_target_tolerance + 1e-6):
             raise ValueError(
                 f"Hand targets violate action_contract bounds: maximum excess {violation[:, 14:].max():.6f} rad"

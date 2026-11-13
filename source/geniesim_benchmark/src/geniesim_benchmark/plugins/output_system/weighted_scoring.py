@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Task-specific weights over existing checker scores; no simulator imports."""
+"""Task weight profiles and native checkpoint validation; no simulator imports."""
 
 from dataclasses import dataclass
 from functools import lru_cache
@@ -16,29 +16,11 @@ from typing import Any, Mapping, Sequence
 def canonical_score_layout(name: str) -> str:
     """Read former layout identifiers without duplicating their profiles."""
     aliases = {
-        "stack_bowls_pickup_v1": "stack_bowls_pickup",
         "wuji_ipc_cloth_hanger": "cloth_hanger",
         "wuji_ipc_fold_cloth": "fold_cloth",
         "wuji_ipc_drawstring_bag": "drawstring_bag",
     }
     return aliases.get(name, name)
-
-
-def canonical_weight_version(version: str) -> str:
-    """Only cosmetic aliases are equivalent; different numeric rules stay distinct."""
-    aliases = {
-        "task-checker-weighted-v5": "task-checker-weighted-completion",
-        "stack-bowls-pickup-weighted-10-40-20261025-v1": "stack-bowls-pickup-weighted-10-40",
-        "charging-weighted-10-10-30-20261023-v1": "charging-weighted-10-10-30",
-        "block-weighted-10-40-20261023-v1": "block-weighted-10-40",
-        "ethernet-weighted-10-40-20261023-v1": "ethernet-weighted-10-40",
-        "bearing-weighted-10-15-25-20261023-v1": "bearing-weighted-10-15-25",
-        "pen-cap-weighted-5-5-20-20-20261025-v1": "pen-cap-weighted-5-5-20-20",
-        "coin-weighted-20-30-20261023-v1": "coin-weighted-20-30",
-        "straw-weighted-20-30-20261023-v1": "straw-weighted-20-30",
-        "phone-packaging-weighted-5-10-5-10-5-15-20261023-v1": "phone-packaging-weighted-5-10-5-10-5-15",
-    }
-    return aliases.get(version, version)
 
 
 @dataclass(frozen=True)
@@ -66,9 +48,9 @@ class WeightProfile:
         if (
             type(self.process_points) not in (int, float)
             or type(self.completion_bonus_points) not in (int, float)
-            or (self.process_points, self.completion_bonus_points) not in ((100, 25), (50, 50))
+            or (self.process_points, self.completion_bonus_points) != (100, 25)
         ):
-            raise ValueError("Weighted scoring requires 100/25 points or historical 50/50 points")
+            raise ValueError("Weighted scoring requires 100 process points and 25 completion points")
         if self.completion_rule != "all_steps_and_native_e2e":
             raise ValueError(f"Unsupported completion rule: {self.completion_rule}")
 
@@ -97,7 +79,7 @@ def load_weight_profiles(weights_path: Path | None = None) -> dict[str, dict[str
     return {
         mode: {
             task: WeightProfile(
-                spec.get("version", data["version"]),
+                data["version"],
                 task,
                 mode,
                 tuple(spec["steps"]),
@@ -120,10 +102,10 @@ def get_weight_profile(
     *,
     weights_path: Path | None = None,
 ) -> WeightProfile | None:
-    """Validate current layouts; historical layouts require an explicit weights file.
+    """Validate checker layouts against the active or explicitly supplied weights file.
 
     Offline callers can pass steps=None only with weights_path, using that
-    version's authored layout rather than relabelling old native checkers.
+    file's authored layout rather than relabelling native checkers.
     """
     if instruction_mode not in ("full", "subtask"):
         raise ValueError(f"Unsupported instruction mode: {instruction_mode}")
@@ -141,23 +123,12 @@ def get_weight_profile(
     return profile
 
 
-@dataclass(frozen=True)
-class WeightedScore:
-    process: float
-    completion_bonus: float
-    complete: bool
-
-    @property
-    def total(self) -> float:
-        return self.process + self.completion_bonus
-
-
-def weighted_score_breakdown(
+def native_stage_scores(
     rows: Sequence[Mapping[str, Any]],
     profile: WeightProfile,
     native_e2e: int | float | None,
-) -> WeightedScore:
-    """Normalize the selected process and conditional completion budgets.
+) -> tuple[list[float], bool]:
+    """Validate raw checkpoints without calculating an unbudgeted total.
 
     Repeated checker names are separate positions. Independent later successes
     retain process credit. Missing steps and native E2E alone cannot earn the
@@ -184,33 +155,4 @@ def weighted_score_breakdown(
     if native_e2e is not None and native_e2e not in (0, 1):
         raise ValueError(f"Native E2E must be 0, 1 or absent: {native_e2e}")
     complete = native_e2e == 1 and len(seen) == len(values) and all(s == 1.0 for s in values)
-    process = math.fsum(w * s for w, s in zip(profile.weights, values)) / 100.0
-    return WeightedScore(
-        process=process * profile.process_points / profile.total_points,
-        completion_bonus=profile.completion_bonus_points / profile.total_points if complete else 0.0,
-        complete=complete,
-    )
-
-
-def weighted_score(
-    rows: Sequence[Mapping[str, Any]],
-    profile: WeightProfile,
-    native_e2e: int | float | None = None,
-) -> float:
-    """Normalized total; absent native completion evidence earns no bonus."""
-    return weighted_score_breakdown(rows, profile, native_e2e).total
-
-
-def add_weighted_score(
-    result: dict[str, Any], rows: Sequence[Mapping[str, Any]], profile: WeightProfile | None
-) -> None:
-    """Append the metric and its reproducible profile without rewriting native scores."""
-    if profile is None:
-        return
-    scores = result.setdefault("scores", {})
-    breakdown = weighted_score_breakdown(rows, profile, scores.get("E2E"))
-    scores["WEIGHTED"] = breakdown.total
-    scores["WEIGHTED_PROCESS"] = breakdown.process
-    scores["WEIGHTED_COMPLETION_BONUS"] = breakdown.completion_bonus
-    scores["WEIGHTED_COMPLETE"] = int(breakdown.complete)
-    result["weighted_scoring"] = profile.to_dict()
+    return values, complete

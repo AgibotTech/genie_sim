@@ -1,0 +1,73 @@
+{
+  "problem1": {
+    "Acts": [
+      {
+        "ActionSetWaitAny": [
+          {
+            "ActionList": [
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "PickUpOnGripper": "benchmark_blackboard_eraser_000|right_gripper"
+                  },
+                  {
+                    "StepOut": 900
+                  }
+                ]
+              },
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "RobotNearObject": "benchmark_whiteboard_000|1.0"
+                  },
+                  {
+                    "StepOut": 1200
+                  }
+                ]
+              },
+              {
+                "ActionSetWaitAny": [
+                  {
+                    "Erased": "benchmark_blackboard_eraser_000/entity|1.0"
+                  },
+                  {
+                    "StepOut": 4800
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "Onfloor": "benchmark_blackboard_eraser_000/entity/body|0"
+          },
+          {
+            "StepOut": 6000
+          }
+        ]
+      }
+    ],
+    "Init": [],
+    "Objects": [],
+    "Problem": "clean_the_blackboard",
+    "ScoreCheckers": [
+      {
+        "PolicyDispatchBudget": {
+          "steps": [
+            {
+              "checker": "PickUpOnGripper",
+              "points": 5
+            },
+            {
+              "checker": "RobotNearObject",
+              "points": 5
+            },
+            {
+              "checker": "Erased",
+              "points": 40
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

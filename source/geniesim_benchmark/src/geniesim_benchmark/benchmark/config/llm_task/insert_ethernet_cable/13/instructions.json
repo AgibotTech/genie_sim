@@ -1,7 +1,7 @@
 {
   "instructions": [
     {
-      "instruction": "Use the left hand to insert the Ethernet cable plug into the network device port.",
+      "instruction": "Insert the network cable plug into the network port.",
       "target": {
         "id1": "benchmark_network_device_001",
         "id2": "benchmark_network_device_000"
@@ -9,7 +9,7 @@
       "gripper": {
         "1": {
           "handover": false,
-          "side": "left"
+          "side": "right"
         }
       }
     }
@@ -17,9 +17,9 @@
   "subtask_steps": [
     {
       "checker": {
-        "PickUpOnGripper": "benchmark_network_device_001/entity/body|left_gripper"
+        "PickUpOnGripper": "benchmark_network_device_001/entity/body|right_gripper"
       },
-      "instruction": "Pick up the Ethernet cable plug with the left gripper",
+      "instruction": "Pick up the Ethernet cable plug with the right gripper",
       "step_out": 600
     },
     {
