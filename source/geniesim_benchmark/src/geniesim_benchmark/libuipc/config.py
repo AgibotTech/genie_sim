@@ -45,7 +45,12 @@ def validate_settings(config):
         raise ValueError("Wuji evaluation requires explicit runtime: libuipc")
     settings = config["libuipc"]
     benchmark = config.get("benchmark", {})
-    for key, default in (("record", False), ("record_state", True), ("resume", False)):
+    for key, default in (
+        ("record", False),
+        ("record_state", False),
+        ("resume", False),
+        ("pause_physics_during_inference", False),
+    ):
         if type(benchmark.get(key, default)) is not bool:
             raise ValueError(f"benchmark.{key} must be a boolean")
     resume_id = benchmark.get("resume_id", "")

@@ -118,7 +118,6 @@ def test_failed_episode_is_retried_without_duplicate_scores_or_recordings(tmp_pa
         }
         for name in ("result.json", "samples.json", "actions.json"):
             (directory / name).write_text("{}")
-        np.savez_compressed(directory / "raw-1000hz.npz", qpos=[index])
         evaluations.append(
             make_evaluation(
                 RUBIK_TASK,
@@ -157,13 +156,13 @@ def test_failed_episode_is_retried_without_duplicate_scores_or_recordings(tmp_pa
     assert [row["episode_coord"]["instance_id"] for row in details] == [0, 1, 2]
     assert json.loads((output / "summary.json").read_text())["total_episodes"] == 3
     for row in details:
-        assert any(artifact["path"].endswith("raw-1000hz.npz") for artifact in row["episode_artifacts"])
+        assert all(not artifact["path"].endswith("raw-1000hz.npz") for artifact in row["episode_artifacts"])
     monkeypatch.setattr(
         runner, "NativeEnvironment", lambda *args: pytest.fail("finished retries must not start a simulator")
     )
     assert runner.run(cfg) == 0
-    raw = output / next(
-        artifact["path"] for artifact in details[0]["episode_artifacts"] if artifact["path"].endswith("raw-1000hz.npz")
+    artifact_path = output / next(
+        artifact["path"] for artifact in details[0]["episode_artifacts"] if artifact["path"].endswith("result.json")
     )
-    raw.unlink()
+    artifact_path.unlink()
     assert runner.run(cfg) == common.CHECKPOINT_REJECTED_EXIT_CODE

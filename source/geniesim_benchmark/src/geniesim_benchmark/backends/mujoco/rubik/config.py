@@ -31,12 +31,14 @@ class BenchmarkConfig:
     seed: int = 0
     output_dir: str = ""
     record: bool = False
-    record_state: bool = True
+    record_state: bool = False
     record_video_dir: str = ""
     fps: int = 30
     resume: bool = False
     resume_id: str = ""
     preview: bool = False
+    # Native stepping is synchronous: no physics advances during policy.infer().
+    pause_physics_during_inference: bool = True
 
 
 @dataclass

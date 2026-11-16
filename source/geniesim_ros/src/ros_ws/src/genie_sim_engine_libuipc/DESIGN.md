@@ -176,7 +176,8 @@ The physics owner freezes each action target and advances CPU, native solve,
 readback, tick/time, post-step work, archive and snapshot work before counting
 one committed solve. Completed action counts establish integration, not target
 convergence. Between actions the world continues stepping with the last target;
-inference and rendering never pause it.
+inference and rendering do not pause it unless the recorded episode caller
+requests the pause boundary described below.
 
 Snapshots copy completed state independently of publication/downsampling. They
 include all constructed deformable ranges and authored-root world `xyz+wxyz`
@@ -224,7 +225,14 @@ During scoring and next-layout material capture the world remains paused. Reset
 restores native construction state and cached kinematic/joint aims, resets CPU
 integration, opens a fresh epoch archive at tick/time zero, and acknowledges only
 after all state writes and archive creation succeed. Begin resumes physical time;
-capture/inference within the running episode still do not pause physics. A failed
+capture/inference within the running episode default to real-time physics.
+Explicit `pause`/`resume` operations use the same serialized episode channel and
+are acknowledged after the owner changes state between native steps. Paused
+steps service snapshots without advancing native ticks or writing duplicate
+archive frames. CPU workers must use barrier synchronization; otherwise pause
+is rejected. Finish can seal an inference-paused episode without advancing it.
+CPU protocol/owner tests cover this pause contract; full GPU inference-pause
+acceptance remains a separate runtime check. A failed
 or uncertain reset is terminal and is never retried automatically. Renderer
 material selection comes from its preloaded YAML table and the physical snapshot
 episode/epoch, with independent receipts for every episode.

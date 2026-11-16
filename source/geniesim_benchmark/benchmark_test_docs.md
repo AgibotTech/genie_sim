@@ -144,12 +144,10 @@ timeouts remain in the score. Temporary inference errors are retried on restart.
 A fatal simulator error remains a scored invalid attempt; its skipped instruction
 range is retained and reported separately in the manifest.
 
-With `--benchmark.record=true`, recordings also save per-episode `state.jsonl`
-files containing measured joint names, positions and velocities, base pose and
-velocity, simulation time and frame indices. State is sampled on the same ticks
-as video; after finalization, files are named `recording_<episode>_*.state.jsonl`
-alongside the videos, including under `record_video_dir` when configured.
-Use `--benchmark.record_state=false` to explicitly disable state recording.
+With `--benchmark.record=true`, recordings save camera videos without replay
+state (`state.jsonl` or `raw-1000hz.npz`). The legacy `record_state` option is
+accepted but has no effect. libuipc uses temporary physical state for scoring
+and removes the arrays and frame index after scoring finishes.
 
 With `--benchmark.record=true`, committed recordings are reused. A retry after
 all episodes finish only rebuilds/publishes artifacts; it does not evaluate again.

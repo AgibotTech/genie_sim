@@ -206,7 +206,7 @@ class APICore:
         # In-process video recorder (replaces the ROS rosbag pipeline).
         self.local_recorder = LocalRecorder(
             fps=30,
-            record_state=bool(getattr(config.benchmark, "record_state", True)),
+            record_state=bool(getattr(config.benchmark, "record_state", False)),
             record_world_camera=bool(getattr(config.benchmark, "record_world_camera", False)),
         )
         self.playback_timerange = []
@@ -3543,9 +3543,7 @@ class APICore:
         self.robot_interface.tick(current_time, current_step)
 
         if self.local_recorder.is_recording:
-            self.local_recorder.write_frames(
-                self.robot_interface, current_step, self._recording_state_sample, sim_time=current_time
-            )
+            self.local_recorder.write_frames(self.robot_interface, current_step)
 
         if not self.enable_ros:
             return
@@ -3651,31 +3649,6 @@ class APICore:
         self.ui_builder._on_capture_cam(isRGB, isDepth, isSemantic)
         currentImage = self.ui_builder.currentImg
         return currentImage
-
-    def _recording_state_sample(self):
-        """Robot state for LocalRecorder's state.jsonl: base_link world pose,
-        articulation root velocity and every DOF (wheels and steer included)."""
-
-        def as_list(value):
-            if hasattr(value, "detach"):
-                value = value.detach().cpu().numpy()
-            return np.asarray(value, dtype=float).reshape(-1).tolist()
-
-        articulation = self._get_articulation()
-        position, wxyz = self._get_link_world_pose("base_link")
-        w, x, y, z = as_list(wxyz)
-        return {
-            "base_pose": {"position": as_list(position), "orientation_xyzw": [x, y, z, w]},
-            "base_velocity": {
-                "linear": as_list(articulation.get_linear_velocity()),
-                "angular": as_list(articulation.get_angular_velocity()),
-            },
-            "joints": {
-                "name": list(articulation.dof_names),
-                "position": as_list(articulation.get_joint_positions()),
-                "velocity": as_list(articulation.get_joint_velocities()),
-            },
-        }
 
     def _get_articulation(self):
         if getattr(self, "_current_articulation", None) is not None:

@@ -64,7 +64,10 @@ physics and verifies/closes the archive while retaining the world. Reset require
 finish, recovers native World frame 0, restores CPU MuJoCo integration/controls
 without respawning its worker, rotates the archive and advances the source epoch.
 The next episode stays paused until begin; physics runs normally during that
-episode's capture and inference. Every archive starts at tick/time 0.
+episode's capture and inference unless the caller requests an acknowledged
+`pause`/`resume` boundary. This requires CPU barrier synchronization and preserves
+the open archive; finish also accepts an inference-paused episode. Every archive
+starts at tick/time 0.
 See [DESIGN.md](DESIGN.md) and the [client wire contract](../genie_sim_client/IPC_CLIENT.md).
 CPU tests live in `test/test_episode_sequence.py` and `test/test_cpu_reset.py`;
 the explicit end-to-end GPU probe is

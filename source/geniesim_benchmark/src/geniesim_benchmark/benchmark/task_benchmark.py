@@ -747,48 +747,50 @@ class TaskBenchmark(object):
                 should_pause = self.args.pause_physics_during_inference and self.policy.need_infer()
                 if should_pause:
                     self.api_core.pause_physics()
-                if self.task_mode == "infer":
-                    if self.args.interactive:
-                        while not self.data_courier.get_infer_start():
-                            logger.info("waiting for infer start")
-                            time.sleep(1)
-                            # if self.env.current_step != 0:
-                            self.env.current_step = 0
-                            self.policy.reset()
-                            need_depth = getattr(self.policy, "need_depth", None)
-                            self.env.set_depth_status(need_depth() if callable(need_depth) else False)
-                            _hold_render()
-                            try:
-                                observaion = self.env.reset()
-                            finally:
-                                _drop_render()
+                try:
+                    if self.task_mode == "infer":
+                        if self.args.interactive:
+                            while not self.data_courier.get_infer_start():
+                                logger.info("waiting for infer start")
+                                time.sleep(1)
+                                # if self.env.current_step != 0:
+                                self.env.current_step = 0
+                                self.policy.reset()
+                                need_depth = getattr(self.policy, "need_depth", None)
+                                self.env.set_depth_status(need_depth() if callable(need_depth) else False)
+                                _hold_render()
+                                try:
+                                    observaion = self.env.reset()
+                                finally:
+                                    _drop_render()
 
-                        if self.data_courier.get_shuffle():
-                            self.api_core.shuffle_scene()
-                        single_instruction = [self.data_courier.get_instruction()]
-                        instruction_segments = []
+                            if self.data_courier.get_shuffle():
+                                self.api_core.shuffle_scene()
+                            single_instruction = [self.data_courier.get_instruction()]
+                            instruction_segments = []
+                        else:
+                            single_instruction = self.env.task.get_instruction()
+                            instruction_segments = self.env.task.get_instruction_segments()
+                        # Record the instruction actually sent in the policy prompt.
+                        # update_instruction deduplicates identical text.
+                        if self.args.record and single_instruction and single_instruction[0]:
+                            self.api_core.local_recorder.update_instruction(single_instruction[0])
+                        action = self.policy.act(
+                            observaion,
+                            step_num=self.env.current_step,
+                            task_instruction=single_instruction[0],
+                            task_segments=instruction_segments,
+                            gen_config=self.env.get_camera_gen_config(),
+                        )
                     else:
-                        single_instruction = self.env.task.get_instruction()
-                        instruction_segments = self.env.task.get_instruction_segments()
-                    # Record the instruction actually sent in the policy prompt.
-                    # update_instruction deduplicates identical text.
-                    if self.args.record and single_instruction and single_instruction[0]:
-                        self.api_core.local_recorder.update_instruction(single_instruction[0])
-                    action = self.policy.act(
-                        observaion,
-                        step_num=self.env.current_step,
-                        task_instruction=single_instruction[0],
-                        task_segments=instruction_segments,
-                        gen_config=self.env.get_camera_gen_config(),
-                    )
-                else:
-                    action = self.policy.act(observaion, step_num=self.env.current_step)
+                        action = self.policy.act(observaion, step_num=self.env.current_step)
+                finally:
+                    if should_pause:
+                        self.api_core.resume_physics()
                 single_te.update_policy_statistics(self.policy)
                 self.env.policy_dispatch_count = getattr(self.policy, "policy_dispatch_count", None)
                 if not self.args.interactive and self._finalize_no_action_episode(self.env, self.policy, single_te):
                     break
-                if should_pause:
-                    self.api_core.resume_physics()
                 for callback in step_callbacks:  # during task
                     callback(self.env, action)
 
@@ -1035,11 +1037,18 @@ class TaskBenchmark(object):
                     for slot, instance_id in enumerate(scene_instance_ids):
                         episode_seed = seed + instance_id
                         np.random.seed(episode_seed)
-                        if task_configs[slot].get("generalization", {}).get("hdr_texture", {}).get("resample_per_episode"):
+                        if (
+                            task_configs[slot]
+                            .get("generalization", {})
+                            .get("hdr_texture", {})
+                            .get("resample_per_episode")
+                        ):
                             apply_hdr_texture_generalization(
-                                envs[slot].api_core, task_configs[slot],
+                                envs[slot].api_core,
+                                task_configs[slot],
                                 seed=seed + instance_id * 1000 + file_idx,
-                                episode_id=episode_id, file_idx=file_idx,
+                                episode_id=episode_id,
+                                file_idx=file_idx,
                             )
                         envs[slot].set_current_task(episode_id)
                         if self.instruction != "":
@@ -1119,14 +1128,23 @@ class TaskBenchmark(object):
                     gen_configs.append(None)
                     step_nums.append(0)
 
-            actions = vec_policy.act_batch(
-                obs_list,
-                instructions,
-                gen_configs,
-                step_nums,
-                active_mask=active,
-                task_segments=instruction_segments,
+            should_pause = self.args.pause_physics_during_inference and any(
+                enabled and due for enabled, due in zip(active, vec_policy.need_infer_list())
             )
+            if should_pause:
+                self.api_core.pause_physics()
+            try:
+                actions = vec_policy.act_batch(
+                    obs_list,
+                    instructions,
+                    gen_configs,
+                    step_nums,
+                    active_mask=active,
+                    task_segments=instruction_segments,
+                )
+            finally:
+                if should_pause:
+                    self.api_core.resume_physics()
             for i, evaluation in enumerate(te_list):
                 if active[i]:
                     evaluation.update_policy_statistics(vec_policy.get_policy(i))

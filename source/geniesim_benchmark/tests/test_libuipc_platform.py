@@ -17,11 +17,19 @@ from geniesim_benchmark.utils.hard_ik import HardIKFKSolver
 
 
 def test_platform_record_resume_flags_accept_equals_and_separate_values(tmp_path):
-    options = runner.make_parser().parse_args([
-        "--config", "task.yaml", "--benchmark.record=true", "--benchmark.resume", "true",
-        "--benchmark.output_dir", str(tmp_path), "--benchmark.resume_id=job-42",
-        "--benchmark.record_state=false",
-    ])
+    options = runner.make_parser().parse_args(
+        [
+            "--config",
+            "task.yaml",
+            "--benchmark.record=true",
+            "--benchmark.resume",
+            "true",
+            "--benchmark.output_dir",
+            str(tmp_path),
+            "--benchmark.resume_id=job-42",
+            "--benchmark.record_state=false",
+        ]
+    )
     assert options.record and options.resume
     assert options.output_dir == tmp_path
     assert options.resume_id == "job-42"
@@ -85,26 +93,36 @@ def test_record_captures_measured_joints_and_labelled_video(tmp_path):
 
     image = np.full((120, 320, 3), 150, dtype=np.uint8)
     jpeg = cv2.imencode(".jpg", image)[1].tobytes()
-    packet = {"snapshot": {"joints": dict.fromkeys(adapter.DRIVE_JOINTS, 0.25), "sim_time": 0.1,
-                           "bodies": {"/robot/base_link": [1, 2, 3, 1, 0, 0, 0]}},
-              "images": {name: {"encoding": "JPEG", "image_data": jpeg, "width": 320, "height": 120}
-                         for name in ("head", "hand_left", "hand_right")}}
-    recording = EpisodeRecording(tmp_path, 7, "Hang the clothes", fps=30, record_state=True,
-                                 fixed_joints=dict.fromkeys(adapter.WAIST_JOINTS + adapter.HEAD_JOINTS, 0.1))
+    packet = {
+        "snapshot": {
+            "joints": dict.fromkeys(adapter.DRIVE_JOINTS, 0.25),
+            "sim_time": 0.1,
+            "bodies": {"/robot/base_link": [1, 2, 3, 1, 0, 0, 0]},
+        },
+        "images": {
+            name: {"encoding": "JPEG", "image_data": jpeg, "width": 320, "height": 120}
+            for name in ("head", "hand_left", "hand_right")
+        },
+    }
+    recording = EpisodeRecording(
+        tmp_path,
+        7,
+        "Hang the clothes",
+        fps=30,
+        record_state=True,
+        fixed_joints=dict.fromkeys(adapter.WAIST_JOINTS + adapter.HEAD_JOINTS, 0.1),
+    )
     recording.capture(packet, 0)
     recording.capture(packet, 0)  # Same control tick must not add another video/state frame.
     packet["snapshot"]["joints"][adapter.ARM_JOINTS[0]] = 0.5
     recording.capture(packet, 1)
     bag = Path(recording.close())
-    rows = [json.loads(line) for line in (bag / "state.jsonl").read_text().splitlines()]
-    assert rows[0]["episode_idx"] == 7
-    assert [row["step"] for row in rows[1:]] == [0, 1]
-    name_index = rows[1]["joints"]["name"].index(adapter.ARM_JOINTS[0])
-    assert [row["joints"]["position"][name_index] for row in rows[1:]] == [0.25, 0.5]
-    assert rows[1]["base_pose"]["orientation_xyzw"] == [0, 0, 0, 1]
+    assert not (bag / "state.jsonl").exists()
     from test_local_recorder_episode_overlay import read_frames
 
-    frame = read_frames(bag / "video/head.webm")[0]
+    frames = read_frames(bag / "video/head.webm")
+    assert len(frames) == 2
+    frame = frames[0]
     assert np.any(frame[-45:, -180:] > 200), "zero-based episode label missing"
 
 
@@ -120,14 +138,27 @@ def test_runner_records_every_executed_control_tick_without_changing_policy_imag
         steps = 0
 
         def observe(self, **kwargs):
-            return {"snapshot": {
-                **dict.fromkeys(("request_id", "source_id", "snapshot_id"), "sample"),
-                **dict.fromkeys(("epoch", "tick", "cloth_tick", "captured_wall_time_ns"), self.steps),
-                "sim_time": self.steps / 30, "joints": dict.fromkeys(adapter.DRIVE_JOINTS, self.steps / 10),
-                "bodies": {"/robot/" + name: [0, 0, 0, 1, 0, 0, 0] for name in
-                           ("base_link", "arm_base_link", "arm_l_end_link", "arm_r_end_link")}},
-                    "images": {name: {"encoding": "JPEG", "image_data": base64.b64encode(jpeg).decode(), "width": 320, "height": 120}
-                               for name in ("head", "hand_left", "hand_right")}}
+            return {
+                "snapshot": {
+                    **dict.fromkeys(("request_id", "source_id", "snapshot_id"), "sample"),
+                    **dict.fromkeys(("epoch", "tick", "cloth_tick", "captured_wall_time_ns"), self.steps),
+                    "sim_time": self.steps / 30,
+                    "joints": dict.fromkeys(adapter.DRIVE_JOINTS, self.steps / 10),
+                    "bodies": {
+                        "/robot/" + name: [0, 0, 0, 1, 0, 0, 0]
+                        for name in ("base_link", "arm_base_link", "arm_l_end_link", "arm_r_end_link")
+                    },
+                },
+                "images": {
+                    name: {
+                        "encoding": "JPEG",
+                        "image_data": base64.b64encode(jpeg).decode(),
+                        "width": 320,
+                        "height": 120,
+                    }
+                    for name in ("head", "hand_left", "hand_right")
+                },
+            }
 
         def step(self, target, duration, *, on_accepted, **kwargs):
             assert len(target) == 54
@@ -140,13 +171,22 @@ def test_runner_records_every_executed_control_tick_without_changing_policy_imag
             assert payload["params"]["images"]["head"]["image_data"] == jpeg
             return joint_reply()
 
-    result = runner.run_episode(Client(), Policy(), task="cloth_hanger", instruction="Hang clothes",
-                                fixed_joints=dict.fromkeys(adapter.WAIST_JOINTS + adapter.HEAD_JOINTS, 0),
-                                episode_dir=tmp_path / "episode", max_steps=2, record=True,
-                                recording_root=tmp_path)
+    result = runner.run_episode(
+        Client(),
+        Policy(),
+        task="cloth_hanger",
+        instruction="Hang clothes",
+        fixed_joints=dict.fromkeys(adapter.WAIST_JOINTS + adapter.HEAD_JOINTS, 0),
+        episode_dir=tmp_path / "episode",
+        max_steps=2,
+        record=True,
+        recording_root=tmp_path,
+    )
     assert result["execution_status"] == "completed"
-    rows = [json.loads(line) for line in (Path(result["recording"]) / "state.jsonl").read_text().splitlines()]
-    assert [row["step"] for row in rows[1:]] == [0, 1, 2]
+    assert not (Path(result["recording"]) / "state.jsonl").exists()
+    from test_local_recorder_episode_overlay import read_frames
+
+    assert len(read_frames(Path(result["recording"]) / "video/head.webm")) == 3
     assert len(list((tmp_path / "episode/observations").glob("*.json"))) == 2
 
 
@@ -159,16 +199,23 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
         "libuipc": {"task": "cloth_hanger", "max_steps": 30},
     }
     monkeypatch.setattr(runner, "checkpoint_identity", lambda *args: {"task": "cloth_hanger"})
-    monkeypatch.setattr(runner, "write_summary", lambda directory, rows: runner.write_json(
-        directory / "evaluate_ret_00.json", {"details": rows, "statistics": {}}))
+    monkeypatch.setattr(
+        runner,
+        "write_summary",
+        lambda directory, rows: runner.write_json(
+            directory / "evaluate_ret_00.json", {"details": rows, "statistics": {}}
+        ),
+    )
     calls = []
     fail = True
     if record:
         import cv2
         import shutil
+
         if shutil.which("ffmpeg") is None:
             pytest.skip("ffmpeg required")
         from geniesim_benchmark.libuipc.recording import EpisodeRecording
+
         jpeg = cv2.imencode(".jpg", np.full((120, 320, 3), 150, dtype=np.uint8))[1].tobytes()
 
     class Session:
@@ -190,15 +237,37 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
 
     def episode(session, index, *, evaluations):
         calls.append(index)
-        result = {"episode_idx": index, "execution_status": "failed" if fail and index == 1 else "completed",
-                  "scoring_status": "scored", "score": 0, "success": False}
+        result = {
+            "episode_idx": index,
+            "execution_status": "failed" if fail and index == 1 else "completed",
+            "scoring_status": "scored",
+            "score": 0,
+            "success": False,
+        }
         if record:
-            recorder = EpisodeRecording(tmp_path, index, "Hang clothes", fps=30, record_state=True,
-                                        fixed_joints={}, run_id=session.checkpoint_run_id)
-            recorder.capture({"snapshot": {"joints": dict.fromkeys(adapter.DRIVE_JOINTS, index / 10),
-                                           "sim_time": 0.1, "bodies": {"/robot/base_link": [0, 0, 0, 1, 0, 0, 0]}},
-                              "images": {name: {"encoding": "JPEG", "image_data": jpeg, "width": 320, "height": 120}
-                                         for name in ("head", "hand_left", "hand_right")}}, 0)
+            recorder = EpisodeRecording(
+                tmp_path,
+                index,
+                "Hang clothes",
+                fps=30,
+                record_state=True,
+                fixed_joints={},
+                run_id=session.checkpoint_run_id,
+            )
+            recorder.capture(
+                {
+                    "snapshot": {
+                        "joints": dict.fromkeys(adapter.DRIVE_JOINTS, index / 10),
+                        "sim_time": 0.1,
+                        "bodies": {"/robot/base_link": [0, 0, 0, 1, 0, 0, 0]},
+                    },
+                    "images": {
+                        name: {"encoding": "JPEG", "image_data": jpeg, "width": 320, "height": 120}
+                        for name in ("head", "hand_left", "hand_right")
+                    },
+                },
+                0,
+            )
             result["recording"] = recorder.close()
         evaluations.append({"execution": result})
         return result
@@ -211,6 +280,7 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
     calls.clear()
     if record:
         from geniesim_benchmark.plugins.output_system.checkpoint import CheckpointRejected
+
         committed = tmp_path / manifest["completed"][0]["bag"]
         displaced = committed.with_name("temporarily-missing")
         committed.rename(displaced)
@@ -231,12 +301,12 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
         from test_local_recorder_episode_overlay import read_frames
 
         assert len(read_frames(tmp_path / "head.webm")) == 3
-        assert len(list(tmp_path.glob("*.state.jsonl"))) == 3
+        assert not list(tmp_path.rglob("*.state.jsonl"))
     calls.clear()
     runner.evaluate(config, "model:9000", tmp_path, tmp_path, headless=True)
     assert calls == []
     if record:
-        # Once finalized, uploads may retain only the published videos/states.
+        # Once finalized, uploads may retain only the published videos.
         # Finalized retries must also work without the intermediate bag folders.
         for directory in tmp_path.glob("recording_*"):
             if directory.is_dir():
@@ -251,7 +321,9 @@ def test_resume_rejects_changed_inputs_before_starting_simulation(tmp_path, monk
     config = {"benchmark": {"num_instances": 1, "num_episode": 1, "resume": True}, "libuipc": {}}
     with EvaluationCheckpoint(tmp_path) as checkpoint:
         checkpoint._result_file = "evaluate_ret_00.json"
-        checkpoint.prepare({"endpoint": "original"}, [dict(episode_idx=0, instance_id=0, file_idx=0, episode_id=0)], [], {})
+        checkpoint.prepare(
+            {"endpoint": "original"}, [dict(episode_idx=0, instance_id=0, file_idx=0, episode_id=0)], [], {}
+        )
     monkeypatch.setattr(runner, "checkpoint_identity", lambda *args: {"endpoint": "different"})
     monkeypatch.setattr(runner, "LibuipcRunSession", lambda *a, **kw: pytest.fail("must reject before starting"))
     with pytest.raises(CheckpointRejected, match="changed"):
@@ -264,7 +336,9 @@ def test_real_session_can_open_fresh_engine_logs_on_retry(tmp_path, monkeypatch)
     from geniesim_benchmark.libuipc import config as native_config, scoring
 
     config = {"libuipc": {"launcher": "launcher", "wait_timeout": 1, "evaluation_scene": "scene"}}
-    monkeypatch.setattr(scoring, "prepare_assets", lambda *a, **kw: {"assets_root": str(tmp_path), "process_environment": {}})
+    monkeypatch.setattr(
+        scoring, "prepare_assets", lambda *a, **kw: {"assets_root": str(tmp_path), "process_environment": {}}
+    )
     monkeypatch.setattr(scoring, "assembled_geometry", lambda *a, **kw: {})
 
     def sequence(config, directory, **kwargs):

@@ -105,7 +105,7 @@ class EpisodeRequests:
                     type(packet["epoch"]) is not int
                     or type(packet["index"]) is not int
                     or packet["index"] < 0
-                    or packet["operation"] not in ("begin", "finish", "reset")
+                    or packet["operation"] not in ("begin", "finish", "reset", "pause", "resume")
                 ):
                     raise ValueError("invalid episode operation/index")
                 key = (packet["source_id"], packet["epoch"], packet["request_id"])

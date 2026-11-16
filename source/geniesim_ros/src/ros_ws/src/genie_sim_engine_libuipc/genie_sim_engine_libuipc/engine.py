@@ -95,6 +95,7 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         self._episode_source = None
         self._sequence_index = 0
         self._sequence_finished = False
+        self._inference_paused = False
         from .episode_sequence import sequence_entries
 
         self._sequence_entries = sequence_entries(self._scene_cfg)
@@ -698,6 +699,7 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
                 self._sim_time = 0.0
                 self._sequence_index = index
                 self._sequence_finished = False
+                self._inference_paused = False
                 self._paused = True
                 self._scene_cfg["libuipc"]["state_recording"] = sequence[index]["state_recording"]
                 self._scene_cfg["generalization"] = {"material": sequence[index]["material"]}
@@ -736,16 +738,30 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         elif index != self._sequence_index:
             raise InvalidEpisodeOperation("episode index differs from active configured entry")
         elif operation == "finish":
-            if self._sequence_finished or self._paused:
+            if self._sequence_finished or (self._paused and not self._inference_paused):
                 raise InvalidEpisodeOperation("episode is not running")
             self.pause()
             self._state_recorder.close(clean=True)
             self._state_recorder = None
             self._sequence_finished = True
+            self._inference_paused = False
         elif operation == "begin":
-            if self._sequence_finished or not self._paused:
+            if self._sequence_finished or not self._paused or self._inference_paused:
                 raise InvalidEpisodeOperation("episode is finished or already running")
             self.resume()
+        elif operation == "pause":
+            if self._sequence_finished or self._paused:
+                raise InvalidEpisodeOperation("episode is not running")
+            cpu = self._scene_cfg["libuipc"].get("cpu_mujoco")
+            if cpu and cpu.get("synchronization") != "barrier":
+                raise InvalidEpisodeOperation("inference pause requires CPU barrier synchronization")
+            self.pause()
+            self._inference_paused = True
+        elif operation == "resume":
+            if self._sequence_finished or not self._paused or not self._inference_paused:
+                raise InvalidEpisodeOperation("episode is not paused for inference")
+            self.resume()
+            self._inference_paused = False
         else:
             raise InvalidEpisodeOperation("unknown episode operation")
         return identity_packet(self, "ready")

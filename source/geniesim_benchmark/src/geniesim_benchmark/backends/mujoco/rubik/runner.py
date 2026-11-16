@@ -62,15 +62,6 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
     samples, action_log = [], []
     projection_count, maximum_projection = 0, 0.0
     arm_projection_count, arm_maximum_projection = 0, 0.0
-    raw_times = []
-    raw = {key: [] for key in ("qpos", "qvel", "ctrl", "qfrc_applied", "actuator_force")}
-
-    def record_raw():
-        if cfg.benchmark.record and (not raw_times or env.data.time > raw_times[-1]):
-            raw_times.append(float(env.data.time))
-            for key in raw:
-                raw[key].append(getattr(env.data, key).copy())
-
     recording = None
     bag = None
     if cfg.benchmark.record and cfg.rubik.render:
@@ -86,19 +77,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
 
     def capture(images):
         if recording is not None:
-            base = env.model.body("base_link").id
-            quat = env.data.xquat[base]
-            state = {
-                "joints": {
-                    "name": [env.model.joint(j).name for j in env.motor_joints],
-                    "position": env.data.qpos[env.motor_q].tolist(),
-                },
-                "base_pose": {
-                    "position": env.data.xpos[base].tolist(),
-                    "orientation_xyzw": [*map(float, quat[1:]), float(quat[0])],
-                },
-            }
-            recording.capture(images, env.steps, state, sim_time=float(env.data.time))
+            recording.capture(images, env.steps)
 
     max_steps = int(np.ceil(cfg.rubik.timeout_seconds / env.model.opt.timestep))
     try:
@@ -112,7 +91,6 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
             status, reason = "success", "cube_solved"
         last_scored_sample = initial
         samples.append(initial)
-        record_raw()
         if recording is not None:
             capture(env.images())
         if not cfg.app.headless:
@@ -135,6 +113,8 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
                     flush=True,
                 )
             sent_at = time.monotonic()
+            # Physics is stepped only below on this thread, so inference always
+            # holds the complete MuJoCo state, including when the flag is false.
             reply = policy.infer(payload)
             reply_seconds = time.monotonic() - sent_at
             inference_seconds += reply_seconds
@@ -186,10 +166,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
                 )
                 next_step = min(action_start_step + execution_steps, max_steps)
                 while env.steps < next_step:
-                    try:
-                        sample = env.tick()
-                    finally:
-                        record_raw()
+                    sample = env.tick()
                     last_scored_sample = sample
                     if scorer.update(sample):
                         status, reason = "success", "solved_and_held" if cfg.rubik.hold_seconds else "cube_solved"
@@ -274,19 +251,12 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
         "error": error,
         "initial": initial,
         "last_scored_sample": last_scored_sample,
-        "recorded_raw": cfg.benchmark.record,
+        "recorded_raw": False,
         "recording": bag,
     }
     write_json(directory / "result.json", result)
     write_json(directory / "samples.json", samples)
     write_json(directory / "actions.json", action_log)
-    if cfg.benchmark.record:
-        np.savez_compressed(
-            directory / "raw-1000hz.npz",
-            timestep=env.model.opt.timestep,
-            time=np.asarray(raw_times),
-            **{k: np.asarray(v) for k, v in raw.items()},
-        )
     if result["task_name"] == RUBIK_TASK:
         evaluation = make_evaluation(
             RUBIK_TASK,

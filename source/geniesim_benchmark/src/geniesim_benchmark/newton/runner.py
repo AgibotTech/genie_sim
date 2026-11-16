@@ -76,8 +76,11 @@ def run_episode(
     evaluation_timeout_s: float = 30,
     event=None,
     recording=None,
+    pause_physics_during_inference: bool = True,
 ) -> dict:
-    """Run bounded action chunks; every model request occurs behind a pause barrier."""
+    """Run bounded chunks with optional physics pause while waiting for inference."""
+    if type(pause_physics_during_inference) is not bool:
+        raise ValueError("pause_physics_during_inference must be a boolean")
     if type(max_steps) is not int or max_steps < 1:
         raise ValueError("max_steps must be a positive integer")
     record = event if event is not None else lambda value: None
@@ -86,9 +89,7 @@ def run_episode(
 
     def capture():
         if recording is not None:
-            from geniesim_benchmark.plugins.output_system.observations import snapshot_state
-
-            recording.capture(frames, steps, snapshot_state(state))
+            recording.capture(frames, steps)
 
     def score_after(*, after_tick=None, after_ns=0):
         if progress is None:
@@ -129,13 +130,19 @@ def run_episode(
             task_progress=evaluation.wire_progress() if evaluation is not None else (),
         )
         record({"event": "inference_start", "steps": steps, "observation_stamp_ns": stamp_ns})
-        chunk = policy.infer(
-            payload,
-            groups=groups,
-            controllable_joints=controllable,
-            held_positions=held,
-            initial_positions=initial,
-        )
+        if not pause_physics_during_inference:
+            client.resume()
+        try:
+            chunk = policy.infer(
+                payload,
+                groups=groups,
+                controllable_joints=controllable,
+                held_positions=held,
+                initial_positions=initial,
+            )
+        finally:
+            if not pause_physics_during_inference:
+                client.pause()
         requests += 1
         record({"event": "inference_end", "steps": steps, "chunk_steps": len(chunk.targets)})
         if chunk.server_episode_done:
@@ -280,7 +287,7 @@ def evaluate_attached(
                 episode_index,
                 config["instruction"],
                 fps=benchmark.get("fps", 30),
-                record_state=benchmark.get("record_state", True),
+                record_state=benchmark.get("record_state", False),
             )
         try:
             result = run_episode(
@@ -297,6 +304,7 @@ def evaluate_attached(
                 progress=progress,
                 evaluation_timeout_s=evaluation_timeout_s,
                 event=record,
+                pause_physics_during_inference=benchmark.get("pause_physics_during_inference", True),
                 **({"recording": recording} if recording is not None else {}),
             )
         finally:
@@ -339,7 +347,7 @@ def main(argv=None) -> int:
     parser.add_argument("--assets-root", type=Path)
     from geniesim_benchmark.execution import boolean
 
-    for key in ("record", "record_state", "resume"):
+    for key in ("record", "record_state", "resume", "pause_physics_during_inference"):
         parser.add_argument(f"--benchmark.{key}", dest=key, type=boolean)
     parser.add_argument("--app.headless", dest="headless", type=boolean)
     parser.add_argument("--benchmark.seed", dest="seed", type=int)
@@ -355,10 +363,21 @@ def main(argv=None) -> int:
     if options.output_dir is None:
         options.output_dir = task_output_directory(config, output_root(config_path))
     benchmark = config.setdefault("benchmark", {})
-    for key in ("record", "record_state", "resume", "resume_id", "seed", "record_video_dir", "fps"):
+    for key in (
+        "record",
+        "record_state",
+        "resume",
+        "resume_id",
+        "seed",
+        "record_video_dir",
+        "fps",
+        "pause_physics_during_inference",
+    ):
         value = getattr(options, key)
         if value is not None:
             benchmark[key] = value
+    if type(benchmark.get("pause_physics_during_inference", True)) is not bool:
+        parser.error("benchmark.pause_physics_during_inference must be a boolean")
     if options.headless is not None:
         config["headless"] = options.headless
     if config.get("runtime") != "newton":

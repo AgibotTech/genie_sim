@@ -86,3 +86,29 @@ def test_unsolicited_epoch_change_fails_and_uncertain_reset_never_replays():
     with pytest.raises(RuntimeError, match="session failed"):
         c.reset(1)
     assert len(t.sent) == 3
+
+
+def test_pause_resume_is_acknowledged_without_advancing_the_episode():
+    c, t = client()
+    c.begin_episode()
+    paused = c.pause()
+    assert paused["operation"] == "pause"
+    with pytest.raises(RuntimeError, match="begin_episode|paused"):
+        c.step({"arm": 0.0}, 1 / 60)
+    c.resume()
+    c.pause()
+    c.finish_episode()  # Failed/terminal inference can finish without resuming.
+    c.reset(1)
+    assert c.identity["epoch"] == 1
+    assert [p[1]["operation"] for p in t.sent] == ["begin", "pause", "resume", "pause", "finish", "reset"]
+
+
+def test_uncertain_pause_poisoning_prevents_actions_or_resume():
+    c, t = client()
+    c.begin_episode()
+    t.fail = True
+    with pytest.raises(TimeoutError):
+        c.pause()
+    with pytest.raises(RuntimeError, match="session failed"):
+        c.resume()
+    assert len(t.sent) == 2

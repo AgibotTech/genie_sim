@@ -578,7 +578,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--shutdown-timeout-s", type=float, default=60)
     from geniesim_benchmark.execution import boolean
 
-    for key in ("record", "record_state", "resume"):
+    for key in ("record", "record_state", "resume", "pause_physics_during_inference"):
         parser.add_argument(f"--benchmark.{key}", dest=key, type=boolean)
     parser.add_argument("--app.headless", dest="headless", type=boolean)
     parser.add_argument("--benchmark.seed", dest="seed", type=int)
@@ -622,10 +622,21 @@ def main(argv: list[str] | None = None) -> int:
         from .checkpoint import run_checkpointed
 
         config = yaml.safe_load(plans[0].evaluation.read_text())
-        for key in ("record", "record_state", "resume", "resume_id", "seed", "record_video_dir", "fps"):
+        for key in (
+            "record",
+            "record_state",
+            "resume",
+            "resume_id",
+            "seed",
+            "record_video_dir",
+            "fps",
+            "pause_physics_during_inference",
+        ):
             value = getattr(options, key)
             if value is not None:
                 config.setdefault("benchmark", {})[key] = value
+        if type(config.get("benchmark", {}).get("pause_physics_during_inference", True)) is not bool:
+            raise ValueError("benchmark.pause_physics_during_inference must be a boolean")
         if options.headless is not None:
             config["headless"] = options.headless
         if options.benchmark_episodes is not None:

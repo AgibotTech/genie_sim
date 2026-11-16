@@ -1,7 +1,7 @@
 # Copyright (c) 2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
-"""Native camera/state files use Isaac's recorder and survive final export."""
+"""Native camera files use Isaac's recorder and survive final export."""
 
 import json
 import shutil
@@ -14,7 +14,7 @@ import pytest
 from geniesim_benchmark.plugins.output_system.observations import ObservationRecording, finalize_recordings
 
 
-def test_three_camera_video_state_and_episode_overlay(tmp_path):
+def test_three_camera_video_only_and_episode_overlay(tmp_path):
     if not shutil.which("ffmpeg") or not shutil.which("ffprobe"):
         pytest.skip("ffmpeg and ffprobe are required")
     output = tmp_path / "task" / "sub_task"
@@ -26,14 +26,12 @@ def test_three_camera_video_state_and_episode_overlay(tmp_path):
     recorder.capture(frames, 1, state)
     bag = Path(recorder.close())
     assert bag.parent == output
-    rows = [json.loads(line) for line in (bag / "state.jsonl").read_text().splitlines()]
-    assert rows[0]["episode_idx"] == 8
-    assert [row["step"] for row in rows[1:]] == [0, 1]
+    assert not (bag / "state.jsonl").exists()
     report = output / "evaluate_ret_00.json"
     report.write_text('{"details": []}')
     artifacts = finalize_recordings(output, [bag], tmp_path / "export", reports=[report])
     assert (tmp_path / "export/sub_task/evaluate_ret_00.json").read_bytes() == report.read_bytes()
-    assert len(artifacts) == 4
+    assert len(artifacts) == 3
     for name in frames:
         path = output / f"{name}.webm"
         probe = subprocess.run(
@@ -75,4 +73,4 @@ def test_three_camera_video_state_and_episode_overlay(tmp_path):
         check=True,
     ).stdout
     assert np.any(np.frombuffer(raw, dtype=np.uint8).reshape(120, 320, 3)[-45:, -180:] > 200)
-    assert (bag / "state.jsonl").is_file()
+    assert not (bag / "state.jsonl").exists()

@@ -366,8 +366,14 @@ class IPCClient:
             self._drain()
             if not self.config.episode_count:
                 raise RuntimeError("scene YAML has no episode_sequence")
-            expected_phase = {"begin": "ready", "finish": "running", "reset": "finished"}[operation]
-            if self._episode_phase != expected_phase:
+            expected_phase = {
+                "begin": ("ready",),
+                "finish": ("running", "paused"),
+                "reset": ("finished",),
+                "pause": ("running",),
+                "resume": ("paused",),
+            }[operation]
+            if self._episode_phase not in expected_phase:
                 raise RuntimeError(f"episode {operation} requires {expected_phase} phase")
             if (
                 type(index) is not int
@@ -396,7 +402,13 @@ class IPCClient:
                     raise ValueError("episode completion has no committed reset identity")
                 self._identity_message(identity)
                 self._episode_index = index
-                self._episode_phase = {"begin": "running", "finish": "finished", "reset": "ready"}[operation]
+                self._episode_phase = {
+                    "begin": "running",
+                    "finish": "finished",
+                    "reset": "ready",
+                    "pause": "paused",
+                    "resume": "running",
+                }[operation]
                 return _freeze(reply)
         except BaseException as exc:
             if sent:
@@ -411,6 +423,14 @@ class IPCClient:
 
     def finish_episode(self):
         return self._episode_command("finish", self._episode_index)
+
+    def pause(self):
+        """Freeze a running recorded episode at an acknowledged native tick boundary."""
+        return self._episode_command("pause", self._episode_index)
+
+    def resume(self):
+        """Continue the same episode without resetting its state, clock or archive."""
+        return self._episode_command("resume", self._episode_index)
 
     def reset(self, index):
         """Recover the same world into the next YAML entry; never retry a failed send."""

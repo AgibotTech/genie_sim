@@ -126,3 +126,17 @@ def test_base_plan_requires_complete_sequence_and_original_first_pose():
     scene["libuipc"]["episode_sequence"][0]["robot_base_pose"]["x"] += 0.01
     with pytest.raises(ValueError, match="initial robot base pose"):
         sequence_entries(scene)
+
+
+@pytest.mark.parametrize("operation", ["pause", "resume"])
+def test_pause_resume_wait_for_the_physics_owner_and_deduplicate(operation):
+    engine = Engine()
+    queue = EpisodeRequests(engine)
+    packet = request(operation)
+    assert queue.request(packet) is None
+    assert not engine.calls
+    reply = queue.drain()[0]
+    assert reply["status"] == "completed"
+    assert engine.calls == [(operation, 0)]
+    assert queue.request(packet) == reply
+    assert queue.drain() == []

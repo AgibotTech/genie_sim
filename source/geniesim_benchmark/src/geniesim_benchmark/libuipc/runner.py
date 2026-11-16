@@ -4,7 +4,7 @@
 
 """Three Wuji tasks with one libuipc bringup and synchronized renderer per task.
 
-Physics remains real time during camera capture and inference. The shared client
+Physics remains real time unless pause_physics_during_inference is enabled. The shared client
 only attaches; this benchmark owns bringup, policy, scorer and archive lifetime.
 """
 
@@ -92,11 +92,12 @@ def run_episode(
     snapshot_validator=None,
     frame_bindings=None,
     record=False,
-    record_state=True,
+    record_state=False,
     recording_root=None,
     recording_run_id=None,
     robot_usd_path=None,
     ik_solver=None,
+    pause_physics_during_inference=False,
 ):
     """Validate whole chunks, count accepted dispatches and stop only at ACK boundaries."""
     root = Path(episode_dir)
@@ -157,6 +158,10 @@ def run_episode(
                 frame_bindings=frame_bindings,
                 run_id=recording_run_id,
             )
+        if type(pause_physics_during_inference) is not bool:
+            raise ValueError("pause_physics_during_inference must be a boolean")
+        if pause_physics_during_inference:
+            client.pause()
         packet = capture("initial")
         while result["steps"] < max_steps:
             if stopped():
@@ -256,6 +261,8 @@ def run_episode(
                         {"request_index": request_index, "steps": result["steps"], "ack": ack},
                     )
 
+            if pause_physics_during_inference:
+                client.resume()
             for offset, target in enumerate(chunk.targets[:count]):
                 acknowledgement = client.step(target, 1.0 / fps, timeout_s=wait_timeout, on_accepted=accepted)
                 result["steps"] += 1
@@ -281,6 +288,8 @@ def run_episode(
                     packet = capture(f"history_{result['steps']:06d}")
                     history.append({"head": wire_images(packet["images"])["head"]})
                     history_metadata.append(metadata(packet))
+            if pause_physics_during_inference:
+                client.pause()
             packet = capture(
                 "final"
                 if result.get("early_stopped") or result["steps"] >= max_steps
@@ -489,6 +498,23 @@ def shutdown_recorded_scene(episode_dir, *, timeout_s=30.0, environment=None, di
     raise TimeoutError("engine lifecycle shutdown did not close a clean physical archive")
 
 
+def discard_physical_state(episode_dir):
+    """Release sealed scoring inputs after readers exit, retaining the close receipt.
+
+    The engine shutdown handshake still reads manifest.json. State arrays and
+    their frame index are temporary scoring inputs, never resume dependencies.
+    """
+    directory = Path(episode_dir) / "physical_state"
+    manifest = directory / "manifest.json"
+    if not manifest.is_file():
+        return
+    if json.loads(manifest.read_text()).get("recording_closed") is not True:
+        return  # The native writer may still own these files.
+    for path in directory.glob("*.bin"):
+        path.unlink()
+    (directory / "frames.jsonl").unlink(missing_ok=True)
+
+
 def verify_physical_archive(episode_dir):
     from genie_sim_engine_libuipc.physical_state_recording import PhysicalStateArchiveFollower
 
@@ -614,6 +640,7 @@ class LibuipcRunSession:
         write_json(self.current / "reuse-material-capture.json", receipt)
         self.client.begin_episode()
         write_json(self.current / "reuse-finish.json", _plain(self.client.finish_episode()))
+        discard_physical_state(self.current)
 
     def close(self):
         errors = []
@@ -638,6 +665,11 @@ class LibuipcRunSession:
         if errors:
             write_json(self.directory / "session-cleanup-error.json", {"errors": errors})
             raise RuntimeError("; ".join(errors))
+        # Also release archives from failures before begin_episode(), once the
+        # writer has shut down. Never race a scorer that failed to terminate.
+        if not getattr(self, "scorer_cleanup_failed", False):
+            for episode in self.episodes:
+                discard_physical_state(episode["directory"])
 
     def __enter__(self):
         return self.start()
@@ -757,8 +789,9 @@ def run_one_episode(session, index, *, evaluations=None):
             snapshot_validator=validate_snapshot_material,
             frame_bindings=session.assembled["policy_frame_bindings"],
             robot_usd_path=session.robot_usd_path,
+            pause_physics_during_inference=session.config["benchmark"].get("pause_physics_during_inference", False),
             record=session.config["benchmark"].get("record", False),
-            record_state=session.config["benchmark"].get("record_state", True),
+            record_state=session.config["benchmark"].get("record_state", False),
             recording_root=session.directory,
             recording_run_id=getattr(session, "checkpoint_run_id", None),
         )
@@ -803,11 +836,19 @@ def run_one_episode(session, index, *, evaluations=None):
         except BaseException as exc:
             errors.append(f"archive/scoring: {exc}")
         finally:
+            scorer_stopped = scorer is None
             if scorer is not None:
                 try:
                     scorer.stop()
+                    scorer_stopped = True
                 except BaseException as exc:
                     errors.append(f"scorer cleanup: {exc}")
+                    session.scorer_cleanup_failed = True
+            if scorer_stopped:
+                try:
+                    discard_physical_state(directory)
+                except Exception as exc:
+                    errors.append(f"state cleanup: {exc}")
         if errors:
             result.update(execution_status="failed", completed=False, success=False, cleanup_errors=errors)
             result.setdefault("error", "; ".join(errors))
@@ -850,7 +891,7 @@ def checkpoint_identity(config, endpoint, assets_root):
     benchmark = value["benchmark"]
     for key in ("resume", "output_dir", "record_video_dir"):
         benchmark.pop(key, None)
-    for key, default in (("record", False), ("record_state", True), ("resume_id", "")):
+    for key, default in (("record", False), ("record_state", False), ("resume_id", "")):
         benchmark.setdefault(key, default)
     value["app"] = {k: v for k, v in value.get("app", {}).items() if k != "headless"}
     value["libuipc"].pop("output_dir", None)
@@ -924,9 +965,6 @@ def evaluate(config, endpoint, root, run_dir, *, headless, assets_root=None):
                 paths = checkpoint.recording_paths()
             except ValueError as exc:
                 raise CheckpointRejected(str(exc)) from exc
-            if benchmark.get("record_state", True) and not checkpoint.recordings_ready:
-                if any(not (Path(p) / "state.jsonl").is_file() for p in paths):
-                    raise CheckpointRejected("A committed joint-state recording is missing")
             return paths
 
         if benchmark.get("record", False):
@@ -993,6 +1031,9 @@ def make_parser():
     parser.add_argument("--benchmark.record", dest="record", type=_boolean)
     parser.add_argument("--benchmark.record_state", dest="record_state", type=_boolean)
     parser.add_argument("--benchmark.record_video_dir", dest="record_video_dir")
+    parser.add_argument(
+        "--benchmark.pause_physics_during_inference", type=_boolean, dest="pause_physics_during_inference"
+    )
     parser.add_argument("--benchmark.resume", dest="resume", type=_boolean)
     parser.add_argument("--benchmark.resume_id", dest="resume_id")
     parser.add_argument("--check-only", action="store_true")
@@ -1046,7 +1087,14 @@ def main(argv=None):
             config["benchmark"]["seed"] = options.seed
         if options.material_enable is not None:
             config.setdefault("generalization", {}).setdefault("material", {})["enable"] = options.material_enable
-        for key in ("record", "record_state", "resume", "resume_id", "record_video_dir"):
+        for key in (
+            "record",
+            "record_state",
+            "resume",
+            "resume_id",
+            "record_video_dir",
+            "pause_physics_during_inference",
+        ):
             value = getattr(options, key)
             if value is not None:
                 config["benchmark"][key] = value

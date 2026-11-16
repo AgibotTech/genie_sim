@@ -40,6 +40,7 @@ def owner(tmp_path):
     e._closed = False
     e._sequence_index = 0
     e._sequence_finished = False
+    e._inference_paused = False
     e._execution_failure = None
     e._failure_lock = threading.Lock()
     e._failure_version = 0
@@ -129,3 +130,34 @@ def test_open_recording_blocks_reset_and_native_failure_never_advances_epoch(tmp
         e.episode_reset(instances={0: 1})
     assert e._epoch == 0 and e._execution_failure is not None
     assert not (tmp_path / "1").exists()
+
+
+def test_inference_pause_freezes_native_ticks_and_keeps_archive_open(tmp_path):
+    e, calls = owner(tmp_path)
+    e._dt = 1 / 60
+    snapshots = []
+    e._snapshots = NS(on_tick=lambda: snapshots.append(e._tick))
+    before = (e._tick, e._sim_time, e._epoch)
+    particle = e._state_0.particle_q.numpy()
+    recorder = e._state_recorder
+    e.sequence_operation("pause", 0)
+    for _ in range(4):
+        assert e.step(e._dt, 0) == 0
+    assert (e._tick, e._sim_time, e._epoch) == before
+    np.testing.assert_array_equal(e._state_0.particle_q.numpy(), particle)
+    assert snapshots == [before[0]] * 4
+    assert e._state_recorder is recorder
+    e.sequence_operation("resume", 0)
+    assert not e._paused and not e._inference_paused
+    e.sequence_operation("pause", 0)
+    e.sequence_operation("finish", 0)
+    assert e._state_recorder is None and e._sequence_finished
+
+
+def test_pause_rejects_cpu_worker_that_would_keep_running(tmp_path):
+    e, _ = owner(tmp_path)
+    e._scene_cfg["libuipc"]["cpu_mujoco"] = {"synchronization": "latest"}
+    with pytest.raises(ValueError, match="CPU barrier"):
+        e.sequence_operation("pause", 0)
+    assert not e._paused
+    e.sequence_operation("finish", 0)

@@ -143,8 +143,8 @@ class BenchmarkConfig:
     resume_id: str = ""
     fps: int = 30
     record: bool = False
-    # Save replay state with recordings; the third-person camera remains opt-in.
-    record_state: bool = True
+    # Legacy compatibility flag; recordings no longer contain replay state.
+    record_state: bool = False
     record_world_camera: bool = False
     record_video_dir: str = ""
     infer_host: str = "localhost:8999"

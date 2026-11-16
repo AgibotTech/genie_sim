@@ -6,6 +6,22 @@ Isaac tasks run with system Python 3.12 and Isaac Sim 6.2 in the dedicated
 `geniesim4:latest` image (`geniesim docker` / `geniesim docker6.2`). Newton and
 libuipc tasks use the same interpreter; native MuJoCo keeps its separate runtime.
 
+## Pause while waiting for inference
+
+All task runners accept the same YAML key or CLI override:
+
+```bash
+geniesim benchmark run <TASK> --infer-host localhost:8999 \
+  --benchmark.pause_physics_during_inference=true
+```
+
+Physics stays frozen while waiting for the model and resumes to execute its
+actions. `record` and `resume` can be used with this flag. Keep the
+same setting when resuming an evaluation. Isaac and libuipc default to `false`;
+Newton defaults to `true`. MuJoCo uses synchronous stepping, so inference never
+advances physics, even with `false`. For libuipc, deploy the matching client and
+engine code and rebuild the ROS overlay with `geniesim ros build dev`.
+
 ## Weighted results and task assets
 
 `POLICY_BUDGET_WEIGHTED` reports the budget-adjusted score. The
@@ -46,8 +62,8 @@ episode plans are declared in startup YAML. Each episode seals its own physical
 archive and score before the next native reset; material receipts, observations
 and score records retain separate source epochs. Geometry changes are rejected
 rather than rebuilt implicitly. Scoring evaluates the initial frame, every tenth
-physical frame and the final frame; raw state recording and full archive integrity
-checks remain unchanged. Scoring drain waits up to 3600 seconds after episode
+physical frame and the final frame. Temporary raw state is verified before
+scoring completes, then its arrays and frame index are removed. Scoring drain waits up to 3600 seconds after episode
 finish. The explicit GPU lifecycle diagnostic
 [sequence probe](tests/native_libuipc_sequence_smoke.py) uses a deterministic hold
 policy and is separate from model evaluation.
@@ -71,17 +87,19 @@ geniesim benchmark run g2crsbwuji_dexmanip_cloth_hanger --infer-host localhost:8
 Retry with the same output directory, task settings and inference service.
 Completed, scored episodes are reused in `evaluate_ret_00.json`; interrupted
 episodes run again. Keep the entire output directory until finalization.
-Recording saves three camera videos and measured joint states; the head video
+Recording saves three camera videos without replay state; the head video
 includes the instruction and zero-based episode index. Frames are captured at
-observed control ticks. Native physical archives needed for scoring are always
-kept, independently of `record`. Both `JOINT_ABS` and `EEF_ABS` arms are supported;
+observed control ticks. Native physical state is temporary scoring input,
+independently of `record`, and is removed after scoring readers finish.
+Both `JOINT_ABS` and `EEF_ABS` arms are supported;
 EEF uses shared hard IK and accepts `base_link` or `arm_base_link` coordinates.
 
 Rubik tasks also accept `benchmark.resume` and optional `benchmark.resume_id`.
 Keep the same output directory and settings across retries. Completed successes,
 task failures and timeouts are retained; inference interruptions are retried.
-Keep the native episode files, including recorded `raw-1000hz.npz`, with the
-checkpoint. Once all episodes are committed, retrying only republishes scores.
+Keep native episode reports with the checkpoint; `raw-1000hz.npz` is no longer
+recorded or required for resume. Once all episodes are committed, retrying only
+republishes scores.
 
 
 Current interfaces are defined by:
@@ -151,8 +169,8 @@ Use the same command and output root on retries. Without an explicit path,
 `GENIESIM_BENCHMARK_OUTPUT_ROOT` or `OUTPUT_DIR` selects the root; the default is
 `output/benchmark`. Scores are saved under `ROOT/task_name/sub_task_name/`;
 if the task has no separate sub-task, both directory names are the task name.
-The score file is `evaluate_ret_00.json`. Recordings keep per-episode state and
+The score file is `evaluate_ret_00.json`. Recordings keep per-episode videos and
 aggregate `head.webm`, `hand_left.webm` and `hand_right.webm`; the head camera
 shows the instruction and zero-based episode index. Camera recording requires
 rendering to be enabled. `--benchmark.record_video_dir` additionally exports
-scores, videos and state files to `PATH/sub_task_name/`.
+scores and videos to `PATH/sub_task_name/`.

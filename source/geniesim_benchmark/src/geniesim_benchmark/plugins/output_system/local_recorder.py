@@ -6,9 +6,7 @@
 Replaces the older ROS rosbag → external extractor pipeline. Camera frames are
 pulled directly from the simulator's image cache, optionally annotated with the
 active task instruction, and piped into per-camera ffmpeg subprocesses (rawvideo
-bgr24 → libvpx-vp9 webm). On the same sampled ticks a state sampler
-(robot base pose / velocity, joint state) is appended to ``state.jsonl`` so a
-recording can be replayed, chassis included.
+bgr24 → libvpx-vp9 webm). Replay state is not recorded or exported.
 """
 
 from __future__ import annotations
@@ -36,7 +34,6 @@ logger = Logger()
 DEFAULT_FPS = 30
 DEFAULT_FFMPEG_THREADS = 2
 DEFAULT_QUEUE_DEPTH = 128
-STATE_SCHEMA = "geniesim.local-recorder-state.v1"
 INSTRUCTION_OVERLAY_CAMERA = "head"
 
 
@@ -279,27 +276,22 @@ class LocalRecorder:
       r.set_sub_task_name(sub_task_name)
       r.start(output_root=..., episode_idx=...)         # opens ffmpeg pipes
       r.update_instruction(text)                        # any time during recording
-      r.write_frames(robot_interface, current_step_index, state_sampler)  # called per sim tick
+      r.write_frames(robot_interface, current_step_index)  # called per sim tick
       r.stop(episode_idx=...)                           # closes pipes, writes instructions_raw.json
       r.concat_all(final_output_dir=...)                # cross-episode concat at the end of the run
 
-    state.jsonl: a header line ``{"schema", "episode_idx", "fps", "every_n_frame"}``
-    followed by one line per sampled tick ``{"frame_index", "step", "sim_time", **sample}``.
-    ``frame_index`` counts sampled ticks from 0, i.e. the video frame index when
-    every camera delivered that tick.
     """
 
     def __init__(
         self,
         fps: int = DEFAULT_FPS,
         ffmpeg_threads: int = DEFAULT_FFMPEG_THREADS,
-        record_state: bool = True,
+        record_state: bool = False,
         record_world_camera: bool = False,
     ):
         self._fps = fps
         self._ffmpeg_threads = ffmpeg_threads
-        # Replay state is enabled by default; world-camera recording is opt-in.
-        self._record_state = record_state
+        # Keep the legacy record_state argument accepted; recordings are video-only.
         self._record_world_camera = record_world_camera
 
         self._lock = threading.RLock()
@@ -313,9 +305,6 @@ class LocalRecorder:
         self._current_instruction = ""
         self._instruction_segments: list[dict] = []
         self._recording_start_time: float | None = None
-
-        self._state_file = None
-        self._state_error_logged = False
 
         self._current_bag_path: str | None = None
         self._current_episode_idx: int = 0
@@ -435,21 +424,6 @@ class LocalRecorder:
 
             self._record_every_n_frame = min(every_ns) if every_ns else 1
             self._step_counter = 0
-            self._state_error_logged = False
-            self._state_file = None
-            if self._record_state:
-                self._state_file = open(os.path.join(bag_path, "state.jsonl"), "w", encoding="utf-8")
-                self._state_file.write(
-                    json.dumps(
-                        {
-                            "schema": STATE_SCHEMA,
-                            "episode_idx": episode_idx,
-                            "fps": self._fps,
-                            "every_n_frame": self._record_every_n_frame,
-                        }
-                    )
-                    + "\n"
-                )
             self._current_bag_path = bag_path
             self._current_episode_idx = episode_idx
             self._recording_start_time = time.time()
@@ -479,8 +453,7 @@ class LocalRecorder:
 
         ``robot_interface._img_data_cache[cam_id]`` is RGBA uint8 — convert to
         BGR before submitting to ffmpeg. The head camera also gets the active
-        instruction and episode index overlaid. ``state_sampler`` is called only on sampled ticks
-        and must return a JSON-serialisable dict.
+        instruction and episode index overlaid. Legacy state arguments are ignored.
         """
         if not self._is_recording:
             return
@@ -512,25 +485,7 @@ class LocalRecorder:
                 _overlay_episode_index(bgr, episode_idx)
             encoder.submit(bgr)
 
-        if state_sampler is not None:
-            self._write_state(state_sampler, current_step_index, sim_time)
-
         self._step_counter += 1
-
-    def _write_state(self, state_sampler, current_step_index, sim_time) -> None:
-        with self._lock:
-            state_file = self._state_file
-        if state_file is None:
-            return
-        try:
-            record = {"frame_index": self._step_counter, "step": current_step_index, "sim_time": sim_time}
-            record.update(state_sampler())
-            state_file.write(json.dumps(record) + "\n")
-        except Exception as exc:
-            # A missing state sample must not stop the video recording.
-            if not self._state_error_logged:
-                logger.warning(f"[local_recorder] state sample failed, skipping: {exc}")
-                self._state_error_logged = True
 
     def stop(self, episode_idx: int | None = None, discard: bool = False) -> str | None:
         """Close ffmpeg pipes and write instructions_raw.json. Returns bag_path."""
@@ -545,7 +500,6 @@ class LocalRecorder:
             self._encoders.clear()
             cam_map = dict(self._camera_id_to_name)
             self._camera_id_to_name.clear()
-            state_file, self._state_file = self._state_file, None
             bag_path = self._current_bag_path
             recording_start = self._recording_start_time
             stop_time = time.time()
@@ -569,8 +523,6 @@ class LocalRecorder:
             except Exception as exc:
                 failures.append(f"{encoder.camera_name}: {exc}")
                 logger.error(f"[local_recorder] failed to close encoder for {encoder.camera_name}: {exc}")
-        if state_file is not None:
-            state_file.close()
         if failures and self._checkpoint_run_id is not None and not discard:
             raise RuntimeError("Episode recording failed: " + "; ".join(failures))
 
@@ -707,16 +659,6 @@ class LocalRecorder:
             except Exception as exc:
                 logger.error(f"[local_recorder] concat error for {camera_name}: {exc}")
 
-        # Per-episode state streams are not concatenated: each keeps its bag
-        # name (episode index + timestamp + uuid) so episodes stay separable.
-        for bag_path in bag_paths:
-            state_path = Path(bag_path) / "state.jsonl"
-            if state_path.is_file():
-                try:
-                    shutil.move(str(state_path), output_dir / f"{Path(bag_path).name}.state.jsonl")
-                except Exception as exc:
-                    logger.error(f"[local_recorder] could not keep {state_path}: {exc}")
-
         for bag_path in bag_paths:
             try:
                 shutil.rmtree(bag_path)
@@ -805,12 +747,6 @@ class LocalRecorder:
                     listing.unlink(missing_ok=True)
                     Path(temporary).unlink(missing_ok=True)
             artifacts.append(destination)
-        for bag in bags:
-            state = bag / "state.jsonl"
-            if state.is_file():
-                destination = output_dir / f"{bag.name}.state.jsonl"
-                self._copy_artifact(state, destination)
-                artifacts.append(destination)
         return artifacts
 
     def _move_to_final(self, src_dir: Path, final_output_dir: str) -> None:

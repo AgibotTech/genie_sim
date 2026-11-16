@@ -90,7 +90,7 @@ When the scene YAML supplies `libuipc.episode_sequence`, the client exposes
 `begin_episode()`, `finish_episode()` and `reset(next_index)`. Each call sends one
 JSON request on `<action prefix>/episode/request` and waits for a correlated
 `/episode/done`. Requests contain version 1, request_id, source_id, old epoch,
-operation (`begin`, `finish`, `reset`) and configured index. They carry no paths,
+operation (`begin`, `finish`, `reset`, `pause`, `resume`) and configured index. They carry no paths,
 material plans or physics settings. Completion includes the committed ready
 identity; reset requires exactly old epoch + 1 with the same source/joint names.
 Only the next YAML index is allowed, after finish. Exact duplicate IDs return
@@ -99,7 +99,13 @@ send retry, reset-after-failure, or replay.
 
 Finish certifies a sealed physical archive and pauses the owner while scoring
 runs. Reset restores native and CPU state, opens a new archive at tick/time zero,
-and leaves it paused for correlated material capture. Begin resumes physics.
+and leaves it paused for correlated material capture. Begin resumes physics. During a running recorded episode, `pause()` waits for
+an owner-thread acknowledgement at a completed native tick; `resume()` continues
+the same episode. Neither rotates the archive nor changes its epoch. Paused
+sessions allow snapshots but reject steps until resumed. `finish_episode()` can
+seal either a running or an inference-paused episode. An uncertain pause/resume
+fails the client without retries. CPU-backed scenes require barrier
+synchronization so the robot cannot keep integrating while IPC is frozen.
 State snapshots contain `episode_index` so the renderer applies the matching
 preloaded plan. Diagnostic identity fields engine_pid/cpu_worker_pid establish
 process reuse; they are not credentials or control inputs.

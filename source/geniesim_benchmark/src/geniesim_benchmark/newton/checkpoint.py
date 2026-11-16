@@ -101,7 +101,7 @@ def run_checkpointed(plans, output, config, endpoint, run_batch, *, startup_time
                     episode_offset=entry["episode_idx"],
                     recording_root=str(output),
                     record=benchmark.get("record", False),
-                    record_state=benchmark.get("record_state", True),
+                    record_state=benchmark.get("record_state", False),
                     fps=benchmark.get("fps", 30),
                 )
                 if "headless" in config:

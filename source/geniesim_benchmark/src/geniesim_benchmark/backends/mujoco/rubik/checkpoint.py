@@ -107,8 +107,6 @@ class RubikCheckpoint(EvaluationCheckpoint):
 
     def artifacts(self, directory):
         names = ["result.json", "samples.json", "actions.json"]
-        if self.cfg.benchmark.record:
-            names.append("raw-1000hz.npz")
         return [
             dict(path=str((directory / name).relative_to(self.out_dir)), sha256=file_digest(directory / name))
             for name in names
