@@ -81,8 +81,12 @@ def validate_settings(config):
         )
     ):
         raise ValueError("libuipc.instance_base_xy_offsets requires one finite XY pair per enumerated instance")
-    if offsets is not None and len({tuple(pair) for pair in offsets}) != count:
-        raise ValueError("libuipc.instance_base_xy_offsets must be distinct")
+    if (
+        offsets is not None
+        and len({tuple(pair) for pair in offsets}) != count
+        and any(value != 0 for pair in offsets for value in pair)
+    ):
+        raise ValueError("libuipc.instance_base_xy_offsets must be distinct or all zero")
     if settings.get("scoring_execution") not in ("offline", "streaming"):
         raise ValueError("scoring_execution must be offline or streaming")
     if (

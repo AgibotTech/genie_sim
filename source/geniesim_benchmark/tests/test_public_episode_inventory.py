@@ -2,7 +2,7 @@
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
 
-"""Public defaults retain the original 950 episodes and exact layout resources."""
+"""Public tasks expose ten instances and retain the selected layout resources."""
 
 import hashlib
 import json
@@ -16,16 +16,16 @@ INVENTORY = json.loads((Path(__file__).parent / "fixtures/public_layouts.json").
 
 
 @pytest.mark.parametrize("name,entry", INVENTORY["tasks"].items())
-def test_public_task_keeps_original_config_and_layouts(name, entry):
+def test_public_task_keeps_ten_instances_and_selected_layouts(name, entry):
     config = PACKAGE / "config" / (name + ".yaml")
     data = yaml.safe_load(config.read_text())
     canonical = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
     assert hashlib.sha256(canonical).hexdigest() == entry["config_value_sha256"]
-    assert data["benchmark"]["num_instances"] == entry["episodes"]
+    assert data["benchmark"]["num_instances"] == entry["episodes"] == 10
     assert data["benchmark"].get("num_episode", data.get("episodes", 1)) == 1
     if "layout_dir" in entry:
         folder = PACKAGE / entry["layout_dir"]
-        assert {p.name for p in folder.iterdir() if p.is_dir() and p.name.isdigit()} == {str(i) for i in range(20)}
+        assert {p.name for p in folder.iterdir() if p.is_dir() and p.name.isdigit()} == {str(i) for i in range(10)}
         digest = hashlib.sha256()
         files = sorted(p for p in folder.rglob("*") if p.is_file())
         assert len(files) == entry["layout_files"]
@@ -38,9 +38,9 @@ def test_public_task_keeps_original_config_and_layouts(name, entry):
         assert digest.hexdigest() == entry["layout_sha256"]
 
 
-def test_public_suite_has_950_episodes_and_original_rubik_catalogs():
+def test_public_suite_has_500_episodes_and_original_rubik_catalogs():
     assert len(INVENTORY["tasks"]) == 50
-    assert sum(row["episodes"] for row in INVENTORY["tasks"].values()) == INVENTORY["total_episodes"] == 950
+    assert sum(row["episodes"] for row in INVENTORY["tasks"].values()) == INVENTORY["total_episodes"] == 500
     for name, expected in INVENTORY["catalogs"].items():
         assert hashlib.sha256((PACKAGE / name).read_bytes()).hexdigest() == expected
 

@@ -43,7 +43,18 @@ class AderEnv(object):
         return self.action_executor.exist_action("eval")
 
     def do_eval_action(self):
+        self._observe_pending_eval_actions()
         self.do_action("eval", self.params.task_name, self.execute_action)
+
+    def _observe_pending_eval_actions(self):
+        # The tree is parsed before the scene reset. Sample episode baselines
+        # only when evaluation starts, and before a preceding stage can finish.
+        # Observers must not start actions or award credit ahead of their stage.
+        for item in self.task.task_progress:
+            action = item["acion_obj"]
+            observe = getattr(action, "observe_before_start", None)
+            if action.is_init() and observe is not None:
+                observe()
 
     def cancel_eval(self):
         self.has_done = True
@@ -64,6 +75,7 @@ class AderEnv(object):
             self.has_done = True
             return
         delta_time = time.time() - self.last_update_time
+        self._observe_pending_eval_actions()
         self.action_executor.update(delta_time)
         self.last_update_time = time.time()
         if self.has_done:

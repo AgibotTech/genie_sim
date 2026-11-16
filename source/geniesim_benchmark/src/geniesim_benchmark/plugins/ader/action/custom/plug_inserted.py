@@ -25,10 +25,12 @@ class PlugInserted(EvaluateAction):
 
     The attractor never detaches once attached, so the joint prim survives on
     the stage. To avoid scoring a leftover joint from an earlier episode,
-    success requires having observed the joint in a not-attached state first --
-    a joint that reads enabled from the very first tick and stays that way is
-    treated as stale and never scores. This also tolerates the attractor's
-    ``on_play`` detach landing a tick or two after this action starts.
+    success requires having observed the joint in a not-attached state during
+    this episode. ADER observes pending insertion checkers from evaluation
+    start, so insertion during a preceding stage is still accepted. A joint
+    enabled throughout the episode is treated as stale and never scores. This
+    also tolerates a delayed attractor ``on_play`` detach. Observation alone
+    never awards credit; the joint must still be enabled in the insertion stage.
 
     Args:
         env: The simulation environment.
@@ -95,6 +97,12 @@ class PlugInserted(EvaluateAction):
             self.joint_path(), self._JOINT_ENABLED_ATTR, default=None
         )
         return bool(enabled)
+
+    def observe_before_start(self) -> None:
+        """Remember this episode's detached state without advancing the stage."""
+        # An unresolved placeholder is not evidence that the target is detached.
+        if self.plug_name and not self.is_attached():
+            self._seen_unattached = True
 
     def update(self, delta_time: float) -> float:
         if self._done_flag:
