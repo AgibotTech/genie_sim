@@ -63,13 +63,24 @@ The owner serializes begin/finish/reset between native steps. Finish pauses
 physics and verifies/closes the archive while retaining the world. Reset requires
 finish, recovers native World frame 0, restores CPU MuJoCo integration/controls
 without respawning its worker, rotates the archive and advances the source epoch.
-The next episode stays paused until begin; physics runs normally during that
-episode's capture and inference unless the caller requests an acknowledged
-`pause`/`resume` boundary. This requires CPU barrier synchronization and preserves
-the open archive; finish also accepts an inference-paused episode. Every archive
-starts at tick/time 0.
+The next episode stays paused until begin. With the default
+`libuipc.pause_when_idle: false`, physics continues during capture and inference
+unless the caller requests an acknowledged `pause`/`resume` boundary. This
+explicit boundary requires CPU barrier synchronization and preserves the open
+archive; finish also accepts an inference-paused episode.
+Opt-in `pause_when_idle: true` additionally holds the owner between submitted
+actions, including startup and capture/inference waits; it requires action and
+snapshot channels, CPU barrier mode and a disabled CPU viewer. The owner services
+snapshots and episode requests, including explicit resume, while a step remains
+pending, so neither CPU/native ticks nor the core clock advance. An explicit
+inference pause still holds an already pending action. Every actual integrated
+step remains archived, and waiting never seals or rotates an archive. Generic
+core lifecycle services wait until stepping resumes; the existing SIGINT and
+ROS-context shutdown path remains available. See DESIGN.md for timing-statistics
+and separate-renderer limits. Every archive starts at tick/time 0.
 See [DESIGN.md](DESIGN.md) and the [client wire contract](../genie_sim_client/IPC_CLIENT.md).
 CPU tests live in `test/test_episode_sequence.py` and `test/test_cpu_reset.py`;
+the opt-in owner wait is covered by `test/test_inference_wait.py`;
 the explicit end-to-end GPU probe is
 `source/geniesim_benchmark/tests/native_libuipc_sequence_smoke.py` from the repo root.
 

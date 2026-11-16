@@ -467,5 +467,12 @@ registered `libuipc` assembly pipeline and `physics_engine: libuipc` /
 `physics_solver: ipc`. Existing engine/solver choices and runtime cache paths
 remain valid. Native scene settings live in the scene YAML's `libuipc:` block;
 [the backend guide](../genie_sim_engine_libuipc/AGENTS.md) owns that contract.
+
+Only the cloth-hanger, fold-cloth and drawstring-bag `*_ipc_*_eval.yaml` scenes
+enable `libuipc.pause_when_idle: true`. Their IPC owner integrates only requested
+actions and services synchronized captures while held. Inference/render waits do
+not advance physics or append physical archive frames. Other scenes retain the
+default false behavior; no generic launcher, pacing mode or lifecycle service is
+changed. See the backend design for the owner wait and shutdown boundaries.
 `scripts/fold_cloth_infer.py` is an optional policy adapter for the new cloth
 scene. It does not alter existing Newton or Isaac task launchers.

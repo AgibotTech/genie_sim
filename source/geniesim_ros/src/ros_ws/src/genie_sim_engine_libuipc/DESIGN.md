@@ -154,6 +154,7 @@ These features are opt-in scene/launcher settings under `libuipc`:
 
 ```yaml
 libuipc:
+  pause_when_idle: true
   action_sequence:
     topic: /ipc/action
   observation_snapshot:
@@ -170,14 +171,41 @@ blocks preserve existing latest/measured-input behavior; no environment variable
 turns these features on. The [public client protocol](../genie_sim_client/IPC_CLIENT.md)
 owns JSON discovery, command/retry, snapshot and identity schemas.
 
+| `libuipc` setting | Default | Contract |
+| --- | --- | --- |
+| `pause_when_idle` | `false` | Boolean; `true` requires action/snapshot channels, CPU barrier synchronization and a disabled CPU viewer. Only submitted action steps advance physics. |
+
+`pause_when_idle: true` holds the physics owner between completed actions, from
+startup and across capture/inference waits. This prevents renderer or inference
+latency from adding simulated time or archive frames. Each submitted action
+retains its configured duration, fixed dt, CPU batch ratio and ordinary core
+pacing. Its final solve is committed and recorded before completion is published;
+without another pending action, no subsequent solve starts. The setting does not
+seal, sample, rotate or discard any archive data. Existing explicit episode
+`pause`/`resume` boundaries remain supported: even a pending action stays held
+until an explicit inference pause is resumed.
+
+While held, `step()` remains pending instead of returning a successful empty tick,
+so the existing core loop cannot advance `/clock`. The existing ROS executor
+continues receiving requests; the physics owner polls its snapshot and episode
+queues with a bounded 1 ms sleep, preserving initial/paused capture and
+finish/reset/begin/pause/resume without advancing CPU or native state. A stopped
+owner-node ROS context exits through the executable's existing interruption/finally
+path. SIGINT remains supported. Generic core lifecycle-service commands and an
+optional in-process viewer are handled outside `step()` and therefore wait until
+a real step resumes; use the benchmark's separate renderer and existing
+process/context shutdown route for these opt-in scenes. Core per-step wall-time
+statistics include the wait, while the backend solver duration excludes it. No
+core contract or lifecycle implementation is changed.
+
 One engine source identity and reset epoch bind actions, snapshots and archives.
 Ready identity follows initial FK/native construction and transport startup.
 The physics owner freezes each action target and advances CPU, native solve,
 readback, tick/time, post-step work, archive and snapshot work before counting
 one committed solve. Completed action counts establish integration, not target
-convergence. Between actions the world continues stepping with the last target;
-inference and rendering do not pause it unless the recorded episode caller
-requests the pause boundary described below.
+convergence. With the default `pause_when_idle: false`, the world continues
+stepping with the last target between actions; inference and rendering do not
+pause it unless the recorded episode caller requests the pause boundary below.
 
 Snapshots copy completed state independently of publication/downsampling. They
 include all constructed deformable ranges and authored-root world `xyz+wxyz`
@@ -215,8 +243,8 @@ changing inputs/native state until that archive is sealed. A startup YAML
 `libuipc.episode_sequence` may preload successive `{state_recording, material}`
 entries. Each has a unique fresh output/receipt path; the initial entry matches
 `libuipc.state_recording` and `generalization.material`. No geometry or solver
-mutation is allowed. The backend-local episode channel accepts only begin,
-finish and the next configured reset index. It never changes the core ABI.
+mutation is allowed. The backend-local episode channel accepts begin, finish,
+pause, resume and the next configured reset index. It never changes the core ABI.
 
 Finish pauses the physical owner and verifies/closes all committed archive bytes.
 The legacy v1 `solver_shutdown_clean` field denotes this clean episode boundary
@@ -224,8 +252,10 @@ alongside `recording_clean`; it does not imply the simulation process exited.
 During scoring and next-layout material capture the world remains paused. Reset
 restores native construction state and cached kinematic/joint aims, resets CPU
 integration, opens a fresh epoch archive at tick/time zero, and acknowledges only
-after all state writes and archive creation succeed. Begin resumes physical time;
-capture/inference within the running episode default to real-time physics.
+after all state writes and archive creation succeed. Begin enables action
+execution; `pause_when_idle: true` still waits for a submitted action before
+resuming physical time. Default scenes continue stepping through capture and
+inference unless explicitly paused.
 Explicit `pause`/`resume` operations use the same serialized episode channel and
 are acknowledged after the owner changes state between native steps. Paused
 steps service snapshots without advancing native ticks or writing duplicate
@@ -268,6 +298,14 @@ cloth-hanger, fold-cloth and drawstring-bag scenes with two material layouts eac
 and a deterministic hold policy. It checks stable engine/CPU/render process IDs,
 separate epoch archives/material receipts and original ADER score records. This
 is a lifecycle diagnostic, not model performance or long-horizon task acceptance.
+
+`test/test_inference_wait.py` uses a constructor-free owner, real action/snapshot
+queues and real archives to check that held capture/inference leaves native
+ticks, simulation time, CPU batches and archive sizes fixed. It also checks exact
+action-step recording, finish/reset/begin while held, explicit inference
+pause/resume with an already pending action, fault handling, stopped ROS context
+exit, opt-in validation and unchanged default free-running behavior. These CPU
+checks do not qualify native GPU contacts, camera delivery or throughput.
 
 On Isaac Sim 6.2 / RTX 5090 D v2, these three two-layout probes restored particle
 positions/velocities, body positions/velocities and joint positions/velocities

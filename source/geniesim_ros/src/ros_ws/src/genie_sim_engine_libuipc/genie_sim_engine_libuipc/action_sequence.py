@@ -200,6 +200,12 @@ class ActionSequence:
     def _reply(self, token, status, **fields):
         return dict(request_id=token, source_id=self.source_id, epoch=self.epoch, status=status, **fields)
 
+    @property
+    def runnable(self):
+        """Whether a submitted action still needs a committed native step."""
+        with self._lock:
+            return self._active is not None or self._pending is not None
+
     def begin_step(self):
         with self._lock:
             if self._closed:

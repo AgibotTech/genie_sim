@@ -4,8 +4,9 @@
 
 """Three Wuji tasks with one libuipc bringup and synchronized renderer per task.
 
-Physics remains real time unless pause_physics_during_inference is enabled. The shared client
-only attaches; this benchmark owns bringup, policy, scorer and archive lifetime.
+Evaluation scenes hold physics between committed actions, including capture and
+inference. The shared client only attaches; this benchmark owns bringup, policy,
+scorer and archive lifetime. Recording reuses the existing on-demand captures.
 """
 
 from __future__ import annotations
@@ -92,7 +93,7 @@ def run_episode(
     snapshot_validator=None,
     frame_bindings=None,
     record=False,
-    record_state=False,
+    record_state=True,
     recording_root=None,
     recording_run_id=None,
     robot_usd_path=None,
@@ -278,10 +279,8 @@ def run_episode(
                         "completed_wall_time_ns": time.time_ns(),
                     },
                 )
-                if record:
-                    # Video/state sampling must not duplicate the large cloth
-                    # geometry JSON on every control tick.
-                    packet = capture(f"record_{result['steps']:06d}", archive=False)
+                # Recording consumes only policy/history/final captures and
+                # must never introduce another observe/render request.
                 if stopped():
                     break
                 if interval and (offset + 1) % interval == 0:
@@ -499,20 +498,12 @@ def shutdown_recorded_scene(episode_dir, *, timeout_s=30.0, environment=None, di
 
 
 def discard_physical_state(episode_dir):
-    """Release sealed scoring inputs after readers exit, retaining the close receipt.
+    """Legacy hook: retain IPC archives after scoring, failures and session close.
 
-    The engine shutdown handshake still reads manifest.json. State arrays and
-    their frame index are temporary scoring inputs, never resume dependencies.
+    Arrays and their frame index remain available for auditing the full verified
+    trajectory. Keeping this hook preserves existing caller boundaries without
+    removing files owned by either the current attempt or an earlier run.
     """
-    directory = Path(episode_dir) / "physical_state"
-    manifest = directory / "manifest.json"
-    if not manifest.is_file():
-        return
-    if json.loads(manifest.read_text()).get("recording_closed") is not True:
-        return  # The native writer may still own these files.
-    for path in directory.glob("*.bin"):
-        path.unlink()
-    (directory / "frames.jsonl").unlink(missing_ok=True)
 
 
 def verify_physical_archive(episode_dir):
@@ -791,7 +782,7 @@ def run_one_episode(session, index, *, evaluations=None):
             robot_usd_path=session.robot_usd_path,
             pause_physics_during_inference=session.config["benchmark"].get("pause_physics_during_inference", False),
             record=session.config["benchmark"].get("record", False),
-            record_state=session.config["benchmark"].get("record_state", False),
+            record_state=session.config["benchmark"].get("record_state", True),
             recording_root=session.directory,
             recording_run_id=getattr(session, "checkpoint_run_id", None),
         )
@@ -891,7 +882,7 @@ def checkpoint_identity(config, endpoint, assets_root):
     benchmark = value["benchmark"]
     for key in ("resume", "output_dir", "record_video_dir"):
         benchmark.pop(key, None)
-    for key, default in (("record", False), ("record_state", False), ("resume_id", "")):
+    for key, default in (("record", False), ("record_state", True), ("resume_id", "")):
         benchmark.setdefault(key, default)
     value["app"] = {k: v for k, v in value.get("app", {}).items() if k != "headless"}
     value["libuipc"].pop("output_dir", None)
@@ -965,11 +956,15 @@ def evaluate(config, endpoint, root, run_dir, *, headless, assets_root=None):
                 paths = checkpoint.recording_paths()
             except ValueError as exc:
                 raise CheckpointRejected(str(exc)) from exc
+            if benchmark.get("record_state", True) and not checkpoint.recordings_ready:
+                if any(not (Path(p) / "state.jsonl").is_file() for p in paths):
+                    raise CheckpointRejected("A committed joint-state recording is missing")
             return paths
 
         if benchmark.get("record", False):
             recording_paths()  # Reject missing committed artifacts before bringup.
-        checkpoint.cleanup_recordings()
+        # Keep failed-attempt bags as well as committed recordings. Their unique
+        # names keep retries isolated without removing previous diagnostics.
         publish()  # Discard any result tail without a manifest commit.
         try:
             if not checkpoint.finished:
@@ -997,8 +992,13 @@ def evaluate(config, endpoint, root, run_dir, *, headless, assets_root=None):
                 from geniesim_benchmark.plugins.output_system.local_recorder import LocalRecorder
 
                 recorder = LocalRecorder()
-                recorder.restore_checkpoint(checkpoint.run_id, recording_paths())
+                paths = recording_paths()
+                recorder.restore_checkpoint(checkpoint.run_id, paths)
                 artifacts = recorder.concat_all(preserve_bags=True)
+                if benchmark.get("record_state", True):
+                    from .recording import publish_observation_states
+
+                    artifacts.extend(publish_observation_states(paths, run_dir))
                 checkpoint.finalize_recordings(artifacts)
             if benchmark.get("record", False):
                 from geniesim_benchmark.plugins.output_system.local_recorder import LocalRecorder

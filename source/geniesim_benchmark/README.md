@@ -62,11 +62,31 @@ episode plans are declared in startup YAML. Each episode seals its own physical
 archive and score before the next native reset; material receipts, observations
 and score records retain separate source epochs. Geometry changes are rejected
 rather than rebuilt implicitly. Scoring evaluates the initial frame, every tenth
-physical frame and the final frame. Temporary raw state is verified before
-scoring completes, then its arrays and frame index are removed. Scoring drain waits up to 3600 seconds after episode
+physical frame and the final frame. Every physical state and the frame index are
+retained after full integrity verification and scoring. Scoring drain waits up to 3600 seconds after episode
 finish. The explicit GPU lifecycle diagnostic
 [sequence probe](tests/native_libuipc_sequence_smoke.py) uses a deterministic hold
 policy and is separate from model evaluation.
+
+These three evaluation scenes enable the backend's scene-only
+`libuipc.pause_when_idle` setting. Every requested action retains its fixed
+physical duration and CPU barrier steps; between actions the owner services
+captures without integrating physics. Slow inference and rendering add wall time
+without adding physical archive frames. Other scenes and task runtimes retain
+their existing defaults. This changes the three tasks' scheduling semantics:
+physical settling during a model wait no longer occurs, so compare scores using
+the mode in the archive's scene metadata. Full verification keeps its 30-second
+deadline.
+
+For these tasks, `--benchmark.record=true` reuses initial, inference, requested
+history and final observation images, with no additional per-action capture.
+Videos hold the latest available image on the simulation-time timeline; they
+are sparse monitoring recordings, with still periods and jumps. Paired state
+records sample those observations only and default to enabled for IPC recording;
+`--benchmark.record_state=false` disables them. Both original and published state
+files, physical archives and failed-attempt recordings are retained. This
+[IPC recording wrapper](docs/libuipc_recording.md) leaves the shared recorder and
+other tasks unchanged.
 
 When a resume coordinator references an already scored layout, it must call
 `LibuipcRunSession.skip_completed_episode(index)` for every skipped index in
@@ -87,10 +107,11 @@ geniesim benchmark run g2crsbwuji_dexmanip_cloth_hanger --infer-host localhost:8
 Retry with the same output directory, task settings and inference service.
 Completed, scored episodes are reused in `evaluate_ret_00.json`; interrupted
 episodes run again. Keep the entire output directory until finalization.
-Recording saves three camera videos without replay state; the head video
-includes the instruction and zero-based episode index. Frames are captured at
-observed control ticks. Native physical state is temporary scoring input,
-independently of `record`, and is removed after scoring readers finish.
+Recording saves three camera videos and sparse observation state by default;
+the head video includes the instruction and zero-based episode index. Videos
+reuse observed frames on the simulation-time timeline. Physical scoring archives
+are retained independently of `record`. Set `--benchmark.record_state=false`
+to omit the paired observation state files.
 Both `JOINT_ABS` and `EEF_ABS` arms are supported;
 EEF uses shared hard IK and accepts `base_link` or `arm_base_link` coordinates.
 

@@ -95,6 +95,9 @@ def test_record_captures_measured_joints_and_labelled_video(tmp_path):
     jpeg = cv2.imencode(".jpg", image)[1].tobytes()
     packet = {
         "snapshot": {
+            "source_id": "recording-world",
+            "epoch": 0,
+            "snapshot_id": "first",
             "joints": dict.fromkeys(adapter.DRIVE_JOINTS, 0.25),
             "sim_time": 0.1,
             "bodies": {"/robot/base_link": [1, 2, 3, 1, 0, 0, 0]},
@@ -113,20 +116,24 @@ def test_record_captures_measured_joints_and_labelled_video(tmp_path):
         fixed_joints=dict.fromkeys(adapter.WAIST_JOINTS + adapter.HEAD_JOINTS, 0.1),
     )
     recording.capture(packet, 0)
-    recording.capture(packet, 0)  # Same control tick must not add another video/state frame.
+    recording.capture(packet, 0)  # Reusing the exact snapshot must not add another state row.
     packet["snapshot"]["joints"][adapter.ARM_JOINTS[0]] = 0.5
+    packet["snapshot"].update(snapshot_id="second", sim_time=0.1 + 1 / 30)
     recording.capture(packet, 1)
     bag = Path(recording.close())
-    assert not (bag / "state.jsonl").exists()
+    rows = [json.loads(line) for line in (bag / "state.jsonl").read_text().splitlines()]
+    assert rows[0]["episode_idx"] == 7
+    assert [row["step"] for row in rows[1:]] == [0, 1]
+    name_index = rows[1]["joints"]["name"].index(adapter.ARM_JOINTS[0])
+    assert [row["joints"]["position"][name_index] for row in rows[1:]] == [0.25, 0.5]
+    assert rows[1]["base_pose"]["orientation_xyzw"] == [0, 0, 0, 1]
     from test_local_recorder_episode_overlay import read_frames
 
-    frames = read_frames(bag / "video/head.webm")
-    assert len(frames) == 2
-    frame = frames[0]
+    frame = read_frames(bag / "video/head.webm")[0]
     assert np.any(frame[-45:, -180:] > 200), "zero-based episode label missing"
 
 
-def test_runner_records_every_executed_control_tick_without_changing_policy_images(tmp_path):
+def test_runner_reuses_observations_for_recording_without_changing_policy_images(tmp_path):
     import cv2
     import shutil
 
@@ -136,12 +143,17 @@ def test_runner_records_every_executed_control_tick_without_changing_policy_imag
 
     class Client:
         steps = 0
+        captures = 0
 
         def observe(self, **kwargs):
+            self.captures += 1
             return {
                 "snapshot": {
-                    **dict.fromkeys(("request_id", "source_id", "snapshot_id"), "sample"),
-                    **dict.fromkeys(("epoch", "tick", "cloth_tick", "captured_wall_time_ns"), self.steps),
+                    **dict.fromkeys(("request_id", "snapshot_id"), f"sample-{self.captures}"),
+                    "source_id": "recording-world",
+                    "epoch": 0,
+                    **dict.fromkeys(("tick", "cloth_tick"), 2 * self.steps),
+                    "captured_wall_time_ns": self.captures,
                     "sim_time": self.steps / 30,
                     "joints": dict.fromkeys(adapter.DRIVE_JOINTS, self.steps / 10),
                     "bodies": {
@@ -183,10 +195,8 @@ def test_runner_records_every_executed_control_tick_without_changing_policy_imag
         recording_root=tmp_path,
     )
     assert result["execution_status"] == "completed"
-    assert not (Path(result["recording"]) / "state.jsonl").exists()
-    from test_local_recorder_episode_overlay import read_frames
-
-    assert len(read_frames(Path(result["recording"]) / "video/head.webm")) == 3
+    rows = [json.loads(line) for line in (Path(result["recording"]) / "state.jsonl").read_text().splitlines()]
+    assert [row["step"] for row in rows[1:]] == [0, 2]
     assert len(list((tmp_path / "episode/observations").glob("*.json"))) == 2
 
 
@@ -257,6 +267,9 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
             recorder.capture(
                 {
                     "snapshot": {
+                        "source_id": "resume-world",
+                        "epoch": index,
+                        "snapshot_id": "sample",
                         "joints": dict.fromkeys(adapter.DRIVE_JOINTS, index / 10),
                         "sim_time": 0.1,
                         "bodies": {"/robot/base_link": [0, 0, 0, 1, 0, 0, 0]},
@@ -297,20 +310,20 @@ def test_resume_keeps_only_committed_episodes_and_skips_finished_without_startup
     assert [r["episode_coord"]["instance_id"] for r in rows] == [0, 1, 2]
     assert len(json.loads((tmp_path / "summary.json").read_text())["results"]) == 3
     if record:
-        assert len([p for p in tmp_path.glob("recording_*") if p.is_dir()]) == 3  # Failed attempt was discarded.
+        assert len([p for p in tmp_path.glob("recording_*") if p.is_dir()]) == 4  # Failed attempt is retained too.
         from test_local_recorder_episode_overlay import read_frames
 
         assert len(read_frames(tmp_path / "head.webm")) == 3
-        assert not list(tmp_path.rglob("*.state.jsonl"))
+        assert len(list(tmp_path.glob("*.state.jsonl"))) == 3
     calls.clear()
     runner.evaluate(config, "model:9000", tmp_path, tmp_path, headless=True)
     assert calls == []
     if record:
-        # Once finalized, uploads may retain only the published videos.
+        # Once finalized, uploads may retain only the published videos/states.
         # Finalized retries must also work without the intermediate bag folders.
         for directory in tmp_path.glob("recording_*"):
             if directory.is_dir():
-                shutil.rmtree(directory)
+                directory.rename(directory.with_name("retained-" + directory.name))
         runner.evaluate(config, "model:9000", tmp_path, tmp_path, headless=True)
         assert calls == []
 

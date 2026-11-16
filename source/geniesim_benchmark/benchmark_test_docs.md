@@ -144,10 +144,13 @@ timeouts remain in the score. Temporary inference errors are retried on restart.
 A fatal simulator error remains a scored invalid attempt; its skipped instruction
 range is retained and reported separately in the manifest.
 
-With `--benchmark.record=true`, recordings save camera videos without replay
-state (`state.jsonl` or `raw-1000hz.npz`). The legacy `record_state` option is
-accepted but has no effect. libuipc uses temporary physical state for scoring
-and removes the arrays and frame index after scoring finishes.
+With `--benchmark.record=true`, recordings save camera videos. The cloth-hanger,
+fold-cloth and drawstring-bag tasks also save sparse observation `state.jsonl`
+files by default; use `--benchmark.record_state=false` to disable those files.
+Their physical scoring archives are retained independently of recording. See
+[IPC observation recordings](docs/libuipc_recording.md) for sampling and exports.
+Other runtimes remain video-only: `record_state` has no effect, and MuJoCo does
+not save `raw-1000hz.npz`.
 
 With `--benchmark.record=true`, committed recordings are reused. A retry after
 all episodes finish only rebuilds/publishes artifacts; it does not evaluate again.

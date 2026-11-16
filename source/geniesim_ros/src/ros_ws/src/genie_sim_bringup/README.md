@@ -561,3 +561,11 @@ The [backend guide](../genie_sim_engine_libuipc/README.md) lists configuration
 and runtime requirements. The three-task evaluation launcher enables
 [synchronized observations](../genie_sim_client/IPC_CLIENT.md); successful
 assembly or CPU checks do not establish physical task or camera acceptance.
+
+The three `*_ipc_*_eval.yaml` scenes explicitly enable
+`libuipc.pause_when_idle: true`. Physics and CPU barrier integration run only for
+requested IPC actions; capture and inference waits keep the completed state and
+physical archive frame count fixed. The original interactive IPC scenes and all
+other backend scenes keep their existing behavior. This changes evaluation time
+semantics from the previous realtime-during-inference mode; compare scores with
+the scheduling mode recorded in the physical archive's scene metadata.

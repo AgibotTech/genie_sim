@@ -1,10 +1,11 @@
 # Copyright (c) 2026, AgiBot Inc. All Rights Reserved.
 # Author: Genie Sim Team
 # License: Mozilla Public License Version 2.0
-"""Temporary scoring state is released only after native and scoring owners close."""
+"""IPC scoring keeps raw state and frame indexes after success and failure."""
 
 import json
 from types import SimpleNamespace as NS
+from pathlib import Path
 
 import pytest
 
@@ -20,8 +21,24 @@ def test_unsealed_archive_is_not_deleted(tmp_path):
     assert (archive / "particle_q.bin").exists()
 
 
+def test_sealed_archive_does_not_request_file_removal(tmp_path, monkeypatch):
+    archive = tmp_path / "physical_state"
+    archive.mkdir()
+    (archive / "manifest.json").write_text('{"recording_closed": true}')
+    (archive / "particle_q.bin").write_bytes(b"verified original state")
+    (archive / "frames.jsonl").write_text("verified frame index")
+
+    def forbid(*args, **kwargs):
+        pytest.fail("IPC archive retention must not request deletion")
+
+    monkeypatch.setattr(Path, "unlink", forbid)
+    runner.discard_physical_state(tmp_path)
+    assert (archive / "particle_q.bin").read_bytes() == b"verified original state"
+    assert (archive / "frames.jsonl").read_text() == "verified frame index"
+
+
 @pytest.mark.parametrize("failure", [None, "inference", "scoring", "scorer_stop"])
-def test_episode_scoring_finishes_before_state_cleanup(tmp_path, monkeypatch, failure):
+def test_episode_keeps_physical_state_after_scoring_and_failures(tmp_path, monkeypatch, failure):
     episode = tmp_path / "episode"
     archive = episode / "physical_state"
     archive.mkdir(parents=True)
@@ -118,8 +135,8 @@ def test_episode_scoring_finishes_before_state_cleanup(tmp_path, monkeypatch, fa
     result = runner.run_one_episode(session, 0, evaluations=evaluations)
     assert events == ["scorer_start", "begin", "native_close", "verify", "score", "scorer_stop"]
     assert (archive / "manifest.json").is_file()  # Still required by shutdown handshake.
-    assert (archive / "particle_q.bin").exists() is (failure == "scorer_stop")
-    assert (archive / "frames.jsonl").exists() is (failure == "scorer_stop")
+    assert (archive / "particle_q.bin").exists()
+    assert (archive / "frames.jsonl").exists()
     assert (episode / "head.webm").read_bytes() == b"video is not a cleanup target"
     assert json.loads((episode / "result.json").read_text()) == result
     assert evaluations == [{"execution": result}]

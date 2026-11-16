@@ -256,12 +256,19 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         from .physical_state_recording import PhysicalStateRecorder, PhysicalStateRecordingConfig
         from .observation_snapshot import SnapshotRequests
 
+        self._pause_when_idle = self._scene_cfg.get("libuipc", {}).get("pause_when_idle", False)
+        if type(self._pause_when_idle) is not bool:
+            raise ValueError("libuipc.pause_when_idle must be a boolean")
         self._action_topic = topic_from_scene(self._scene_cfg, "action_sequence")
         self._snapshot_topic = topic_from_scene(self._scene_cfg, "observation_snapshot")
+        if self._pause_when_idle and (self._action_topic is None or self._snapshot_topic is None):
+            raise ValueError("libuipc.pause_when_idle requires action_sequence and observation_snapshot")
         if self._action_topic is not None:
             cpu = self._driver._cpu_config
             if cpu is None or cpu.synchronization != "barrier":
                 raise ValueError("libuipc.action_sequence requires CPU barrier synchronization")
+            if self._pause_when_idle and cpu.viewer.enabled:
+                raise ValueError("libuipc.pause_when_idle requires the CPU viewer to be disabled")
             self._actions = ActionSequence(
                 self._driver._cpu_names,
                 self._initial_q[self._driver._cpu_q_indices],
@@ -411,7 +418,13 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
         if self._closed:
             raise RuntimeError("libuipc engine is closed")
         self._raise_if_execution_failed()
-        if self._paused:
+        if getattr(self, "_pause_when_idle", False):
+            try:
+                self._wait_for_action()
+            except Exception as exc:
+                self._latch_execution_failure(exc)
+                raise
+        elif self._paused:
             snapshots = getattr(self, "_snapshots", None) or getattr(self, "_snapshot_requests", None)
             if snapshots is not None:
                 snapshots.on_tick()
@@ -455,6 +468,33 @@ class LibuipcEngine(USDPolicies, PhysicsEngine):
             self._latch_execution_failure(exc)
             raise
         return (time.monotonic() - start) * 1000.0
+
+    def _wait_for_action(self):
+        """Keep one ABI tick pending until it can commit a real native solve.
+
+        The existing ROS executor only enqueues requests. Capture and episode
+        boundaries stay on this owner while CPU/native state and the core clock
+        remain fixed. Do not call the generic lifecycle pause: it skips step().
+        """
+        while True:
+            if self._closed:
+                raise RuntimeError("libuipc engine is closed")
+            self._raise_if_execution_failed()
+            node = self._lifecycle._node
+            if node is not None and not node.context.ok():
+                # The executable already handles this normal exit and closes
+                # resources in finally. Core catches Exception, so a regular
+                # runtime error here would keep retrying a stopped ROS context.
+                raise KeyboardInterrupt("libuipc ROS context stopped")
+            if self._episode_source is not None:
+                self._episode_source.drain()
+            snapshots = getattr(self, "_snapshots", None) or getattr(self, "_snapshot_requests", None)
+            if snapshots is not None:
+                snapshots.on_tick()
+            self._raise_if_execution_failed()
+            if not self._paused and self._actions.runnable:
+                return
+            time.sleep(0.001)
 
     @property
     def execution_status(self):
