@@ -16,6 +16,7 @@ def common_result(task, execution, score, *, instruction="", endpoint="", step_o
     evaluation.robot_type = "G2_crsB_wuji"
     evaluation.model_type = endpoint
     evaluation.task_instruction = instruction
+    evaluation.duration = execution.get("wall_seconds", 0.0)
     evaluation.policy_dispatch_count = execution.get("policy_dispatch_count")
     clean = execution.get("execution_status") == "completed"
     evaluation.task_success = score.get("success") is True and clean
