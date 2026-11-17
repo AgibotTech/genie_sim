@@ -11,7 +11,12 @@ from typing import Dict
 
 from .base import BasePolicy
 from geniesim_benchmark.plugins.logger import Logger
-from geniesim_benchmark.utils.comm.retry import run_with_inference_retry, is_transient_error, InferenceServiceError
+from geniesim_benchmark.utils.comm.retry import (
+    InferenceServiceError,
+    get_recv_timeout,
+    is_transient_error,
+    run_with_inference_retry,
+)
 from geniesim_benchmark.utils.generalization_utils import apply_camera_image_augmentation
 from collections import deque
 import numpy as np
@@ -821,7 +826,9 @@ class CoRobotPolicy(BasePolicy):
                 f"robot_type={self._robot_type}, ee_type={self._ee_type}"
             )
             self._ws.send(data)
-            response = self._ws.recv()
+            # A lost request/reply would otherwise block here forever while
+            # ping/pong keeps the socket alive; the TimeoutError is retried.
+            response = self._ws.recv(timeout=get_recv_timeout())
             if isinstance(response, str):
                 raise RuntimeError(f"Server error: {response}")
             result = msgpack.unpackb(response, raw=False)

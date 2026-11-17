@@ -12,6 +12,7 @@ import websockets.sync.client
 from geniesim_benchmark.utils.comm.retry import (
     TRANSIENT_EXC_TYPES,
     backoff_delay,
+    get_recv_timeout,
 )
 from geniesim_benchmark.utils.msgpack_numpy import *
 
@@ -96,7 +97,7 @@ class WebsocketClientPolicy:
             ping_interval=_PING_INTERVAL_SEC,
             ping_timeout=_PING_TIMEOUT_SEC,
         )
-        metadata = unpackb(conn.recv())
+        metadata = unpackb(conn.recv(timeout=_OPEN_TIMEOUT_SEC))
         return conn, metadata
 
     def send_recv_bytes(self, data: bytes) -> bytes:
@@ -111,7 +112,7 @@ class WebsocketClientPolicy:
             self._ws, self._server_metadata = self._connect()
         try:
             self._ws.send(data)
-            response = self._ws.recv()
+            response = self._ws.recv(timeout=get_recv_timeout())
         except Exception:
             # Connection is likely dead (keepalive ping timeout, server reset,
             # etc.). Drop it so the next call reconnects instead of reusing a
