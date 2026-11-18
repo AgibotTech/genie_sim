@@ -95,5 +95,13 @@ class AutoScoreParseTests(unittest.TestCase):
         self.assertAlmostEqual(grade(vlm_reply(2, "SCORE: 5", counts=False)), 2 / 3)
 
 
+class AutoScoreLogTests(unittest.TestCase):
+    def test_api_key_is_not_logged(self):
+        with mock.patch.object(auto_score_module, "API_KEY", "sk-test-value-not-a-real-key"):
+            _score, log = grade_with_log(vlm_reply(1, "SCORE: 0.33"))
+        self.assertNotIn("sk-test-value-not-a-real-key", log)
+        self.assertIn("API_KEY: set", log)
+
+
 if __name__ == "__main__":
     unittest.main()

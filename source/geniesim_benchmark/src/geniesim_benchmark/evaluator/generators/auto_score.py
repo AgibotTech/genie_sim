@@ -159,7 +159,7 @@ def auto_score(
     if target_size:
         print(f"[auto_score] Resizing all images to {target_size[0]}x{target_size[1]}")
 
-    print(f"[auto_score] API_KEY: {API_KEY}")
+    print(f"[auto_score] API_KEY: {'set' if API_KEY else 'not set'}")
     print(f"[auto_score] BASE_URL: {BASE_URL}")
     print(f"[auto_score] MODEL: {MODEL}")
 
