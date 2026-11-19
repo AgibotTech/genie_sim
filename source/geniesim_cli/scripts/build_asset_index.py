@@ -58,7 +58,8 @@ def compile_index(manifests, benchmark):
                 evaluation = json.loads((benchmark / ep).read_text())
                 rp = "app/robot_cfg/" + evaluation["robot"]["robot_cfg"]
                 robot = json.loads((benchmark / rp).read_text())
-                roots.update(["code:" + ep, "code:" + rp, robot["robot"]["robot_usd"].lstrip("/")])
+                robot_entry = settings.get("robot_usd") or robot["robot"]["robot_usd"]
+                roots.update(["code:" + ep, "code:" + rp, robot_entry.lstrip("/")])
                 backgrounds = evaluation["scene"]["scene_usd"]
                 roots.update(s.lstrip("/") for s in (backgrounds if isinstance(backgrounds, list) else [backgrounds]))
                 prefix = "benchmark/config/llm_task/" + settings["sub_task_name"] + "/"

@@ -183,6 +183,8 @@ class BenchmarkConfig:
     # Override only the configured gripper control-joint drives on the runtime
     # USD stage. -1 preserves the shared asset values; angular drives use N·m.
     gripper_drive_max_force: float = -1.0
+    # Asset-root-relative robot entry selected by this evaluation task.
+    robot_usd: str = ""
 
 
 @dataclass

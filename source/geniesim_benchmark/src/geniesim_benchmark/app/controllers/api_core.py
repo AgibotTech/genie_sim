@@ -190,6 +190,7 @@ class APICore:
         self.num_obj = config.layout.num_obj
 
         # task config
+        self.task_robot_usd = config.benchmark.robot_usd
         self.task_name = config.benchmark.task_name
         self.sub_task_name = config.benchmark.sub_task_name
         self.gripper_drive_max_force = float(getattr(config.benchmark, "gripper_drive_max_force", -1.0))
@@ -457,6 +458,8 @@ class APICore:
         return self.env_root + prim_path
 
     def _set_robot_cfg(self, robot_cfg: RobotCfg) -> None:
+        if self.task_robot_usd:
+            robot_cfg.robot_usd = self.task_robot_usd
         self.robot_cfg = robot_cfg
 
     def init_robot_cfg_multi(

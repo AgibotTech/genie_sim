@@ -203,6 +203,8 @@ class TaskBenchmark(object):
     def _checkpoint_identity(self, instance_ids):
         excluded = {"resume", "infer_host", "record_video_dir", "output_dir"}
         parameters = {k: v for k, v in vars(self.args).items() if k not in excluded}
+        if not parameters.get("robot_usd"):
+            parameters.pop("robot_usd", None)
         root = Path(system_utils.benchmark_conf_path())
         files = {}
         for iid in instance_ids:
@@ -671,7 +673,43 @@ class TaskBenchmark(object):
         self.env.set_data_courier(self.data_courier)
         self.env.set_scene_info(scene_info)
 
-    def _finalize_no_action_episode(self, env, policy, evaluation):
+    @staticmethod
+    def _hang_validation_steps(env, policy):
+        termination = policy.server_episode_termination
+        exhausted = {
+            stage["stage"]
+            for stage in termination.get("stage_budget") or ()
+            if isinstance(stage, dict)
+            and stage.get("reason") == "stage_budget_exhausted"
+            and type(stage.get("stage")) is int
+        }
+        if not exhausted:
+            return
+        hang = next(
+            (
+                item["acion_obj"]
+                for item in env.task.task_progress
+                if item["class_name"] == "Hang" and item["acion_obj"].is_running()
+            ),
+            None,
+        )
+        if hang is None:
+            return
+        env.task.step(env)
+        env.action_update()
+        budgets = (
+            item["acion_obj"].progress_info["POLICY_BUDGET"]
+            for item in env.task.task_progress
+            if item["class_name"] == "PolicyDispatchBudget" and item["acion_obj"].is_running()
+        )
+        if not any(budget["step"] in exhausted and budget["count"] >= budget["baseline"] for budget in budgets):
+            return
+        checks = hang.remaining_stability_checks
+        last_step = (env.current_step // 30 + checks) * 30
+        while not env.has_done and hang.remaining_stability_checks and env.current_step < last_step:
+            yield {}
+
+    def _finalize_no_action_episode(self, env, policy, evaluation, terminal_step=None):
         """Score the last executed state without issuing or counting another action."""
         termination = getattr(policy, "server_episode_termination", None)
         if termination is None:
@@ -685,10 +723,14 @@ class TaskBenchmark(object):
         evaluation.update_progress(env.task.task_progress)
         evaluation.result["termination"] = {
             "source": "policy",
-            "native_step": env.current_step,
+            "native_step": env.current_step if terminal_step is None else terminal_step,
             "policy": copy.deepcopy(termination),
         }
+        if terminal_step is not None and env.current_step > terminal_step:
+            evaluation.result["termination"]["validation_end_step"] = env.current_step
         evaluation.summarize_scores()
+        evaluation.episode_finished = True
+        evaluation.terminal_result = copy.deepcopy(evaluation.result)
         env.has_done = True
         policy.update_task_status(True, env.task.task_progress)
         logger.info("Policy terminated without an action; native scores finalized at step %s", env.current_step)
@@ -789,7 +831,15 @@ class TaskBenchmark(object):
                         self.api_core.resume_physics()
                 single_te.update_policy_statistics(self.policy)
                 self.env.policy_dispatch_count = getattr(self.policy, "policy_dispatch_count", None)
-                if not self.args.interactive and self._finalize_no_action_episode(self.env, self.policy, single_te):
+                if not self.args.interactive and getattr(self.policy, "server_episode_termination", None) is not None:
+                    terminal_step = self.env.current_step
+                    for hold in self._hang_validation_steps(self.env, self.policy):
+                        if not self.data_courier.loop_ok():
+                            raise InterruptedError("Hang validation interrupted")
+                        self.env.set_infer_status(False)
+                        self.env.step(hold)
+                        self.data_courier.sleep()
+                    self._finalize_no_action_episode(self.env, self.policy, single_te, terminal_step)
                     break
                 for callback in step_callbacks:  # during task
                     callback(self.env, action)
@@ -1106,7 +1156,9 @@ class TaskBenchmark(object):
             vec_env.get_env(i).policy_dispatch_count = getattr(vec_policy.get_policy(i), "policy_dispatch_count", None)
         vec_env.do_eval_actions()
 
-        active = [True] * n_envs
+        unfinished = [True] * n_envs
+        validation = [None] * n_envs
+        terminal_steps = [None] * n_envs
         finish_times = [None] * n_envs
 
         while not vec_env.all_done():
@@ -1116,7 +1168,7 @@ class TaskBenchmark(object):
             step_nums = []
             for i in range(n_envs):
                 env = vec_env.get_env(i)
-                if active[i]:
+                if unfinished[i]:
                     inst = env.task.get_instruction()
                     instructions.append(inst[0] if inst else "")
                     instruction_segments.append(env.task.get_instruction_segments())
@@ -1128,6 +1180,7 @@ class TaskBenchmark(object):
                     gen_configs.append(None)
                     step_nums.append(0)
 
+            active = [enabled and wait is None for enabled, wait in zip(unfinished, validation)]
             should_pause = self.args.pause_physics_during_inference and any(
                 enabled and due for enabled, due in zip(active, vec_policy.need_infer_list())
             )
@@ -1146,16 +1199,19 @@ class TaskBenchmark(object):
                 if should_pause:
                     self.api_core.resume_physics()
             for i, evaluation in enumerate(te_list):
-                if active[i]:
-                    evaluation.update_policy_statistics(vec_policy.get_policy(i))
-                    vec_env.get_env(i).policy_dispatch_count = getattr(
-                        vec_policy.get_policy(i),
-                        "policy_dispatch_count",
-                        None,
-                    )
-                    self._finalize_no_action_episode(vec_env.get_env(i), vec_policy.get_policy(i), evaluation)
+                if unfinished[i]:
+                    env, policy = vec_env.get_env(i), vec_policy.get_policy(i)
+                    evaluation.update_policy_statistics(policy)
+                    env.policy_dispatch_count = getattr(policy, "policy_dispatch_count", None)
+                    if getattr(policy, "server_episode_termination", None) is not None:
+                        if validation[i] is None:
+                            terminal_steps[i] = env.current_step
+                            validation[i] = self._hang_validation_steps(env, policy)
+                        actions[i] = next(validation[i], None)
+                        if actions[i] is None:
+                            self._finalize_no_action_episode(env, policy, evaluation, terminal_steps[i])
 
-            need_infer = vec_policy.need_infer_list()
+            need_infer = [due and wait is None for due, wait in zip(vec_policy.need_infer_list(), validation)]
             vec_env.set_infer_status(need_infer)
             vec_env.set_depth_status(vec_policy.need_depth_list())
 
@@ -1163,7 +1219,7 @@ class TaskBenchmark(object):
             vec_policy.update_task_status_batch(dones, task_progresses)
 
             for i in range(n_envs):
-                if not active[i]:
+                if not unfinished[i]:
                     continue
                 env = vec_env.get_env(i)
                 if env.current_step % 30 == 0:
@@ -1171,8 +1227,10 @@ class TaskBenchmark(object):
                 if need_updates[i]:
                     te_list[i].update_progress(task_progresses[i])
                 if dones[i]:
+                    if validation[i] is not None and actions[i] is not None:
+                        self._finalize_no_action_episode(env, vec_policy.get_policy(i), te_list[i], terminal_steps[i])
                     te_list[i].update_progress(task_progresses[i])
-                    active[i] = False
+                    unfinished[i] = False
                     finish_times[i] = time.time()
                     env.current_step = 0
                     te_list[i].summarize_scores()

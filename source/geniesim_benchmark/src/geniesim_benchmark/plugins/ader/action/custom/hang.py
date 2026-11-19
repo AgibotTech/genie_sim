@@ -56,6 +56,7 @@ class Hang(EvaluateAction):
         self.open_ratio = float(open_ratio)
         self.near_dist = float(near_dist)
         self._heights = deque(maxlen=self.stable_checks)
+        self._last_height_step = None
         self._done_flag = False
 
     @property
@@ -88,6 +89,12 @@ class Hang(EvaluateAction):
                 return False
         return True
 
+    @property
+    def remaining_stability_checks(self):
+        if not self.is_running() or not self._heights:
+            return 0
+        return self.stable_checks - len(self._heights)
+
     def update(self, delta_time: float) -> float:
         if self._done_flag:
             return super().update(delta_time)
@@ -100,7 +107,11 @@ class Hang(EvaluateAction):
             self._heights.clear()
             return super().update(delta_time)
 
-        self._heights.append(current_z)
+        if self._heights and self._last_height_step == self.env.current_step:
+            self._heights[-1] = current_z
+        else:
+            self._heights.append(current_z)
+        self._last_height_step = self.env.current_step
         spread = max(self._heights) - min(self._heights)
         if len(self._heights) == self.stable_checks and spread <= self.tolerance:
             self._done_flag = True

@@ -156,6 +156,32 @@ class PourVolume(EvaluateAction):
             UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
         )
 
+    def _container_body(self, obj_name):
+        from pxr import UsdPhysics
+
+        root = self.api_core._stage.GetPrimAtPath(self._prim_path(obj_name))
+        if root:
+            for prim in (root.GetChild("entity"), root):
+                if prim and prim.HasAPI(UsdPhysics.RigidBodyAPI):
+                    return prim
+        return None
+
+    def _container_matrix(self, obj_name):
+        from omni.physx import get_physx_interface
+        from pxr import Gf, Usd, UsdGeom
+
+        body = self._container_body(obj_name)
+        if body is None:
+            return None
+        pose = get_physx_interface().get_rigidbody_transformation(str(body.GetPath()))
+        if not pose or not pose.get("ret_val"):
+            return None
+        transform = Gf.Transform(UsdGeom.Xformable(body).ComputeLocalToWorldTransform(Usd.TimeCode.Default()))
+        x, y, z, w = pose["rotation"]
+        transform.SetRotation(Gf.Rotation(Gf.Quatd(w, Gf.Vec3d(x, y, z))))
+        transform.SetTranslation(Gf.Vec3d(*pose["position"]))
+        return np.asarray(transform.GetMatrix())
+
     def _receiver_cavity(self):
         """Inner radius, floor height and rim height of the receiver, in its own
         local frame.
@@ -183,11 +209,10 @@ class PourVolume(EvaluateAction):
             self._cavity_error = f"receiver colliders not found under {root}"
             return None
 
-        M = self._world_matrix(root)
-        if M is None:
-            self._cavity_error = f"receiver prim not found: {root}"
+        body = self._container_body(self.receiver_obj)
+        if body is None:
+            self._cavity_error = f"receiver rigid body not found: {root}"
             return None
-        M_inv = np.linalg.inv(M)
 
         bbox = UsdGeom.BBoxCache(
             Usd.TimeCode.Default(),
@@ -196,14 +221,13 @@ class PourVolume(EvaluateAction):
         )
 
         def local_corners(prim):
-            r = bbox.ComputeWorldBound(prim).ComputeAlignedRange()
+            r = bbox.ComputeRelativeBound(prim, body).ComputeAlignedRange()
             if r.IsEmpty():
                 return None
             lo, hi = np.array(r.GetMin()), np.array(r.GetMax())
-            pts = np.array(
+            return np.array(
                 [[x, y, z] for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
             )
-            return _to_local(pts, M_inv)
 
         walls = [
             p
@@ -293,18 +317,19 @@ class PourVolume(EvaluateAction):
             return super().update(delta_time)
 
         M_f = self._world_matrix(particle_prim)
-        M_r = self._world_matrix(self._prim_path(self.receiver_obj))
-        M_s = self._world_matrix(self._prim_path(self.source_obj))
-        if M_f is None or M_r is None:
+        M_r = self._container_matrix(self.receiver_obj)
+        M_s = self._container_matrix(self.source_obj)
+        if M_f is None or M_r is None or M_s is None:
+            self._history.clear()
             return super().update(delta_time)
 
         world = _to_world(pts, M_f)
 
         # Tilt: the receiver's local +Z against world +Z.
-        up = M_r[:3, 2]
+        up = M_r[2, :3]
         norm = np.linalg.norm(up)
         self._tilt_deg = (
-            float(np.degrees(np.arccos(np.clip(abs(up[2]) / norm, -1.0, 1.0))))
+            float(np.degrees(np.arccos(np.clip(up[2] / norm, -1.0, 1.0))))
             if norm > 0
             else 180.0
         )
@@ -321,15 +346,12 @@ class PourVolume(EvaluateAction):
         # rule in the contract is a during-pour test that needs per-step samples.
         # A particle stopped above the rim is therefore also a fail, which also
         # covers the contract's "nothing left waiting to fall into the cylinder".
-        src = _to_local(world, np.linalg.inv(M_s)) if M_s is not None else None
-        if src is not None:
-            in_jug = (
-                (np.hypot(src[:, 0], src[:, 1]) <= SOURCE_ENVELOPE_RADIUS)
-                & (src[:, 2] >= SOURCE_ENVELOPE_Z[0])
-                & (src[:, 2] <= SOURCE_ENVELOPE_Z[1])
-            )
-        else:
-            in_jug = np.zeros(len(world), dtype=bool)
+        src = _to_local(world, np.linalg.inv(M_s))
+        in_jug = (
+            (np.hypot(src[:, 0], src[:, 1]) <= SOURCE_ENVELOPE_RADIUS)
+            & (src[:, 2] >= SOURCE_ENVELOPE_Z[0])
+            & (src[:, 2] <= SOURCE_ENVELOPE_Z[1])
+        )
         in_receiver = (
             (np.hypot(loc[:, 0], loc[:, 1]) <= cavity[0])
             & (loc[:, 2] >= cavity[1])
