@@ -6,7 +6,7 @@
 import os
 import base64
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 from openai import OpenAI
 import cv2
 import re
@@ -99,6 +99,40 @@ def save_debug_image(
     return False
 
 
+# A non-negative number: "1", "0.67" or ".33".
+_NUMBER = r"\d+(?:\.\d+)?|\.\d+"
+# "1/3", "1 / 3", "1 out of 3", "1 of 3", "1.0/3.0". A period after the denominator with no digit
+# following it ("1/3.") is punctuation.
+_FRACTION = re.compile(rf"(?<![\d.])(-?)({_NUMBER})\s*(?:/|out\s+of|of)\s*({_NUMBER})(?!\.?\d)", re.IGNORECASE)
+_DECIMAL = re.compile(rf"(?<![\d.])(-?)({_NUMBER})")
+# PROMPT_AUTOSCORE.txt asks for SCORE = SATISFIED_COUNT / TOTAL_COUNT. A SCORE further than this
+# from the counts is not a rounding of them, and the counts are used instead.
+_SCORE_COUNT_TOLERANCE = 0.01
+
+
+def _parse_score_field(score_text: str) -> Optional[float]:
+    """
+    Read the value of the SCORE field of the VLM reply.
+
+    Accepts a decimal in [0, 1] ("0.67", ".33"), a fraction ("1/3", "1/3 = 0.33", "2 out of 3",
+    "1 of 3") or a percentage ("67%"). Returns None for anything else, including a negative number,
+    a number above 1 and a fraction above 1, so the caller falls back to the counts.
+    """
+    fraction = _FRACTION.search(score_text)
+    if fraction:
+        if fraction.group(1):
+            return None
+        numerator, denominator = float(fraction.group(2)), float(fraction.group(3))
+        return numerator / denominator if 0 < denominator and numerator <= denominator else None
+    number = _DECIMAL.search(score_text)
+    if not number or number.group(1):
+        return None
+    value = float(number.group(2))
+    if score_text[number.end() :].lstrip().startswith("%"):
+        value /= 100.0
+    return value if 0.0 <= value <= 1.0 else None
+
+
 def auto_score(
     description: str,
     image_history: list,
@@ -125,7 +159,7 @@ def auto_score(
     if target_size:
         print(f"[auto_score] Resizing all images to {target_size[0]}x{target_size[1]}")
 
-    print(f"[auto_score] API_KEY: {API_KEY}")
+    print(f"[auto_score] API_KEY: {'set' if API_KEY else 'not set'}")
     print(f"[auto_score] BASE_URL: {BASE_URL}")
     print(f"[auto_score] MODEL: {MODEL}")
 
@@ -266,13 +300,9 @@ def auto_score(
         # Extract SCORE field
         elif line_lower.startswith("score:"):
             score_text = line_lower.replace("score:", "").strip()
-            score_match = re.search(r"(\d+\.?\d*)", score_text)
-            if score_match:
-                try:
-                    score = float(score_match.group(1))
-                    score = max(0.0, min(1.0, score))  # Clamp to [0.0, 1.0]
-                except ValueError:
-                    pass
+            parsed_score = _parse_score_field(score_text)
+            if parsed_score is not None:
+                score = parsed_score
             current_field = None
             continue
 
@@ -311,10 +341,16 @@ def auto_score(
             total_count = true_count + false_count
             print(f"[auto_score] Derived total_count from [TRUE]/[FALSE] tags: {total_count}")
 
-    # Calculate score from counts if score not explicitly provided
-    if score == 0.0 and satisfied_count is not None and total_count is not None and total_count > 0:
-        score = satisfied_count / total_count
-        print(f"[auto_score] Calculated score from counts: {satisfied_count}/{total_count} = {score:.3f}")
+    # Use the counts when the SCORE field is missing or unreadable (score is still 0.0) or does not match them
+    counts_valid = satisfied_count is not None and total_count is not None and 0 <= satisfied_count <= total_count
+    if counts_valid and total_count > 0:
+        count_score = satisfied_count / total_count
+        if abs(score - count_score) > _SCORE_COUNT_TOLERANCE:
+            print(
+                f"[auto_score] Calculated score from counts: {satisfied_count}/{total_count} = {count_score:.3f}"
+                f" (SCORE field gave {score:.3f})"
+            )
+            score = count_score
 
     # Print extracted information
     print(f"[auto_score] Final score: {score:.3f}")
