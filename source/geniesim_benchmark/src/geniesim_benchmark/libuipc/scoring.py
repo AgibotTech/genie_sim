@@ -26,7 +26,7 @@ SCORING_FRAME_INTERVAL = 10
 PROFILE_HASHES = {
     "fold_cloth": "32c2256e6ab9f831a1d622d8111f93fbde6269ef2729c39d72ccb011c8ecfd5f",
     "cloth_hanger": "c230c6c0fc6e742a41acce09ee22af11b0db79291ce474216dcac098ea3257cc",
-    "drawstring_bag": "8ccf257c9314ab720d03b9288b462dac4ceaccda816589201f05eb55a1eb4703",
+    "drawstring_bag": "79f003645041c9b8e1cc3d37bf318dc31b5d35206c1cc44cbc2e30764c585c2c",
 }
 
 
