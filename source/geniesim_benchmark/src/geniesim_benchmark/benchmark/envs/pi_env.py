@@ -1027,14 +1027,25 @@ class PiEnv(DummyEnv):
         if chunk_len is not None and int(chunk_len) > 0:
             self._policy_chunk_len_steps = int(chunk_len)
 
-    def step(self, action):
+    def _terminal_observation(self, fetch_images):
+        observation = self.get_observation(fetch_images=fetch_images)
+        self.finish_on_current_frame()
+        return observation
+
+    def finish_on_current_frame(self):
+        self.task.step(self)
+        self.action_update()
+        self.has_done = True
+        logger.info("Policy episode_done: last action executed and checker evaluated at step %s", self.current_step)
+
+    def step(self, action, *, final_action=False):
         if action is None:
             self.has_done = True
             return self.get_observation(), self.has_done, False, self.task.task_progress
 
         self.current_step += 1
         need_update = False
-        if self.current_step != 1 and self.current_step % 30 == 0:
+        if not final_action and self.current_step != 1 and self.current_step % 30 == 0:
             self.task.step(self)
             self.action_update()
             need_update = True
@@ -1080,7 +1091,10 @@ class PiEnv(DummyEnv):
                 self._wait_robot_settled(arm=arm, waist=waist, head=head, gripper=gripper)
             elif arm is not None:
                 self._wait_arm_settled([float(v) for v in arm])
-        next_obs = self.get_observation(fetch_images=self.need_infer or self.has_done)
+        if final_action:
+            next_obs = self.api_core.read_terminal_frame(self._terminal_observation, self.need_infer or self.has_done)
+        else:
+            next_obs = self.get_observation(fetch_images=self.need_infer or self.has_done)
         return next_obs, self.has_done, need_update, self.task.task_progress
 
     def _wait_arm_settled(self, target_arm):

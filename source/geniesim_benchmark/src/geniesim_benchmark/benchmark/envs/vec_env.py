@@ -169,10 +169,10 @@ class BenchmarkVecEnv:
         self._api_core.run_on_physics_loop(_read_images)
 
     # ----------------------------- step ---------------------------------
-    def step(self, actions: list) -> Tuple[List, List[bool], List[bool], List]:
+    def step(self, actions: list, *, final_actions=None) -> Tuple[List, List[bool], List[bool], List]:
         assert len(actions) == self._n_envs
         self._batch_apply_actions(actions)
-        obs_list, dones, need_updates, task_progresses = self._batch_read_obs_and_eval(actions)
+        obs_list, dones, need_updates, task_progresses = self._batch_read_obs_and_eval(actions, final_actions)
         self._rate_sleep()
         return obs_list, dones, need_updates, task_progresses
 
@@ -206,8 +206,10 @@ class BenchmarkVecEnv:
             if actions[idx] is not None and getattr(self._envs[idx], "need_infer", True):
                 api.render_env(idx, env_paths=env_paths)
 
-    def _batch_read_obs_and_eval(self, actions: list) -> Tuple[List, List[bool], List[bool], List]:
+    def _batch_read_obs_and_eval(self, actions: list, final_actions=None) -> Tuple[List, List[bool], List[bool], List]:
         self._maybe_render_on_demand(actions)
+        if final_actions is None:
+            final_actions = [False] * self._n_envs
 
         # task.step / action_update run on the task thread — they may schedule
         # run_on_physics_loop themselves, which would deadlock if nested.
@@ -220,7 +222,7 @@ class BenchmarkVecEnv:
                 continue
 
             env.current_step += 1
-            if env.current_step != 1 and env.current_step % 30 == 0:
+            if not final_actions[idx] and env.current_step != 1 and env.current_step % 30 == 0:
                 env.task.step(env)
                 env.action_update()
                 need_updates[idx] = True
@@ -234,9 +236,15 @@ class BenchmarkVecEnv:
                 if actions[idx] is None:
                     obs_results[idx] = None
                     continue
-                obs_results[idx] = self._read_obs_direct(self._envs[idx], idx)
+                env = self._envs[idx]
+                obs_results[idx] = self._read_obs_direct(env, idx)
+                if final_actions[idx]:
+                    env.finish_on_current_frame()
 
-        self._api_core.run_on_physics_loop(_read_all)
+        if any(final_actions):
+            self._api_core.read_terminal_frame(_read_all)
+        else:
+            self._api_core.run_on_physics_loop(_read_all)
 
         obs_list, dones, need_updates_list, progresses = [], [], [], []
         for i in range(self._n_envs):

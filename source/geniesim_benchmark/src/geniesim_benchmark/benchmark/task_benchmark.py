@@ -158,12 +158,19 @@ class TaskBenchmark(object):
         """Finalize one started attempt before control leaves its episode loop."""
         if error is None and self.data_courier.stop_requested() and "scores" not in evaluation.result:
             error = RuntimeError("benchmark shutdown requested")
-        if error is not None:
-            evaluation.assemble_expect_result(error)
-        evaluation.update_progress(env.task.task_progress)
-        evaluation.summarize_scores()
-        self.evaluate_summary.update_current(evaluation)
-        self.evaluate_summary.make_cache()
+        try:
+            if evaluation.terminal_result is None:
+                evaluation.update_progress(env.task.task_progress)
+                evaluation.summarize_scores()
+            else:
+                evaluation.result = copy.deepcopy(evaluation.terminal_result)
+            if error is not None:
+                evaluation.assemble_expect_result(error)
+            self.evaluate_summary.update_current(evaluation)
+            self.evaluate_summary.make_cache()
+        finally:
+            if env.exist_eval_action():
+                self.api_core.run_on_render_loop(env.cancel_action, "eval")
 
     def _evaluate_policy_impl(self):
         for task in self.tasks:
@@ -522,8 +529,6 @@ class TaskBenchmark(object):
                     finally:
                         # A failed terminal notification cannot invalidate a sealed checker result.
                         sealed = checkpoint is not None and single_te.episode_finished
-                        if sealed and single_te.terminal_result is not None:
-                            single_te.result = copy.deepcopy(single_te.terminal_result)
                         self._cache_episode_result(single_te, self.env, None if sealed else episode_error)
                         bag = None
                         if self.args.record:
@@ -672,6 +677,13 @@ class TaskBenchmark(object):
 
         self.env.set_data_courier(self.data_courier)
         self.env.set_scene_info(scene_info)
+
+    @staticmethod
+    def _is_final_action(policy):
+        if not getattr(policy, "server_episode_done", False):
+            return False
+        inference_due = getattr(policy, "inference_due", None)
+        return inference_due is None or inference_due()
 
     @staticmethod
     def _hang_validation_steps(env, policy):
@@ -867,32 +879,12 @@ class TaskBenchmark(object):
                 else:
                     _drop_render()
 
-                observaion, done, need_update, task_progress = self.env.step(action)
-                # A policy backed by a replay/mock server can signal that it
-                # has run out of recorded actions to give (e.g. corobot's
-                # server_episode_done, set from the inference reply's
-                # "episode_done" field) -- that ends the episode, regardless
-                # of what the checker currently thinks, since there is
-                # nothing further to feed it either way.
-                #
-                # server_episode_done latches True the INSTANT that reply
-                # arrives, well before the sim has driven through the ~30
-                # ticks of raw waypoints the chunk still queued -- acting on
-                # it immediately cuts that last chunk short and resets one
-                # chunk early, before the recording's true final pose is
-                # ever reached. Gate on inference_due() (raw_action_buffer
-                # and action_buffer both drained) so the episode only ends
-                # once every queued waypoint from that final chunk has
-                # actually been executed.
-                if getattr(self.policy, "server_episode_done", False) and not done:
-                    inference_due = getattr(self.policy, "inference_due", None)
-                    if inference_due is None or inference_due():
-                        logger.info(
-                            "Policy server signaled episode_done and the last queued "
-                            "chunk has fully executed; overriding checker and ending "
-                            "episode now."
-                        )
-                        done = True
+                final_action = self._is_final_action(self.policy)
+                if final_action and not self.args.interactive:
+                    observaion, done, need_update, task_progress = self.env.step(action, final_action=True)
+                else:
+                    observaion, done, need_update, task_progress = self.env.step(action)
+                    done = done or final_action
                 if hasattr(self.policy, "update_task_status"):
                     self.policy.update_task_status(done, task_progress)
                 if self.env.current_step % 30 == 0:
@@ -1215,7 +1207,11 @@ class TaskBenchmark(object):
             vec_env.set_infer_status(need_infer)
             vec_env.set_depth_status(vec_policy.need_depth_list())
 
-            obs_list, dones, need_updates, task_progresses = vec_env.step(actions)
+            final_actions = [
+                action is not None and validation[i] is None and self._is_final_action(vec_policy.get_policy(i))
+                for i, action in enumerate(actions)
+            ]
+            obs_list, dones, need_updates, task_progresses = vec_env.step(actions, final_actions=final_actions)
             vec_policy.update_task_status_batch(dones, task_progresses)
 
             for i in range(n_envs):
@@ -1234,6 +1230,10 @@ class TaskBenchmark(object):
                     finish_times[i] = time.time()
                     env.current_step = 0
                     te_list[i].summarize_scores()
+                    te_list[i].episode_finished = True
+                    te_list[i].terminal_result = copy.deepcopy(te_list[i].result)
+                    if env.exist_eval_action():
+                        self.api_core.run_on_render_loop(env.cancel_action, "eval")
                     vec_policy.reset_policy(i)
 
         end_time = time.time()

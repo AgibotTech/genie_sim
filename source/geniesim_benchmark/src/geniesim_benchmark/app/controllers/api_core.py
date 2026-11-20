@@ -86,6 +86,7 @@ class APICore:
         # wait_while_physics_paused().
         self._main_loop_wake = threading.Event()
         self._render_scheduler = RenderLoopScheduler(on_enqueue=self._main_loop_wake.set)
+        self._terminal_frame = threading.local()
         self.task_queue_on_physics_loop = queue.Queue()
         self._physics_tick_callbacks = {}
         self._physics_tick_callback_lock = threading.Lock()
@@ -320,7 +321,23 @@ class APICore:
             return True
         return self._render_needed.is_set()
 
+    def read_terminal_frame(self, func, *args):
+        """Read on the sim thread after world.step has delivered all physics callbacks."""
+        if getattr(self._terminal_frame, "active", False):
+            return func(*args)
+
+        def read():
+            self._terminal_frame.active = True
+            try:
+                return func(*args)
+            finally:
+                self._terminal_frame.active = False
+
+        return self.run_on_render_loop(read)
+
     def run_on_render_loop(self, func, *args, timeout=120, **kwargs):
+        if getattr(self._terminal_frame, "active", False):
+            return func(*args, **kwargs)
         deadline = time.monotonic() + timeout
         label = getattr(func, "__qualname__", getattr(func, "__name__", type(func).__name__))
         try:
@@ -333,6 +350,8 @@ class APICore:
             raise
 
     def run_on_physics_loop(self, func, *args, timeout=120, **kwargs):
+        if getattr(self._terminal_frame, "active", False):
+            return func(*args, **kwargs)
         done = threading.Event()
         result = {}
 
