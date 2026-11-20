@@ -35,10 +35,8 @@ task:
 3. the system still holds ``expected_total`` particles (a pass cannot come from
    deleting or adding fluid);
 4. the receiver is tilted less than ``max_tilt_deg`` from upright;
-5. every particle is inside the source's envelope, inside the receiver's
-   cavity, or not yet below ``NEAR_TABLE_Z`` -- so a puddle on the table fails
-   rather than being ignored. ``NEAR_TABLE_Z`` is the fixed table height of
-   this task's 40 scenes, not a general threshold.
+5. every particle is inside the source's envelope or the receiver's cavity.
+   A particle outside both containers prevents completion, even while airborne.
 
 What this deliberately does *not* check, and why (see EVALUATION.md section 4):
 contact/spacing against the receiver needs per-physics-step sampling, but
@@ -64,10 +62,8 @@ from geniesim_benchmark.plugins.logger import Logger
 
 logger = Logger()
 
-# World-Z below which a stray particle counts as spilled onto the table rather
-# than as still in flight. Measured for this task's fixed table height; a scene
-# with a different table breaks it (EVALUATION.md documents the same constant
-# and the same caveat).
+# Table-height threshold in EVALUATION.md for spills during pouring.
+# The endpoint check uses containment alone.
 NEAR_TABLE_Z = 0.736
 
 # Source envelope from the delivered ASSETS.json bounds, widened per
