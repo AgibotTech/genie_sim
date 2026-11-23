@@ -13,6 +13,7 @@ from __future__ import annotations
 import base64
 import json
 from collections.abc import Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 import math
 from numbers import Real
@@ -21,6 +22,15 @@ from types import MappingProxyType
 
 import numpy as np
 import yaml
+
+from geniesim_benchmark.plugins.logger import Logger
+from geniesim_benchmark.utils.comm.retry import (
+    TRANSIENT_EXC_TYPES,
+    get_recv_timeout,
+    run_with_inference_retry,
+)
+
+logger = Logger()
 
 ARM_JOINTS = tuple(
     f"idx{start+i:02d}_arm_{side}_joint{i+1}" for side, start in (("l", 21), ("r", 61)) for i in range(7)
@@ -312,7 +322,7 @@ def build_payload(
 
 
 class InferenceClient:
-    """One direct msgpack/WebSocket infer exchange; no metadata handshake."""
+    """Send msgpack inference requests over a reconnectable WebSocket."""
 
     def __init__(self, host, timeout_s=120):
         if not isinstance(host, str) or not host.strip():
@@ -348,9 +358,22 @@ class InferenceClient:
             for index, frame in enumerate(payload["params"].get("history", {}).get("images", [])):
                 for name, image in frame.items():
                     (archive / f"history_{index:04d}_{name}.jpg").write_bytes(image["image_data"])
-        self.connect()
-        self._ws.send(wire)
-        raw = self._ws.recv(timeout=self.timeout_s)
+        raw = None
+        recv_timeout = get_recv_timeout(default=self.timeout_s)
+
+        def exchange():
+            nonlocal raw
+            try:
+                self.connect()
+                self._ws.send(wire)
+                raw = self._ws.recv(timeout=recv_timeout)
+            except TRANSIENT_EXC_TYPES:
+                with suppress(*TRANSIENT_EXC_TYPES):
+                    self.close()
+                raise
+            return True
+
+        run_with_inference_retry(exchange, log=logger, label="libuipc.infer", raise_on_exhaustion=True)
         if archive is not None:
             (archive / ("response.txt" if isinstance(raw, str) else "response.msgpack")).write_bytes(
                 raw.encode() if isinstance(raw, str) else raw
@@ -363,9 +386,9 @@ class InferenceClient:
         return response["result"]
 
     def close(self):
-        if self._ws is not None:
-            self._ws.close()
-            self._ws = None
+        ws, self._ws = self._ws, None
+        if ws is not None:
+            ws.close()
 
 
 def policy_frame_bindings(manifest_path):

@@ -51,12 +51,9 @@ class InferenceUnavailableError(RuntimeError):
     """Fatal "inference server unreachable" condition, after the configured
     number of consecutive failed attempts.
 
-    Caveat: the current retry loop (`retry_until_ready`) does not raise this — on
-    exhaustion it terminates the process directly via ``sys.exit(1)`` and lets an
-    external supervisor (shell / k8s / scheduler) decide whether to restart. This
-    type is kept for callers that prefer to catch a typed exception instead. The
-    intent either way is to NOT skip the current episode — a dead server would
-    otherwise silently burn through the remaining episodes as failures.
+    Callers that own episode cleanup can opt in to this exception from
+    ``run_with_inference_retry``. They can report the final transport error
+    before aborting the evaluation.
     """
 
 
@@ -143,6 +140,7 @@ def run_with_inference_retry(
     max_consecutive_failures: Optional[int] = None,
     backoff_cap: Optional[float] = None,
     label: str = "inference",
+    raise_on_exhaustion: bool = False,
 ) -> None:
     """Drive an infer callable until it succeeds.
 
@@ -153,8 +151,9 @@ def run_with_inference_retry(
       - raises any other exception → propagated immediately (fatal)
 
     After ``max_consecutive_failures`` consecutive failed attempts, logs an
-    error and terminates the process via ``sys.exit(1)``. The counter resets
-    on the next call to this helper; within one call it only grows.
+    error and terminates the process via ``sys.exit(1)``. Callers can pass
+    ``raise_on_exhaustion=True`` to receive ``InferenceUnavailableError``.
+    The failure counter resets for each call.
     """
     max_failures = max_consecutive_failures if max_consecutive_failures is not None else get_max_consecutive_failures()
     cap = backoff_cap if backoff_cap is not None else get_backoff_cap()
@@ -162,12 +161,14 @@ def run_with_inference_retry(
     attempt = 0
     while True:
         last_err: Optional[str] = None
+        cause: Optional[Exception] = None
         try:
             ok = infer_fn()
         except Exception as e:
             if not is_transient_error(e):
                 raise
             ok = False
+            cause = e
             last_err = f"{type(e).__name__}: {e}"
 
         if ok:
@@ -175,11 +176,14 @@ def run_with_inference_retry(
 
         attempt += 1
         if attempt >= max_failures:
-            log.error(
+            message = (
                 f"{label} failed {attempt} consecutive times "
                 f"(last: {last_err or 'returned False'}); inference server "
                 f"unreachable, exiting."
             )
+            log.error(message)
+            if raise_on_exhaustion:
+                raise InferenceUnavailableError(message) from cause
             sys.exit(1)
 
         delay = backoff_delay(attempt, cap=cap)
