@@ -244,6 +244,7 @@ def run_episode(env, cfg, policy, index, scramble, directory, scene=None, *, eva
             "arm_target_limit_policy": "clip_to_joint_limits",
             "arm_changed_values_in_received_chunks": arm_projection_count,
             "arm_maximum_projection_radians": arm_maximum_projection,
+            "hand_target_limit_policy": "clip_to_joint_limits",
             "hand_target_tolerance": cfg.rubik.hand_target_tolerance,
             "changed_values_in_received_chunks": projection_count,
             "maximum_projection_radians": maximum_projection,

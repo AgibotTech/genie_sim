@@ -7,6 +7,7 @@
 from contextlib import ExitStack
 from inspect import signature
 from io import BytesIO
+import logging
 import time
 import msgpack
 import numpy as np
@@ -73,7 +74,7 @@ def parse_actions(
     measured_state=None,
     ik_solver=None,
 ):
-    """Validate action chunks and saturate finite arm targets at joint limits."""
+    """Clip finite joint targets to their limits. Hand tolerance controls warnings."""
     if not np.isfinite(hand_target_tolerance) or not 0 <= hand_target_tolerance <= 0.05:
         raise PolicyError("Hand target tolerance must be in [0,0.05] radians")
     if not isinstance(reply, dict) or reply.get("error"):
@@ -134,30 +135,30 @@ def parse_actions(
         bounds = np.asarray(contract["bounds"])
         if not np.isfinite(actions).all():
             raise ValueError("Joint targets must be finite")
-        violation = np.maximum(np.maximum(bounds[:, 0] - actions, actions - bounds[:, 1]), 0)
-        projected_arms = np.clip(actions[:, :14], bounds[:14, 0], bounds[:14, 1])
+        projected = np.clip(actions, bounds[:, 0], bounds[:, 1])
+        difference = np.abs(actions - projected)
+        hand_difference = difference[:, 14:]
+        hand_changed = int(np.count_nonzero(hand_difference))
+        hand_excess = float(hand_difference.max())
         if projection_log is not None:
-            difference = np.abs(actions[:, :14] - projected_arms)
             projection_log.update(
-                arm_changed_values=int(np.count_nonzero(difference)),
-                arm_maximum_projection_radians=float(difference.max()),
+                arm_changed_values=int(np.count_nonzero(difference[:, :14])),
+                arm_maximum_projection_radians=float(difference[:, :14].max()),
+                changed_values=hand_changed,
+                maximum_projection_radians=hand_excess,
             )
-        actions[:, :14] = projected_arms
-        if np.any(violation[:, 14:] > hand_target_tolerance + 1e-6):
-            raise ValueError(
-                f"Hand targets violate action_contract bounds: maximum excess {violation[:, 14:].max():.6f} rad"
+        if hand_excess > hand_target_tolerance:
+            row, finger = np.unravel_index(hand_difference.argmax(), hand_difference.shape)
+            column = 14 + finger
+            joint = contract["joint_names"][column] if "joint_names" in contract else column
+            logging.getLogger(__name__).warning(
+                "Clipped %d Rubik hand targets to joint limits. Maximum excess %.6f rad "
+                "at action row %d, joint %s (%.6f -> %.6f rad)",
+                hand_changed, hand_excess, row, joint, actions[row, column], projected[row, column],
             )
-        if hand_target_tolerance:
-            projected = np.clip(actions[:, 14:], bounds[14:, 0], bounds[14:, 1])
-            difference = np.abs(actions[:, 14:] - projected)
-            if projection_log is not None:
-                projection_log.update(
-                    changed_values=int(np.count_nonzero(difference)), maximum_projection_radians=float(difference.max())
-                )
-            actions[:, 14:] = projected
     except (KeyError, TypeError, ValueError, OverflowError, RuntimeError) as error:
         raise PolicyError(str(error)) from error
-    return actions, done
+    return projected, done
 
 
 class WebsocketPolicy:
