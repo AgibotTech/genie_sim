@@ -6,20 +6,17 @@
           {
             "ActionSetWaitAny": [
               {
-                "ActionSetWaitSome_2": [
-                  {
-                    "Ontop": "benchmark_carton_061_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_062_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_063_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_064_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  }
-                ]
+                "OnTopCount": {
+                  "objects": [
+                    "benchmark_carton_061_00",
+                    "benchmark_carton_062_00",
+                    "benchmark_carton_063_00",
+                    "benchmark_carton_064_00"
+                  ],
+                  "surface": "benchmark_luggage_cart_002/entity/body/collider_body_008",
+                  "minimum": 2,
+                  "threshold": 0.5
+                }
               },
               {
                 "StepOut": 3000
@@ -29,20 +26,17 @@
           {
             "ActionSetWaitAny": [
               {
-                "ActionSetWaitAll": [
-                  {
-                    "Ontop": "benchmark_carton_061_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_062_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_063_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  },
-                  {
-                    "Ontop": "benchmark_carton_064_00|benchmark_luggage_cart_002/entity/body/collider_body_008|active|0.5"
-                  }
-                ]
+                "OnTopCount": {
+                  "objects": [
+                    "benchmark_carton_061_00",
+                    "benchmark_carton_062_00",
+                    "benchmark_carton_063_00",
+                    "benchmark_carton_064_00"
+                  ],
+                  "surface": "benchmark_luggage_cart_002/entity/body/collider_body_008",
+                  "minimum": 4,
+                  "threshold": 0.5
+                }
               },
               {
                 "StepOut": 3000
@@ -93,36 +87,12 @@
         "PolicyDispatchBudget": {
           "steps": [
             {
-              "checker": "Ontop",
-              "points": 1.25
+              "checker": "OnTopCount",
+              "points": 5
             },
             {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
-            },
-            {
-              "checker": "Ontop",
-              "points": 1.25
+              "checker": "OnTopCount",
+              "points": 5
             },
             {
               "checker": "InBBox",
@@ -147,6 +117,7 @@
           ]
         }
       }
-    ]
+    ],
+    "ScoreLayout": "transport_cartons_to_table_wbc_milestones"
   }
 }
