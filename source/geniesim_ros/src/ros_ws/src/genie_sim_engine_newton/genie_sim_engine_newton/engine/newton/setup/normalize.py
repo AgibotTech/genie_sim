@@ -213,6 +213,26 @@ class _NormalizeMixin:
                         if hasattr(self._model, "max_dofs_per_articulation"):
                             self._model.max_dofs_per_articulation = int(getattr(self._model, "joint_dof_count", 0) or 0)
 
+                        # newton 1.6.1 schedules CUDA ``eval_fk`` from level
+                        # tables that ``finalize`` caches per articulation id.
+                        # They still describe the pre-merge articulations, so
+                        # with one articulation left ``eval_fk`` walks only the
+                        # first of them and every body behind the others keeps
+                        # a stale ``body_q`` (e.g. a free object after a reset).
+                        # Without the tables ``eval_fk`` uses its serial path,
+                        # which reads the arrays rewritten above.
+                        # ``SolverCoupled`` drops them the same way.
+                        for fk_cache in (
+                            "_fk_articulation_level_start",
+                            "_fk_level_joint_start",
+                            "_fk_level_joints",
+                            "_fk_level_parent_pos",
+                        ):
+                            if hasattr(self._model, fk_cache):
+                                setattr(self._model, fk_cache, None)
+                        if hasattr(self._model, "_fk_level_capacity"):
+                            self._model._fk_level_capacity = 0
+
                         # World bookkeeping is only rewritten for a SINGLE
                         # world.  Collapsing N articulations to one already
                         # spans every world on the multi-env adapter, and
